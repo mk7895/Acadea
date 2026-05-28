@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle2, Globe, GraduationCap, MapPin, Users } from "lucide-react";
+import { ArrowRight, CheckCircle2, Globe, GraduationCap, Heart, MapPin, Users } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Home() {
@@ -160,6 +160,71 @@ export default function Home() {
               </motion.div>
             ))}
           </motion.div>
+        </div>
+      </section>
+
+      {/* Scholarship Impact Section */}
+      <section className="py-24 bg-white overflow-hidden">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-accent text-sm font-semibold mb-8">
+                <Heart size={16} className="fill-accent" />
+                <span>Program Stypendialny ACADEA</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-6">
+                Korzystasz z naszych usług.<br />
+                <span className="text-accent">Wspierasz czyjś sen.</span>
+              </h2>
+              <p className="text-lg text-gray-600 leading-relaxed mb-6">
+                Wierzymy, że wykształcenie nie powinno być przywilejem. Dlatego każda osoba, która wybiera ACADEA, automatycznie przyczynia się do naszego funduszu stypendialnego.
+              </p>
+              <p className="text-lg text-gray-600 leading-relaxed mb-10">
+                Część każdej opłaty trafia do uczniów o wybitnym potencjale, których nie stać na studia za granicą. Twój wybór otwiera im drzwi do świata.
+              </p>
+              <Link href="/stypendium">
+                <Button
+                  size="lg"
+                  data-testid="button-scholarship-home"
+                  className="h-13 px-8 text-base rounded-full bg-accent text-primary hover:bg-primary hover:text-white transition-all font-bold border-none"
+                >
+                  Dowiedz się więcej <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
+              className="grid grid-cols-2 gap-4"
+            >
+              {[
+                { value: "40+", label: "Stypendystów od początku programu", color: "bg-primary" },
+                { value: "12", label: "Krajów, gdzie uczą się nasi stypendyści", color: "bg-accent" },
+                { value: "100%", label: "Transparentność — każdy widzi, dokąd trafiają środki", color: "bg-gray-900" },
+                { value: "Ty", label: "też możesz być częścią tej zmiany — każde zamówienie liczy się podwójnie", color: "bg-primary/80" },
+              ].map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.15 * i, duration: 0.5 }}
+                  className={`${item.color} rounded-2xl p-7 text-white flex flex-col justify-between min-h-[160px]`}
+                >
+                  <span className="text-4xl font-bold">{item.value}</span>
+                  <p className="text-white/80 text-sm leading-relaxed mt-3">{item.label}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
         </div>
       </section>
 

@@ -9,6 +9,8 @@ const links = [
   { href: "/", label: "Strona Główna" },
   { href: "/jak-to-dziala", label: "Jak to działa" },
   { href: "/kraje", label: "Kraje i Uczelnie" },
+  { href: "/baza-wiedzy", label: "Baza Wiedzy" },
+  { href: "/stypendium", label: "Stypendia", highlight: true },
   { href: "/o-nas", label: "O nas" },
 ];
 
@@ -44,17 +46,31 @@ export function Navbar() {
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden md:flex items-center gap-6">
           {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`text-sm font-medium transition-colors hover:text-accent ${
-                location === link.href ? "text-primary" : "text-gray-600"
-              }`}
-            >
-              {link.label}
-            </Link>
+            link.highlight ? (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`text-sm font-semibold transition-colors px-3 py-1 rounded-full border ${
+                  location === link.href
+                    ? "bg-accent text-primary border-accent"
+                    : "text-accent border-accent/40 hover:bg-accent hover:text-primary"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`text-sm font-medium transition-colors hover:text-accent ${
+                  location === link.href ? "text-primary" : "text-gray-600"
+                }`}
+              >
+                {link.label}
+              </Link>
+            )
           ))}
         </nav>
 
@@ -91,7 +107,11 @@ export function Navbar() {
                     key={link.href}
                     href={link.href}
                     className={`text-2xl font-semibold transition-colors ${
-                      location === link.href ? "text-primary" : "text-gray-600"
+                      link.highlight
+                        ? "text-accent"
+                        : location === link.href
+                        ? "text-primary"
+                        : "text-gray-600"
                     }`}
                   >
                     {link.label}

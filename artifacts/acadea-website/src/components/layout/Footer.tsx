@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import logo from "@assets/acadea-logo.png";
-import { Facebook, Instagram, Mail, MapPin, Phone } from "lucide-react";
+import { Facebook, Instagram, Mail, MapPin, Phone, Heart } from "lucide-react";
 
 export function Footer() {
   return (
@@ -42,6 +42,16 @@ export function Footer() {
               <li>
                 <Link href="/kraje" className="text-gray-300 hover:text-white transition-colors">
                   Kraje i Uczelnie
+                </Link>
+              </li>
+              <li>
+                <Link href="/baza-wiedzy" className="text-gray-300 hover:text-white transition-colors">
+                  Baza Wiedzy
+                </Link>
+              </li>
+              <li>
+                <Link href="/stypendium" className="inline-flex items-center gap-1.5 text-accent hover:text-white transition-colors font-medium">
+                  <Heart size={14} className="fill-accent" /> Program Stypendialny
                 </Link>
               </li>
               <li>

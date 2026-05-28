@@ -11,6 +11,8 @@ import HowItWorks from "@/pages/HowItWorks";
 import Countries from "@/pages/Countries";
 import AboutUs from "@/pages/AboutUs";
 import Contact from "@/pages/Contact";
+import Blog from "@/pages/Blog";
+import Scholarship from "@/pages/Scholarship";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +25,8 @@ function Router() {
         <Route path="/kraje" component={Countries} />
         <Route path="/o-nas" component={AboutUs} />
         <Route path="/kontakt" component={Contact} />
+        <Route path="/baza-wiedzy" component={Blog} />
+        <Route path="/stypendium" component={Scholarship} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
