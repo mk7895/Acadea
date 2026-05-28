@@ -1,0 +1,32 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "k4tUp-9LDH9u2WLU0oLLz"
+uri = "file://artifacts/acadea-website/public/images/europe-city.jpg"
+type = "image"
+title = "beautiful historic european city center, vibrant international atmosphere, high quality photography"
+
+[[outputs]]
+id = "AN0afGuFXGLtLrILh7m7w"
+uri = "file://artifacts/acadea-website/public/images/hero-students.jpg"
+type = "image"
+title = "university students campus"
+
+[[outputs]]
+id = "54NfxLM4KyLnccH9n5OQ6"
+uri = "file://artifacts/acadea-website/public/images/consultation.jpg"
+type = "image"
+title = "office meeting mentoring"
+
+[[outputs]]
+id = "n7Yewx3aUvott-u-_n6pu"
+uri = "file://artifacts/acadea-website/public/images/library.jpg"
+type = "image"
+title = "historic university library"
+
+[[outputs]]
+id = "4Aiwd5nr4kEGJKSfgrcne"
+uri = "file://artifacts/acadea-website/public/images/team-1.jpg"
+type = "image"
+title = "professional business portrait"
