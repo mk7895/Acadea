@@ -1,90 +1,109 @@
-import { motion, type Variants } from "framer-motion";
-import { Link } from "wouter";
-import { ArrowRight, BookOpen, Clock, ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { BookOpen, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-const articles = [
-  {
-    slug: "studia-w-holandii",
-    title: "Studia w Holandii — przewodnik dla polskich maturzystów",
-    excerpt:
-      "Holandia to jedno z najlepszych miejsc na studia w Europie. Dowiedz się, jak wygląda aplikacja, jakie są koszty życia i które uczelnie warto rozważyć.",
-    category: "Kraje",
-    country: "Holandia",
-    readTime: "8 min",
-    date: "12 maja 2025",
-    image: "https://images.unsplash.com/photo-1534351590666-13e3e96b5017?w=800&q=80",
-  },
-  {
-    slug: "jak-napisac-esej-uczelniany",
-    title: "Jak napisać esej uczelniany, który wyróżni Cię z tłumu?",
-    excerpt:
-      "Personal statement to Twoja wizytówka — jeden dokument, który może zdecydować o przyjęciu lub odrzuceniu. Oto sprawdzone strategie, które stosujemy z naszymi studentami.",
-    category: "Poradniki",
-    country: null,
-    readTime: "12 min",
-    date: "3 maja 2025",
-    image: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&q=80",
-  },
-  {
-    slug: "studia-w-niemczech",
-    title: "Bezpłatne studia w Niemczech — jak to możliwe i jak aplikować?",
-    excerpt:
-      "Niemcy oferują jedne z najlepszych uczelni technicznych na świecie — i większość studiów jest tam bezpłatna nawet dla zagranicznych studentów. Sprawdź, co musisz wiedzieć.",
-    category: "Kraje",
-    country: "Niemcy",
-    readTime: "10 min",
-    date: "25 kwietnia 2025",
-    image: "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=800&q=80",
-  },
-  {
-    slug: "list-motywacyjny-vs-personal-statement",
-    title: "List motywacyjny a personal statement — jaka jest różnica?",
-    excerpt:
-      "Wiele osób myli te dwa dokumenty. Tymczasem różnią się strukturą, tonem i przeznaczeniem. Dowiedz się, kiedy piszesz co — i jak unikać najczęstszych błędów.",
-    category: "Poradniki",
-    country: null,
-    readTime: "7 min",
-    date: "18 kwietnia 2025",
-    image: "https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e?w=800&q=80",
-  },
-  {
-    slug: "studia-w-hiszpanii",
-    title: "Studia w Hiszpanii — słońce, kultura i dyplom uznawany w całej Europie",
-    excerpt:
-      "Madryt, Barcelona, Sewilla — Hiszpania to nie tylko turystyka. To kraj z doskonałymi uczelniami i rosnącym rynkiem pracy dla absolwentów. Oto jak tam trafić.",
-    category: "Kraje",
-    country: "Hiszpania",
-    readTime: "9 min",
-    date: "10 kwietnia 2025",
-    image: "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=800&q=80",
-  },
-  {
-    slug: "stypendium-zagraniczne-jak-zdobyc",
-    title: "Jak zdobyć stypendium na studia za granicą? Kompletny poradnik",
-    excerpt:
-      "Stypendia, granty, programy wymiany — istnieje wiele sposobów na sfinansowanie zagranicznych studiów. Poznaj najważniejsze z nich i dowiedz się, jak skutecznie aplikować.",
-    category: "Stypendia",
-    country: null,
-    readTime: "14 min",
-    date: "1 kwietnia 2025",
-    image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&q=80",
-  },
+type Category = "Poradniki" | "Kraje" | "Stypendia";
+
+type Article = {
+  title: string;
+  excerpt: string;
+  readMin: number;
+  category: Category;
+};
+
+const IMAGES: Record<Category, string[]> = {
+  Poradniki: [
+    "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&q=80",
+    "https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e?w=800&q=80",
+    "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&q=80",
+    "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&q=80",
+    "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80",
+  ],
+  Kraje: [
+    "https://images.unsplash.com/photo-1534351590666-13e3e96b5017?w=800&q=80",
+    "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=800&q=80",
+    "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=800&q=80",
+    "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800&q=80",
+    "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&q=80",
+    "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80",
+  ],
+  Stypendia: [
+    "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&q=80",
+    "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&q=80",
+    "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&q=80",
+    "https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=800&q=80",
+  ],
+};
+
+const articles: Article[] = [
+  { category: "Poradniki", readMin: 16, title: "Jak dostać się na studia za granicą? Kompletny przewodnik krok po kroku", excerpt: "Od wyboru kraju i kierunku po dokumenty, terminy, eseje i finansowanie — przewodnik, który pomaga zrozumieć proces aplikacji bez chaosu i przypadkowych decyzji." },
+  { category: "Poradniki", readMin: 11, title: "Dokumenty na studia za granicą — checklista dla kandydatów", excerpt: "Oceny, certyfikat językowy, rekomendacje, CV, eseje i dokumenty finansowe — zobacz, czego zwykle wymagają uczelnie i czego nie zostawiać na ostatnią chwilę." },
+  { category: "Poradniki", readMin: 9, title: "Terminy aplikacji na studia za granicą — dołącz do grupy WhatsApp", excerpt: "Deadline'y różnią się między krajami, uczelniami i stypendiami. Wyjaśniamy, jak ich pilnować i dlaczego aktualizacje publikujemy także na grupie WhatsApp Acadea." },
+  { category: "Poradniki", readMin: 9, title: "Rankingi uczelni: QS, THE, Shanghai — jak je czytać?", excerpt: "Rankingi mogą pomóc, ale potrafią też wprowadzać w błąd. Sprawdź, co naprawdę mierzą i dlaczego nie warto wybierać uczelni wyłącznie po pozycji w tabeli." },
+  { category: "Poradniki", readMin: 8, title: "IELTS, TOEFL czy Duolingo? Certyfikat językowy na studia za granicą", excerpt: "Nie każda uczelnia akceptuje ten sam egzamin. Sprawdź, kiedy potrzebujesz certyfikatu językowego i dlaczego warto zaplanować go wcześniej." },
+  { category: "Poradniki", readMin: 12, title: "Jak napisać personal statement na studia w UK?", excerpt: "Personal statement nie jest listą osiągnięć ani zwykłym listem motywacyjnym. Zobacz, jak pokazać zainteresowanie kierunkiem i uniknąć ogólników." },
+  { category: "Poradniki", readMin: 8, title: "List motywacyjny a personal statement — jaka jest różnica?", excerpt: "Wiele osób myli te dwa dokumenty. Tymczasem różnią się strukturą, tonem i przeznaczeniem — szczególnie przy aplikacji do UK, Europy i USA." },
+  { category: "Poradniki", readMin: 10, title: "Jak wybrać kierunek studiów za granicą?", excerpt: "Dobry kierunek to nie tylko to, co brzmi ciekawie. Trzeba sprawdzić wymagania, strukturę programu, perspektywy i dopasowanie do profilu ucznia." },
+  { category: "Poradniki", readMin: 9, title: "Jak wybrać kraj na studia za granicą?", excerpt: "Kraj to nie wakacje. Liczą się koszty życia, styl nauki, język, rynek pracy, wymagania i to, czy dany system pasuje do Twoich planów." },
+  { category: "Poradniki", readMin: 8, title: "Jak poprosić nauczyciela o rekomendację?", excerpt: "Dobra rekomendacja nie powinna być ogólną pochwałą. Zobacz, kogo poprosić, kiedy to zrobić i jak pomóc nauczycielowi napisać konkretny list." },
+  { category: "Poradniki", readMin: 10, title: "Najczęstsze błędy w aplikacji na studia za granicą", excerpt: "Zbyt późny start, przypadkowa lista uczelni, słabe eseje i brak planu finansowego — sprawdź, które błędy najczęściej osłabiają aplikację." },
+  { category: "Poradniki", readMin: 9, title: "Czy warto korzystać z mentora przy aplikacji na studia za granicą?", excerpt: "Mentor nie powinien obiecywać przyjęcia ani pisać aplikacji za ucznia. Może jednak pomóc uporządkować proces, strategię i dokumenty." },
+  { category: "Poradniki", readMin: 8, title: "Jak wygląda współpraca z mentorem aplikacyjnym?", excerpt: "Od pierwszej konsultacji po wybór uczelni, teksty aplikacyjne i terminy — zobacz, jak może wyglądać uporządkowane wsparcie w aplikacji." },
+  { category: "Poradniki", readMin: 8, title: "Czy studia za granicą są dla mnie?", excerpt: "Nie każdy powinien wybierać tę samą ścieżkę. Sprawdź, jak myśleć o gotowości akademickiej, finansowej i osobistej do wyjazdu." },
+  { category: "Poradniki", readMin: 9, title: "Studia za granicą z polską maturą, IB albo A-levels", excerpt: "Polska matura, IB i A-levels mogą otwierać różne drzwi — ale wymagania zależą od kraju, kierunku i konkretnych przedmiotów." },
+  { category: "Kraje", readMin: 14, title: "Studia w USA — aplikacja, eseje, SAT i financial aid", excerpt: "Aplikacja do USA różni się od europejskich systemów. Wyjaśniamy Common App, eseje, extracurriculars, testy i pomoc finansową dla international students." },
+  { category: "Kraje", readMin: 12, title: "Studia w Europie po angielsku — gdzie warto aplikować?", excerpt: "Holandia, Dania, Szwecja, Austria, Włochy, Hiszpania czy Belgia? Zobacz, jak porównywać kraje, koszty i programy po angielsku." },
+  { category: "Kraje", readMin: 10, title: "Studia w Holandii — przewodnik dla polskich maturzystów", excerpt: "Holandia przyciąga programami po angielsku i praktycznym stylem nauki, ale trzeba uważać na terminy, wymagania i zakwaterowanie." },
+  { category: "Kraje", readMin: 10, title: "Studia w UK po Brexicie — aplikacja, koszty i UCAS", excerpt: "Wielka Brytania nadal ma świetne uczelnie, ale po Brexicie wymaga dokładniejszego planu finansowego, UCAS i mocnych dokumentów." },
+  { category: "Kraje", readMin: 10, title: "Bezpłatne studia w Niemczech — jak to możliwe i jak aplikować?", excerpt: "Niemcy mogą być bardzo atrakcyjne finansowo, szczególnie na uczelniach publicznych. Sprawdź, kiedy niski koszt naprawdę oznacza dobrą opcję." },
+  { category: "Kraje", readMin: 9, title: "Studia w Hiszpanii — słońce, kultura i dyplom uznawany w całej Europie", excerpt: "Hiszpania to nie tylko Madryt i Barcelona. To także uczelnie, programy po angielsku, kierunki biznesowe i rosnące możliwości dla absolwentów." },
+  { category: "Kraje", readMin: 9, title: "Studia we Włoszech po angielsku — koszty, uczelnie i aplikacja", excerpt: "Włochy mogą być ciekawą opcją dla osób zainteresowanych biznesem, ekonomią, designem, architekturą i naukami społecznymi." },
+  { category: "Kraje", readMin: 9, title: "Studia w Danii po angielsku — co warto wiedzieć?", excerpt: "Dania oferuje praktyczny styl nauki i międzynarodowe środowisko, ale wybór programów i koszty życia trzeba dokładnie sprawdzić." },
+  { category: "Kraje", readMin: 9, title: "Studia w Szwecji po angielsku — kierunki, koszty i wymagania", excerpt: "Szwecja przyciąga jakością edukacji i nowoczesnym podejściem do nauki, ale wymaga dobrego planu kosztów i aplikacji." },
+  { category: "Kraje", readMin: 9, title: "Studia w Kanadzie — czy to dobra alternatywa dla USA?", excerpt: "Kanada może być atrakcyjna dla osób szukających anglojęzycznych studiów poza Europą, ale koszty, terminy i wymagania różnią się od USA." },
+  { category: "Stypendia", readMin: 14, title: "Ile kosztują studia za granicą i jak znaleźć stypendium?", excerpt: "Czesne to tylko część budżetu. Wyjaśniamy koszty życia, zakwaterowanie, opłaty aplikacyjne, financial aid i najczęstsze pułapki finansowe." },
+  { category: "Stypendia", readMin: 12, title: "Jak zdobyć stypendium na studia za granicą? Kompletny poradnik", excerpt: "Scholarship, grant, financial aid, tuition waiver — sprawdź, czym różnią się formy finansowania i kiedy zacząć szukać wsparcia." },
+  { category: "Stypendia", readMin: 10, title: "Darmowe studia za granicą — kiedy to naprawdę możliwe?", excerpt: "Brak czesnego nie oznacza braku kosztów. Sprawdź, jak odróżnić rzeczywiście tanią opcję od programu, który tylko wygląda korzystnie na papierze." },
+  { category: "Stypendia", readMin: 11, title: "Financial aid dla international students w USA", excerpt: "Niektóre uczelnie w USA oferują bardzo dużą pomoc finansową, ale zasady różnią się między szkołami. Zobacz, na co uważać przy układaniu listy." },
+  { category: "Stypendia", readMin: 8, title: "Stypendia Acadea — kto może otrzymać wsparcie aplikacyjne?", excerpt: "Profesjonalna pomoc w aplikacji nie powinna być dostępna tylko dla osób, które mogą zapłacić pełną cenę. Wyjaśniamy, jak myślimy o stypendiach Acadea." },
 ];
 
-const categories = ["Wszystkie", "Kraje", "Poradniki", "Stypendia"];
+const categories = ["Wszystkie", "Poradniki", "Kraje", "Stypendia"] as const;
+type Filter = (typeof categories)[number];
+
+function imageFor(article: Article, indexInCategory: number) {
+  const pool = IMAGES[article.category];
+  return pool[indexInCategory % pool.length];
+}
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
+  visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
 };
 
 const itemVariants: Variants = {
   hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
 };
 
 export default function Blog() {
+  const [filter, setFilter] = useState<Filter>("Wszystkie");
+
+  const withImages = useMemo(() => {
+    const counters: Record<Category, number> = { Poradniki: 0, Kraje: 0, Stypendia: 0 };
+    return articles.map((a) => {
+      const img = imageFor(a, counters[a.category]);
+      counters[a.category] += 1;
+      return { ...a, image: img };
+    });
+  }, []);
+
+  const visible = useMemo(
+    () => (filter === "Wszystkie" ? withImages : withImages.filter((a) => a.category === filter)),
+    [filter, withImages],
+  );
+
   return (
     <div className="w-full">
       {/* Hero */}
@@ -103,7 +122,7 @@ export default function Blog() {
               Wszystko, co musisz wiedzieć<br className="hidden md:block" /> o <span className="text-primary">studiach za granicą</span>
             </h1>
             <p className="text-lg text-gray-500 max-w-2xl leading-relaxed">
-              Przewodniki, poradniki i artykuły pisane przez ekspertów ACADEA — żebyś podejmował decyzje ze świadomością, a nie ze strachem.
+              Przewodniki, poradniki i artykuły przygotowane przez ekspertów ACADEA — żeby decyzje o studiach za granicą podejmować ze świadomością, a nie ze strachem.
             </p>
           </motion.div>
         </div>
@@ -116,9 +135,11 @@ export default function Blog() {
             {categories.map((cat) => (
               <button
                 key={cat}
+                onClick={() => setFilter(cat)}
                 data-testid={`filter-${cat.toLowerCase()}`}
+                aria-pressed={filter === cat}
                 className={`shrink-0 px-5 py-2 rounded-full text-sm font-medium transition-all border ${
-                  cat === "Wszystkie"
+                  filter === cat
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary"
                 }`}
@@ -131,97 +152,53 @@ export default function Blog() {
       </section>
 
       {/* Articles Grid */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-gray-50 min-h-[50vh]">
         <div className="container mx-auto px-4 md:px-6">
-          {/* Featured */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="mb-12"
-          >
-            <div className="group relative bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-shadow cursor-pointer">
-              <div className="grid grid-cols-1 lg:grid-cols-2">
-                <div className="relative h-64 lg:h-auto overflow-hidden">
-                  <img
-                    src={articles[0].image}
-                    alt={articles[0].title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent lg:bg-gradient-to-t" />
-                </div>
-                <div className="p-10 flex flex-col justify-center">
-                  <div className="flex items-center gap-3 mb-5">
-                    <Badge className="bg-accent/10 text-accent hover:bg-accent/20 border-none font-semibold">
-                      {articles[0].category}
-                    </Badge>
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <Clock size={12} /> {articles[0].readTime}
-                    </span>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={filter}
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit={{ opacity: 0 }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {visible.map((article, i) => (
+                <motion.div
+                  key={article.title}
+                  variants={itemVariants}
+                  data-testid={`article-card-${i}`}
+                  className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col"
+                >
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={article.image}
+                      alt={article.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-4 left-4">
+                      <Badge className="bg-white/90 text-primary hover:bg-white border-none font-semibold text-xs shadow-sm">
+                        {article.category}
+                      </Badge>
+                    </div>
                   </div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-primary mb-4 leading-tight group-hover:text-accent transition-colors">
-                    {articles[0].title}
-                  </h2>
-                  <p className="text-gray-600 leading-relaxed mb-8">{articles[0].excerpt}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">{articles[0].date}</span>
-                    <span className="inline-flex items-center gap-2 text-primary font-semibold text-sm group-hover:text-accent transition-colors">
-                      Czytaj dalej <ArrowRight size={16} />
-                    </span>
+                  <div className="p-6 flex flex-col flex-1">
+                    <div className="flex items-center gap-2 mb-3 text-xs text-gray-400">
+                      <Clock size={12} />
+                      <span>{article.readMin} min czytania</span>
+                    </div>
+                    <h3 className="text-lg font-bold text-primary mb-3 leading-snug">
+                      {article.title}
+                    </h3>
+                    <p className="text-gray-500 text-sm leading-relaxed line-clamp-4">
+                      {article.excerpt}
+                    </p>
                   </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Rest of articles */}
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {articles.slice(1).map((article, i) => (
-              <motion.div
-                key={i}
-                variants={itemVariants}
-                data-testid={`article-card-${i}`}
-                className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer flex flex-col"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={article.image}
-                    alt={article.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <Badge className="bg-white/90 text-primary hover:bg-white border-none font-semibold text-xs shadow-sm">
-                      {article.category}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="p-6 flex flex-col flex-1">
-                  <div className="flex items-center gap-2 mb-3 text-xs text-gray-400">
-                    <Clock size={12} />
-                    <span>{article.readTime}</span>
-                    <span className="mx-1">·</span>
-                    <span>{article.date}</span>
-                  </div>
-                  <h3 className="text-lg font-bold text-primary mb-3 leading-snug group-hover:text-accent transition-colors flex-1">
-                    {article.title}
-                  </h3>
-                  <p className="text-gray-500 text-sm leading-relaxed mb-6 line-clamp-3">
-                    {article.excerpt}
-                  </p>
-                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary group-hover:text-accent transition-colors mt-auto">
-                    Czytaj dalej <ChevronRight size={14} />
-                  </span>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </section>
 
@@ -242,7 +219,7 @@ export default function Blog() {
                 Nie przegap nowych artykułów
               </h2>
               <p className="text-gray-300 mb-8">
-                Zapisz się na newsletter i otrzymuj nowe poradniki, aktualności o uczelniach i informacje o stypendialnych prosto na skrzynkę.
+                Zapisz się na newsletter i otrzymuj nowe poradniki, aktualności o uczelniach i informacje o stypendiach prosto na skrzynkę.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
                 <input

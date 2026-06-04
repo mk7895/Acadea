@@ -278,19 +278,19 @@ export default function Scholarship() {
               Jeśli masz wybitne wyniki, pasję do nauki i marzenia większe niż możliwości finansowe — to konkurs dla Ciebie.
             </p>
             <p className="text-base text-gray-500 mb-10">
-              Nabór trwa do <strong className="text-primary">20 czerwca 2026</strong>. Napisz do nas — rozpatrujemy zgłoszenia indywidualnie, z pełnym szacunkiem dla każdej historii.
+              Nabór trwa do <strong className="text-primary">20 czerwca 2026</strong>. Wypełnij formularz — rozpatrujemy zgłoszenia indywidualnie, z pełnym szacunkiem dla każdej historii.
             </p>
-            <Link href="/kontakt">
+            <Link href="/stypendium/aplikacja">
               <Button
                 size="lg"
                 data-testid="button-apply-scholarship"
                 className="h-14 px-10 text-base bg-primary text-white hover:bg-primary/90 rounded-full font-bold shadow-lg"
               >
-                Aplikuj teraz <ArrowRight className="ml-2 h-5 w-5" />
+                Wypełnij formularz <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <p className="text-sm text-gray-400 mt-5">
-              W tytule wiadomości wpisz: "Konkurs Stypendialny ACADEA 2026"
+              Wypełnienie formularza zajmuje kilka minut.
             </p>
           </motion.div>
         </div>

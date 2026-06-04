@@ -9,7 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           <div className="space-y-6">
             <Link href="/">
-              <img src={logo} alt="ACADEA Logo" className="h-20 md:h-24 w-auto mb-2" />
+              <img src={logo} alt="ACADEA Logo" className="h-28 md:h-36 w-auto mb-2" />
             </Link>
             <p className="text-gray-300 text-sm leading-relaxed max-w-sm">
               Aplikacja na studia za granicą — z nami to proste. Pomagamy polskim uczniom dostać się na wymarzone uczelnie w ponad 15 krajach.

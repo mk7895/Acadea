@@ -104,7 +104,7 @@ export default function MentorForm() {
             Mentoruj z ACADEA
           </h1>
           <p className="text-gray-500 text-lg max-w-lg mx-auto">
-            Studiujesz lub skończyłeś studia za granicą? Pomóż kolejnym rocznikom — jako mentor płatny lub wolontariusz.
+            Studiujesz za granicą lub masz już dyplom zagranicznej uczelni? Pomóż kolejnym rocznikom — jako mentor płatny lub wolontariusz.
           </p>
         </motion.div>
 

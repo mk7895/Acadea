@@ -14,6 +14,7 @@ import AboutUs from "@/pages/AboutUs";
 import Contact from "@/pages/Contact";
 import Blog from "@/pages/Blog";
 import Scholarship from "@/pages/Scholarship";
+import ScholarshipForm from "@/pages/ScholarshipForm";
 import Booking from "@/pages/Booking";
 import MentorForm from "@/pages/MentorForm";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
@@ -33,6 +34,7 @@ function Router() {
         <Route path="/kontakt" component={Contact} />
         <Route path="/baza-wiedzy" component={Blog} />
         <Route path="/stypendium" component={Scholarship} />
+        <Route path="/stypendium/aplikacja" component={ScholarshipForm} />
         <Route path="/umow-spotkanie" component={Booking} />
         <Route path="/mentoruj" component={MentorForm} />
         <Route path="/polityka-prywatnosci" component={PrivacyPolicy} />

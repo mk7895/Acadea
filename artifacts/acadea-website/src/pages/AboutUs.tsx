@@ -22,10 +22,10 @@ export default function AboutUs() {
                 Założyliśmy ACADEA, ponieważ sami kiedyś przeszliśmy przez stresujący i skomplikowany proces aplikacji na zagraniczne uczelnie.
               </p>
               <p>
-                Wiemy, jak to jest gubić się w gąszczu wymagań, portali aplikacyjnych, egzaminów językowych i terminów. Wiemy też, jak to jest nie mieć pewności, czy Twój esej jest wystarczająco dobry, albo czy dobrze zinterpretowałeś wymagania konkretnego uniwersytetu.
+                Sami gubiliśmy się w gąszczu wymagań, portali aplikacyjnych, egzaminów językowych i terminów. Nie mieliśmy pewności, czy nasz esej jest wystarczająco dobry ani czy dobrze rozumiemy wymagania konkretnej uczelni.
               </p>
               <p className="font-semibold text-primary">
-                Dziś naszym celem jest ułatwienie tej drogi kolejnym rocznikom ambitnych uczniów.
+                Od ponad 5 lat pomagamy kolejnym rocznikom ambitnych uczniów przejść tę drogę łatwiej, niż udało się to nam.
               </p>
             </div>
           </motion.div>
@@ -37,8 +37,8 @@ export default function AboutUs() {
             className="relative h-[500px] rounded-3xl overflow-hidden"
           >
             <img 
-              src="/images/consultation.jpg" 
-              alt="Mentor rozmawiający z uczniem" 
+              src="/images/hero-students.jpg" 
+              alt="Studenci na zagranicznej uczelni" 
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-primary/10 mix-blend-multiply"></div>
@@ -46,10 +46,10 @@ export default function AboutUs() {
         </div>
 
         {/* Values */}
-        <div className="bg-primary text-white rounded-3xl p-10 md:p-16 mb-24">
+        <div className="bg-gray-50 border border-gray-100 rounded-3xl p-10 md:p-16 mb-24">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Nasze wartości</h2>
-            <p className="text-gray-300 max-w-2xl mx-auto">Tym kierujemy się w codziennej pracy z naszymi podopiecznymi.</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">Nasze wartości</h2>
+            <p className="text-gray-500 max-w-2xl mx-auto">Tym kierujemy się w codziennej pracy z naszymi podopiecznymi.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -73,10 +73,10 @@ export default function AboutUs() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
-                className="bg-white/10 p-8 rounded-2xl backdrop-blur-sm border border-white/10"
+                className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm"
               >
-                <h3 className="text-xl font-bold text-accent mb-3">{value.title}</h3>
-                <p className="text-gray-300">{value.desc}</p>
+                <h3 className="text-xl font-bold text-primary mb-3">{value.title}</h3>
+                <p className="text-gray-500">{value.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -93,7 +93,7 @@ export default function AboutUs() {
               {
                 name: "Marlena Sołtysińska",
                 role: "Mentor",
-                desc: "Absolwentka UCL (Education and Technology) i NYU. Wspiera uczniów na każdym etapie procesu aplikacyjnego.",
+                desc: "Absolwentka UCL (Education and Technology) i NYU. Od ponad 5 lat wspiera uczniów na każdym etapie procesu aplikacyjnego.",
                 initials: "MS",
                 linkedin: "https://www.linkedin.com/in/marlena-soltysinska/",
                 color: "#166534",
@@ -101,7 +101,7 @@ export default function AboutUs() {
               {
                 name: "Mateusz Klepacki",
                 role: "Mentor",
-                desc: "Absolwent LSE (Environmental Management & Economics) i NYU. Twórca ACADEA — pomaga innym powtórzyć ten sukces.",
+                desc: "Absolwent LSE (Econometrics and Mathematical Economics) i NYU.",
                 initials: "MK",
                 linkedin: "https://www.linkedin.com/in/mateusz-klepacki/",
                 color: "#14532d",
@@ -117,7 +117,7 @@ export default function AboutUs() {
               {
                 name: "Bartosz Kuźma",
                 role: "Tutor",
-                desc: "Nauczyciel języka angielskiego z certyfikatem TEFL. Pomaga osiągnąć wymagane wyniki w egzaminach językowych.",
+                desc: "Nauczyciel języka angielskiego z certyfikatem TEFL, absolwent prawa. Pomaga osiągnąć wymagane wyniki w egzaminach językowych.",
                 initials: "BK",
                 linkedin: "https://www.linkedin.com/in/bartosz-ku%C5%BAma-243945259/",
                 color: "#FCBC1E",
@@ -160,7 +160,7 @@ export default function AboutUs() {
         <div className="text-center">
           <Link href="/kontakt">
             <Button size="lg" className="rounded-full px-10 h-14 text-lg">
-              Poznajmy się osobiście
+              Poznajmy się
             </Button>
           </Link>
         </div>

@@ -1,10 +1,41 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useParams, useLocation } from "wouter";
 import { ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { countryBySlug } from "@/data/countries";
+import { countryBySlug, countryLocative, uniDomain } from "@/data/countries";
 import NotFound from "@/pages/not-found";
+
+function UniLogo({ slug, name }: { slug: string; name: string }) {
+  const domain = uniDomain[slug];
+  const sources = domain
+    ? [
+        `https://logo.clearbit.com/${domain}`,
+        `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
+      ]
+    : [];
+  const [idx, setIdx] = useState(0);
+
+  if (!domain || idx >= sources.length) {
+    return (
+      <div className="w-12 h-12 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
+        <GraduationCap size={24} className="text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-12 h-12 rounded-xl bg-white border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden p-1.5">
+      <img
+        src={sources[idx]}
+        alt={`Logo ${name}`}
+        loading="lazy"
+        className="w-full h-full object-contain"
+        onError={() => setIdx((i) => i + 1)}
+      />
+    </div>
+  );
+}
 
 export default function CountryDetail() {
   const params = useParams();
@@ -29,8 +60,10 @@ export default function CountryDetail() {
 
   if (!country) return <NotFound />;
 
+  const locative = countryLocative[country.slug] ?? country.name;
+
   return (
-    <div className="w-full pt-28 pb-20 bg-gray-50 min-h-screen">
+    <div className="w-full pt-36 md:pt-40 pb-20 bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 md:px-6">
         <Link
           href="/kraje"
@@ -74,12 +107,10 @@ export default function CountryDetail() {
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="scroll-mt-28 bg-white rounded-2xl p-7 border border-gray-100 shadow-sm target:ring-2 target:ring-accent"
+              className="scroll-mt-36 bg-white rounded-2xl p-7 border border-gray-100 shadow-sm target:ring-2 target:ring-accent"
             >
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/8 flex items-center justify-center shrink-0">
-                  <GraduationCap size={24} className="text-primary" />
-                </div>
+                <UniLogo slug={uni.slug} name={uni.name} />
                 <div>
                   <h3 className="text-lg font-bold text-primary mb-1.5">{uni.name}</h3>
                   <p className="text-gray-500 text-sm leading-relaxed">{uni.blurb}</p>
@@ -94,7 +125,7 @@ export default function CountryDetail() {
           <div className="absolute top-0 right-0 w-72 h-72 bg-accent rounded-full blur-[120px] opacity-20 pointer-events-none" />
           <div className="relative z-10">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">
-              Myślisz o studiach w kraju {country.name}?
+              Myślisz o studiach {locative}?
             </h2>
             <p className="text-white/70 mb-8 max-w-2xl mx-auto">
               Podczas bezpłatnej konsultacji sprawdzimy, które uczelnie pasują do Twojego profilu, i ułożymy plan aplikacji krok po kroku.

@@ -10,7 +10,12 @@ import {
   MapPin,
   MessageCircle,
   Users,
+  ShieldCheck,
+  Wallet,
+  Compass,
+  PhoneCall,
 } from "lucide-react";
+import QRCode from "react-qr-code";
 import { Link } from "wouter";
 import { GlobeSection } from "@/components/GlobeSection";
 
@@ -201,7 +206,7 @@ export default function Home() {
               <p className="text-lg text-gray-500 leading-relaxed mb-10">
                 Nasze stypendia pokrywają pełny koszt doradztwa — od wyboru uczelni po finalne przyjęcie. Sprawdź, czy się kwalifikujesz.
               </p>
-              <Link href="/stypendium">
+              <Link href="/stypendium/aplikacja">
                 <Button
                   size="lg"
                   data-testid="button-scholarship-home"
@@ -233,6 +238,64 @@ export default function Home() {
                 </p>
               </div>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── DLA RODZICÓW ─────────────────────────────────────────────── */}
+      <section className="py-24 bg-gray-50">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="max-w-3xl mx-auto text-center mb-14">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/8 border border-primary/15 text-primary text-sm font-semibold mb-6">
+                <Heart size={16} />
+                <span>Dla rodziców</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-5">
+                Rodzicu, jesteśmy tu również dla Ciebie
+              </h2>
+              <p className="text-lg text-gray-500 leading-relaxed">
+                Decyzja o studiach za granicą to ważny krok dla całej rodziny. Dbamy o to, żeby był przejrzysty, bezpieczny i dobrze zaplanowany — także z perspektywy rodzica.
+              </p>
+            </motion.div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {[
+              { icon: ShieldCheck, title: "Pełna przejrzystość", desc: "Jasne zasady współpracy i stały wgląd w postępy — wiecie, za co płacicie i na jakim etapie jest aplikacja." },
+              { icon: Wallet, title: "Świadome decyzje finansowe", desc: "Realnie pokazujemy koszty studiów, stypendia i opcje finansowania — bez ukrytych obietnic." },
+              { icon: Compass, title: "Szczere doradztwo", desc: "Doradzamy najlepsze, a nie najdroższe rozwiązania. Mówimy wprost, jakie są realne szanse Waszego dziecka." },
+              { icon: PhoneCall, title: "Kontakt na każdym etapie", desc: "Jesteśmy dostępni dla rodziców i odpowiadamy na pytania przez całą drogę — od pierwszej rozmowy po wyjazd." },
+            ].map((c, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                className="bg-white rounded-2xl p-7 border border-gray-100 shadow-sm"
+              >
+                <div className="w-12 h-12 bg-primary/8 rounded-xl flex items-center justify-center mb-5">
+                  <c.icon size={24} className="text-primary" />
+                </div>
+                <h3 className="text-lg font-bold text-primary mb-2">{c.title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{c.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+          <div className="text-center">
+            <Link href="/umow-spotkanie">
+              <Button
+                size="lg"
+                data-testid="button-parents-cta"
+                className="h-14 px-8 rounded-full bg-primary text-white hover:bg-primary/90 font-bold"
+              >
+                Umów rozmowę — także z rodzicami <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -281,26 +344,27 @@ export default function Home() {
                 Dołącz do społeczności — to bezpłatne
               </a>
             </div>
-            <div className="bg-primary p-10 md:p-14 flex flex-col justify-center">
-              <div className="space-y-6">
-                {[
-                  { num: "01", text: "Kliknij przycisk — otworzy się WhatsApp" },
-                  { num: "02", text: "Naciśnij \"Dołącz do społeczności\"" },
-                  { num: "03", text: "Gotowe — aktualizacje przychodzą automatycznie" },
-                ].map((step, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.1 * i }}
-                    className="flex items-center gap-5"
-                  >
-                    <span className="text-4xl font-bold text-white/20 w-10 shrink-0">{step.num}</span>
-                    <p className="text-white/90 text-lg font-medium">{step.text}</p>
-                  </motion.div>
-                ))}
-              </div>
+            <div className="bg-primary p-10 md:p-14 flex flex-col items-center justify-center text-center">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className="bg-white rounded-3xl p-6 shadow-xl"
+              >
+                <QRCode
+                  value="https://chat.whatsapp.com/Cg8sKNNvAFIKBfDjBLqWKl"
+                  size={200}
+                  fgColor="#166534"
+                  bgColor="#ffffff"
+                  title="Kod QR do grupy WhatsApp ACADEA"
+                  style={{ height: "auto", maxWidth: "100%", width: "200px" }}
+                />
+              </motion.div>
+              <p className="text-white font-bold text-lg mt-7">Zeskanuj kod telefonem</p>
+              <p className="text-white/70 text-sm mt-2 max-w-xs">
+                Otwórz aparat w telefonie i zeskanuj kod QR, aby od razu dołączyć do społeczności WhatsApp ACADEA.
+              </p>
             </div>
           </motion.div>
         </div>
@@ -324,7 +388,7 @@ export default function Home() {
                 Mentoruj z ACADEA
               </h2>
               <p className="text-lg text-gray-500 leading-relaxed mb-5">
-                Studiujesz lub skończyłeś studia za granicą? Wiesz, jak wygląda aplikacja od środka? Pomóż kolejnym rocznikom polskich uczniów przejść tę drogę pewniej.
+                Studiujesz za granicą lub masz to już za sobą? Wiesz, jak wygląda aplikacja od środka? Pomóż kolejnym rocznikom polskich uczniów przejść tę drogę pewniej.
               </p>
               <p className="text-lg text-gray-500 leading-relaxed mb-10">
                 Mentorzy ACADEA doradzają uczniom, recenzują eseje i dzielą się swoim doświadczeniem — w elastycznym modelu, dopasowanym do Twojego harmonogramu.
