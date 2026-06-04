@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Check, Search, PenTool, Send, Home as HomeIcon } from "lucide-react";
+import { ArrowRight, Check, Search, PenTool, Send, Home as HomeIcon, BookOpen } from "lucide-react";
 import { Link } from "wouter";
 
 const steps = [
@@ -11,26 +11,32 @@ const steps = [
     color: "bg-blue-100 text-blue-600"
   },
   {
+    icon: BookOpen,
+    title: "2. Przygotowanie do egzaminów",
+    desc: "Pomagamy w przygotowaniu do egzaminów wymaganych przez uczelnie — IELTS, TOEFL, egzaminów Cambridge, SAT oraz egzaminów maturalnych. Ćwiczymy w zaplanowanym tempie, aby osiągnąć wymagane wyniki z wyprzedzeniem.",
+    color: "bg-teal-100 text-teal-600"
+  },
+  {
     icon: PenTool,
-    title: "2. Tworzenie dokumentów",
+    title: "3. Kompletowanie dokumentów",
     desc: "Pomagamy w zebraniu niezbędnych dokumentów: transkryptów ocen, referencji. Pracujemy nad Twoim CV (Extracurriculars) tak, aby pokazać Cię z jak najlepszej strony.",
     color: "bg-emerald-100 text-emerald-600"
   },
   {
     icon: Check,
-    title: "3. Eseje i Personal Statement",
+    title: "4. Eseje i Personal Statement",
     desc: "To najważniejszy element aplikacji. Przechodzimy przez burzę mózgów, tworzymy konspekty i przeprowadzamy wielokrotną korektę esejów, aż będą perfekcyjne. Twoja unikalna historia musi błyszczeć.",
     color: "bg-purple-100 text-purple-600"
   },
   {
     icon: Send,
-    title: "4. Aplikacja i Formalności",
+    title: "5. Aplikacja i Formalności",
     desc: "Wspólnie wypełniamy portale aplikacyjne (UCAS, Common App itp.). Dbamy o wszystkie terminy (deadlines), opłaty aplikacyjne oraz ewentualne wnioski o stypendia.",
     color: "bg-orange-100 text-orange-600"
   },
   {
     icon: HomeIcon,
-    title: "5. Po przyjęciu",
+    title: "6. Po przyjęciu",
     desc: "Otrzymujesz oferty! Pomagamy podjąć ostateczną decyzję. Wspieramy w procesie aplikacji o wizę studencką, rezerwacji akademika oraz zakładaniu konta bankowego.",
     color: "bg-rose-100 text-rose-600"
   }

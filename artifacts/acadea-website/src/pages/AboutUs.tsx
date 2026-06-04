@@ -92,7 +92,7 @@ export default function AboutUs() {
             {[
               {
                 name: "Marlena Sołtysińska",
-                role: "Mentor",
+                role: "Mentorka",
                 desc: "Absolwentka UCL (Education and Technology) i NYU. Od ponad 5 lat wspiera uczniów na każdym etapie procesu aplikacyjnego.",
                 initials: "MS",
                 linkedin: "https://www.linkedin.com/in/marlena-soltysinska/",
@@ -108,7 +108,7 @@ export default function AboutUs() {
               },
               {
                 name: "Weronika Klepacka",
-                role: "Tutor",
+                role: "Tutorka",
                 desc: "Przygotowuje do IELTS, TOEFL i egzaminów Cambridge — krok po kroku, bez stresu.",
                 initials: "WK",
                 linkedin: "https://www.linkedin.com/in/weronika-klepacka-7349b51b6",
