@@ -6,12 +6,33 @@ import { Button } from "@/components/ui/button";
 import { countryBySlug, countryLocative, uniDomain } from "@/data/countries";
 import NotFound from "@/pages/not-found";
 
+const SKIP_CLEARBIT = new Set([
+  "dtu.dk",
+  "fudan.edu.cn",
+  "ku.ac.ae",
+  "skku.edu",
+  "hanyang.ac.kr",
+  "inha.ac.kr",
+  "tuj.ac.jp",
+  "pku.edu.cn",
+  "tsinghua.edu.cn",
+  "zju.edu.cn",
+  "snu.ac.kr",
+  "kaist.ac.kr",
+  "yonsei.ac.kr",
+  "u-tokyo.ac.jp",
+  "kyoto-u.ac.jp",
+  "waseda.jp",
+  "osaka-u.ac.jp",
+]);
+
 function UniLogo({ slug, name }: { slug: string; name: string }) {
   const domain = uniDomain[slug];
   const sources = domain
     ? [
-        `https://logo.clearbit.com/${domain}`,
+        ...(SKIP_CLEARBIT.has(domain) ? [] : [`https://logo.clearbit.com/${domain}`]),
         `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
+        `https://icons.duckduckgo.com/ip3/${domain}.ico`,
       ]
     : [];
   const [idx, setIdx] = useState(0);
@@ -97,7 +118,7 @@ export default function CountryDetail() {
 
         {/* Universities */}
         <h2 className="text-2xl md:text-3xl font-bold text-primary mb-8">
-          Uczelnie, z którymi współpracujemy
+          Uczelnie warte uwagi
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-20">
           {country.unis.map((uni) => (

@@ -478,7 +478,7 @@ export default function Home() {
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6">Zacznijmy Twoją drogę.</h2>
             <p className="text-xl text-white/70 mb-10">
-              Umów bezpłatną konsultację — bez zobowiązań. Wybierz termin i porozmawiaj z naszym doradcą przez Google Meet.
+              Umów bezpłatną konsultację — bez zobowiązań. Wybierz termin i porozmawiaj z naszym doradcą.
             </p>
             <Link href="/umow-spotkanie">
               <Button size="lg" className="h-14 px-10 text-lg bg-accent text-primary hover:bg-white transition-colors border-none rounded-full font-bold shadow-lg shadow-accent/20">
