@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Heart, BookOpen, GraduationCap, Star, Users } from "lucide-react";
+import { ArrowRight, Heart, BookOpen, GraduationCap, Star, Clock, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const containerVariants = {
@@ -40,27 +40,22 @@ const howItWorks = [
   },
 ];
 
-const testimonials = [
+const criteria = [
   {
-    name: "Marta K.",
-    school: "TU Delft, Holandia",
-    quote:
-      "Dzięki stypendium ACADEA mogłam skupić się w pełni na aplikacji, zamiast martwić się o koszty. Teraz jestem na wymarzonych studiach inżynierskich.",
-    year: "Stypendystka 2024",
+    title: "Wybitne wyniki w nauce",
+    desc: "Szukamy uczniów z pasją do nauki — oceny są ważne, ale jeszcze ważniejsza jest motywacja i determinacja.",
   },
   {
-    name: "Tomasz W.",
-    school: "University of Edinburgh, Wielka Brytania",
-    quote:
-      "Nie myślałem, że mnie na to stać. ACADEA pokazało, że możliwe jest coś, co wydawało się odległym marzeniem.",
-    year: "Stypendysta 2023",
+    title: "Marzenia większe niż możliwości finansowe",
+    desc: "Program jest skierowany do osób, dla których koszty byłyby główną przeszkodą w realizacji celu.",
   },
   {
-    name: "Zofia R.",
-    school: "Sciences Po, Francja",
-    quote:
-      "Program stypendialny zmienił moje życie. Jestem wdzięczna każdemu, kto zdecydował się na usługi ACADEA — wspieraliście mnie nawet o tym nie wiedząc.",
-    year: "Stypendystka 2024",
+    title: "Jasny cel edukacyjny",
+    desc: "Wiemy, gdzie chcesz studiować i dlaczego — albo jesteś gotowy to odkryć razem z nami.",
+  },
+  {
+    title: "Obywatelstwo lub rezydencja polska",
+    desc: "Konkurs skierowany jest do polskich uczniów planujących studia za granicą.",
   },
 ];
 
@@ -92,15 +87,36 @@ export default function Scholarship() {
               Każda osoba, która wybiera ACADEA, automatycznie przyczynia się do funduszu stypendialnego, który otwiera drzwi do światowych uczelni uczniom, których na to nie stać.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/kontakt">
+              <a href="#konkurs">
                 <Button
                   size="lg"
-                  data-testid="button-scholarship-cta"
+                  data-testid="button-scholarship-hero-cta"
                   className="h-14 px-8 text-base bg-accent text-primary hover:bg-white transition-colors border-none rounded-full font-bold"
                 >
-                  Zacznij z ACADEA <ArrowRight className="ml-2 h-5 w-5" />
+                  Zobacz konkurs stypendialny <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-              </Link>
+              </a>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Deadline banner */}
+      <section id="konkurs" className="bg-accent py-5">
+        <div className="container mx-auto px-4 md:px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 text-primary text-center"
+          >
+            <div className="flex items-center gap-2 font-bold text-lg">
+              <Calendar size={22} className="shrink-0" />
+              <span>Nabór do I edycji Konkursu Stypendialnego ACADEA</span>
+            </div>
+            <div className="flex items-center gap-2 bg-primary/10 rounded-full px-5 py-2 font-bold text-base">
+              <Clock size={18} className="shrink-0" />
+              <span>Zgłoszenia do: 20 czerwca 2025</span>
             </div>
           </motion.div>
         </div>
@@ -140,7 +156,7 @@ export default function Scholarship() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-4xl md:text-5xl font-bold text-primary mb-6">Jak to działa?</h2>
+              <h2 className="text-4xl md:text-5xl font-bold text-primary mb-6">Jak działa fundusz?</h2>
               <p className="text-lg text-gray-600">
                 Model jest prosty. Przejrzysty. I autentyczny.
               </p>
@@ -179,84 +195,81 @@ export default function Scholarship() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="py-20 bg-primary">
-        <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center"
-          >
-            {[
-              { value: "40+", label: "Stypendystów od początku programu", icon: <Users size={28} className="text-accent" /> },
-              { value: "12", label: "Krajów, gdzie uczą się nasi stypendyści", icon: <GraduationCap size={28} className="text-accent" /> },
-              { value: "100%", label: "Transparentność — każdy widzi, dokąd trafiają środki", icon: <Heart size={28} className="text-accent" /> },
-            ].map((stat, i) => (
-              <motion.div key={i} variants={itemVariants} className="flex flex-col items-center">
-                <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center mb-5">
-                  {stat.icon}
-                </div>
-                <div className="text-5xl font-bold text-white mb-3">{stat.value}</div>
-                <p className="text-gray-300 leading-relaxed max-w-xs">{stat.label}</p>
-              </motion.div>
-            ))}
-          </motion.div>
+      {/* Competition section */}
+      <section className="py-24 bg-primary relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-accent blur-[120px]" />
         </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-24 bg-white">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-3xl mx-auto text-center mb-16">
+        <div className="container mx-auto px-4 md:px-6 relative z-10">
+          <div className="max-w-4xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
+              className="text-center mb-14"
             >
-              <h2 className="text-4xl font-bold text-primary mb-6">Głosy naszych stypendystów</h2>
-              <p className="text-lg text-gray-600">Oni są dowodem na to, że ten model działa.</p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 border border-accent/30 text-accent text-sm font-semibold mb-8">
+                <Star size={16} className="fill-accent" />
+                <span>I Edycja — 2025</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+                Konkurs Stypendialny ACADEA
+              </h2>
+              <p className="text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto">
+                Ogłaszamy pierwszą edycję naszego konkursu stypendialnego. Szukamy ambitnych polskich uczniów, którzy marzą o studiach za granicą, ale potrzebują wsparcia, żeby ten sen stał się rzeczywistością.
+              </p>
+            </motion.div>
+
+            {/* Deadline card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="bg-accent rounded-3xl p-8 md:p-12 text-primary text-center mb-12"
+            >
+              <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12">
+                <div>
+                  <div className="text-sm font-semibold uppercase tracking-widest mb-2 text-primary/70">Termin zgłoszeń</div>
+                  <div className="text-4xl md:text-5xl font-bold">20 czerwca 2025</div>
+                </div>
+                <div className="hidden md:block w-px h-16 bg-primary/20" />
+                <div>
+                  <div className="text-sm font-semibold uppercase tracking-widest mb-2 text-primary/70">Edycja</div>
+                  <div className="text-4xl md:text-5xl font-bold">I / 2025</div>
+                </div>
+                <div className="hidden md:block w-px h-16 bg-primary/20" />
+                <div>
+                  <div className="text-sm font-semibold uppercase tracking-widest mb-2 text-primary/70">Forma</div>
+                  <div className="text-2xl md:text-3xl font-bold">Online</div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Criteria */}
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            >
+              {criteria.map((c, i) => (
+                <motion.div
+                  key={i}
+                  variants={itemVariants}
+                  data-testid={`criterion-${i}`}
+                  className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20"
+                >
+                  <h3 className="text-white font-bold text-lg mb-2">{c.title}</h3>
+                  <p className="text-gray-300 text-sm leading-relaxed">{c.desc}</p>
+                </motion.div>
+              ))}
             </motion.div>
           </div>
-
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-          >
-            {testimonials.map((t, i) => (
-              <motion.div
-                key={i}
-                variants={itemVariants}
-                data-testid={`testimonial-card-${i}`}
-                className="bg-gray-50 rounded-2xl p-8 border border-gray-100"
-              >
-                <div className="flex gap-1 mb-6">
-                  {Array.from({ length: 5 }).map((_, j) => (
-                    <Star key={j} size={16} className="text-accent fill-accent" />
-                  ))}
-                </div>
-                <p className="text-gray-700 leading-relaxed mb-8 italic">"{t.quote}"</p>
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {t.name[0]}
-                  </div>
-                  <div>
-                    <div className="font-bold text-primary text-sm">{t.name}</div>
-                    <div className="text-xs text-gray-500">{t.school}</div>
-                    <div className="text-xs text-accent font-semibold mt-0.5">{t.year}</div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
         </div>
       </section>
 
-      {/* Apply for scholarship CTA */}
+      {/* Apply CTA */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
@@ -265,9 +278,12 @@ export default function Scholarship() {
             viewport={{ once: true }}
             className="max-w-3xl mx-auto text-center"
           >
-            <h2 className="text-4xl font-bold text-primary mb-6">Chcesz ubiegać się o stypendium?</h2>
-            <p className="text-lg text-gray-600 mb-10 leading-relaxed">
-              Jeśli masz wybitne wyniki, pasję do nauki i marzenia większe niż możliwości finansowe — napisz do nas. Rozpatrujemy zgłoszenia indywidualnie, z pełnym szacunkiem dla każdej historii.
+            <h2 className="text-4xl font-bold text-primary mb-6">Aplikuj o stypendium</h2>
+            <p className="text-lg text-gray-600 mb-4 leading-relaxed">
+              Jeśli masz wybitne wyniki, pasję do nauki i marzenia większe niż możliwości finansowe — to konkurs dla Ciebie.
+            </p>
+            <p className="text-base text-gray-500 mb-10">
+              Nabór trwa do <strong className="text-primary">20 czerwca 2025</strong>. Napisz do nas — rozpatrujemy zgłoszenia indywidualnie, z pełnym szacunkiem dla każdej historii.
             </p>
             <Link href="/kontakt">
               <Button
@@ -275,9 +291,12 @@ export default function Scholarship() {
                 data-testid="button-apply-scholarship"
                 className="h-14 px-10 text-base bg-primary text-white hover:bg-primary/90 rounded-full font-bold shadow-lg"
               >
-                Aplikuj o stypendium <ArrowRight className="ml-2 h-5 w-5" />
+                Aplikuj teraz <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
+            <p className="text-sm text-gray-400 mt-5">
+              W tytule wiadomości wpisz: "Konkurs Stypendialny ACADEA 2025"
+            </p>
           </motion.div>
         </div>
       </section>
