@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import logo from "@assets/acadea-logo.png";
+import logo from "@assets/Acadea_Logo_-_Horizontal_Style-2_1780602818262.png";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";

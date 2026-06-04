@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import logo from "@assets/acadea-logo.png";
+import logo from "@assets/Acadea_Logo_-_Horizontal_Style-2_1780602818262.png";
 import { Facebook, Instagram, Mail, MapPin, Phone, Heart } from "lucide-react";
 
 export function Footer() {
