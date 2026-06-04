@@ -61,11 +61,32 @@ const itemVariants: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
+const mentors = [
+  {
+    name: "Marlena Sołtysińska",
+    initials: "MS",
+    lines: [
+      "Education and Technology · University College London (UCL) · Wielka Brytania",
+      "Business and Finance · New York University (NYU) · USA, Chiny, ZEA, Włochy",
+    ],
+    quote: "Mentoruję w ACADEA, bo sama przeszłam przez ten proces i wiem, ile może zmienić jedna dobra rozmowa z kimś, kto już tam był.",
+  },
+  {
+    name: "Mateusz Klepacki",
+    initials: "MK",
+    lines: [
+      "Econometrics and Mathematical Economics · London School of Economics and Political Science (LSE) · Wielka Brytania",
+      "Ekonomia, Biznes i Finanse · New York University (NYU) · USA, Chiny, ZEA, Włochy",
+    ],
+    quote: "Najbardziej cenię chwilę, gdy kandydat dostaje list przyjęcia. Wiem wtedy, że nasza praca naprawdę coś zmieniła.",
+  },
+];
+
 export default function Home() {
   return (
     <div className="w-full">
       {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex items-center overflow-hidden bg-white pt-20">
+      <section className="relative min-h-screen flex items-center overflow-hidden bg-white pt-36 md:pt-44">
         {/* Background accent shapes */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute -top-40 -right-40 w-[700px] h-[700px] rounded-full bg-primary/6" />
@@ -200,11 +221,8 @@ export default function Home() {
                 Liczy się Twój <span className="text-accent">potencjał</span>,<br />
                 nie budżet.
               </h2>
-              <p className="text-lg text-gray-500 leading-relaxed mb-6">
-                Wybitny potencjał nie powinien napotykać barier finansowych. Dlatego stworzyliśmy Program Stypendialny ACADEA — dla kandydatów, którym zależy, a potrzebują wsparcia.
-              </p>
               <p className="text-lg text-gray-500 leading-relaxed mb-10">
-                Nasze stypendia pokrywają pełny koszt doradztwa — od wyboru uczelni po finalne przyjęcie. Sprawdź, czy się kwalifikujesz.
+                Wybitny potencjał nie powinien napotykać barier finansowych. Dlatego stworzyliśmy Program Stypendialny ACADEA — dla kandydatów, którym zależy, a potrzebują wsparcia.
               </p>
               <Link href="/stypendium/aplikacja">
                 <Button
@@ -233,9 +251,6 @@ export default function Home() {
                   <GraduationCap size={28} className="text-primary" />
                 </div>
                 <p className="text-primary/50 text-xs uppercase tracking-widest font-semibold mb-3">Program Stypendialny</p>
-                <p className="text-primary text-2xl font-bold leading-snug">
-                  Wybrani kandydaci otrzymują pełne stypendium — nasza pomoc jest dla nich całkowicie bezpłatna.
-                </p>
               </div>
             </motion.div>
           </div>
@@ -293,7 +308,7 @@ export default function Home() {
                 data-testid="button-parents-cta"
                 className="h-14 px-8 rounded-full bg-primary text-white hover:bg-primary/90 font-bold"
               >
-                Umów rozmowę — także z rodzicami <ArrowRight className="ml-2 h-5 w-5" />
+                Umów rozmowę — również jako rodzic <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
           </div>
@@ -361,9 +376,9 @@ export default function Home() {
                   style={{ height: "auto", maxWidth: "100%", width: "200px" }}
                 />
               </motion.div>
-              <p className="text-white font-bold text-lg mt-7">Zeskanuj kod telefonem</p>
+              <p className="text-white font-bold text-lg mt-7">Zeskanuj kod QR</p>
               <p className="text-white/70 text-sm mt-2 max-w-xs">
-                Otwórz aparat w telefonie i zeskanuj kod QR, aby od razu dołączyć do społeczności WhatsApp ACADEA.
+                Otwórz aparat i dołącz do społeczności ACADEA na WhatsApp.
               </p>
             </div>
           </motion.div>
@@ -411,7 +426,7 @@ export default function Home() {
                   data-testid="button-become-mentor"
                   className="h-14 px-8 rounded-full bg-primary text-white hover:bg-primary/90 font-bold text-base"
                 >
-                  Aplikuj jako mentor <ArrowRight className="ml-2 h-5 w-5" />
+                  Aplikuj jako mentor(ka) <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
             </motion.div>
@@ -423,24 +438,7 @@ export default function Home() {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="space-y-4"
             >
-              {[
-                {
-                  name: "Marlena Sołtysińska",
-                  initials: "MS",
-                  country: "Wielka Brytania",
-                  school: "University College London",
-                  field: "Zarządzanie Międzynarodowe",
-                  quote: "Mentoruję w ACADEA, bo sama przeszłam przez ten proces i wiem, ile może zmienić jedna dobra rozmowa z kimś, kto już tam był.",
-                },
-                {
-                  name: "Mateusz Klepacki",
-                  initials: "MK",
-                  country: "Holandia",
-                  school: "Maastricht University",
-                  field: "Ekonomia",
-                  quote: "Najbardziej cenię chwilę, gdy kandydat dostaje list przyjęcia. Wiem wtedy, że nasza praca naprawdę coś zmieniła.",
-                },
-              ].map((m, i) => (
+              {mentors.map((m, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, x: 20 }}
@@ -456,7 +454,9 @@ export default function Home() {
                   <div>
                     <p className="text-gray-600 text-sm leading-relaxed italic mb-3">"{m.quote}"</p>
                     <p className="text-primary font-semibold text-sm">{m.name}</p>
-                    <p className="text-gray-400 text-xs">{m.field} · {m.school} · {m.country}</p>
+                    {m.lines.map((line, j) => (
+                      <p key={j} className="text-gray-400 text-xs leading-snug">{line}</p>
+                    ))}
                   </div>
                 </motion.div>
               ))}

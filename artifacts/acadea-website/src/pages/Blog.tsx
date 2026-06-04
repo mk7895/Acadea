@@ -1,206 +1,10 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
-import { BookOpen, Clock, X, ArrowRight } from "lucide-react";
+import { BookOpen, Clock, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { articles } from "@/data/articles";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-
-type Category = "Poradniki" | "Kraje" | "Stypendia";
-
-type Article = {
-  title: string;
-  excerpt: string;
-  readMin: number;
-  category: Category;
-  image: string;
-};
-
-function u(id: string) {
-  return `https://images.unsplash.com/photo-${id}?w=800&q=80`;
-}
-
-const articles: Article[] = [
-  {
-    category: "Poradniki", readMin: 16,
-    image: u("1481627834876-b7833e8f5570"),
-    title: "Jak dostać się na studia za granicą? Kompletny przewodnik krok po kroku",
-    excerpt: "Od wyboru kraju i kierunku po dokumenty, terminy, eseje i finansowanie — przewodnik, który pomaga zrozumieć proces aplikacji bez chaosu i przypadkowych decyzji.",
-  },
-  {
-    category: "Poradniki", readMin: 11,
-    image: u("1455390582262-044cdead277a"),
-    title: "Dokumenty na studia za granicą — checklista dla kandydatów",
-    excerpt: "Oceny, certyfikat językowy, rekomendacje, CV, eseje i dokumenty finansowe — zobacz, czego zwykle wymagają uczelnie i czego nie zostawiać na ostatnią chwilę.",
-  },
-  {
-    category: "Poradniki", readMin: 9,
-    image: u("1434030216411-0b793f4b4173"),
-    title: "Terminy aplikacji na studia za granicą — dołącz do grupy WhatsApp",
-    excerpt: "Deadline'y różnią się między krajami, uczelniami i stypendiami. Wyjaśniamy, jak ich pilnować i dlaczego aktualizacje publikujemy także na grupie WhatsApp Acadea.",
-  },
-  {
-    category: "Poradniki", readMin: 9,
-    image: u("1481627834876-b7833e8f5570"),
-    title: "Rankingi uczelni: QS, THE, Shanghai — jak je czytać?",
-    excerpt: "Rankingi mogą pomóc, ale potrafią też wprowadzać w błąd. Sprawdź, co naprawdę mierzą i dlaczego nie warto wybierać uczelni wyłącznie po pozycji w tabeli.",
-  },
-  {
-    category: "Poradniki", readMin: 8,
-    image: u("1488190211105-8b0e65b80b4e"),
-    title: "IELTS, TOEFL czy Duolingo? Certyfikat językowy na studia za granicą",
-    excerpt: "Nie każda uczelnia akceptuje ten sam egzamin. Sprawdź, kiedy potrzebujesz certyfikatu językowego i dlaczego warto zaplanować go wcześniej.",
-  },
-  {
-    category: "Poradniki", readMin: 12,
-    image: u("1456513080510-7bf3a84b82f8"),
-    title: "Jak napisać personal statement na studia w UK?",
-    excerpt: "Personal statement nie jest listą osiągnięć ani zwykłym listem motywacyjnym. Zobacz, jak pokazać zainteresowanie kierunkiem i uniknąć ogólników.",
-  },
-  {
-    category: "Poradniki", readMin: 8,
-    image: u("1503676260728-1c00da094a0b"),
-    title: "List motywacyjny a personal statement — jaka jest różnica?",
-    excerpt: "Wiele osób myli te dwa dokumenty. Tymczasem różnią się strukturą, tonem i przeznaczeniem — szczególnie przy aplikacji do UK, Europy i USA.",
-  },
-  {
-    category: "Poradniki", readMin: 10,
-    image: u("1522202176988-66273c2fd55f"),
-    title: "Jak wybrać kierunek studiów za granicą?",
-    excerpt: "Dobry kierunek to nie tylko to, co brzmi ciekawie. Trzeba sprawdzić wymagania, strukturę programu, perspektywy i dopasowanie do profilu ucznia.",
-  },
-  {
-    category: "Poradniki", readMin: 9,
-    image: u("1467269204594-9661b134dd2b"),
-    title: "Jak wybrać kraj na studia za granicą?",
-    excerpt: "Kraj to nie wakacje. Liczą się koszty życia, styl nauki, język, rynek pracy, wymagania i to, czy dany system pasuje do Twoich planów.",
-  },
-  {
-    category: "Poradniki", readMin: 8,
-    image: u("1532012197267-da84d127e765"),
-    title: "Jak poprosić nauczyciela o rekomendację?",
-    excerpt: "Dobra rekomendacja nie powinna być ogólną pochwałą. Zobacz, kogo poprosić, kiedy to zrobić i jak pomóc nauczycielowi napisać konkretny list.",
-  },
-  {
-    category: "Poradniki", readMin: 10,
-    image: u("1571260899304-425eee4c7efc"),
-    title: "Najczęstsze błędy w aplikacji na studia za granicą",
-    excerpt: "Zbyt późny start, przypadkowa lista uczelni, słabe eseje i brak planu finansowego — sprawdź, które błędy najczęściej osłabiają aplikację.",
-  },
-  {
-    category: "Poradniki", readMin: 9,
-    image: u("1455390582262-044cdead277a"),
-    title: "Czy warto korzystać z mentora przy aplikacji na studia za granicą?",
-    excerpt: "Mentor nie powinien obiecywać przyjęcia ani pisać aplikacji za ucznia. Może jednak pomóc uporządkować proces, strategię i dokumenty.",
-  },
-  {
-    category: "Poradniki", readMin: 8,
-    image: u("1503676260728-1c00da094a0b"),
-    title: "Jak wygląda współpraca z mentorem aplikacyjnym?",
-    excerpt: "Od pierwszej konsultacji po wybór uczelni, teksty aplikacyjne i terminy — zobacz, jak może wyglądać uporządkowane wsparcie w aplikacji.",
-  },
-  {
-    category: "Poradniki", readMin: 8,
-    image: u("1488190211105-8b0e65b80b4e"),
-    title: "Czy studia za granicą są dla mnie?",
-    excerpt: "Nie każdy powinien wybierać tę samą ścieżkę. Sprawdź, jak myśleć o gotowości akademickiej, finansowej i osobistej do wyjazdu.",
-  },
-  {
-    category: "Poradniki", readMin: 9,
-    image: u("1434030216411-0b793f4b4173"),
-    title: "Studia za granicą z polską maturą, IB albo A-levels",
-    excerpt: "Polska matura, IB i A-levels mogą otwierać różne drzwi — ale wymagania zależą od kraju, kierunku i konkretnych przedmiotów.",
-  },
-  {
-    category: "Kraje", readMin: 14,
-    image: u("1496442226666-8d4d0e62e6e9"),
-    title: "Studia w USA — aplikacja, eseje, SAT i financial aid",
-    excerpt: "Aplikacja do USA różni się od europejskich systemów. Wyjaśniamy Common App, eseje, extracurriculars, testy i pomoc finansową dla international students.",
-  },
-  {
-    category: "Kraje", readMin: 12,
-    image: u("1502602898657-3e91760cbb34"),
-    title: "Studia w Europie po angielsku — gdzie warto aplikować?",
-    excerpt: "Holandia, Dania, Szwecja, Austria, Włochy, Hiszpania czy Belgia? Zobacz, jak porównywać kraje, koszty i programy po angielsku.",
-  },
-  {
-    category: "Kraje", readMin: 10,
-    image: u("1534351590666-13e3e96b5017"),
-    title: "Studia w Holandii — przewodnik dla polskich maturzystów",
-    excerpt: "Holandia przyciąga programami po angielsku i praktycznym stylem nauki, ale trzeba uważać na terminy, wymagania i zakwaterowanie.",
-  },
-  {
-    category: "Kraje", readMin: 10,
-    image: u("1513635269975-59663e0ac1ad"),
-    title: "Studia w UK po Brexicie — aplikacja, koszty i UCAS",
-    excerpt: "Wielka Brytania nadal ma świetne uczelnie, ale po Brexicie wymaga dokładniejszego planu finansowego, UCAS i mocnych dokumentów.",
-  },
-  {
-    category: "Kraje", readMin: 10,
-    image: u("1467269204594-9661b134dd2b"),
-    title: "Bezpłatne studia w Niemczech — jak to możliwe i jak aplikować?",
-    excerpt: "Niemcy mogą być bardzo atrakcyjne finansowo, szczególnie na uczelniach publicznych. Sprawdź, kiedy niski koszt naprawdę oznacza dobrą opcję.",
-  },
-  {
-    category: "Kraje", readMin: 9,
-    image: u("1583422409516-2895a77efded"),
-    title: "Studia w Hiszpanii — słońce, kultura i dyplom uznawany w całej Europie",
-    excerpt: "Hiszpania to nie tylko Madryt i Barcelona. To także uczelnie, programy po angielsku, kierunki biznesowe i rosnące możliwości dla absolwentów.",
-  },
-  {
-    category: "Kraje", readMin: 9,
-    image: u("1502602898657-3e91760cbb34"),
-    title: "Studia we Włoszech po angielsku — koszty, uczelnie i aplikacja",
-    excerpt: "Włochy mogą być ciekawą opcją dla osób zainteresowanych biznesem, ekonomią, designem, architekturą i naukami społecznymi.",
-  },
-  {
-    category: "Kraje", readMin: 9,
-    image: u("1534351590666-13e3e96b5017"),
-    title: "Studia w Danii po angielsku — co warto wiedzieć?",
-    excerpt: "Dania oferuje praktyczny styl nauki i międzynarodowe środowisko, ale wybór programów i koszty życia trzeba dokładnie sprawdzić.",
-  },
-  {
-    category: "Kraje", readMin: 9,
-    image: u("1513635269975-59663e0ac1ad"),
-    title: "Studia w Szwecji po angielsku — kierunki, koszty i wymagania",
-    excerpt: "Szwecja przyciąga jakością edukacji i nowoczesnym podejściem do nauki, ale wymaga dobrego planu kosztów i aplikacji.",
-  },
-  {
-    category: "Kraje", readMin: 9,
-    image: u("1496442226666-8d4d0e62e6e9"),
-    title: "Studia w Kanadzie — czy to dobra alternatywa dla USA?",
-    excerpt: "Kanada może być atrakcyjna dla osób szukających anglojęzycznych studiów poza Europą, ale koszty, terminy i wymagania różnią się od USA.",
-  },
-  {
-    category: "Stypendia", readMin: 14,
-    image: u("1554224155-6726b3ff858f"),
-    title: "Ile kosztują studia za granicą i jak znaleźć stypendium?",
-    excerpt: "Czesne to tylko część budżetu. Wyjaśniamy koszty życia, zakwaterowanie, opłaty aplikacyjne, financial aid i najczęstsze pułapki finansowe.",
-  },
-  {
-    category: "Stypendia", readMin: 12,
-    image: u("1523240795612-9a054b0db644"),
-    title: "Jak zdobyć stypendium na studia za granicą? Kompletny poradnik",
-    excerpt: "Scholarship, grant, financial aid, tuition waiver — sprawdź, czym różnią się formy finansowania i kiedy zacząć szukać wsparcia.",
-  },
-  {
-    category: "Stypendia", readMin: 10,
-    image: u("1579621970563-ebec7560ff3e"),
-    title: "Darmowe studia za granicą — kiedy to naprawdę możliwe?",
-    excerpt: "Brak czesnego nie oznacza braku kosztów. Sprawdź, jak odróżnić rzeczywiście tanią opcję od programu, który tylko wygląda korzystnie na papierze.",
-  },
-  {
-    category: "Stypendia", readMin: 11,
-    image: u("1606760227091-3dd870d97f1d"),
-    title: "Financial aid dla international students w USA",
-    excerpt: "Niektóre uczelnie w USA oferują bardzo dużą pomoc finansową, ale zasady różnią się między szkołami. Zobacz, na co uważać przy układaniu listy.",
-  },
-  {
-    category: "Stypendia", readMin: 8,
-    image: u("1523240795612-9a054b0db644"),
-    title: "Stypendia Acadea — kto może otrzymać wsparcie aplikacyjne?",
-    excerpt: "Profesjonalna pomoc w aplikacji nie powinna być dostępna tylko dla osób, które mogą zapłacić pełną cenę. Wyjaśniamy, jak myślimy o stypendiach Acadea.",
-  },
-];
 
 const categories = ["Wszystkie", "Poradniki", "Kraje", "Stypendia"] as const;
 type Filter = (typeof categories)[number];
@@ -217,7 +21,6 @@ const itemVariants: Variants = {
 
 export default function Blog() {
   const [filter, setFilter] = useState<Filter>("Wszystkie");
-  const [openArticle, setOpenArticle] = useState<Article | null>(null);
   const [email, setEmail] = useState("");
   const [newsStatus, setNewsStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
 
@@ -257,7 +60,8 @@ export default function Blog() {
               <span>Baza Wiedzy</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight mb-4">
-              Wszystko, co musisz wiedzieć<br className="hidden md:block" /> o <span className="text-primary">studiach za granicą</span>
+              Wszystko, co musisz wiedzieć<br className="hidden md:block" /> o{" "}
+              <span className="text-primary">studiach za granicą</span>
             </h1>
             <p className="text-lg text-gray-500 max-w-2xl leading-relaxed">
               Przewodniki, poradniki i artykuły przygotowane przez ekspertów ACADEA — żeby decyzje o studiach za granicą podejmować ze świadomością, a nie ze strachem.
@@ -303,7 +107,7 @@ export default function Blog() {
             >
               {visible.map((article, i) => (
                 <motion.div
-                  key={article.title}
+                  key={article.slug}
                   variants={itemVariants}
                   data-testid={`article-card-${i}`}
                   className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col"
@@ -314,6 +118,9 @@ export default function Blog() {
                       alt={article.title}
                       loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
                     />
                     <div className="absolute top-4 left-4">
                       <Badge className="bg-white/90 text-primary hover:bg-white border-none font-semibold text-xs shadow-sm">
@@ -332,13 +139,15 @@ export default function Blog() {
                     <p className="text-gray-500 text-sm leading-relaxed line-clamp-3 flex-1">
                       {article.excerpt}
                     </p>
-                    <button
-                      onClick={() => setOpenArticle(article)}
+                    <a
+                      href={`${BASE}/baza-wiedzy${article.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors group/btn"
                     >
                       Czytaj więcej
                       <ArrowRight size={14} className="group-hover/btn:translate-x-0.5 transition-transform" />
-                    </button>
+                    </a>
                   </div>
                 </motion.div>
               ))}
@@ -369,7 +178,7 @@ export default function Blog() {
 
               {newsStatus === "ok" ? (
                 <p className="text-accent font-semibold text-lg">
-                  Zapisano! Wkrótce dostaniesz pierwszy e-mail. 🎉
+                  Zapisano! Wkrótce dostaniesz pierwszy e-mail.
                 </p>
               ) : (
                 <>
@@ -403,65 +212,6 @@ export default function Blog() {
           </motion.div>
         </div>
       </section>
-
-      {/* Article Modal */}
-      <AnimatePresence>
-        {openArticle && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-            onClick={() => setOpenArticle(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-            >
-              <div className="relative h-52 overflow-hidden rounded-t-3xl">
-                <img
-                  src={openArticle.image}
-                  alt={openArticle.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <button
-                  onClick={() => setOpenArticle(null)}
-                  aria-label="Zamknij"
-                  className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 transition-colors flex items-center justify-center text-white"
-                >
-                  <X size={18} />
-                </button>
-                <div className="absolute bottom-4 left-5">
-                  <Badge className="bg-white/90 text-primary border-none font-semibold text-xs shadow-sm">
-                    {openArticle.category}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="p-8">
-                <div className="flex items-center gap-2 mb-4 text-xs text-gray-400">
-                  <Clock size={12} />
-                  <span>{openArticle.readMin} min czytania</span>
-                </div>
-                <h2 className="text-2xl font-bold text-primary mb-4 leading-snug">
-                  {openArticle.title}
-                </h2>
-                <p className="text-gray-600 leading-relaxed mb-6">
-                  {openArticle.excerpt}
-                </p>
-                <p className="text-gray-400 text-sm italic border-t border-gray-100 pt-5">
-                  Pełna wersja artykułu dostępna jest podczas bezpłatnej konsultacji z ekspertem ACADEA.
-                </p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

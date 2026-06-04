@@ -19,6 +19,7 @@ import Booking from "@/pages/Booking";
 import MentorForm from "@/pages/MentorForm";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import Regulamin from "@/pages/Regulamin";
+import ArticlePage from "@/pages/ArticlePage";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ function Router() {
         <Route path="/o-nas" component={AboutUs} />
         <Route path="/kontakt" component={Contact} />
         <Route path="/baza-wiedzy" component={Blog} />
+        <Route path="/baza-wiedzy/:slug" component={ArticlePage} />
         <Route path="/stypendium" component={Scholarship} />
         <Route path="/stypendium/aplikacja" component={ScholarshipForm} />
         <Route path="/umow-spotkanie" component={Booking} />

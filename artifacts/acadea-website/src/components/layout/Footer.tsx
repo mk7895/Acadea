@@ -9,7 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           <div className="space-y-6">
             <Link href="/">
-              <img src={logo} alt="ACADEA Logo" className="h-28 md:h-36 w-auto mb-2" />
+              <img src={logo} alt="ACADEA Logo" className="h-20 md:h-24 w-auto shrink-0 mb-2" />
             </Link>
             <p className="text-gray-300 text-sm leading-relaxed max-w-sm">
               Aplikacja na studia za granicą — z nami to proste. Pomagamy polskim uczniom dostać się na wymarzone uczelnie w ponad 25 krajach.
@@ -89,12 +89,20 @@ export function Footer() {
           <div>
             <h4 className="text-lg font-semibold mb-6">Usługi</h4>
             <ul className="space-y-4">
-              <li className="text-gray-300">Doradztwo Uczelni</li>
-              <li className="text-gray-300">Przygotowanie Dokumentów</li>
-              <li className="text-gray-300">Eseje i Motywacje</li>
-              <li className="text-gray-300">Tłumaczenia i Legalizacja</li>
-              <li className="text-gray-300">Wizy i Zakwaterowanie</li>
-              <li className="text-gray-300">Egzaminy i Certyfikaty</li>
+              {[
+                "Doradztwo Uczelni",
+                "Egzaminy i Certyfikaty",
+                "Przygotowanie Dokumentów",
+                "Eseje i Motywacje",
+                "Tłumaczenia i Legalizacja",
+                "Wizy i Zakwaterowanie",
+              ].map((svc) => (
+                <li key={svc}>
+                  <Link href="/jak-to-dziala" className="text-gray-300 hover:text-white transition-colors">
+                    {svc}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
