@@ -573,7 +573,7 @@ export const countryLocative: Record<string, string> = {
   japonia: "w Japonii",
   australia: "w Australii",
   malta: "na Malcie",
-  zea: "w ZEA",
+  zea: "w Emiratach",
   hongkong: "w Hongkongu",
 };
 

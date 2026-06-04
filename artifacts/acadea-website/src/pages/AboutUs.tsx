@@ -22,10 +22,10 @@ export default function AboutUs() {
                 Założyliśmy ACADEA, ponieważ sami kiedyś przeszliśmy przez stresujący i skomplikowany proces aplikacji na zagraniczne uczelnie.
               </p>
               <p>
-                Sami gubiliśmy się w gąszczu wymagań, portali aplikacyjnych, egzaminów językowych i terminów. Nie mieliśmy pewności, czy nasz esej jest wystarczająco dobry ani czy dobrze rozumiemy wymagania konkretnej uczelni.
+                Sami gubiliśmy się w gąszczu wymagań, portali aplikacyjnych, egzaminów językowych i terminów. Z biegiem lat nauczyliśmy się, co naprawdę znaczy doskonały esej, a wymagania kolejnych uczelni przestały mieć przed nami jakiekolwiek tajemnice.
               </p>
               <p className="font-semibold text-primary">
-                Od ponad 5 lat pomagamy kolejnym rocznikom ambitnych uczniów przejść tę drogę łatwiej, niż udało się to nam.
+                Od ponad 5 lat prowadzimy kolejne roczniki ambitnych uczniów za rękę — dokładnie tak, jak sami chcielibyśmy zostać wtedy poprowadzeni.
               </p>
             </div>
           </motion.div>

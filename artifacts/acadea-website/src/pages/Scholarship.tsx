@@ -13,49 +13,22 @@ const itemVariants: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
-const howItWorks = [
-  {
-    step: "01",
-    title: "Kupujesz nasze usługi",
-    desc: "Każdy pakiet doradztwa ACADEA — od konsultacji po pełne wsparcie aplikacyjne — zawiera wbudowany wkład w fundusz stypendialny.",
-    icon: <GraduationCap size={28} className="text-accent" />,
-  },
-  {
-    step: "02",
-    title: "Część środków trafia do funduszu",
-    desc: "Automatycznie przekazujemy część każdej opłaty do naszego wewnętrznego Funduszu Stypendialnego ACADEA. Bez dodatkowych działań z Twojej strony.",
-    icon: <Heart size={28} className="text-accent" />,
-  },
-  {
-    step: "03",
-    title: "Fundusz wspiera zdolnych uczniów",
-    desc: "Co roku przyznajemy stypendia uczniom o wysokim potencjale, którzy nie mają środków na studia za granicą. Twój wybór im to umożliwia.",
-    icon: <Star size={28} className="text-accent" />,
-  },
-  {
-    step: "04",
-    title: "Więcej studentów na świecie",
-    desc: "Każdy rok to nowi stypendyści, nowe uczelnie, nowe możliwości. Razem budujemy pokolenie wykształconych Polaków na arenie międzynarodowej.",
-    icon: <BookOpen size={28} className="text-accent" />,
-  },
-];
-
 const criteria = [
   {
-    title: "Wybitne wyniki w nauce",
-    desc: "Szukamy uczniów z pasją do nauki — oceny są ważne, ale jeszcze ważniejsza jest motywacja i determinacja.",
+    title: "Wybitne wyniki i osiągnięcia",
+    desc: "Szukamy osób z pasją — oceny są ważne, ale jeszcze ważniejsza jest motywacja, determinacja i to, co robisz poza szkołą.",
   },
   {
-    title: "Marzenia większe niż możliwości finansowe",
-    desc: "Program jest skierowany do osób, dla których koszty byłyby główną przeszkodą w realizacji celu.",
+    title: "Wielkie marzenia i jasna pasja",
+    desc: "Chcesz studiować za granicą, latać samolotami, tańczyć albo rozwijać zupełnie inną dziedzinę? Pomożemy Ci zaplanować własną ścieżkę.",
   },
   {
-    title: "Jasny cel edukacyjny",
-    desc: "Wiemy, gdzie chcesz studiować i dlaczego — albo jesteś gotowy to odkryć razem z nami.",
+    title: "Gotowość do rozwoju",
+    desc: "Wiesz, w czym chcesz się rozwijać — albo jesteś gotowy odkryć to razem z nami i swoim mentorem.",
   },
   {
     title: "Obywatelstwo lub rezydencja polska",
-    desc: "Konkurs skierowany jest do polskich uczniów planujących studia za granicą.",
+    desc: "Konkurs skierowany jest do polskich uczniów i młodych osób, niezależnie od ich sytuacji finansowej.",
   },
 ];
 
@@ -75,11 +48,11 @@ export default function Scholarship() {
               <span>Program Stypendialny ACADEA</span>
             </div>
             <h1 className="text-5xl md:text-7xl font-bold text-gray-900 leading-[1.05] tracking-tight mb-5">
-              Korzystasz z naszych usług.<br />
-              <span className="text-primary">Wspierasz czyjś sen.</span>
+              Twoja pasja.<br />
+              <span className="text-primary">Nasze wsparcie.</span>
             </h1>
             <p className="text-xl text-gray-500 leading-relaxed max-w-2xl mb-10">
-              Każda osoba, która wybiera ACADEA, automatycznie przyczynia się do funduszu stypendialnego, który otwiera drzwi do światowych uczelni uczniom, których na to nie stać.
+              Program Stypendialny ACADEA to mentoring i wsparcie dla ambitnych, zmotywowanych osób — niezależnie od tego, czy marzą o studiach za granicą, czy chcą rozwijać inną pasję, jak lotnictwo czy taniec. Pomagamy wybrać i przejść własną ścieżkę.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <a href="#konkurs">
@@ -131,62 +104,17 @@ export default function Scholarship() {
               <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-8">
                 <Heart size={32} className="text-accent" />
               </div>
-              <blockquote className="text-2xl md:text-3xl font-bold text-primary leading-snug mb-6">
-                "Wierzymy, że wykształcenie nie powinno być przywilejem. Powinno być prawem."
+              <blockquote className="text-2xl md:text-3xl font-bold text-primary leading-snug mb-3">
+                „Edukacja jest najpotężniejszą bronią, której możesz użyć, aby zmienić świat.”
               </blockquote>
+              <p className="text-sm font-semibold text-accent uppercase tracking-widest mb-6">
+                — Nelson Mandela
+              </p>
               <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
-                Dlatego zbudowaliśmy model, w którym każdy klient ACADEA jest jednocześnie mecenasem edukacji. Kiedy inwestujesz w siebie — inwestujesz też w kogoś, dla kogo ta szansa mogłaby nigdy nie nadejść.
+                Wierzymy w to każdego dnia. Dlatego stworzyliśmy program, który daje ambitnym, zmotywowanym osobom dostęp do mentoringu i wsparcia w realizacji ich marzeń — niezależnie od tego, skąd pochodzą i jaką ścieżkę wybiorą.
               </p>
             </motion.div>
           </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="py-24 bg-gray-50">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-3xl mx-auto text-center mb-16">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-4xl md:text-5xl font-bold text-primary mb-6">Jak działa fundusz?</h2>
-              <p className="text-lg text-gray-600">
-                Model jest prosty. Przejrzysty. I autentyczny.
-              </p>
-            </motion.div>
-          </div>
-
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto"
-          >
-            {howItWorks.map((item, i) => (
-              <motion.div
-                key={i}
-                variants={itemVariants}
-                data-testid={`scholarship-step-${i}`}
-                className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 group hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start gap-5">
-                  <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-accent/20 transition-colors">
-                    {item.icon}
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-accent tracking-widest uppercase mb-2 block">
-                      Krok {item.step}
-                    </span>
-                    <h3 className="text-xl font-bold text-primary mb-3">{item.title}</h3>
-                    <p className="text-gray-600 leading-relaxed text-sm">{item.desc}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
         </div>
       </section>
 
@@ -205,13 +133,13 @@ export default function Scholarship() {
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 border border-accent/30 text-accent text-sm font-semibold mb-8">
                 <Star size={16} className="fill-accent" />
-                <span>I Edycja — 2026</span>
+                <span>I Edycja</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
                 Konkurs Stypendialny ACADEA
               </h2>
               <p className="text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto">
-                Ogłaszamy pierwszą edycję naszego konkursu stypendialnego. Szukamy ambitnych polskich uczniów, którzy marzą o studiach za granicą, ale potrzebują wsparcia, żeby ten sen stał się rzeczywistością.
+                Ogłaszamy pierwszą edycję naszego programu stypendialnego. Szukamy ambitnych, zmotywowanych osób z pasją — niezależnie od tego, czy marzą o studiach za granicą, czy chcą rozwijać swoje zainteresowania, takie jak lotnictwo, taniec czy nauka. To program mentoringowy, w którym pomagamy wybrać i przejść własną ścieżkę.
               </p>
             </motion.div>
 
@@ -230,7 +158,7 @@ export default function Scholarship() {
                 <div className="hidden md:block w-px h-16 bg-primary/20" />
                 <div>
                   <div className="text-sm font-semibold uppercase tracking-widest mb-2 text-primary/70">Edycja</div>
-                  <div className="text-4xl md:text-5xl font-bold">I / 2026</div>
+                  <div className="text-4xl md:text-5xl font-bold">I</div>
                 </div>
                 <div className="hidden md:block w-px h-16 bg-primary/20" />
                 <div>
@@ -275,7 +203,7 @@ export default function Scholarship() {
           >
             <h2 className="text-4xl font-bold text-primary mb-6">Aplikuj o stypendium</h2>
             <p className="text-lg text-gray-600 mb-4 leading-relaxed">
-              Jeśli masz wybitne wyniki, pasję do nauki i marzenia większe niż możliwości finansowe — to konkurs dla Ciebie.
+              Jeśli masz wybitne wyniki, pasję i wielkie marzenia, ten konkurs jest dla Ciebie.
             </p>
             <p className="text-base text-gray-500 mb-10">
               Nabór trwa do <strong className="text-primary">20 czerwca 2026</strong>. Wypełnij formularz — rozpatrujemy zgłoszenia indywidualnie, z pełnym szacunkiem dla każdej historii.

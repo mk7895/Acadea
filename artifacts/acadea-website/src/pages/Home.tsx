@@ -122,7 +122,7 @@ export default function Home() {
               <div className="flex flex-wrap gap-6 items-center text-sm text-gray-400 border-t border-gray-100 pt-8">
                 <div className="flex items-center gap-2">
                   <MapPin size={16} className="text-primary" />
-                  <span><strong className="text-gray-700 font-semibold">15+</strong> krajów w ofercie</span>
+                  <span><strong className="text-gray-700 font-semibold">25+</strong> krajów w ofercie</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-primary" />

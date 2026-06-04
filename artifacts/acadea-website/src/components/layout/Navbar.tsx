@@ -7,11 +7,11 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const links = [
   { href: "/", label: "Strona Główna" },
-  { href: "/jak-to-dziala", label: "Jak to działa" },
+  { href: "/jak-to-dziala", label: "Jak pomagamy" },
   { href: "/kraje", label: "Kraje i Uczelnie" },
   { href: "/baza-wiedzy", label: "Baza Wiedzy" },
   { href: "/stypendium", label: "Stypendia", highlight: true },
-  { href: "/o-nas", label: "O nas" },
+  { href: "/o-nas", label: "Poznajmy się" },
 ];
 
 export function Navbar() {

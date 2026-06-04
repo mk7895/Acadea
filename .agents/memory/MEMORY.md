@@ -1,1 +1,2 @@
 - [Google Calendar connector API paths](google-calendar-connector.md) — proxy calls need full `/calendar/v3/` prefix, not just the endpoint path
+- [ACADEA site conventions](acadea-site.md) — scholarship is general mentoring (not fund/mecenas); nav labels Jak pomagamy / Poznajmy się; 25+ krajów; booking consent required client-side only.

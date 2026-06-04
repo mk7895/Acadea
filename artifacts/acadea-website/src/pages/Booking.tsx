@@ -51,7 +51,7 @@ const TOPICS = [
   "Inne",
 ];
 
-const steps = ["Termin", "Godzina", "Dane", "Potwierdzenie"];
+const steps = ["Termin", "Godzina", "Rezerwacja", "Potwierdzenie"];
 
 export default function Booking() {
   const [step, setStep] = useState(0);
@@ -62,7 +62,8 @@ export default function Booking() {
   const [selectedDay, setSelectedDay] = useState<DayGroup | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
 
-  const [form, setForm] = useState({ name: "", email: "", phone: "", topic: TOPICS[0] });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", topic: TOPICS[0], otherDetail: "" });
+  const [consent, setConsent] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState<{ start: string; calendarLink?: string } | null>(null);
@@ -84,6 +85,8 @@ export default function Booking() {
     if (!form.name.trim() || form.name.trim().length < 2) err.name = "Wpisz imię i nazwisko.";
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) err.email = "Podaj poprawny adres e-mail.";
     if (!form.topic) err.topic = "Wybierz temat.";
+    if (form.topic === "Inne" && !form.otherDetail.trim()) err.otherDetail = "Napisz, w czym możemy pomóc.";
+    if (!consent) err.consent = "Zaznacz zgodę, aby umówić spotkanie.";
     setFormErrors(err);
     return Object.keys(err).length === 0;
   };
@@ -94,10 +97,14 @@ export default function Booking() {
     setSubmitting(true);
     setSubmitError("");
     try {
+      const topicValue =
+        form.topic === "Inne" && form.otherDetail.trim()
+          ? `Inne — ${form.otherDetail.trim()}`
+          : form.topic;
       const res = await fetch(`${BASE}/api/booking/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...selectedSlot, ...form }),
+        body: JSON.stringify({ ...selectedSlot, ...form, topic: topicValue, consent }),
       });
       const data = await res.json() as { success?: boolean; start?: string; calendarLink?: string; error?: string };
       if (!data.success) { setSubmitError(data.error ?? "Błąd. Spróbuj ponownie."); return; }
@@ -305,6 +312,37 @@ export default function Booking() {
                     {formErrors.topic && <p className="text-red-500 text-xs mt-1">{formErrors.topic}</p>}
                   </div>
 
+                  {form.topic === "Inne" && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                        Napisz, w czym możemy pomóc *
+                      </label>
+                      <Textarea
+                        value={form.otherDetail}
+                        onChange={(e) => setForm({ ...form, otherDetail: e.target.value })}
+                        placeholder="Opisz krótko, czego dotyczy konsultacja…"
+                        rows={3}
+                        className={`rounded-xl ${formErrors.otherDetail ? "border-red-400" : ""}`}
+                      />
+                      {formErrors.otherDetail && <p className="text-red-500 text-xs mt-1">{formErrors.otherDetail}</p>}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={consent}
+                        onChange={(e) => setConsent(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-primary cursor-pointer"
+                      />
+                      <span className="text-xs text-gray-500 leading-relaxed">
+                        Umawiając spotkanie, zgadzam się na otrzymywanie informacji handlowych od Fundacji Acadea. Nigdy nie przekażemy Twoich danych dalej, zawsze możesz się wypisać.
+                      </span>
+                    </label>
+                    {formErrors.consent && <p className="text-red-500 text-xs mt-1">{formErrors.consent}</p>}
+                  </div>
+
                   {submitError && (
                     <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">
                       {submitError}
@@ -317,9 +355,9 @@ export default function Booking() {
                     className="w-full h-14 rounded-full bg-primary text-white hover:bg-primary/90 font-bold text-base mt-2"
                   >
                     {submitting ? (
-                      <><Loader2 size={18} className="animate-spin mr-2" /> Rezerwowanie…</>
+                      <><Loader2 size={18} className="animate-spin mr-2" /> Umawianie…</>
                     ) : (
-                      <>Zarezerwuj spotkanie <ArrowRight className="ml-2 h-5 w-5" /></>
+                      <>Umów spotkanie <ArrowRight className="ml-2 h-5 w-5" /></>
                     )}
                   </Button>
                   <p className="text-center text-xs text-gray-400">
