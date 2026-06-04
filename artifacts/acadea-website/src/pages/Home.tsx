@@ -70,9 +70,9 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 text-primary text-xs font-semibold mb-8 uppercase tracking-widest">
-                <Globe size={13} />
-                <span>Edukacja bez granic</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/12 text-accent border border-accent/25 text-xs font-semibold mb-8 uppercase tracking-widest">
+                <Heart size={13} className="fill-accent" />
+                <span>Nasza pomoc może być bezpłatna</span>
               </div>
 
               <h1 className="text-5xl md:text-6xl xl:text-7xl font-bold text-gray-900 leading-[1.05] tracking-tight mb-6">
@@ -82,27 +82,27 @@ export default function Home() {
               </h1>
 
               <p className="text-lg text-gray-500 leading-relaxed mb-10 max-w-lg">
-                ACADEA to doradcy edukacyjni, którzy sami studiowali za granicą. Znamy ten proces od środka — i przeprowadzimy przez niego Ciebie.
+                Pomagamy polskim uczniom dostać się na najlepsze uczelnie w Europie. Dzięki Programowi Stypendialnemu ACADEA — całkowicie bezpłatnie.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-14">
-                <Link href="/kontakt">
+                <Link href="/umow-spotkanie">
                   <Button
                     size="lg"
                     data-testid="button-hero-cta-primary"
                     className="h-14 px-8 text-base rounded-full bg-primary text-white hover:bg-primary/90 font-bold border-none shadow-lg shadow-primary/20"
                   >
-                    Bezpłatna konsultacja
+                    Umów bezpłatną konsultację
                   </Button>
                 </Link>
-                <Link href="/jak-to-dziala">
+                <Link href="/stypendium">
                   <Button
                     size="lg"
                     variant="outline"
                     data-testid="button-hero-cta-secondary"
-                    className="h-14 px-8 text-base rounded-full border-gray-200 text-gray-700 hover:border-primary hover:text-primary font-medium"
+                    className="h-14 px-8 text-base rounded-full border-accent/40 text-accent hover:border-accent hover:bg-accent/6 font-semibold"
                   >
-                    Jak pomagamy?
+                    Jak działają stypendia?
                   </Button>
                 </Link>
               </div>
@@ -118,8 +118,8 @@ export default function Home() {
                   <span><strong className="text-gray-700 font-semibold">95%+</strong> skuteczność</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Users size={16} className="text-primary" />
-                  <span><strong className="text-gray-700 font-semibold">Setki</strong> studentów za granicą</span>
+                  <Heart size={16} className="text-accent fill-accent" />
+                  <span><strong className="text-gray-700 font-semibold">0 zł</strong> dla stypendystów</span>
                 </div>
               </div>
             </motion.div>
@@ -186,14 +186,15 @@ export default function Home() {
                 <span>Program Stypendialny ACADEA</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-6">
-                Korzystasz z naszych usług.<br />
-                <span className="text-accent">Wspierasz czyjś sen.</span>
+                Twoja droga na<br />
+                <span className="text-accent">zagraniczną uczelnię</span><br />
+                może być bezpłatna.
               </h2>
               <p className="text-lg text-gray-500 leading-relaxed mb-6">
-                Wierzymy, że wykształcenie nie powinno być przywilejem. Dlatego każda osoba, która wybiera ACADEA, automatycznie przyczynia się do naszego funduszu stypendialnego.
+                Wybitny potencjał nie powinien napotykać barier finansowych. Dlatego stworzyliśmy Program Stypendialny ACADEA — dla kandydatów, którym zależy, a potrzebują wsparcia.
               </p>
               <p className="text-lg text-gray-500 leading-relaxed mb-10">
-                Część każdej opłaty trafia do uczniów o wybitnym potencjale, których nie stać na studia za granicą.
+                Nasze stypendia pokrywają pełny koszt doradztwa — od wyboru uczelni po finalne przyjęcie. Sprawdź, czy się kwalifikujesz.
               </p>
               <Link href="/stypendium">
                 <Button
@@ -201,7 +202,7 @@ export default function Home() {
                   data-testid="button-scholarship-home"
                   className="h-13 px-8 text-base rounded-full bg-accent text-primary hover:bg-primary hover:text-white transition-all font-bold border-none"
                 >
-                  Dowiedz się więcej <ArrowRight className="ml-2 h-5 w-5" />
+                  Aplikuj o stypendium <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
             </motion.div>
@@ -219,11 +220,11 @@ export default function Home() {
               </div>
               <div className="relative z-10">
                 <div className="w-14 h-14 bg-accent/20 rounded-2xl flex items-center justify-center mb-6">
-                  <Heart size={28} className="text-accent" />
+                  <GraduationCap size={28} className="text-accent" />
                 </div>
-                <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-3">Nasza misja</p>
+                <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-3">Program Stypendialny</p>
                 <p className="text-white text-2xl font-bold leading-snug">
-                  Każda opłata za usługi ACADEA tworzy fundusz, który zmienia czyjeś życie.
+                  Wybrani kandydaci otrzymują pełne stypendium — nasza pomoc jest dla nich całkowicie bezpłatna.
                 </p>
               </div>
             </motion.div>
@@ -398,11 +399,11 @@ export default function Home() {
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6">Zacznijmy Twoją drogę.</h2>
             <p className="text-xl text-white/70 mb-10">
-              Umów się na bezpłatną konsultację. Opowiesz nam o swoich celach, a my powiemy Ci, jak je osiągnąć.
+              Umów bezpłatną konsultację — bez zobowiązań. Wybierz termin i porozmawiaj z naszym doradcą przez Google Meet.
             </p>
-            <Link href="/kontakt">
+            <Link href="/umow-spotkanie">
               <Button size="lg" className="h-14 px-10 text-lg bg-accent text-primary hover:bg-white transition-colors border-none rounded-full font-bold shadow-lg shadow-accent/20">
-                Zarezerwuj spotkanie <ArrowRight className="ml-2 h-5 w-5" />
+                Wybierz termin <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
           </motion.div>

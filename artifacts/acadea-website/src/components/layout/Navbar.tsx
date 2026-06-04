@@ -79,9 +79,9 @@ export function Navbar() {
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
-          <Link href="/kontakt">
+          <Link href="/umow-spotkanie">
             <Button className="rounded-full px-6 bg-primary text-white hover:bg-primary/90 transition-all font-semibold">
-              Bezpłatna Konsultacja
+              Umów spotkanie
             </Button>
           </Link>
         </div>

@@ -1,0 +1,1 @@
+- [Google Calendar connector API paths](google-calendar-connector.md) — proxy calls need full `/calendar/v3/` prefix, not just the endpoint path
