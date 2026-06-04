@@ -129,7 +129,7 @@ export default function Booking() {
             Bezpłatna konsultacja
           </h1>
           <p className="text-gray-500 text-lg">
-            Wybierz termin, a nasz doradca skontaktuje się z Tobą przez Zoom.
+            Wybierz termin, a nasz doradca skontaktuje się z Tobą.
           </p>
         </motion.div>
 
@@ -345,7 +345,7 @@ export default function Booking() {
                 </div>
                 <p className="text-sm text-gray-400 mb-8">
                   Potwierdzenie zostało wysłane na <strong>{form.email}</strong>.<br />
-                  Spotkanie odbędzie się przez Zoom — link znajdziesz w zaproszeniu.
+                  Link do spotkania znajdziesz w zaproszeniu kalendarzowym.
                 </p>
                 {confirmed?.calendarLink && (
                   <a

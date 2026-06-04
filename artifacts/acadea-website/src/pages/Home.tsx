@@ -21,14 +21,14 @@ const services = [
     icon: <GraduationCap size={22} className="text-primary" />,
   },
   {
-    title: "Przygotowanie dokumentów",
-    desc: "Wspieramy przy każdym etapie aplikacji — od transkryptów po referencje.",
-    icon: <CheckCircle2 size={22} className="text-primary" />,
-  },
-  {
     title: "Egzaminy i certyfikaty",
     desc: "Przygotowujemy do GRE, SAT, GMAT, Cambridge, IELTS, TOEFL i innych egzaminów wymaganych przez zagraniczne uczelnie.",
     icon: <BookOpen size={22} className="text-primary" />,
+  },
+  {
+    title: "Przygotowanie dokumentów",
+    desc: "Wspieramy przy każdym etapie aplikacji — od transkryptów po referencje.",
+    icon: <CheckCircle2 size={22} className="text-primary" />,
   },
   {
     title: "Eseje, listy motywacyjne i CV",
@@ -218,18 +218,18 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.7, delay: 0.1 }}
-              className="relative rounded-3xl overflow-hidden bg-primary min-h-[380px] flex flex-col justify-end p-10"
+              className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary/5 to-accent/10 border border-primary/10 min-h-[380px] flex flex-col justify-end p-10"
             >
-              <div className="absolute inset-0 opacity-20 pointer-events-none">
-                <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent blur-[80px]" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-white blur-[60px]" />
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent/10 blur-[80px]" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-primary/8 blur-[60px]" />
               </div>
               <div className="relative z-10">
-                <div className="w-14 h-14 bg-accent/20 rounded-2xl flex items-center justify-center mb-6">
-                  <GraduationCap size={28} className="text-accent" />
+                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+                  <GraduationCap size={28} className="text-primary" />
                 </div>
-                <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-3">Program Stypendialny</p>
-                <p className="text-white text-2xl font-bold leading-snug">
+                <p className="text-primary/50 text-xs uppercase tracking-widest font-semibold mb-3">Program Stypendialny</p>
+                <p className="text-primary text-2xl font-bold leading-snug">
                   Wybrani kandydaci otrzymują pełne stypendium — nasza pomoc jest dla nich całkowicie bezpłatna.
                 </p>
               </div>
@@ -248,7 +248,7 @@ export default function Home() {
             transition={{ duration: 0.6 }}
             className="rounded-3xl overflow-hidden grid grid-cols-1 lg:grid-cols-2"
           >
-            <div className="bg-amber-50 p-10 md:p-14 flex flex-col justify-center">
+            <div className="bg-orange-50 p-10 md:p-14 flex flex-col justify-center">
               <div className="w-14 h-14 bg-primary/12 rounded-2xl flex items-center justify-center mb-7">
                 <MessageCircle size={30} className="text-primary" />
               </div>
@@ -332,8 +332,8 @@ export default function Home() {
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
                 {[
-                  { title: "Elastyczny czas", desc: "Dopasowany do Twojego harmonogramu" },
-                  { title: "Własny harmonogram", desc: "Mentorujesz tyle, ile chcesz — bez minimalnych zobowiązań" },
+                  { title: "Elastyczny czas", desc: "Mentorujesz tyle, ile chcesz — bez minimalnych zobowiązań" },
+                  { title: "Sieć absolwentów", desc: "Dołącz do społeczności mentorów z najlepszych uczelni świata" },
                   { title: "Realny wpływ", desc: "Twoje doświadczenie zmienia czyjąś ścieżkę edukacyjną" },
                 ].map((b, i) => (
                   <div key={i} className="bg-gray-50 rounded-xl p-5 border border-gray-100">

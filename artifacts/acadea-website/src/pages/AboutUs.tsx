@@ -93,7 +93,7 @@ export default function AboutUs() {
               {
                 name: "Marlena Sołtysińska",
                 role: "Mentor",
-                desc: "Absolwentka uczelni zagranicznej. Wspiera uczniów na każdym etapie — od wyboru uczelni po finalne przyjęcie.",
+                desc: "Absolwentka UCL (Education and Technology) i NYU. Wspiera uczniów na każdym etapie procesu aplikacyjnego.",
                 initials: "MS",
                 linkedin: "https://www.linkedin.com/in/marlena-soltysinska/",
                 color: "#166534",
@@ -101,14 +101,14 @@ export default function AboutUs() {
               {
                 name: "Mateusz Klepacki",
                 role: "Mentor",
-                desc: "Sam przeszedł przez rekrutację na zagraniczną uczelnię i teraz pomaga innym powtórzyć ten sukces.",
+                desc: "Absolwent LSE (Environmental Management & Economics) i NYU. Twórca ACADEA — pomaga innym powtórzyć ten sukces.",
                 initials: "MK",
                 linkedin: "https://www.linkedin.com/in/mateusz-klepacki/",
                 color: "#14532d",
               },
               {
                 name: "Weronika Klepacka",
-                role: "Certyfikaty językowe",
+                role: "Tutor",
                 desc: "Przygotowuje do IELTS, TOEFL i egzaminów Cambridge — krok po kroku, bez stresu.",
                 initials: "WK",
                 linkedin: "https://www.linkedin.com/in/weronika-klepacka-7349b51b6",
@@ -116,7 +116,7 @@ export default function AboutUs() {
               },
               {
                 name: "Bartosz Kuźma",
-                role: "Certyfikaty językowe",
+                role: "Tutor",
                 desc: "Nauczyciel języka angielskiego z certyfikatem TEFL. Pomaga osiągnąć wymagane wyniki w egzaminach językowych.",
                 initials: "BK",
                 linkedin: "https://www.linkedin.com/in/bartosz-ku%C5%BAma-243945259/",
