@@ -129,7 +129,7 @@ export default function Booking() {
             Umów spotkanie
           </h1>
           <p className="text-gray-500 text-lg">
-            Wybierz termin, a nasz doradca skontaktuje się z Tobą przez Google Meet.
+            Wybierz termin, a nasz doradca skontaktuje się z Tobą przez Zoom.
           </p>
         </motion.div>
 
@@ -345,7 +345,7 @@ export default function Booking() {
                 </div>
                 <p className="text-sm text-gray-400 mb-8">
                   Potwierdzenie zostało wysłane na <strong>{form.email}</strong>.<br />
-                  Spotkanie odbędzie się przez Google Meet — link znajdziesz w zaproszeniu.
+                  Spotkanie odbędzie się przez Zoom — link znajdziesz w zaproszeniu.
                 </p>
                 {confirmed?.calendarLink && (
                   <a
@@ -366,7 +366,7 @@ export default function Booking() {
         {/* Reassurance row */}
         {step < 3 && (
           <div className="flex flex-wrap justify-center gap-6 mt-8 text-sm text-gray-400">
-            {["Bezpłatna konsultacja", "Google Meet", "Bez zobowiązań"].map((item) => (
+            {["Bezpłatna konsultacja", "Zoom", "Bez zobowiązań"].map((item) => (
               <span key={item} className="flex items-center gap-2">
                 <CheckCircle2 size={14} className="text-primary" /> {item}
               </span>

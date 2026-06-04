@@ -15,6 +15,8 @@ import Blog from "@/pages/Blog";
 import Scholarship from "@/pages/Scholarship";
 import Booking from "@/pages/Booking";
 import MentorForm from "@/pages/MentorForm";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import Regulamin from "@/pages/Regulamin";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +33,8 @@ function Router() {
         <Route path="/stypendium" component={Scholarship} />
         <Route path="/umow-spotkanie" component={Booking} />
         <Route path="/mentoruj" component={MentorForm} />
+        <Route path="/polityka-prywatnosci" component={PrivacyPolicy} />
+        <Route path="/regulamin" component={Regulamin} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

@@ -10,7 +10,7 @@ export function Footer() {
           <div className="space-y-6">
             <Link href="/">
               <div className="bg-white inline-block p-3 rounded-xl mb-2">
-                <img src={logo} alt="ACADEA Logo" className="h-8 w-auto" />
+                <img src={logo} alt="ACADEA Logo" className="h-12 w-auto" />
               </div>
             </Link>
             <p className="text-gray-300 text-sm leading-relaxed max-w-sm">
@@ -75,6 +75,7 @@ export function Footer() {
               <li className="text-gray-300">Eseje i Motywacje</li>
               <li className="text-gray-300">Tłumaczenia i Legalizacja</li>
               <li className="text-gray-300">Wizy i Zakwaterowanie</li>
+              <li className="text-gray-300">Egzaminy i Certyfikaty</li>
             </ul>
           </div>
 
@@ -83,14 +84,14 @@ export function Footer() {
             <ul className="space-y-4">
               <li className="flex items-start gap-3 text-gray-300">
                 <Mail size={20} className="text-accent shrink-0 mt-0.5" />
-                <a href="mailto:kontakt@acadea.pl" className="hover:text-white transition-colors">
-                  kontakt@acadea.pl
+                <a href="mailto:kontakt@acadea.org" className="hover:text-white transition-colors">
+                  kontakt@acadea.org
                 </a>
               </li>
               <li className="flex items-start gap-3 text-gray-300">
                 <Phone size={20} className="text-accent shrink-0 mt-0.5" />
-                <a href="tel:+48123456789" className="hover:text-white transition-colors">
-                  +48 123 456 789
+                <a href="tel:+48728492936" className="hover:text-white transition-colors">
+                  +48 728 492 936
                 </a>
               </li>
               <li className="flex items-start gap-3 text-gray-300">
@@ -107,8 +108,8 @@ export function Footer() {
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
           <p>&copy; {new Date().getFullYear()} ACADEA. Wszelkie prawa zastrzeżone.</p>
           <div className="flex items-center gap-6">
-            <a href="#" className="hover:text-white transition-colors">Polityka Prywatności</a>
-            <a href="#" className="hover:text-white transition-colors">Regulamin</a>
+            <Link href="/polityka-prywatnosci" className="hover:text-white transition-colors">Polityka Prywatności</Link>
+            <Link href="/regulamin" className="hover:text-white transition-colors">Regulamin</Link>
           </div>
         </div>
       </div>

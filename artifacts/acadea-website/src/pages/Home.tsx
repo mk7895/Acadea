@@ -77,8 +77,8 @@ export default function Home() {
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/12 text-accent border border-accent/25 text-xs font-semibold mb-8 uppercase tracking-widest">
-                <Heart size={13} className="fill-accent" />
-                <span>Nasza pomoc może być bezpłatna</span>
+                <Globe size={13} />
+                <span>Edukacja bez granic</span>
               </div>
 
               <h1 className="text-5xl md:text-6xl xl:text-7xl font-bold text-gray-900 leading-[1.05] tracking-tight mb-6">

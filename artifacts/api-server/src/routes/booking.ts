@@ -10,6 +10,7 @@ const router = Router();
 const connectors = new ReplitConnectors();
 const CALENDAR_ID = "primary";
 const TZ = "Europe/Warsaw";
+const ZOOM_LINK = "https://nyu.zoom.us/j/5717075193";
 
 // ─── GET /api/booking/slots ──────────────────────────────────────────────────
 // Returns available 1-hour slots for the next 14 weekdays (9:00–17:00 Warsaw)
@@ -43,8 +44,8 @@ router.get("/slots", async (req, res) => {
     };
     const busy = fbData.calendars?.[CALENDAR_ID]?.busy ?? [];
 
-    // Build slots: weekdays, 09:00–17:00, hourly. Events are 15 min.
-    const SLOT_DURATION_MS = 15 * 60 * 1000;
+    // Build slots: weekdays, 09:00–17:00, hourly. Events are 20 min.
+    const SLOT_DURATION_MS = 20 * 60 * 1000;
     const slots: { start: string; end: string; label: string }[] = [];
     const cursor = new Date(now);
     cursor.setMinutes(0, 0, 0);
@@ -110,10 +111,13 @@ router.post("/create", async (req, res) => {
         `Email: ${email}`,
         phone ? `Telefon: ${phone}` : null,
         "",
-        "Spotkanie umówione przez formularz na stronie acadea.pl",
+        `Dołącz do spotkania przez Zoom: ${ZOOM_LINK}`,
+        "",
+        "Spotkanie umówione przez formularz na stronie acadea.org",
       ]
         .filter(Boolean)
         .join("\n"),
+      location: ZOOM_LINK,
       start: { dateTime: start, timeZone: TZ },
       end: { dateTime: end, timeZone: TZ },
       attendees: [{ email, displayName: name }],
@@ -170,6 +174,7 @@ router.post("/create", async (req, res) => {
       start: created.start?.dateTime,
       end: created.end?.dateTime,
       calendarLink: created.htmlLink,
+      zoomLink: ZOOM_LINK,
     });
   } catch (err) {
     logger.error({ err }, "booking/create error");
