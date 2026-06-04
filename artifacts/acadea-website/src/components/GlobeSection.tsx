@@ -30,6 +30,16 @@ const ACADEA: Record<string, CountryData> = {
   "203": { name: "Czechy", flag: "🇨🇿", unis: ["Charles University Prague", "Czech Technical University"] },
   "620": { name: "Portugalia", flag: "🇵🇹", unis: ["Universidade de Lisboa", "Universidade do Porto", "Nova University Lisbon"] },
   "246": { name: "Finlandia", flag: "🇫🇮", unis: ["Aalto University", "University of Helsinki", "Tampere University"] },
+  "124": { name: "Kanada", flag: "🇨🇦", unis: ["University of Toronto", "McGill University", "UBC Vancouver", "University of Waterloo"] },
+  "840": { name: "USA", flag: "🇺🇸", unis: ["MIT", "Harvard University", "Stanford University", "Columbia University", "NYU"] },
+  "156": { name: "Chiny", flag: "🇨🇳", unis: ["Peking University", "Tsinghua University", "Fudan University", "Zhejiang University"] },
+  "410": { name: "Korea Południowa", flag: "🇰🇷", unis: ["Seoul National University", "KAIST", "Yonsei University", "POSTECH"] },
+  "702": { name: "Singapur", flag: "🇸🇬", unis: ["National University of Singapore", "Nanyang Technological University", "SMU"] },
+  "392": { name: "Japonia", flag: "🇯🇵", unis: ["University of Tokyo", "Kyoto University", "Waseda University", "Osaka University"] },
+  "36":  { name: "Australia", flag: "🇦🇺", unis: ["University of Melbourne", "University of Sydney", "ANU", "UNSW Sydney"] },
+  "470": { name: "Malta", flag: "🇲🇹", unis: ["University of Malta", "MCAST", "Malta Business School"] },
+  "784": { name: "ZEA", flag: "🇦🇪", unis: ["NYU Abu Dhabi", "Khalifa University", "American University of Sharjah"] },
+  "344": { name: "Hongkong", flag: "🇭🇰", unis: ["HKU", "HKUST", "Chinese University of Hong Kong", "City University of Hong Kong"] },
 };
 
 type Rotation = [number, number, number];

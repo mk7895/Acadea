@@ -14,6 +14,7 @@ import Contact from "@/pages/Contact";
 import Blog from "@/pages/Blog";
 import Scholarship from "@/pages/Scholarship";
 import Booking from "@/pages/Booking";
+import MentorForm from "@/pages/MentorForm";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ function Router() {
         <Route path="/baza-wiedzy" component={Blog} />
         <Route path="/stypendium" component={Scholarship} />
         <Route path="/umow-spotkanie" component={Booking} />
+        <Route path="/mentoruj" component={MentorForm} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

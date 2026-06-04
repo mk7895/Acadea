@@ -2,6 +2,7 @@ import { motion, type Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
+  BookOpen,
   CheckCircle2,
   Globe,
   GraduationCap,
@@ -38,6 +39,11 @@ const services = [
     title: "Wizy i zakwaterowanie",
     desc: "Nie zostawiamy Cię samego po przyjęciu. Pomożemy odnaleźć się w nowym kraju.",
     icon: <MapPin size={22} className="text-primary" />,
+  },
+  {
+    title: "Egzaminy i certyfikaty",
+    desc: "Przygotowujemy do GRE, SAT, GMAT, Cambridge, IELTS, TOEFL i innych egzaminów wymaganych przez zagraniczne uczelnie.",
+    icon: <BookOpen size={22} className="text-primary" />,
   },
 ];
 
@@ -115,7 +121,7 @@ export default function Home() {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-primary" />
-                  <span><strong className="text-gray-700 font-semibold">95%+</strong> skuteczność</span>
+                  <span><strong className="text-gray-700 font-semibold">99%</strong> skuteczność</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Heart size={16} className="text-accent fill-accent" />
@@ -266,7 +272,7 @@ export default function Home() {
                 ))}
               </ul>
               <a
-                href="https://chat.whatsapp.com"
+                href="https://chat.whatsapp.com/Cg8sKNNvAFIKBfDjBLqWKl"
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="button-whatsapp-join"
@@ -279,9 +285,9 @@ export default function Home() {
             <div className="bg-primary p-10 md:p-14 flex flex-col justify-center">
               <div className="space-y-6">
                 {[
-                  { num: "01", text: "Kliknij przycisk i wejdź do grupy" },
-                  { num: "02", text: "Zaakceptuj zaproszenie w WhatsApp" },
-                  { num: "03", text: "Otrzymuj aktualizacje — kiedy chcesz, możesz wyjść" },
+                  { num: "01", text: "Kliknij przycisk — otworzy się WhatsApp" },
+                  { num: "02", text: "Naciśnij \"Dołącz do społeczności\"" },
+                  { num: "03", text: "Gotowe — aktualizacje przychodzą automatycznie" },
                 ].map((step, i) => (
                   <motion.div
                     key={i}
@@ -295,9 +301,6 @@ export default function Home() {
                     <p className="text-white/90 text-lg font-medium">{step.text}</p>
                   </motion.div>
                 ))}
-                <p className="text-white/40 text-sm pt-4 border-t border-white/10">
-                  Aktualnie ponad 200 uczniów i rodziców w grupie.
-                </p>
               </div>
             </div>
           </motion.div>
@@ -319,7 +322,7 @@ export default function Home() {
                 <span>Dołącz do zespołu</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-6">
-                Zostań mentorem ACADEA
+                Mentoruj z ACADEA
               </h2>
               <p className="text-lg text-gray-500 leading-relaxed mb-5">
                 Studiujesz lub skończyłeś studia za granicą? Wiesz, jak wygląda aplikacja od środka? Pomóż kolejnym rocznikom polskich uczniów przejść tę drogę pewniej.
@@ -329,9 +332,9 @@ export default function Home() {
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
                 {[
-                  { title: "Elastyczny czas", desc: "Pracujesz kiedy chcesz" },
-                  { title: "Realne wynagrodzenie", desc: "Płacimy za każdą sesję" },
-                  { title: "Misja z sensem", desc: "Twoja wiedza zmienia przyszłość" },
+                  { title: "Elastyczny czas", desc: "Dopasowany do Twojego harmonogramu" },
+                  { title: "Praca lub wolontariat", desc: "Ty decydujesz, czy zarabiasz czy angażujesz się pro bono" },
+                  { title: "Realny wpływ", desc: "Twoje doświadczenie zmienia czyjąś ścieżkę edukacyjną" },
                 ].map((b, i) => (
                   <div key={i} className="bg-gray-50 rounded-xl p-5 border border-gray-100">
                     <h4 className="font-bold text-primary text-sm mb-1">{b.title}</h4>
@@ -339,7 +342,7 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <Link href="/kontakt">
+              <Link href="/mentoruj">
                 <Button
                   size="lg"
                   data-testid="button-become-mentor"
@@ -358,9 +361,22 @@ export default function Home() {
               className="space-y-4"
             >
               {[
-                { country: "Wielka Brytania", school: "University of Edinburgh", field: "Computer Science", quote: "Mentoruję w ACADEA, bo pamiętam jak bardzo brakowało mi kogoś, kto powiedział po prostu — dasz radę." },
-                { country: "Holandia", school: "TU Delft", field: "Inżynieria Lądowa", quote: "Praca z uczniami ACADEA to najlepsza rzecz, jaką mogę zrobić z moją wiedzą o procesie aplikacji." },
-                { country: "Niemcy", school: "TU Munich", field: "Mechatronika", quote: "Każda sesja mentoringowa to dla mnie przypomnienie, dlaczego sam podjąłem tę decyzję." },
+                {
+                  name: "Marlena Sołtysińska",
+                  initials: "MS",
+                  country: "Wielka Brytania",
+                  school: "University College London",
+                  field: "Zarządzanie Międzynarodowe",
+                  quote: "Mentoruję w ACADEA, bo sama przeszłam przez ten proces i wiem, ile może zmienić jedna dobra rozmowa z kimś, kto już tam był.",
+                },
+                {
+                  name: "Mateusz Klepacki",
+                  initials: "MK",
+                  country: "Holandia",
+                  school: "Maastricht University",
+                  field: "Ekonomia",
+                  quote: "Najbardziej cenię chwilę, gdy kandydat dostaje list przyjęcia. Wiem wtedy, że nasza praca naprawdę coś zmieniła.",
+                },
               ].map((m, i) => (
                 <motion.div
                   key={i}
@@ -371,13 +387,13 @@ export default function Home() {
                   data-testid={`mentor-card-${i}`}
                   className="bg-gray-50 rounded-2xl p-6 border border-gray-100 flex gap-5"
                 >
-                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-bold text-lg shrink-0">
-                    {m.country[0]}
+                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-bold text-base shrink-0">
+                    {m.initials}
                   </div>
                   <div>
                     <p className="text-gray-600 text-sm leading-relaxed italic mb-3">"{m.quote}"</p>
-                    <p className="text-primary font-semibold text-sm">{m.school}</p>
-                    <p className="text-gray-400 text-xs">{m.field} · {m.country}</p>
+                    <p className="text-primary font-semibold text-sm">{m.name}</p>
+                    <p className="text-gray-400 text-xs">{m.field} · {m.school} · {m.country}</p>
                   </div>
                 </motion.div>
               ))}

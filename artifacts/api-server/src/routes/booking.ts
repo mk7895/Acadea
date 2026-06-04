@@ -2,6 +2,7 @@ import { Router } from "express";
 import { ReplitConnectors } from "@replit/connectors-sdk";
 import { z } from "zod";
 import { logger } from "../lib/logger";
+import { db, contactSubmissionsTable } from "@workspace/db";
 
 const router = Router();
 
@@ -42,7 +43,8 @@ router.get("/slots", async (req, res) => {
     };
     const busy = fbData.calendars?.[CALENDAR_ID]?.busy ?? [];
 
-    // Build slots: weekdays, 09:00–17:00, hourly
+    // Build slots: weekdays, 09:00–17:00, hourly. Events are 15 min.
+    const SLOT_DURATION_MS = 15 * 60 * 1000;
     const slots: { start: string; end: string; label: string }[] = [];
     const cursor = new Date(now);
     cursor.setMinutes(0, 0, 0);
@@ -53,7 +55,7 @@ router.get("/slots", async (req, res) => {
       if (dow !== 0 && dow !== 6) {
         const h = cursor.getHours();
         if (h >= 9 && h < 17) {
-          const slotEnd = new Date(cursor.getTime() + 60 * 60 * 1000);
+          const slotEnd = new Date(cursor.getTime() + SLOT_DURATION_MS);
           const overlaps = busy.some(({ start, end }) => {
             return cursor < new Date(end) && slotEnd > new Date(start);
           });
@@ -147,6 +149,19 @@ router.post("/create", async (req, res) => {
       return res
         .status(500)
         .json({ error: "Nie udało się zarezerwować spotkania." });
+    }
+
+    // Save visitor to mailing list via contact_submissions
+    try {
+      await db.insert(contactSubmissionsTable).values({
+        name,
+        email,
+        phone: phone ?? null,
+        message: `Temat: ${topic}`,
+        type: "booking",
+      });
+    } catch (dbErr) {
+      logger.warn({ err: dbErr }, "mailing list save failed (non-fatal)");
     }
 
     return res.json({

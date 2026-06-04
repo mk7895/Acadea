@@ -341,7 +341,7 @@ export default function Booking() {
                 </p>
                 <div className="bg-primary/6 rounded-2xl px-6 py-4 mb-6 inline-block">
                   <p className="font-bold text-primary capitalize text-lg">{confirmedDate}</p>
-                  <p className="text-sm text-gray-500 mt-1">Konsultacja z doradcą ACADEA · 60 minut</p>
+                  <p className="text-sm text-gray-500 mt-1">Konsultacja z doradcą ACADEA</p>
                 </div>
                 <p className="text-sm text-gray-400 mb-8">
                   Potwierdzenie zostało wysłane na <strong>{form.email}</strong>.<br />
@@ -366,7 +366,7 @@ export default function Booking() {
         {/* Reassurance row */}
         {step < 3 && (
           <div className="flex flex-wrap justify-center gap-6 mt-8 text-sm text-gray-400">
-            {["Bezpłatna konsultacja", "60 minut z doradcą", "Google Meet"].map((item) => (
+            {["Bezpłatna konsultacja", "Google Meet", "Bez zobowiązań"].map((item) => (
               <span key={item} className="flex items-center gap-2">
                 <CheckCircle2 size={14} className="text-primary" /> {item}
               </span>
