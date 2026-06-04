@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: contact
+    description: Contact form submissions
 paths:
   /healthz:
     get:
@@ -24,6 +26,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /contact:
+    post:
+      operationId: submitContact
+      tags: [contact]
+      summary: Submit contact form
+      description: Store a contact/consultation request or mentor application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactFormInput"
+      responses:
+        "201":
+          description: Submission stored successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactSubmission"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +60,58 @@ components:
           type: string
       required:
         - status
-
+    ContactFormInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        message:
+          type: string
+          minLength: 10
+        type:
+          type: string
+          enum: [consultation, mentor, scholarship]
+          default: consultation
+      required:
+        - name
+        - email
+        - message
+    ContactSubmission:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        message:
+          type: string
+        type:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - email
+        - message
+        - type
+        - createdAt
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

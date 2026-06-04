@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { Link } from "wouter";
 import { ArrowRight, BookOpen, Clock, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -74,12 +74,12 @@ const articles = [
 
 const categories = ["Wszystkie", "Kraje", "Poradniki", "Stypendia"];
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 24 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
