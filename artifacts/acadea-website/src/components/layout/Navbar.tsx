@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import logo from "@assets/Acadea_Logo_-_Horizontal_Style-2_1780602818262.png";
+import logoGreen from "@/assets/logo-green.png";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -42,7 +42,11 @@ export function Navbar() {
     >
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 z-50 relative">
-          <img src={logo} alt="ACADEA Logo" className="h-8 md:h-10 w-auto" />
+          <img
+            src={isScrolled ? logoGreen : logoGreen}
+            alt="ACADEA Logo"
+            className="h-9 md:h-11 w-auto"
+          />
         </Link>
 
         {/* Desktop Nav */}

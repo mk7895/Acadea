@@ -11,17 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import { Link } from "wouter";
-
-const destinations = [
-  { name: "Wielka Brytania", flag: "🇬🇧", uni: "Oxford · Imperial · LSE" },
-  { name: "Holandia", flag: "🇳🇱", uni: "TU Delft · Leiden · UvA" },
-  { name: "Niemcy", flag: "🇩🇪", uni: "TU Munich · HU Berlin" },
-  { name: "Irlandia", flag: "🇮🇪", uni: "UCD · Trinity College" },
-  { name: "Francja", flag: "🇫🇷", uni: "Sciences Po · HEC Paris" },
-  { name: "Szwajcaria", flag: "🇨🇭", uni: "ETH Zurich · EPFL" },
-  { name: "Szwecja", flag: "🇸🇪", uni: "KTH · Lund University" },
-  { name: "Dania", flag: "🇩🇰", uni: "DTU · Copenhagen Uni" },
-];
+import { GlobeSection } from "@/components/GlobeSection";
 
 const services = [
   {
@@ -134,32 +124,14 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Right — destination cards grid */}
+            {/* Right — interactive globe */}
             <motion.div
               initial={{ opacity: 0, x: 40 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.9, ease: "easeOut", delay: 0.15 }}
-              className="grid grid-cols-2 gap-3"
+              transition={{ duration: 0.9, ease: "easeOut", delay: 0.2 }}
+              className="hidden lg:flex items-center justify-center"
             >
-              {destinations.map((d, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + i * 0.07, duration: 0.5 }}
-                  className={`rounded-2xl p-5 border border-gray-100 hover:border-primary/30 hover:shadow-md transition-all cursor-default group ${
-                    i === 0 ? "bg-primary text-white border-primary" : "bg-white"
-                  }`}
-                >
-                  <span className="text-2xl mb-3 block">{d.flag}</span>
-                  <h3 className={`font-bold text-sm mb-1 ${i === 0 ? "text-white" : "text-gray-900"}`}>
-                    {d.name}
-                  </h3>
-                  <p className={`text-xs leading-relaxed ${i === 0 ? "text-white/70" : "text-gray-400"}`}>
-                    {d.uni}
-                  </p>
-                </motion.div>
-              ))}
+              <GlobeSection />
             </motion.div>
           </div>
         </div>
