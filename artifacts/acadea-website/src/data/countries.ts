@@ -1,0 +1,556 @@
+export type Uni = { name: string; slug: string; blurb: string };
+
+export type Country = {
+  slug: string;
+  name: string;
+  flag: string;
+  code: string; // flagcdn 2-letter code
+  iso: string[]; // ISO 3166-1 numeric codes used by the globe topology
+  tagline: string;
+  intro: string;
+  highlights: { label: string; value: string }[];
+  unis: Uni[];
+};
+
+export const countries: Country[] = [
+  {
+    slug: "wielka-brytania",
+    name: "Wielka Brytania",
+    flag: "🇬🇧",
+    code: "gb",
+    iso: ["826"],
+    tagline: "Oksford, Cambridge i prestiżowe uczelnie Russell Group.",
+    intro:
+      "Wielka Brytania to kolebka nowoczesnego uniwersytetu i jeden z najbardziej rozpoznawalnych kierunków studiów na świecie. Trzyletnie studia licencjackie, silny nacisk na samodzielną pracę i globalna renoma dyplomu przyciągają najambitniejszych.",
+    highlights: [
+      { label: "System", value: "Licencjat 3 lata" },
+      { label: "Język", value: "angielski" },
+      { label: "Aplikacja", value: "UCAS (do stycznia)" },
+    ],
+    unis: [
+      { name: "University of Oxford", slug: "oxford", blurb: "Najstarszy uniwersytet w świecie anglojęzycznym, słynący z systemu tutorialowego i kolegiów." },
+      { name: "Imperial College London", slug: "imperial", blurb: "Ścisła czołówka w naukach przyrodniczych, inżynierii, medycynie i biznesie technologicznym." },
+      { name: "London School of Economics", slug: "lse", blurb: "Światowy lider nauk społecznych, ekonomii i politologii w sercu Londynu." },
+      { name: "UCL", slug: "ucl", blurb: "Wszechstronny uniwersytet badawczy z silnymi kierunkami od medycyny po sztukę." },
+    ],
+  },
+  {
+    slug: "holandia",
+    name: "Holandia",
+    flag: "🇳🇱",
+    code: "nl",
+    iso: ["528"],
+    tagline: "Praktyczne podejście i innowacyjne programy po angielsku.",
+    intro:
+      "Holandia oferuje jedne z najlepszych w Europie programów anglojęzycznych i praktyczne, projektowe podejście do nauki. Jest przyjazna międzynarodowym studentom i świetnie skomunikowana z resztą kontynentu.",
+    highlights: [
+      { label: "System", value: "Licencjat 3 lata" },
+      { label: "Język", value: "angielski" },
+      { label: "Aplikacja", value: "Studielink (do maja)" },
+    ],
+    unis: [
+      { name: "TU Delft", slug: "tu-delft", blurb: "Najlepsza politechnika w kraju, ceniona za inżynierię i architekturę." },
+      { name: "Universiteit Leiden", slug: "leiden", blurb: "Najstarszy holenderski uniwersytet, mocny w prawie, humanistyce i naukach ścisłych." },
+      { name: "Universiteit van Amsterdam", slug: "uva", blurb: "Największy uniwersytet w Amsterdamie z szeroką ofertą po angielsku." },
+      { name: "Utrecht University", slug: "utrecht", blurb: "Czołowy ośrodek badawczy z renomą w naukach o życiu i zrównoważonym rozwoju." },
+    ],
+  },
+  {
+    slug: "niemcy",
+    name: "Niemcy",
+    flag: "🇩🇪",
+    code: "de",
+    iso: ["276"],
+    tagline: "Najwyższy poziom kształcenia, często bez czesnego.",
+    intro:
+      "Niemcy łączą wysoką jakość kształcenia z symbolicznym lub zerowym czesnym na uczelniach publicznych. To silne kierunki inżynieryjne i ścisłe oraz prężny rynek pracy tuż za granicą.",
+    highlights: [
+      { label: "System", value: "Licencjat 3–3,5 roku" },
+      { label: "Język", value: "niemiecki / angielski" },
+      { label: "Koszty", value: "często bez czesnego" },
+    ],
+    unis: [
+      { name: "TU Munich", slug: "tu-munich", blurb: "Najlepsza niemiecka uczelnia techniczna, blisko przemysłu i startupów." },
+      { name: "Humboldt Universität Berlin", slug: "humboldt", blurb: "Historyczny berliński uniwersytet, kolebka nowoczesnego modelu badawczego." },
+      { name: "Universität Heidelberg", slug: "heidelberg", blurb: "Najstarszy uniwersytet w Niemczech, znany z medycyny i nauk przyrodniczych." },
+      { name: "KIT Karlsruhe", slug: "kit", blurb: "Połączenie uniwersytetu i instytutu badawczego — czołówka inżynierii." },
+    ],
+  },
+  {
+    slug: "irlandia",
+    name: "Irlandia",
+    flag: "🇮🇪",
+    code: "ie",
+    iso: ["372"],
+    tagline: "Anglojęzyczny kraj UE i europejska siedziba gigantów tech.",
+    intro:
+      "Irlandia to anglojęzyczny kraj Unii Europejskiej i europejska siedziba gigantów technologicznych. Studentów przyciąga przyjazne środowisko i mocne powiązania uczelni z biznesem.",
+    highlights: [
+      { label: "System", value: "Licencjat 3–4 lata" },
+      { label: "Język", value: "angielski" },
+      { label: "Aplikacja", value: "CAO" },
+    ],
+    unis: [
+      { name: "University College Dublin", slug: "ucd", blurb: "Największy uniwersytet w Irlandii z silnym profilem międzynarodowym." },
+      { name: "Trinity College Dublin", slug: "trinity", blurb: "Najbardziej prestiżowa irlandzka uczelnia z wielowiekową tradycją." },
+      { name: "University College Cork", slug: "ucc", blurb: "Ceniony ośrodek w Cork, mocny w naukach o życiu i biznesie." },
+    ],
+  },
+  {
+    slug: "francja",
+    name: "Francja",
+    flag: "🇫🇷",
+    code: "fr",
+    iso: ["250"],
+    tagline: "Elitarne Grandes Écoles i bogata tradycja akademicka.",
+    intro:
+      "Francja oferuje elitarne Grandes Écoles i bogatą tradycję akademicką. Rośnie liczba programów prowadzonych po angielsku, zwłaszcza w biznesie i naukach ścisłych.",
+    highlights: [
+      { label: "System", value: "Licence / Grande École" },
+      { label: "Język", value: "francuski / angielski" },
+      { label: "Aplikacja", value: "Parcoursup / własne" },
+    ],
+    unis: [
+      { name: "Sciences Po", slug: "sciences-po", blurb: "Czołowa szkoła nauk politycznych i stosunków międzynarodowych." },
+      { name: "HEC Paris", slug: "hec", blurb: "Najlepsza szkoła biznesu w Europie kontynentalnej." },
+      { name: "Université PSL", slug: "psl", blurb: "Związek elitarnych uczelni paryskich z czołówki rankingów." },
+      { name: "École Polytechnique", slug: "polytechnique", blurb: "Najbardziej prestiżowa francuska szkoła inżynierska." },
+    ],
+  },
+  {
+    slug: "szwajcaria",
+    name: "Szwajcaria",
+    flag: "🇨🇭",
+    code: "ch",
+    iso: ["756"],
+    tagline: "Prestiż, bezpieczeństwo i bliskość międzynarodowych korporacji.",
+    intro:
+      "Szwajcaria łączy światowy prestiż z bezpieczeństwem i bliskością międzynarodowych korporacji. Uczelnie publiczne oferują najwyższą jakość za umiarkowane czesne.",
+    highlights: [
+      { label: "System", value: "Licencjat 3 lata" },
+      { label: "Język", value: "ang. / niem. / fr." },
+      { label: "Koszty", value: "niskie czesne" },
+    ],
+    unis: [
+      { name: "ETH Zürich", slug: "eth", blurb: "Najlepsza uczelnia techniczna Europy kontynentalnej." },
+      { name: "EPFL Lausanne", slug: "epfl", blurb: "Francuskojęzyczna siostra ETH, czołówka inżynierii i IT." },
+      { name: "Universität Zürich", slug: "uzh", blurb: "Największy uniwersytet w Szwajcarii, mocny w medycynie i prawie." },
+      { name: "Universität Basel", slug: "basel", blurb: "Najstarszy szwajcarski uniwersytet, renomowany w naukach o życiu." },
+    ],
+  },
+  {
+    slug: "szwecja",
+    name: "Szwecja",
+    flag: "🇸🇪",
+    code: "se",
+    iso: ["752"],
+    tagline: "Innowacyjność i darmowe studia dla obywateli UE.",
+    intro:
+      "Szwecja stawia na pracę zespołową, innowacyjność i zrównoważony rozwój. Studia dla obywateli UE są bezpłatne, a oferta anglojęzyczna bardzo szeroka.",
+    highlights: [
+      { label: "System", value: "Licencjat 3 lata" },
+      { label: "Język", value: "angielski" },
+      { label: "Koszty", value: "bezpłatne dla UE" },
+    ],
+    unis: [
+      { name: "KTH Royal Institute of Technology", slug: "kth", blurb: "Wiodąca szwedzka uczelnia techniczna w Sztokholmie." },
+      { name: "Lund University", slug: "lund", blurb: "Jeden z najstarszych i najbardziej wszechstronnych uniwersytetów w regionie." },
+      { name: "Uppsala University", slug: "uppsala", blurb: "Najstarszy uniwersytet w Skandynawii o silnej tradycji badawczej." },
+    ],
+  },
+  {
+    slug: "dania",
+    name: "Dania",
+    flag: "🇩🇰",
+    code: "dk",
+    iso: ["208"],
+    tagline: "Nowoczesność, design i wysokie stypendia.",
+    intro:
+      "Dania to nowoczesność, design i jedne z najwyższych standardów życia na świecie. Studia są bezpłatne dla obywateli UE, a oferta po angielsku — bogata.",
+    highlights: [
+      { label: "System", value: "Licencjat 3 lata" },
+      { label: "Język", value: "angielski" },
+      { label: "Koszty", value: "bezpłatne dla UE" },
+    ],
+    unis: [
+      { name: "Technical Univ. of Denmark", slug: "dtu", blurb: "Czołowa duńska politechnika z silnymi związkami z przemysłem." },
+      { name: "Univ. of Copenhagen", slug: "copenhagen", blurb: "Największy i najstarszy uniwersytet w Danii." },
+      { name: "Aarhus University", slug: "aarhus", blurb: "Nowoczesny ośrodek badawczy z szeroką ofertą anglojęzyczną." },
+    ],
+  },
+  {
+    slug: "hiszpania",
+    name: "Hiszpania",
+    flag: "🇪🇸",
+    code: "es",
+    iso: ["724"],
+    tagline: "Doskonałe szkoły biznesowe i ciepły klimat.",
+    intro:
+      "Hiszpania to doskonałe szkoły biznesowe, bogata kultura i przyjazny klimat. Z roku na rok rośnie oferta programów prowadzonych po angielsku.",
+    highlights: [
+      { label: "System", value: "Grado 4 lata" },
+      { label: "Język", value: "hiszpański / angielski" },
+      { label: "Atut", value: "ciepły klimat" },
+    ],
+    unis: [
+      { name: "IE University", slug: "ie", blurb: "Międzynarodowa uczelnia znana z biznesu i innowacji." },
+      { name: "Univ. Complutense de Madrid", slug: "complutense", blurb: "Jeden z największych i najstarszych uniwersytetów w Hiszpanii." },
+      { name: "Universitat de Barcelona", slug: "ub", blurb: "Czołowy ośrodek badawczy w jednym z najpiękniejszych miast Europy." },
+    ],
+  },
+  {
+    slug: "wlochy",
+    name: "Włochy",
+    flag: "🇮🇹",
+    code: "it",
+    iso: ["380"],
+    tagline: "Sztuka, design i najstarsze uniwersytety świata.",
+    intro:
+      "Włochy łączą najstarsze uniwersytety świata ze sztuką, designem i doskonałą kuchnią. Atrakcyjne czesne i regionalne stypendia czynią je przystępnym wyborem.",
+    highlights: [
+      { label: "System", value: "Laurea 3 lata" },
+      { label: "Język", value: "włoski / angielski" },
+      { label: "Koszty", value: "niskie + stypendia" },
+    ],
+    unis: [
+      { name: "Università di Bologna", slug: "bologna", blurb: "Najstarszy uniwersytet na świecie, działający od 1088 roku." },
+      { name: "Politecnico di Milano", slug: "polimi", blurb: "Najlepsza włoska politechnika, czołówka w designie i inżynierii." },
+      { name: "Università La Sapienza", slug: "sapienza", blurb: "Jeden z największych uniwersytetów w Europie, mocny w naukach ścisłych." },
+    ],
+  },
+  {
+    slug: "austria",
+    name: "Austria",
+    flag: "🇦🇹",
+    code: "at",
+    iso: ["40"],
+    tagline: "Klasyczna edukacja w historycznych miastach.",
+    intro:
+      "Austria oferuje klasyczną edukację w pięknych, historycznych miastach i niskie czesne. To wysoka jakość życia w samym sercu Europy.",
+    highlights: [
+      { label: "System", value: "Licencjat 3 lata" },
+      { label: "Język", value: "niemiecki / angielski" },
+      { label: "Koszty", value: "niskie czesne" },
+    ],
+    unis: [
+      { name: "Universität Wien", slug: "uni-wien", blurb: "Najstarszy i największy uniwersytet w krajach niemieckojęzycznych." },
+      { name: "TU Wien", slug: "tu-wien", blurb: "Wiodąca austriacka uczelnia techniczna." },
+      { name: "Wirtschaftsuniversität Wien", slug: "wu-wien", blurb: "Jedna z największych szkół biznesu w Europie." },
+    ],
+  },
+  {
+    slug: "belgia",
+    name: "Belgia",
+    flag: "🇧🇪",
+    code: "be",
+    iso: ["56"],
+    tagline: "Serce Europy i wielojęzyczne kampusy.",
+    intro:
+      "Belgia to serce Europy, wielojęzyczność i znakomita jakość kształcenia przy umiarkowanych kosztach. Idealna dla osób myślących o karierze w instytucjach UE.",
+    highlights: [
+      { label: "System", value: "Licencjat 3 lata" },
+      { label: "Język", value: "ang. / niderl. / fr." },
+      { label: "Atut", value: "centrum UE" },
+    ],
+    unis: [
+      { name: "KU Leuven", slug: "ku-leuven", blurb: "Najstarszy katolicki uniwersytet na świecie i czołówka badań w Europie." },
+      { name: "Université Libre de Bruxelles", slug: "ulb", blurb: "Frankofoński uniwersytet w Brukseli o silnym profilu badawczym." },
+      { name: "Ghent University", slug: "ghent", blurb: "Wszechstronny uniwersytet z mocnymi naukami o życiu." },
+    ],
+  },
+  {
+    slug: "norwegia",
+    name: "Norwegia",
+    flag: "🇳🇴",
+    code: "no",
+    iso: ["578"],
+    tagline: "Bezpłatne studia i wysoka jakość życia.",
+    intro:
+      "Norwegia oferuje wysoką jakość życia i mocne kierunki techniczne oraz morskie. Wiele programów publicznych pozostaje bezpłatnych lub bardzo tanich.",
+    highlights: [
+      { label: "System", value: "Licencjat 3 lata" },
+      { label: "Język", value: "angielski / norweski" },
+      { label: "Koszty", value: "niskie / bezpłatne" },
+    ],
+    unis: [
+      { name: "University of Oslo", slug: "oslo", blurb: "Największy i najstarszy uniwersytet w Norwegii." },
+      { name: "NTNU Trondheim", slug: "ntnu", blurb: "Czołowy ośrodek techniczny w Trondheim." },
+      { name: "BI Norwegian Business School", slug: "bi", blurb: "Najbardziej znana norweska szkoła biznesu." },
+    ],
+  },
+  {
+    slug: "czechy",
+    name: "Czechy",
+    flag: "🇨🇿",
+    code: "cz",
+    iso: ["203"],
+    tagline: "Mocna medycyna i kierunki techniczne blisko Polski.",
+    intro:
+      "Czechy oferują wysoki poziom medycyny i kierunków technicznych w przystępnych cenach, a do tego tuż za polską granicą. Bliskość kulturowa ułatwia aklimatyzację.",
+    highlights: [
+      { label: "System", value: "Licencjat 3 lata" },
+      { label: "Język", value: "angielski / czeski" },
+      { label: "Koszty", value: "przystępne" },
+    ],
+    unis: [
+      { name: "Charles University Prague", slug: "charles", blurb: "Najstarszy uniwersytet w Europie Środkowej, ceniony w medycynie." },
+      { name: "Czech Technical University", slug: "ctu", blurb: "Wiodąca czeska uczelnia techniczna w Pradze." },
+    ],
+  },
+  {
+    slug: "portugalia",
+    name: "Portugalia",
+    flag: "🇵🇹",
+    code: "pt",
+    iso: ["620"],
+    tagline: "Przystępne koszty i łagodny klimat.",
+    intro:
+      "Portugalia łączy przystępne koszty życia, łagodny klimat i rosnącą ofertę programów po angielsku. To jeden z najbezpieczniejszych krajów w Europie.",
+    highlights: [
+      { label: "System", value: "Licenciatura 3 lata" },
+      { label: "Język", value: "portugalski / angielski" },
+      { label: "Atut", value: "łagodny klimat" },
+    ],
+    unis: [
+      { name: "Universidade de Lisboa", slug: "lisboa", blurb: "Największy portugalski uniwersytet z szeroką ofertą kierunków." },
+      { name: "Universidade do Porto", slug: "porto", blurb: "Czołowy ośrodek badawczy na północy kraju." },
+      { name: "Nova University Lisbon", slug: "nova", blurb: "Nowoczesny uniwersytet znany z biznesu i nauk ścisłych." },
+    ],
+  },
+  {
+    slug: "finlandia",
+    name: "Finlandia",
+    flag: "🇫🇮",
+    code: "fi",
+    iso: ["246"],
+    tagline: "Światowy lider edukacji i innowacji.",
+    intro:
+      "Finlandia to światowy lider edukacji, innowacji i jakości życia. Nowoczesne kampusy i programy anglojęzyczne czynią ją coraz popularniejszym kierunkiem.",
+    highlights: [
+      { label: "System", value: "Licencjat 3 lata" },
+      { label: "Język", value: "angielski" },
+      { label: "Atut", value: "topowa edukacja" },
+    ],
+    unis: [
+      { name: "Aalto University", slug: "aalto", blurb: "Połączenie techniki, biznesu i designu — prawdziwa kuźnia startupów." },
+      { name: "University of Helsinki", slug: "helsinki", blurb: "Największy i najbardziej wszechstronny fiński uniwersytet." },
+      { name: "Tampere University", slug: "tampere", blurb: "Mocny w technologii i naukach o zdrowiu." },
+    ],
+  },
+  {
+    slug: "kanada",
+    name: "Kanada",
+    flag: "🇨🇦",
+    code: "ca",
+    iso: ["124"],
+    tagline: "Rozległe kampusy i ścieżka pobytu po studiach.",
+    intro:
+      "Kanada oferuje rozległe kampusy, ogromne możliwości badawcze i otwartą politykę imigracyjną dla absolwentów. To wymarzony kierunek dla osób myślących o karierze za oceanem.",
+    highlights: [
+      { label: "System", value: "Licencjat 4 lata" },
+      { label: "Język", value: "angielski / francuski" },
+      { label: "Po studiach", value: "ścieżka pobytu" },
+    ],
+    unis: [
+      { name: "University of Toronto", slug: "toronto", blurb: "Najwyżej notowany uniwersytet w Kanadzie, lider badań." },
+      { name: "McGill University", slug: "mcgill", blurb: "Anglojęzyczna perła Montrealu o globalnej renomie." },
+      { name: "UBC Vancouver", slug: "ubc", blurb: "Czołowy uniwersytet zachodniego wybrzeża w Vancouver." },
+      { name: "University of Waterloo", slug: "waterloo", blurb: "Słynie z informatyki, inżynierii i programów co-op." },
+    ],
+  },
+  {
+    slug: "usa",
+    name: "USA",
+    flag: "🇺🇸",
+    code: "us",
+    iso: ["840"],
+    tagline: "Największy wybór uczelni i hojne stypendia.",
+    intro:
+      "Stany Zjednoczone to największy wybór uczelni na świecie, hojne stypendia i elastyczne programy w modelu liberal arts. Dyplom amerykańskiej uczelni otwiera drzwi globalnie.",
+    highlights: [
+      { label: "System", value: "Bachelor 4 lata" },
+      { label: "Język", value: "angielski" },
+      { label: "Aplikacja", value: "Common App + SAT/ACT" },
+    ],
+    unis: [
+      { name: "MIT", slug: "mit", blurb: "Światowy lider techniki, nauki i przedsiębiorczości." },
+      { name: "Harvard University", slug: "harvard", blurb: "Najbardziej rozpoznawalny uniwersytet na świecie." },
+      { name: "Stanford University", slug: "stanford", blurb: "Serce Doliny Krzemowej i globalnej innowacji." },
+      { name: "Columbia University", slug: "columbia", blurb: "Uczelnia Ivy League w sercu Nowego Jorku." },
+      { name: "NYU", slug: "nyu", blurb: "Globalny uniwersytet z kampusami na całym świecie." },
+    ],
+  },
+  {
+    slug: "chiny",
+    name: "Chiny",
+    flag: "🇨🇳",
+    code: "cn",
+    iso: ["156"],
+    tagline: "Rosnąca potęga akademicka i stypendia rządowe.",
+    intro:
+      "Chiny szybko awansują w światowych rankingach i oferują hojne stypendia rządowe dla zagranicznych studentów. To okno na najszybciej rozwijającą się gospodarkę świata.",
+    highlights: [
+      { label: "System", value: "Licencjat 4 lata" },
+      { label: "Język", value: "angielski / chiński" },
+      { label: "Stypendia", value: "rządowe (CSC)" },
+    ],
+    unis: [
+      { name: "Peking University", slug: "peking", blurb: "Najbardziej prestiżowy chiński uniwersytet w Pekinie." },
+      { name: "Tsinghua University", slug: "tsinghua", blurb: "Czołówka światowej inżynierii i informatyki." },
+      { name: "Fudan University", slug: "fudan", blurb: "Wiodący uniwersytet w Szanghaju, mocny w biznesie." },
+      { name: "Zhejiang University", slug: "zhejiang", blurb: "Jeden z najlepszych i najbardziej wszechstronnych w Chinach." },
+    ],
+  },
+  {
+    slug: "korea-poludniowa",
+    name: "Korea Południowa",
+    flag: "🇰🇷",
+    code: "kr",
+    iso: ["410"],
+    tagline: "Technologiczna potęga z nowoczesnymi kampusami.",
+    intro:
+      "Korea Południowa to technologiczna potęga z nowoczesnymi kampusami i rosnącą liczbą programów po angielsku. Kraj K-popu, gier i innowacji przyciąga coraz więcej studentów.",
+    highlights: [
+      { label: "System", value: "Licencjat 4 lata" },
+      { label: "Język", value: "angielski / koreański" },
+      { label: "Stypendia", value: "liczne" },
+    ],
+    unis: [
+      { name: "Seoul National University", slug: "snu", blurb: "Najbardziej prestiżowy uniwersytet w Korei." },
+      { name: "KAIST", slug: "kaist", blurb: "Czołowa uczelnia naukowo-techniczna kraju." },
+      { name: "Yonsei University", slug: "yonsei", blurb: "Renomowany prywatny uniwersytet w Seulu." },
+      { name: "POSTECH", slug: "postech", blurb: "Elitarna, kameralna uczelnia badawcza." },
+    ],
+  },
+  {
+    slug: "singapur",
+    name: "Singapur",
+    flag: "🇸🇬",
+    code: "sg",
+    iso: ["702"],
+    tagline: "Globalny węzeł edukacji w sercu Azji.",
+    intro:
+      "Singapur to globalny węzeł edukacji i biznesu, łączący zachodnie standardy z azjatycką dynamiką. Bezpieczne, anglojęzyczne i niezwykle nowoczesne miasto-państwo.",
+    highlights: [
+      { label: "System", value: "Licencjat 3–4 lata" },
+      { label: "Język", value: "angielski" },
+      { label: "Renoma", value: "topowa w Azji" },
+    ],
+    unis: [
+      { name: "National University of Singapore", slug: "nus", blurb: "Najwyżej notowany uniwersytet w Azji." },
+      { name: "Nanyang Technological University", slug: "ntu", blurb: "Czołówka inżynierii i nauk ścisłych." },
+      { name: "SMU", slug: "smu", blurb: "Uczelnia o profilu biznesowym w stylu amerykańskim." },
+    ],
+  },
+  {
+    slug: "japonia",
+    name: "Japonia",
+    flag: "🇯🇵",
+    code: "jp",
+    iso: ["392"],
+    tagline: "Tradycja, technologia i stypendia MEXT.",
+    intro:
+      "Japonia łączy tradycję z technologiczną nowoczesnością i oferuje hojne stypendia rządowe MEXT. To unikalne doświadczenie kulturowe i akademickie.",
+    highlights: [
+      { label: "System", value: "Licencjat 4 lata" },
+      { label: "Język", value: "angielski / japoński" },
+      { label: "Stypendia", value: "MEXT" },
+    ],
+    unis: [
+      { name: "University of Tokyo", slug: "tokyo", blurb: "Najbardziej prestiżowy uniwersytet w Japonii." },
+      { name: "Kyoto University", slug: "kyoto", blurb: "Kuźnia noblistów, mocna w naukach podstawowych." },
+      { name: "Waseda University", slug: "waseda", blurb: "Czołowy prywatny uniwersytet z dużą liczbą obcokrajowców." },
+      { name: "Osaka University", slug: "osaka", blurb: "Wiodący ośrodek badawczy zachodniej Japonii." },
+    ],
+  },
+  {
+    slug: "australia",
+    name: "Australia",
+    flag: "🇦🇺",
+    code: "au",
+    iso: ["36", "036"],
+    tagline: "Wysoka jakość życia i praca po studiach.",
+    intro:
+      "Australia oferuje wysoką jakość życia, przyjazne wizy studenckie i możliwość pracy po studiach. Świetny wybór dla osób ceniących równowagę między nauką a stylem życia.",
+    highlights: [
+      { label: "System", value: "Licencjat 3 lata" },
+      { label: "Język", value: "angielski" },
+      { label: "Po studiach", value: "wiza pracy" },
+    ],
+    unis: [
+      { name: "University of Melbourne", slug: "melbourne", blurb: "Najwyżej notowany uniwersytet w Australii." },
+      { name: "University of Sydney", slug: "sydney", blurb: "Prestiżowa uczelnia z silnym profilem międzynarodowym." },
+      { name: "ANU", slug: "anu", blurb: "Wiodący ośrodek badawczy w stolicy kraju." },
+      { name: "UNSW Sydney", slug: "unsw", blurb: "Mocny w inżynierii, biznesie i naukach ścisłych." },
+    ],
+  },
+  {
+    slug: "malta",
+    name: "Malta",
+    flag: "🇲🇹",
+    code: "mt",
+    iso: ["470"],
+    tagline: "Anglojęzyczny kraj UE nad Morzem Śródziemnym.",
+    intro:
+      "Malta to anglojęzyczny kraj Unii Europejskiej z ciepłym klimatem i kameralnym, przyjaznym środowiskiem akademickim. Idealna dla osób szukających spokojnego startu za granicą.",
+    highlights: [
+      { label: "System", value: "Licencjat 3 lata" },
+      { label: "Język", value: "angielski" },
+      { label: "Atut", value: "klimat śródziemnomorski" },
+    ],
+    unis: [
+      { name: "University of Malta", slug: "uni-malta", blurb: "Główny i najstarszy uniwersytet na wyspie." },
+      { name: "MCAST", slug: "mcast", blurb: "Uczelnia o profilu praktyczno-zawodowym." },
+      { name: "Malta Business School", slug: "mbs", blurb: "Szkoła nastawiona na biznes i zarządzanie." },
+    ],
+  },
+  {
+    slug: "zea",
+    name: "ZEA",
+    flag: "🇦🇪",
+    code: "ae",
+    iso: ["784"],
+    tagline: "Filie światowych uczelni i hojne stypendia.",
+    intro:
+      "Zjednoczone Emiraty Arabskie to nowoczesne kampusy filii światowych uczelni i hojne stypendia. Dynamiczny, międzynarodowy hub na styku kultur.",
+    highlights: [
+      { label: "System", value: "Bachelor 4 lata" },
+      { label: "Język", value: "angielski" },
+      { label: "Atut", value: "filie światowych uczelni" },
+    ],
+    unis: [
+      { name: "NYU Abu Dhabi", slug: "nyuad", blurb: "Selektywny kampus NYU z pełnymi stypendiami." },
+      { name: "Khalifa University", slug: "khalifa", blurb: "Czołowa uczelnia techniczno-badawcza w regionie." },
+      { name: "American University of Sharjah", slug: "aus", blurb: "Amerykański model studiów w Sharjah." },
+    ],
+  },
+  {
+    slug: "hongkong",
+    name: "Hongkong",
+    flag: "🇭🇰",
+    code: "hk",
+    iso: ["344"],
+    tagline: "Brytyjski system i wykłady po angielsku.",
+    intro:
+      "Hongkong łączy azjatycką dynamikę z brytyjskim systemem edukacji i wykładami po angielsku. To jeden z najważniejszych ośrodków finansowych i akademickich Azji.",
+    highlights: [
+      { label: "System", value: "Licencjat 4 lata" },
+      { label: "Język", value: "angielski" },
+      { label: "Renoma", value: "topowa w Azji" },
+    ],
+    unis: [
+      { name: "HKU", slug: "hku", blurb: "Najstarszy i najbardziej prestiżowy uniwersytet w Hongkongu." },
+      { name: "HKUST", slug: "hkust", blurb: "Młoda uczelnia z czołówki rankingów w naukach ścisłych i biznesie." },
+      { name: "Chinese University of Hong Kong", slug: "cuhk", blurb: "Wszechstronny uniwersytet o silnym profilu badawczym." },
+      { name: "City University of Hong Kong", slug: "cityu", blurb: "Nowoczesna uczelnia mocna w inżynierii i mediach." },
+    ],
+  },
+];
+
+export const countryBySlug: Record<string, Country> = Object.fromEntries(
+  countries.map((c) => [c.slug, c]),
+);
+
+export const countryByIso: Record<string, Country> = Object.fromEntries(
+  countries.flatMap((c) => c.iso.map((iso) => [iso, c])),
+);

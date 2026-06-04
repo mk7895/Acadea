@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import logo from "@/assets/logo-white.png";
-import { Facebook, Instagram, Mail, MapPin, Phone, Heart } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Mail, Phone, Heart } from "lucide-react";
 
 export function Footer() {
   return (
@@ -9,17 +9,38 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           <div className="space-y-6">
             <Link href="/">
-              <img src={logo} alt="ACADEA Logo" className="h-16 md:h-20 w-auto mb-2" />
+              <img src={logo} alt="ACADEA Logo" className="h-20 md:h-24 w-auto mb-2" />
             </Link>
             <p className="text-gray-300 text-sm leading-relaxed max-w-sm">
               Aplikacja na studia za granicą — z nami to proste. Pomagamy polskim uczniom dostać się na wymarzone uczelnie w ponad 15 krajach.
             </p>
             <div className="flex items-center gap-4 text-white">
-              <a href="#" className="hover:text-accent transition-colors bg-white/10 p-2 rounded-full">
+              <a
+                href="https://www.facebook.com/acadeaorg/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
+                className="hover:text-accent transition-colors bg-white/10 p-2 rounded-full"
+              >
                 <Facebook size={20} />
               </a>
-              <a href="#" className="hover:text-accent transition-colors bg-white/10 p-2 rounded-full">
+              <a
+                href="https://www.instagram.com/acadeaorg?igsh=NmFwcHUwZXI1M2Y5&utm_source=qr"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="hover:text-accent transition-colors bg-white/10 p-2 rounded-full"
+              >
                 <Instagram size={20} />
+              </a>
+              <a
+                href="https://www.linkedin.com/company/acadeaorg"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="LinkedIn"
+                className="hover:text-accent transition-colors bg-white/10 p-2 rounded-full"
+              >
+                <Linkedin size={20} />
               </a>
             </div>
           </div>

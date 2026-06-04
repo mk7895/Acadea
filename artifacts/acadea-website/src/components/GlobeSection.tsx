@@ -2,6 +2,8 @@ import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { geoOrthographic, geoPath, geoGraticule, type GeoPermissibleObjects } from "d3-geo";
 import { feature } from "topojson-client";
 import topologyJson from "world-atlas/countries-110m.json";
+import { Link, useLocation } from "wouter";
+import { countryByIso } from "@/data/countries";
 
 type CountryFeature = {
   id?: string | number;
@@ -10,37 +12,8 @@ type CountryFeature = {
   properties: Record<string, unknown>;
 };
 
-type CountryData = { name: string; flag: string; unis: string[] };
-
 /** ISO 3166-1 numeric codes → country info */
-const ACADEA: Record<string, CountryData> = {
-  "826": { name: "Wielka Brytania", flag: "🇬🇧", unis: ["University of Oxford", "Imperial College London", "London School of Economics", "UCL"] },
-  "528": { name: "Holandia", flag: "🇳🇱", unis: ["TU Delft", "Universiteit Leiden", "Universiteit van Amsterdam", "Utrecht University"] },
-  "276": { name: "Niemcy", flag: "🇩🇪", unis: ["TU Munich", "Humboldt Universität Berlin", "Universität Heidelberg", "KIT Karlsruhe"] },
-  "372": { name: "Irlandia", flag: "🇮🇪", unis: ["University College Dublin", "Trinity College Dublin", "University College Cork"] },
-  "250": { name: "Francja", flag: "🇫🇷", unis: ["Sciences Po", "HEC Paris", "Université PSL", "École Polytechnique"] },
-  "756": { name: "Szwajcaria", flag: "🇨🇭", unis: ["ETH Zürich", "EPFL Lausanne", "Universität Zürich", "Universität Basel"] },
-  "752": { name: "Szwecja", flag: "🇸🇪", unis: ["KTH Royal Institute of Technology", "Lund University", "Uppsala University"] },
-  "208": { name: "Dania", flag: "🇩🇰", unis: ["Technical Univ. of Denmark", "Univ. of Copenhagen", "Aarhus University"] },
-  "724": { name: "Hiszpania", flag: "🇪🇸", unis: ["IE University", "Univ. Complutense de Madrid", "Universitat de Barcelona"] },
-  "380": { name: "Włochy", flag: "🇮🇹", unis: ["Università di Bologna", "Politecnico di Milano", "Università La Sapienza"] },
-  "40":  { name: "Austria", flag: "🇦🇹", unis: ["Universität Wien", "TU Wien", "Wirtschaftsuniversität Wien"] },
-  "56":  { name: "Belgia", flag: "🇧🇪", unis: ["KU Leuven", "Université Libre de Bruxelles", "Ghent University"] },
-  "578": { name: "Norwegia", flag: "🇳🇴", unis: ["University of Oslo", "NTNU Trondheim", "BI Norwegian Business School"] },
-  "203": { name: "Czechy", flag: "🇨🇿", unis: ["Charles University Prague", "Czech Technical University"] },
-  "620": { name: "Portugalia", flag: "🇵🇹", unis: ["Universidade de Lisboa", "Universidade do Porto", "Nova University Lisbon"] },
-  "246": { name: "Finlandia", flag: "🇫🇮", unis: ["Aalto University", "University of Helsinki", "Tampere University"] },
-  "124": { name: "Kanada", flag: "🇨🇦", unis: ["University of Toronto", "McGill University", "UBC Vancouver", "University of Waterloo"] },
-  "840": { name: "USA", flag: "🇺🇸", unis: ["MIT", "Harvard University", "Stanford University", "Columbia University", "NYU"] },
-  "156": { name: "Chiny", flag: "🇨🇳", unis: ["Peking University", "Tsinghua University", "Fudan University", "Zhejiang University"] },
-  "410": { name: "Korea Południowa", flag: "🇰🇷", unis: ["Seoul National University", "KAIST", "Yonsei University", "POSTECH"] },
-  "702": { name: "Singapur", flag: "🇸🇬", unis: ["National University of Singapore", "Nanyang Technological University", "SMU"] },
-  "392": { name: "Japonia", flag: "🇯🇵", unis: ["University of Tokyo", "Kyoto University", "Waseda University", "Osaka University"] },
-  "36":  { name: "Australia", flag: "🇦🇺", unis: ["University of Melbourne", "University of Sydney", "ANU", "UNSW Sydney"] },
-  "470": { name: "Malta", flag: "🇲🇹", unis: ["University of Malta", "MCAST", "Malta Business School"] },
-  "784": { name: "ZEA", flag: "🇦🇪", unis: ["NYU Abu Dhabi", "Khalifa University", "American University of Sharjah"] },
-  "344": { name: "Hongkong", flag: "🇭🇰", unis: ["HKU", "HKUST", "Chinese University of Hong Kong", "City University of Hong Kong"] },
-};
+const ACADEA = countryByIso;
 
 type Rotation = [number, number, number];
 
@@ -70,10 +43,24 @@ export function GlobeSection() {
 
   const rotRef = useRef<Rotation>(INITIAL_ROT);
   const dragging = useRef(false);
+  const didDrag = useRef(false);
   const dragStart = useRef<{ x: number; y: number; rot: Rotation }>({ x: 0, y: 0, rot: INITIAL_ROT });
   const animRef = useRef<number | null>(null);
+  const clearTimer = useRef<number | null>(null);
+  const [, navigate] = useLocation();
+
+  const cancelClear = useCallback(() => {
+    if (clearTimer.current) { clearTimeout(clearTimer.current); clearTimer.current = null; }
+  }, []);
+  const scheduleClear = useCallback(() => {
+    cancelClear();
+    clearTimer.current = window.setTimeout(() => setHovered(null), 160);
+  }, [cancelClear]);
 
   useEffect(() => { rotRef.current = rotation; }, [rotation]);
+
+  // Clear any pending hover-card timer on unmount
+  useEffect(() => () => { if (clearTimer.current) clearTimeout(clearTimer.current); }, []);
 
   // Auto-rotate
   useEffect(() => {
@@ -97,6 +84,7 @@ export function GlobeSection() {
       const cy = "touches" in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
       const dx = cx - dragStart.current.x;
       const dy = cy - dragStart.current.y;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) didDrag.current = true;
       const { rot } = dragStart.current;
       setRotation([
         rot[0] + dx * 0.4,
@@ -119,6 +107,7 @@ export function GlobeSection() {
 
   const onPointerDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     dragging.current = true;
+    didDrag.current = false;
     const cx = "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
     const cy = "touches" in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
     dragStart.current = { x: cx, y: cy, rot: rotRef.current };
@@ -186,9 +175,14 @@ export function GlobeSection() {
               stroke="#fff"
               strokeWidth={isAcadea ? 0.7 : 0.3}
               opacity={isAcadea ? 0.92 : 0.6}
-              style={{ transition: "fill 0.12s ease" }}
-              onMouseEnter={() => isAcadea && setHovered(resolvedId)}
-              onMouseLeave={() => setHovered(null)}
+              style={{ transition: "fill 0.12s ease", cursor: isAcadea ? "pointer" : "grab" }}
+              onMouseEnter={() => { if (isAcadea) { cancelClear(); setHovered(resolvedId); } }}
+              onMouseLeave={() => isAcadea && scheduleClear()}
+              onClick={() => {
+                if (!isAcadea || didDrag.current) return;
+                const c = ACADEA[resolvedId];
+                if (c) navigate(`/kraje/${c.slug}`);
+              }}
             />
           );
         })}
@@ -206,19 +200,37 @@ export function GlobeSection() {
 
       {/* Country hover card */}
       {hoveredData && (
-        <div className="absolute top-5 left-5 bg-white/96 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-4 min-w-[220px] z-20 pointer-events-none">
-          <div className="flex items-center gap-2.5 mb-3">
+        <div
+          className="absolute top-5 left-5 bg-white/96 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-4 min-w-[230px] z-20"
+          onMouseEnter={cancelClear}
+          onMouseLeave={scheduleClear}
+        >
+          <Link
+            href={`/kraje/${hoveredData.slug}`}
+            className="flex items-center gap-2.5 mb-3 group"
+          >
             <span className="text-2xl leading-none">{hoveredData.flag}</span>
-            <h3 className="font-bold text-primary text-sm leading-tight">{hoveredData.name}</h3>
-          </div>
-          <ul className="space-y-1.5">
-            {hoveredData.unis.map((uni, i) => (
-              <li key={i} className="text-xs text-gray-600 flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary/60 inline-block shrink-0 mt-1" />
-                {uni}
+            <h3 className="font-bold text-primary text-sm leading-tight group-hover:text-accent transition-colors">{hoveredData.name}</h3>
+          </Link>
+          <ul className="space-y-0.5">
+            {hoveredData.unis.map((uni) => (
+              <li key={uni.slug}>
+                <Link
+                  href={`/kraje/${hoveredData.slug}#${uni.slug}`}
+                  className="text-xs text-gray-600 flex items-start gap-2 rounded-lg px-1.5 py-1 -mx-1.5 hover:bg-primary/5 hover:text-primary transition-colors"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 inline-block shrink-0 mt-1.5" />
+                  {uni.name}
+                </Link>
               </li>
             ))}
           </ul>
+          <Link
+            href={`/kraje/${hoveredData.slug}`}
+            className="mt-2.5 inline-block text-xs font-semibold text-accent hover:text-primary transition-colors"
+          >
+            Zobacz kraj →
+          </Link>
         </div>
       )}
 

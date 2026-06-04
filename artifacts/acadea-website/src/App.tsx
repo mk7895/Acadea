@@ -9,6 +9,7 @@ import { Layout } from "@/components/layout/Layout";
 import Home from "@/pages/Home";
 import HowItWorks from "@/pages/HowItWorks";
 import Countries from "@/pages/Countries";
+import CountryDetail from "@/pages/CountryDetail";
 import AboutUs from "@/pages/AboutUs";
 import Contact from "@/pages/Contact";
 import Blog from "@/pages/Blog";
@@ -27,6 +28,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/jak-to-dziala" component={HowItWorks} />
         <Route path="/kraje" component={Countries} />
+        <Route path="/kraje/:slug" component={CountryDetail} />
         <Route path="/o-nas" component={AboutUs} />
         <Route path="/kontakt" component={Contact} />
         <Route path="/baza-wiedzy" component={Blog} />

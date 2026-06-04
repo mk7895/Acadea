@@ -192,9 +192,8 @@ export default function Home() {
                 <span>Program Stypendialny ACADEA</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-6">
-                Twoja droga na<br />
-                <span className="text-accent">zagraniczną uczelnię</span><br />
-                może być bezpłatna.
+                Liczy się Twój <span className="text-accent">potencjał</span>,<br />
+                nie budżet.
               </h2>
               <p className="text-lg text-gray-500 leading-relaxed mb-6">
                 Wybitny potencjał nie powinien napotykać barier finansowych. Dlatego stworzyliśmy Program Stypendialny ACADEA — dla kandydatów, którym zależy, a potrzebują wsparcia.
