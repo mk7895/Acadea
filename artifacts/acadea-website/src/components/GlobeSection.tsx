@@ -158,9 +158,25 @@ export function GlobeSection() {
         {/* Countries */}
         {COUNTRIES_GEO.features.map((f: CountryFeature) => {
           const id = String(f.id ?? "");
-          const isAcadea = !!ACADEA[id];
-          const isHov = hovered === id;
-          const d = pathGen(f as GeoPermissibleObjects);
+          const isAcadea = !!ACADEA[id] || !!ACADEA[id.padStart(3, "0")];
+          const resolvedId = ACADEA[id] ? id : id.padStart(3, "0");
+          const isHov = hovered === resolvedId;
+
+          // France (250): strip overseas territories in South America / Caribbean
+          // by filtering out MultiPolygon rings whose first coordinate is west of -20°
+          let effectiveFeature: CountryFeature = f;
+          if (id === "250" || resolvedId === "250") {
+            const geo = f.geometry as { type: string; coordinates: number[][][][] };
+            if (geo.type === "MultiPolygon") {
+              const europeOnly = geo.coordinates.filter((poly: number[][][]) => {
+                const lon = poly[0]?.[0]?.[0] as number | undefined;
+                return lon !== undefined && lon > -10;
+              });
+              effectiveFeature = { ...f, geometry: { ...geo, coordinates: europeOnly } } as CountryFeature;
+            }
+          }
+
+          const d = pathGen(effectiveFeature as GeoPermissibleObjects);
           if (!d) return null;
           return (
             <path
@@ -171,7 +187,7 @@ export function GlobeSection() {
               strokeWidth={isAcadea ? 0.7 : 0.3}
               opacity={isAcadea ? 0.92 : 0.6}
               style={{ transition: "fill 0.12s ease" }}
-              onMouseEnter={() => isAcadea && setHovered(id)}
+              onMouseEnter={() => isAcadea && setHovered(resolvedId)}
               onMouseLeave={() => setHovered(null)}
             />
           );

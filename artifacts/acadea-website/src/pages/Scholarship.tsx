@@ -63,27 +63,22 @@ export default function Scholarship() {
   return (
     <div className="w-full">
       {/* Hero */}
-      <section className="relative bg-primary pt-36 pb-24 overflow-hidden">
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <div className="absolute top-0 right-0 w-[700px] h-[700px] rounded-full bg-accent blur-[140px]" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full bg-blue-400 blur-[120px]" />
-        </div>
-        <div className="container mx-auto px-4 md:px-6 relative z-10">
+      <section className="pt-28 pb-16 bg-white border-b border-gray-100">
+        <div className="container mx-auto px-4 md:px-6">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="max-w-3xl"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm font-medium mb-8">
-              <Heart size={16} className="text-accent" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/20 text-primary text-xs font-semibold mb-6 uppercase tracking-widest border border-accent/40">
+              <Heart size={13} className="fill-accent text-accent" />
               <span>Program Stypendialny ACADEA</span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold text-white leading-[1.05] tracking-tight mb-6">
+            <h1 className="text-5xl md:text-7xl font-bold text-gray-900 leading-[1.05] tracking-tight mb-5">
               Korzystasz z naszych usług.<br />
-              <span className="text-accent">Wspierasz czyjś sen.</span>
+              <span className="text-primary">Wspierasz czyjś sen.</span>
             </h1>
-            <p className="text-xl text-gray-300 leading-relaxed max-w-2xl mb-10">
+            <p className="text-xl text-gray-500 leading-relaxed max-w-2xl mb-10">
               Każda osoba, która wybiera ACADEA, automatycznie przyczynia się do funduszu stypendialnego, który otwiera drzwi do światowych uczelni uczniom, których na to nie stać.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -91,7 +86,7 @@ export default function Scholarship() {
                 <Button
                   size="lg"
                   data-testid="button-scholarship-hero-cta"
-                  className="h-14 px-8 text-base bg-accent text-primary hover:bg-white transition-colors border-none rounded-full font-bold"
+                  className="h-14 px-8 text-base bg-primary text-white hover:bg-gray-900 transition-colors border-none rounded-full font-bold"
                 >
                   Zobacz konkurs stypendialny <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>

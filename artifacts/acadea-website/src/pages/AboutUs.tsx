@@ -82,28 +82,75 @@ export default function AboutUs() {
           </div>
         </div>
 
-        {/* Team Placeholder */}
-        <div className="mb-20 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-primary mb-12">Nasz zespół</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            {[1, 2, 3, 4].map((member, idx) => (
-              <motion.div 
+        {/* Team */}
+        <div className="mb-20">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-primary mb-3">Nasz zespół</h2>
+            <p className="text-gray-500 max-w-xl mx-auto">Eksperci, którzy sami przeszli przez proces aplikacji za granicą i teraz pomagają innym.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              {
+                name: "Marlena Sołtysińska",
+                role: "Doradca Edukacyjny",
+                desc: "Absolwentka uczelni zagranicznej. Pomaga uczniom budować mocne profile aplikacyjne.",
+                initials: "MS",
+                linkedin: "https://www.linkedin.com/in/marlena-soltysinska/",
+                color: "#166534",
+              },
+              {
+                name: "Mateusz Klepacki",
+                role: "Założyciel ACADEA",
+                desc: "Twórca fundacji i wizji ACADEA. Łączy edukację z misją wyrównywania szans.",
+                initials: "MK",
+                linkedin: "https://www.linkedin.com/in/mateusz-klepacki/",
+                color: "#FCBC1E",
+              },
+              {
+                name: "Weronika Klepacka",
+                role: "Doradca Edukacyjny",
+                desc: "Specjalistka ds. uczelni zachodnioeuropejskich. Pomaga w pisaniu esejów i SOP.",
+                initials: "WK",
+                linkedin: "https://www.linkedin.com/in/weronika-klepacka-7349b51b6",
+                color: "#166534",
+              },
+              {
+                name: "Bartosz Kuźma",
+                role: "Doradca Edukacyjny",
+                desc: "Ekspert od procesów rekrutacyjnych i przygotowania do rozmów kwalifikacyjnych.",
+                initials: "BK",
+                linkedin: "https://www.linkedin.com/in/bartosz-ku%C5%BAma-243945259/",
+                color: "#14532d",
+              },
+            ].map((member, idx) => (
+              <motion.div
                 key={idx}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
-                className="flex flex-col items-center"
+                className="flex flex-col items-center text-center group"
               >
-                <div className="w-48 h-48 rounded-full overflow-hidden mb-4 bg-gray-100 border-4 border-white shadow-lg">
-                  <img 
-                    src={idx === 0 ? "/images/team-1.jpg" : `https://api.dicebear.com/7.x/notionists/svg?seed=Acadea${idx}&backgroundColor=e2e8f0`} 
-                    alt={`Członek zespołu ${idx}`}
-                    className="w-full h-full object-cover"
-                  />
+                <div className="w-44 h-44 rounded-full overflow-hidden mb-5 shadow-lg ring-4 ring-white">
+                  <div
+                    className="w-full h-full flex items-center justify-center text-white font-bold text-4xl select-none"
+                    style={{ backgroundColor: member.color }}
+                  >
+                    {member.initials}
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-primary">Doradca Edukacyjny</h3>
-                <p className="text-gray-500 text-sm">Absolwent uczelni zagranicznej</p>
+                <h3 className="text-lg font-bold text-primary mb-0.5">{member.name}</h3>
+                <p className="text-accent font-semibold text-sm mb-2">{member.role}</p>
+                <p className="text-gray-500 text-sm leading-relaxed mb-4 max-w-[200px]">{member.desc}</p>
+                <a
+                  href={member.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary/60 hover:text-primary transition-colors border border-primary/20 hover:border-primary rounded-full px-4 py-1.5"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                  LinkedIn
+                </a>
               </motion.div>
             ))}
           </div>

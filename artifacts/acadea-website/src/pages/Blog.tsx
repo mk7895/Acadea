@@ -88,26 +88,21 @@ export default function Blog() {
   return (
     <div className="w-full">
       {/* Hero */}
-      <section className="bg-primary pt-36 pb-20 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-accent blur-[120px]" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-blue-400 blur-[100px]" />
-        </div>
-        <div className="container mx-auto px-4 md:px-6 relative z-10">
+      <section className="pt-28 pb-16 bg-white border-b border-gray-100">
+        <div className="container mx-auto px-4 md:px-6">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: "easeOut" }}
-            className="max-w-3xl"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm font-medium mb-8">
-              <BookOpen size={16} className="text-accent" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 text-primary text-xs font-semibold mb-6 uppercase tracking-widest border border-primary/15">
+              <BookOpen size={13} />
               <span>Baza Wiedzy</span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight mb-6">
-              Wszystko, co musisz wiedzieć o <span className="text-accent">studiach za granicą</span>
+            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight mb-4">
+              Wszystko, co musisz wiedzieć<br className="hidden md:block" /> o <span className="text-primary">studiach za granicą</span>
             </h1>
-            <p className="text-lg text-gray-300 max-w-2xl leading-relaxed">
+            <p className="text-lg text-gray-500 max-w-2xl leading-relaxed">
               Przewodniki, poradniki i artykuły pisane przez ekspertów ACADEA — żebyś podejmował decyzje ze świadomością, a nie ze strachem.
             </p>
           </motion.div>

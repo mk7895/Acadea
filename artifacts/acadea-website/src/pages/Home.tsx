@@ -121,7 +121,7 @@ export default function Home() {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-primary" />
-                  <span><strong className="text-gray-700 font-semibold">99%</strong> skuteczność</span>
+                  <span><strong className="text-gray-700 font-semibold">99%+</strong> skuteczność</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Heart size={16} className="text-accent fill-accent" />
@@ -248,15 +248,15 @@ export default function Home() {
             transition={{ duration: 0.6 }}
             className="rounded-3xl overflow-hidden grid grid-cols-1 lg:grid-cols-2"
           >
-            <div className="bg-[#075E54] p-10 md:p-14 flex flex-col justify-center">
-              <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center mb-7">
-                <MessageCircle size={30} className="text-white" />
+            <div className="bg-accent p-10 md:p-14 flex flex-col justify-center">
+              <div className="w-14 h-14 bg-primary/12 rounded-2xl flex items-center justify-center mb-7">
+                <MessageCircle size={30} className="text-primary" />
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight mb-5">
-                Darmowa grupa WhatsApp — aktualności o studiach za granicą
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight mb-5">
+                Darmowa społeczność WhatsApp — aktualności o studiach za granicą
               </h2>
-              <p className="text-white/80 text-lg leading-relaxed mb-8">
-                Dołącz do naszej społeczności i otrzymuj bezpłatne porady, terminy aplikacji i aktualności — prosto na telefon.
+              <p className="text-gray-800/70 text-lg leading-relaxed mb-8">
+                Dołącz i otrzymuj bezpłatne porady, terminy aplikacji i aktualności — prosto na telefon.
               </p>
               <ul className="space-y-3 mb-10">
                 {[
@@ -265,8 +265,8 @@ export default function Home() {
                   "Porady od absolwentów zagranicznych uczelni",
                   "Odpowiedzi na pytania od ekspertów ACADEA",
                 ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3 text-white/90 text-sm">
-                    <CheckCircle2 size={16} className="text-[#25D366] shrink-0 mt-0.5" />
+                  <li key={i} className="flex items-start gap-3 text-gray-900 text-sm">
+                    <CheckCircle2 size={16} className="text-primary shrink-0 mt-0.5" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -276,10 +276,10 @@ export default function Home() {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="button-whatsapp-join"
-                className="inline-flex items-center gap-3 self-start bg-[#25D366] text-white font-bold px-8 py-4 rounded-full hover:bg-white hover:text-[#075E54] transition-all text-base"
+                className="inline-flex items-center gap-3 self-start bg-primary text-white font-bold px-8 py-4 rounded-full hover:bg-gray-900 transition-all text-base"
               >
                 <MessageCircle size={20} />
-                Dołącz do grupy — to bezpłatne
+                Dołącz do społeczności — to bezpłatne
               </a>
             </div>
             <div className="bg-primary p-10 md:p-14 flex flex-col justify-center">
