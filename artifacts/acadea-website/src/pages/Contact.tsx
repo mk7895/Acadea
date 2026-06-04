@@ -125,17 +125,6 @@ export default function Contact() {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-4">
-                    <MapPin className="text-accent shrink-0 mt-1" />
-                    <div>
-                      <p className="font-semibold mb-1">Biuro</p>
-                      <p className="text-gray-300">
-                        Warszawa, Polska
-                        <br />
-                        (Działamy online na terenie całego kraju)
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>

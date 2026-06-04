@@ -45,7 +45,7 @@ export function Navbar() {
           <img
             src={isScrolled ? logoGreen : logoGreen}
             alt="ACADEA Logo"
-            className="h-12 md:h-14 w-auto"
+            className="h-14 md:h-16 w-auto"
           />
         </Link>
 
@@ -81,7 +81,7 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-4">
           <Link href="/umow-spotkanie">
             <Button className="rounded-full px-6 bg-primary text-white hover:bg-primary/90 transition-all font-semibold">
-              Umów spotkanie
+              Bezpłatna konsultacja
             </Button>
           </Link>
         </div>

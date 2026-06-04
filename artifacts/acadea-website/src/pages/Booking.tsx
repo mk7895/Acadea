@@ -126,7 +126,7 @@ export default function Booking() {
             Bezpłatna konsultacja
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-3">
-            Umów spotkanie
+            Bezpłatna konsultacja
           </h1>
           <p className="text-gray-500 text-lg">
             Wybierz termin, a nasz doradca skontaktuje się z Tobą przez Zoom.

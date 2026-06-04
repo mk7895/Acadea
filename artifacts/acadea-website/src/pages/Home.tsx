@@ -26,24 +26,24 @@ const services = [
     icon: <CheckCircle2 size={22} className="text-primary" />,
   },
   {
-    title: "Eseje i motywacje",
-    desc: "Piszemy razem, żeby wyróżnić Cię spośród tysięcy kandydatów.",
+    title: "Egzaminy i certyfikaty",
+    desc: "Przygotowujemy do GRE, SAT, GMAT, Cambridge, IELTS, TOEFL i innych egzaminów wymaganych przez zagraniczne uczelnie.",
+    icon: <BookOpen size={22} className="text-primary" />,
+  },
+  {
+    title: "Eseje, listy motywacyjne i CV",
+    desc: "Nieograniczona liczba wersji i stała informacja zwrotna — Twoje dokumenty w najlepszej możliwej formie.",
     icon: <Users size={22} className="text-primary" />,
   },
   {
     title: "Tłumaczenia i legalizacja",
-    desc: "Zajmujemy się formalnościami, żebyś Ty mógł skupić się na nauce.",
+    desc: "Prowadzimy za rękę przez wszystkie formalności, żebyś Ty mógł skupić się na nauce.",
     icon: <Globe size={22} className="text-primary" />,
   },
   {
     title: "Wizy i zakwaterowanie",
-    desc: "Nie zostawiamy Cię samego po przyjęciu. Pomożemy odnaleźć się w nowym kraju.",
+    desc: "Nie znikamy po przyjęciu — pomagamy z wizami, zakwaterowaniem i ułatwiamy kontakt z uczelnią.",
     icon: <MapPin size={22} className="text-primary" />,
-  },
-  {
-    title: "Egzaminy i certyfikaty",
-    desc: "Przygotowujemy do GRE, SAT, GMAT, Cambridge, IELTS, TOEFL i innych egzaminów wymaganych przez zagraniczne uczelnie.",
-    icon: <BookOpen size={22} className="text-primary" />,
   },
 ];
 
@@ -248,7 +248,7 @@ export default function Home() {
             transition={{ duration: 0.6 }}
             className="rounded-3xl overflow-hidden grid grid-cols-1 lg:grid-cols-2"
           >
-            <div className="bg-accent p-10 md:p-14 flex flex-col justify-center">
+            <div className="bg-amber-50 p-10 md:p-14 flex flex-col justify-center">
               <div className="w-14 h-14 bg-primary/12 rounded-2xl flex items-center justify-center mb-7">
                 <MessageCircle size={30} className="text-primary" />
               </div>
@@ -333,7 +333,7 @@ export default function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
                 {[
                   { title: "Elastyczny czas", desc: "Dopasowany do Twojego harmonogramu" },
-                  { title: "Praca lub wolontariat", desc: "Ty decydujesz, czy zarabiasz czy angażujesz się pro bono" },
+                  { title: "Własny harmonogram", desc: "Mentorujesz tyle, ile chcesz — bez minimalnych zobowiązań" },
                   { title: "Realny wpływ", desc: "Twoje doświadczenie zmienia czyjąś ścieżkę edukacyjną" },
                 ].map((b, i) => (
                   <div key={i} className="bg-gray-50 rounded-xl p-5 border border-gray-100">

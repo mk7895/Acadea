@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import logo from "@assets/Acadea_Logo_-_Horizontal_Style-2_1780602818262.png";
+import logo from "@/assets/logo-white.png";
 import { Facebook, Instagram, Mail, MapPin, Phone, Heart } from "lucide-react";
 
 export function Footer() {
@@ -9,9 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           <div className="space-y-6">
             <Link href="/">
-              <div className="bg-white inline-block p-3 rounded-xl mb-2">
-                <img src={logo} alt="ACADEA Logo" className="h-12 w-auto" />
-              </div>
+              <img src={logo} alt="ACADEA Logo" className="h-14 w-auto mb-2" />
             </Link>
             <p className="text-gray-300 text-sm leading-relaxed max-w-sm">
               Aplikacja na studia za granicą — z nami to proste. Pomagamy polskim uczniom dostać się na wymarzone uczelnie w ponad 15 krajach.
@@ -93,13 +91,6 @@ export function Footer() {
                 <a href="tel:+48728492936" className="hover:text-white transition-colors">
                   +48 728 492 936
                 </a>
-              </li>
-              <li className="flex items-start gap-3 text-gray-300">
-                <MapPin size={20} className="text-accent shrink-0 mt-0.5" />
-                <span>
-                  Warszawa, Polska<br />
-                  (Konsultacje online na całą Polskę)
-                </span>
               </li>
             </ul>
           </div>
