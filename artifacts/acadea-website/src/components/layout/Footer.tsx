@@ -12,7 +12,7 @@ export function Footer() {
               <img src={logo} alt="ACADEA Logo" className="h-20 md:h-24 w-auto shrink-0 mb-2" />
             </Link>
             <p className="text-gray-300 text-sm leading-relaxed max-w-sm">
-              Aplikacja na studia za granicą — z nami to proste. Pomagamy polskim uczniom dostać się na wymarzone uczelnie w ponad 25 krajach.
+              Aplikacja na studia za granicą — z nami to proste. Pomagamy uczniom dostać się na wymarzone uczelnie w ponad 25 krajach.
             </p>
             <div className="flex items-center gap-4 text-white">
               <a

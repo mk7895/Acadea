@@ -26,7 +26,7 @@ export default function Countries() {
               transition={{ delay: 0.1 }}
               className="text-lg md:text-xl text-gray-600"
             >
-              Pomagamy w aplikacji do ponad 25 krajów na świecie. Każdy z nich ma swój specyficzny system edukacji, wymagania i terminy. Obróć globus lub wybierz kraj poniżej, aby poznać uczelnie, z którymi współpracujemy.
+              Pomagamy w aplikacji do ponad 25 krajów na świecie. Każdy z nich ma swój specyficzny system edukacji, wymagania i terminy. Obróć globus lub wybierz kraj poniżej, aby poznać uczelnie, na które możemy wspólnie zaaplikować.
             </motion.p>
           </div>
           <motion.div

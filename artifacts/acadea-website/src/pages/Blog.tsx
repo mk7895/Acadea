@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { BookOpen, Clock, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "wouter";
 import { articles } from "@/data/articles";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -139,15 +140,13 @@ export default function Blog() {
                     <p className="text-gray-500 text-sm leading-relaxed line-clamp-3 flex-1">
                       {article.excerpt}
                     </p>
-                    <a
-                      href={`${BASE}/baza-wiedzy${article.slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <Link
+                      href={`/baza-wiedzy${article.slug}`}
                       className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors group/btn"
                     >
                       Czytaj więcej
                       <ArrowRight size={14} className="group-hover/btn:translate-x-0.5 transition-transform" />
-                    </a>
+                    </Link>
                   </div>
                 </motion.div>
               ))}

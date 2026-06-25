@@ -123,11 +123,13 @@ export function GlobeSection() {
 
   return (
     <div className="relative select-none w-full max-w-[500px] mx-auto">
+      {/* Static drop-shadow underneath so it doesn't repaint every animation frame */}
+      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-black/15 rounded-full blur-2xl pointer-events-none" />
       <svg
         width={SIZE}
         height={SIZE}
         viewBox={`0 0 ${SIZE} ${SIZE}`}
-        className="w-full h-auto cursor-grab active:cursor-grabbing rounded-full shadow-2xl"
+        className="w-full h-auto cursor-grab active:cursor-grabbing rounded-full"
         onMouseDown={onPointerDown}
         onTouchStart={onPointerDown}
         style={{ touchAction: "none" }}

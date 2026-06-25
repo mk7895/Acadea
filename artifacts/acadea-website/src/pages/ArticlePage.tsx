@@ -88,15 +88,15 @@ export default function ArticlePage() {
               a: ({ href, children }) => {
                 if (!href) return <span>{children}</span>;
                 const isInternal = href.startsWith("/");
-                const finalHref = isInternal
-                  ? `${BASE}/baza-wiedzy${href}`
-                  : href;
+                if (isInternal) {
+                  return (
+                    <Link href={`/baza-wiedzy${href}`}>
+                      {children}
+                    </Link>
+                  );
+                }
                 return (
-                  <a
-                    href={finalHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  <a href={href} target="_blank" rel="noopener noreferrer">
                     {children}
                   </a>
                 );
@@ -113,11 +113,9 @@ export default function ArticlePage() {
             <h3 className="text-xl font-bold text-primary mb-6">Czytaj też</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {related.map((r) => (
-                <a
+                <Link
                   key={r.slug}
-                  href={`${BASE}/baza-wiedzy${r.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={`/baza-wiedzy${r.slug}`}
                   className="group block rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow"
                 >
                   <div className="h-28 overflow-hidden bg-gray-100">

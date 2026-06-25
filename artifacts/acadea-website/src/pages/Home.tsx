@@ -114,7 +114,7 @@ export default function Home() {
               </h1>
 
               <p className="text-lg text-gray-500 leading-relaxed mb-10 max-w-lg">
-                Pomagamy polskim uczniom dostać się na najlepsze uczelnie w Europie. Dzięki Programowi Stypendialnemu ACADEA — całkowicie bezpłatnie.
+                Pomagamy dostać się na wymarzone uczelnie na całym świecie. 
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-14">
@@ -127,20 +127,10 @@ export default function Home() {
                     Umów bezpłatną konsultację
                   </Button>
                 </Link>
-                <Link href="/stypendium">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    data-testid="button-hero-cta-secondary"
-                    className="h-14 px-8 text-base rounded-full border-accent/40 text-accent hover:border-accent hover:bg-accent/6 font-semibold"
-                  >
-                    Jak działają stypendia?
-                  </Button>
-                </Link>
               </div>
 
               {/* Trust row */}
-              <div className="flex flex-wrap gap-6 items-center text-sm text-gray-400 border-t border-gray-100 pt-8">
+              <div className="flex flex-wrap gap-6 items-center text-sm text-gray-400 pt-8">
                 <div className="flex items-center gap-2">
                   <MapPin size={16} className="text-primary" />
                   <span><strong className="text-gray-700 font-semibold">25+</strong> krajów w ofercie</span>
