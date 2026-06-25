@@ -137,7 +137,7 @@ export default function ArticlePage() {
                       {r.title}
                     </p>
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
           </div>
