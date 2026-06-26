@@ -51,6 +51,12 @@ function collectMatches(source, regex) {
   return Array.from(source.matchAll(regex), (match) => match[1]);
 }
 
+function collectSlugDatePairs(source, regex) {
+  return Object.fromEntries(
+    Array.from(source.matchAll(regex), (match) => [match[1], match[2]]),
+  );
+}
+
 function dedupe(values) {
   return [...new Set(values)];
 }
@@ -91,11 +97,19 @@ async function main() {
     articlesSource,
     /slug:\s*"\/([^"]+)"/g,
   ).map((slug) => `/baza-wiedzy/${slug}`);
+  const articleUpdatedAtBySlug = collectSlugDatePairs(
+    articlesSource,
+    /slug:\s*"\/([^"]+)",\s*\n\s*updatedAt:\s*"([^"]+)"/g,
+  );
 
   const countrySlugs = collectMatches(
     countriesSource,
-    /slug:\s*"([^"]+)",\s*name:\s*"[^"]+",\s*flag:/g,
+    /slug:\s*"([^"]+)",\s*\n\s*updatedAt:\s*"[^"]+",\s*\n\s*name:\s*"[^"]+",\s*\n\s*flag:/g,
   ).map((slug) => `/kraje/${slug}`);
+  const countryUpdatedAtBySlug = collectSlugDatePairs(
+    countriesSource,
+    /slug:\s*"([^"]+)",\s*\n\s*updatedAt:\s*"([^"]+)"/g,
+  );
 
   const routes = dedupe([
     ...staticRoutes,
@@ -112,9 +126,16 @@ async function main() {
         sourceFile = "data/articles.ts";
       }
 
-      const lastmod = await getGitLastModified(
-        sourceFile ? `src/${sourceFile}` : "index.html",
-      );
+      const updatedAt =
+        route.startsWith("/kraje/")
+          ? countryUpdatedAtBySlug[route.replace("/kraje/", "")]
+          : route.startsWith("/baza-wiedzy/")
+            ? articleUpdatedAtBySlug[route.replace("/baza-wiedzy/", "")]
+            : null;
+
+      const lastmod =
+        updatedAt ??
+        (await getGitLastModified(sourceFile ? `src/${sourceFile}` : "index.html"));
 
       return toUrlEntry(route, lastmod);
     }),

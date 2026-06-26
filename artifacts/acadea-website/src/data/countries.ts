@@ -2,6 +2,7 @@ export type Uni = { name: string; slug: string; blurb: string };
 
 export type Country = {
   slug: string;
+  updatedAt: string;
   name: string;
   flag: string;
   code: string; // flagcdn 2-letter code
@@ -16,6 +17,7 @@ export const countries: Country[] = [
   // ── WIELKA BRYTANIA ──────────────────────────────────────────────
   {
     slug: "wielka-brytania",
+    updatedAt: "2026-06-26",
     name: "Wielka Brytania",
     flag: "🇬🇧",
     code: "gb",
@@ -48,6 +50,7 @@ export const countries: Country[] = [
   // ── HOLANDIA ────────────────────────────────────────────────────
   {
     slug: "holandia",
+    updatedAt: "2026-06-26",
     name: "Holandia",
     flag: "🇳🇱",
     code: "nl",
@@ -77,6 +80,7 @@ export const countries: Country[] = [
   // ── NIEMCY ──────────────────────────────────────────────────────
   {
     slug: "niemcy",
+    updatedAt: "2026-06-26",
     name: "Niemcy",
     flag: "🇩🇪",
     code: "de",
@@ -100,6 +104,7 @@ export const countries: Country[] = [
   // ── IRLANDIA ────────────────────────────────────────────────────
   {
     slug: "irlandia",
+    updatedAt: "2026-06-26",
     name: "Irlandia",
     flag: "🇮🇪",
     code: "ie",
@@ -123,6 +128,7 @@ export const countries: Country[] = [
   // ── FRANCJA ─────────────────────────────────────────────────────
   {
     slug: "francja",
+    updatedAt: "2026-06-26",
     name: "Francja",
     flag: "🇫🇷",
     code: "fr",
@@ -147,6 +153,7 @@ export const countries: Country[] = [
   // ── SZWAJCARIA ──────────────────────────────────────────────────
   {
     slug: "szwajcaria",
+    updatedAt: "2026-06-26",
     name: "Szwajcaria",
     flag: "🇨🇭",
     code: "ch",
@@ -170,6 +177,7 @@ export const countries: Country[] = [
   // ── SZWECJA ─────────────────────────────────────────────────────
   {
     slug: "szwecja",
+    updatedAt: "2026-06-26",
     name: "Szwecja",
     flag: "🇸🇪",
     code: "se",
@@ -192,6 +200,7 @@ export const countries: Country[] = [
   // ── DANIA ───────────────────────────────────────────────────────
   {
     slug: "dania",
+    updatedAt: "2026-06-26",
     name: "Dania",
     flag: "🇩🇰",
     code: "dk",
@@ -215,6 +224,7 @@ export const countries: Country[] = [
   // ── HISZPANIA ───────────────────────────────────────────────────
   {
     slug: "hiszpania",
+    updatedAt: "2026-06-26",
     name: "Hiszpania",
     flag: "🇪🇸",
     code: "es",
@@ -238,6 +248,7 @@ export const countries: Country[] = [
   // ── WŁOCHY ──────────────────────────────────────────────────────
   {
     slug: "wlochy",
+    updatedAt: "2026-06-26",
     name: "Włochy",
     flag: "🇮🇹",
     code: "it",
@@ -264,6 +275,7 @@ export const countries: Country[] = [
   // ── AUSTRIA ─────────────────────────────────────────────────────
   {
     slug: "austria",
+    updatedAt: "2026-06-26",
     name: "Austria",
     flag: "🇦🇹",
     code: "at",
@@ -288,6 +300,7 @@ export const countries: Country[] = [
   // ── BELGIA ──────────────────────────────────────────────────────
   {
     slug: "belgia",
+    updatedAt: "2026-06-26",
     name: "Belgia",
     flag: "🇧🇪",
     code: "be",
@@ -311,6 +324,7 @@ export const countries: Country[] = [
   // ── NORWEGIA ────────────────────────────────────────────────────
   {
     slug: "norwegia",
+    updatedAt: "2026-06-26",
     name: "Norwegia",
     flag: "🇳🇴",
     code: "no",
@@ -333,6 +347,7 @@ export const countries: Country[] = [
   // ── CZECHY ──────────────────────────────────────────────────────
   {
     slug: "czechy",
+    updatedAt: "2026-06-26",
     name: "Czechy",
     flag: "🇨🇿",
     code: "cz",
@@ -354,6 +369,7 @@ export const countries: Country[] = [
   // ── PORTUGALIA ──────────────────────────────────────────────────
   {
     slug: "portugalia",
+    updatedAt: "2026-06-26",
     name: "Portugalia",
     flag: "🇵🇹",
     code: "pt",
@@ -376,6 +392,7 @@ export const countries: Country[] = [
   // ── FINLANDIA ───────────────────────────────────────────────────
   {
     slug: "finlandia",
+    updatedAt: "2026-06-26",
     name: "Finlandia",
     flag: "🇫🇮",
     code: "fi",
@@ -398,6 +415,7 @@ export const countries: Country[] = [
   // ── KANADA ──────────────────────────────────────────────────────
   {
     slug: "kanada",
+    updatedAt: "2026-06-26",
     name: "Kanada",
     flag: "🇨🇦",
     code: "ca",
@@ -422,6 +440,7 @@ export const countries: Country[] = [
   // ── USA ─────────────────────────────────────────────────────────
   {
     slug: "usa",
+    updatedAt: "2026-06-26",
     name: "USA",
     flag: "🇺🇸",
     code: "us",
@@ -457,6 +476,7 @@ export const countries: Country[] = [
   // ── CHINY ───────────────────────────────────────────────────────
   {
     slug: "chiny",
+    updatedAt: "2026-06-26",
     name: "Chiny",
     flag: "🇨🇳",
     code: "cn",
@@ -480,6 +500,7 @@ export const countries: Country[] = [
   // ── KOREA POŁUDNIOWA ────────────────────────────────────────────
   {
     slug: "korea-poludniowa",
+    updatedAt: "2026-06-26",
     name: "Korea Południowa",
     flag: "🇰🇷",
     code: "kr",
@@ -505,6 +526,7 @@ export const countries: Country[] = [
   // ── SINGAPUR ────────────────────────────────────────────────────
   {
     slug: "singapur",
+    updatedAt: "2026-06-26",
     name: "Singapur",
     flag: "🇸🇬",
     code: "sg",
@@ -527,6 +549,7 @@ export const countries: Country[] = [
   // ── JAPONIA ─────────────────────────────────────────────────────
   {
     slug: "japonia",
+    updatedAt: "2026-06-26",
     name: "Japonia",
     flag: "🇯🇵",
     code: "jp",
@@ -551,6 +574,7 @@ export const countries: Country[] = [
   // ── AUSTRALIA ───────────────────────────────────────────────────
   {
     slug: "australia",
+    updatedAt: "2026-06-26",
     name: "Australia",
     flag: "🇦🇺",
     code: "au",
@@ -575,6 +599,7 @@ export const countries: Country[] = [
   // ── MALTA ───────────────────────────────────────────────────────
   {
     slug: "malta",
+    updatedAt: "2026-06-26",
     name: "Malta",
     flag: "🇲🇹",
     code: "mt",
@@ -597,6 +622,7 @@ export const countries: Country[] = [
   // ── ZEA ─────────────────────────────────────────────────────────
   {
     slug: "zea",
+    updatedAt: "2026-06-26",
     name: "ZEA",
     flag: "🇦🇪",
     code: "ae",
@@ -619,6 +645,7 @@ export const countries: Country[] = [
   // ── HONGKONG ────────────────────────────────────────────────────
   {
     slug: "hongkong",
+    updatedAt: "2026-06-26",
     name: "Hongkong",
     flag: "🇭🇰",
     code: "hk",
