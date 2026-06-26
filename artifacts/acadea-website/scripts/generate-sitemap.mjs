@@ -1,7 +1,10 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
@@ -9,7 +12,6 @@ const srcRoot = path.join(projectRoot, "src");
 const publicRoot = path.join(projectRoot, "public");
 
 const siteUrl = (process.env.SITE_URL ?? "https://acadea.org").replace(/\/+$/, "");
-const today = new Date().toISOString().slice(0, 10);
 
 const staticRoutes = [
   "/",
@@ -26,6 +28,21 @@ const staticRoutes = [
   "/regulamin",
 ];
 
+const routeSourceMap = {
+  "/": "pages/Home.tsx",
+  "/jak-to-dziala": "pages/HowItWorks.tsx",
+  "/kraje": "pages/Countries.tsx",
+  "/o-nas": "pages/AboutUs.tsx",
+  "/kontakt": "pages/Contact.tsx",
+  "/baza-wiedzy": "pages/Blog.tsx",
+  "/stypendium": "pages/Scholarship.tsx",
+  "/stypendium/aplikacja": "pages/ScholarshipForm.tsx",
+  "/umow-spotkanie": "pages/Booking.tsx",
+  "/mentoruj": "pages/MentorForm.tsx",
+  "/polityka-prywatnosci": "pages/PrivacyPolicy.tsx",
+  "/regulamin": "pages/Regulamin.tsx",
+};
+
 async function readSource(relativePath) {
   return readFile(path.join(srcRoot, relativePath), "utf8");
 }
@@ -38,13 +55,28 @@ function dedupe(values) {
   return [...new Set(values)];
 }
 
-function toUrlEntry(route) {
+async function getGitLastModified(relativePath) {
+  try {
+    const filePath = path.join(projectRoot, relativePath);
+    const { stdout } = await execFileAsync(
+      "git",
+      ["log", "-1", "--format=%cs", "--", filePath],
+      { cwd: projectRoot },
+    );
+    const value = stdout.trim();
+    return value || new Date().toISOString().slice(0, 10);
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+function toUrlEntry(route, lastmod) {
   const normalizedRoute = route === "/" ? "" : route;
   const loc = `${siteUrl}${normalizedRoute}`;
   return [
     "  <url>",
     `    <loc>${loc}</loc>`,
-    `    <lastmod>${today}</lastmod>`,
+    `    <lastmod>${lastmod}</lastmod>`,
     "  </url>",
   ].join("\n");
 }
@@ -71,10 +103,27 @@ async function main() {
     ...articleSlugs,
   ]).sort((a, b) => a.localeCompare(b));
 
+  const routeEntries = await Promise.all(
+    routes.map(async (route) => {
+      let sourceFile = routeSourceMap[route];
+      if (!sourceFile && route.startsWith("/kraje/")) {
+        sourceFile = "data/countries.ts";
+      } else if (!sourceFile && route.startsWith("/baza-wiedzy/")) {
+        sourceFile = "data/articles.ts";
+      }
+
+      const lastmod = await getGitLastModified(
+        sourceFile ? `src/${sourceFile}` : "index.html",
+      );
+
+      return toUrlEntry(route, lastmod);
+    }),
+  );
+
   const xml = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...routes.map(toUrlEntry),
+    ...routeEntries,
     "</urlset>",
     "",
   ].join("\n");
