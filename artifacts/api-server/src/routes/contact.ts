@@ -18,6 +18,24 @@ type LocalSubmission = {
 
 const localSubmissions: LocalSubmission[] = [];
 
+function shapeSubmissionResponse(row: {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  message: string;
+  createdAt: Date;
+}) {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    phone: row.phone ?? null,
+    message: row.message,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
 router.post("/contact", async (req, res) => {
   const parsed = SubmitContactBody.safeParse(req.body);
   if (!parsed.success) {
@@ -26,28 +44,58 @@ router.post("/contact", async (req, res) => {
   }
 
   if (process.env.DATABASE_URL) {
-    const { db, contactSubmissionsTable, insertContactSchema } = await import(
-      "@workspace/db"
-    );
-    const insert = insertContactSchema.safeParse(parsed.data);
+    const {
+      db,
+      contactSubmissionsTable,
+      insertContactSchema,
+      mentorApplicationsTable,
+      insertMentorApplicationSchema,
+      scholarshipApplicationsTable,
+      insertScholarshipApplicationSchema,
+      newsletterSignupsTable,
+      insertNewsletterSignupSchema,
+    } = await import("@workspace/db");
+
+    const config =
+      parsed.data.type === "mentor_application" || parsed.data.type === "mentor"
+        ? {
+            table: mentorApplicationsTable,
+            schema: insertMentorApplicationSchema,
+          }
+        : parsed.data.type === "scholarship"
+          ? {
+              table: scholarshipApplicationsTable,
+              schema: insertScholarshipApplicationSchema,
+            }
+          : parsed.data.type === "newsletter"
+            ? {
+                table: newsletterSignupsTable,
+                schema: insertNewsletterSignupSchema,
+              }
+            : {
+                table: contactSubmissionsTable,
+                schema: insertContactSchema,
+              };
+
+    const insert = config.schema.safeParse({
+      name: parsed.data.name,
+      email: parsed.data.email,
+      phone: parsed.data.phone,
+      message: parsed.data.message,
+    });
     if (!insert.success) {
       res.status(422).json({ error: insert.error.message });
       return;
     }
 
     const [row] = await db
-      .insert(contactSubmissionsTable)
+      .insert(config.table)
       .values(insert.data)
       .returning();
 
     res.status(201).json({
-      id: row.id,
-      name: row.name,
-      email: row.email,
-      phone: row.phone ?? null,
-      message: row.message,
-      type: row.type,
-      createdAt: row.createdAt.toISOString(),
+      ...shapeSubmissionResponse(row),
+      type: parsed.data.type,
     });
 
     void sendContactEmails({

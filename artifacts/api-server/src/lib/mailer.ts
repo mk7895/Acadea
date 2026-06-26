@@ -78,7 +78,7 @@ function renderEmailShell({
           <td style="padding:28px 32px 20px; background:linear-gradient(135deg, #ffffff 0%, #f5fbf7 100%); border-bottom:1px solid #e5efe9;">
             <img src="${BRAND_LOGO_URL}" alt="ACADEA" style="display:block; width:180px; max-width:100%; height:auto; margin-bottom:22px;" />
             <div style="display:inline-block; padding:6px 12px; border-radius:999px; background:rgba(252,188,30,0.16); color:${BRAND_PRIMARY}; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:16px;">
-              ACADEA
+              EDUKACJA BEZ GRANIC
             </div>
             <h1 style="margin:0 0 10px; font-size:28px; line-height:1.2; color:${BRAND_PRIMARY};">${escapeHtml(title)}</h1>
             <p style="margin:0; font-size:16px; line-height:1.6; color:#4b5563;">${escapeHtml(intro)}</p>
@@ -312,7 +312,8 @@ export async function sendContactEmails(input: {
 }) {
   const senderEmail = getGoogleGmailSendAs() ?? (await getGoogleAccountEmail());
   const notifyEmail = process.env.CONTACT_NOTIFY_EMAIL ?? senderEmail ?? null;
-  const greetingName = input.type === "newsletter" ? "tam" : input.name;
+  const normalizedGreeting =
+    input.type === "newsletter" ? "Cześć," : `Cześć ${input.name},`;
 
   if (!notifyEmail || !senderEmail || !(await hasGoogleGmailCredentials())) {
     logger.warn(
@@ -381,18 +382,20 @@ export async function sendContactEmails(input: {
         : "Otrzymaliśmy Twoje zgłoszenie i wrócimy do Ciebie tak szybko, jak to możliwe.";
 
   const autoresponseBody = [
-    `Cześć ${greetingName},`,
+    normalizedGreeting,
     "",
     autoresponseIntro,
     autoresponseNextStep,
     "",
-    "Dla porządku zapisujemy poniżej treść Twojego zgłoszenia:",
+    input.type === "newsletter"
+      ? null
+      : "Treść Twojego zgłoszenia:",
     "",
-    input.message,
+    input.type === "newsletter" ? null : input.message,
     "",
     "Pozdrawiamy,",
     "Zespół ACADEA",
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 
   const organizerHtml = renderEmailShell({
     title:
@@ -422,11 +425,14 @@ export async function sendContactEmails(input: {
           : input.type === "newsletter"
             ? "Potwierdzenie zapisu do newslettera"
             : "Potwierdzenie otrzymania wiadomości",
-    intro: `Cześć ${greetingName}, ${autoresponseIntro} ${autoresponseNextStep}`,
+    intro:
+      input.type === "newsletter"
+        ? `Cześć, ${autoresponseIntro} ${autoresponseNextStep}`
+        : `Cześć ${input.name}, ${autoresponseIntro} ${autoresponseNextStep}`,
     bodyHtml:
       input.type === "newsletter"
         ? "<p style=\"margin:0;\">Jeśli chcesz kiedyś zrezygnować, po prostu odpisz na wiadomość lub napisz do nas na kontakt@acadea.org.</p>"
-        : `<strong>Dla porządku zapisujemy poniżej treść Twojego zgłoszenia:</strong><br /><br />${nl2br(input.message)}`,
+        : `<strong>Treść Twojego zgłoszenia:</strong><br /><br />${nl2br(input.message)}`,
   });
 
   let organizerSent = false;

@@ -142,13 +142,12 @@ router.post("/create", async (req, res) => {
 
     if (process.env.DATABASE_URL) {
       try {
-        const { db, contactSubmissionsTable } = await import("@workspace/db");
-        await db.insert(contactSubmissionsTable).values({
+        const { db, bookingLeadsTable } = await import("@workspace/db");
+        await db.insert(bookingLeadsTable).values({
           name,
           email,
           phone: phone ?? null,
           message: `Temat: ${topic}\nTryb: local-dev booking`,
-          type: "booking",
         });
       } catch (dbErr) {
         logger.warn({ err: dbErr }, "mailing list save failed (non-fatal)");
@@ -225,13 +224,12 @@ router.post("/create", async (req, res) => {
     // Save visitor to mailing list via contact_submissions
     if (process.env.DATABASE_URL) {
       try {
-        const { db, contactSubmissionsTable } = await import("@workspace/db");
-        await db.insert(contactSubmissionsTable).values({
+        const { db, bookingLeadsTable } = await import("@workspace/db");
+        await db.insert(bookingLeadsTable).values({
           name,
           email,
           phone: phone ?? null,
           message: `Temat: ${topic}`,
-          type: "booking",
         });
       } catch (dbErr) {
         logger.warn({ err: dbErr }, "mailing list save failed (non-fatal)");
