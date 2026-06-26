@@ -79,7 +79,7 @@ export default function Scholarship() {
               initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-              className="relative flex justify-center xl:justify-end xl:-translate-x-12"
+              className="relative flex justify-center xl:justify-end xl:-translate-x-20"
             >
               <div className="w-full max-w-[340px] rounded-[32px] border border-primary/10 bg-gradient-to-br from-primary/[0.04] via-white to-accent/10 p-4 md:p-5 shadow-[0_22px_60px_rgba(22,101,52,0.08)]">
                 <div className="relative overflow-hidden rounded-3xl border border-primary/10 bg-gradient-to-br from-primary to-primary/85 aspect-[9/16]">

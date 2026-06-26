@@ -200,7 +200,7 @@ export default function MentorForm() {
                     <select
                       value={form.country}
                       onChange={e => set("country", e.target.value)}
-                      className={`w-full rounded-xl border bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40 h-11 ${errors.country ? "border-red-400" : "border-input"}`}
+                      className={`w-full rounded-xl border bg-white px-4 py-3 text-[15px] leading-none text-gray-900 shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40 h-[58px] appearance-none ${errors.country ? "border-red-400" : "border-gray-200"}`}
                     >
                       <option value="">Kraj uczelni *</option>
                       {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
