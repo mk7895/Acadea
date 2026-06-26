@@ -160,6 +160,10 @@ router.get("/google/auth/callback", async (req, res) => {
       gmailRefreshToken: tokenData.refresh_token,
     });
 
+    const storageTarget = process.env.DATABASE_URL
+      ? "the database and the running server"
+      : ".env.local and the running server";
+
     logger.info(
       { scopes: tokenData.scope },
       "Google OAuth refresh token updated via admin callback",
@@ -169,7 +173,7 @@ router.get("/google/auth/callback", async (req, res) => {
       <html>
         <body style="font-family: sans-serif; padding: 32px; line-height: 1.5;">
           <h1>Google connected successfully</h1>
-          <p>The refresh token has been saved to <code>.env.local</code> and applied to the running server.</p>
+          <p>The refresh token has been saved to <code>${storageTarget}</code>.</p>
           <p>You can close this tab.</p>
         </body>
       </html>

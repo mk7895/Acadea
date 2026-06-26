@@ -43,7 +43,7 @@ async function sendGmailMessage({
   text: string;
   replyTo?: string;
 }) {
-  if (!hasGoogleGmailCredentials()) {
+  if (!(await hasGoogleGmailCredentials())) {
     return false;
   }
 
@@ -92,7 +92,7 @@ export async function sendBookingEmails(input: {
   const senderEmail = getGoogleGmailSendAs() ?? (await getGoogleAccountEmail());
   const notifyEmail = process.env.CONTACT_NOTIFY_EMAIL ?? senderEmail ?? null;
 
-  if (!notifyEmail || !senderEmail || !hasGoogleGmailCredentials()) {
+  if (!notifyEmail || !senderEmail || !(await hasGoogleGmailCredentials())) {
     logger.warn(
       "Unable to send booking confirmation emails because Gmail credentials are incomplete",
     );
@@ -180,7 +180,7 @@ export async function sendContactEmails(input: {
   const senderEmail = getGoogleGmailSendAs() ?? (await getGoogleAccountEmail());
   const notifyEmail = process.env.CONTACT_NOTIFY_EMAIL ?? senderEmail ?? null;
 
-  if (!notifyEmail || !senderEmail || !hasGoogleGmailCredentials()) {
+  if (!notifyEmail || !senderEmail || !(await hasGoogleGmailCredentials())) {
     logger.warn(
       "Unable to send contact email notifications because Gmail credentials are incomplete",
     );
