@@ -176,6 +176,13 @@ export default function AdminArticles() {
   }, [token, selectedId]);
 
   const readMin = useMemo(() => estimateReadMinutes(editor.markdown), [editor.markdown]);
+  const sortedArticles = useMemo(
+    () =>
+      [...articles].sort((a, b) =>
+        a.sortOrder === b.sortOrder ? a.title.localeCompare(b.title) : a.sortOrder - b.sortOrder,
+      ),
+    [articles],
+  );
 
   async function verifySecret(secretValue: string) {
     setAccessError("");
@@ -235,14 +242,6 @@ export default function AdminArticles() {
       </div>
     );
   }
-
-  const sortedArticles = useMemo(
-    () =>
-      [...articles].sort((a, b) =>
-        a.sortOrder === b.sortOrder ? a.title.localeCompare(b.title) : a.sortOrder - b.sortOrder,
-      ),
-    [articles],
-  );
 
   async function handleLogin() {
     setLoginError("");
