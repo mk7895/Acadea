@@ -14,6 +14,7 @@ import {
 
 const API_BASE = getApiBase();
 const ADMIN_TOKEN_KEY = "acadea-admin-session";
+const ADMIN_ENTRY_GRANTED_KEY = "acadea-admin-entry-granted";
 
 type EditorState = {
   id?: number;
@@ -67,6 +68,10 @@ async function fileToDataUrl(file: File) {
 export default function AdminArticles() {
   const entrySecret = new URLSearchParams(window.location.search).get("secret")?.trim() ?? "";
   const [token, setToken] = useState(() => localStorage.getItem(ADMIN_TOKEN_KEY) ?? "");
+  const [entryGranted, setEntryGranted] = useState(
+    () => sessionStorage.getItem(ADMIN_ENTRY_GRANTED_KEY) === "true",
+  );
+  const [entryCheckComplete, setEntryCheckComplete] = useState(false);
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [articles, setArticles] = useState<ArticleEditorRecord[]>([]);
@@ -77,32 +82,81 @@ export default function AdminArticles() {
   const markdownRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    if (!token) return;
-
     let cancelled = false;
-    void fetch(`${API_BASE}/admin/auth/status`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((data: { authenticated?: boolean }) => {
-        if (!cancelled && !data.authenticated) {
-          localStorage.removeItem(ADMIN_TOKEN_KEY);
-          setToken("");
+
+    async function verifyAccess() {
+      if (entrySecret) {
+        try {
+          const response = await fetch(`${API_BASE}/admin/auth/entry`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              entrySecret,
+            }),
+          });
+
+          if (!response.ok) {
+            window.location.replace("/");
+            return;
+          }
+
+          sessionStorage.setItem(ADMIN_ENTRY_GRANTED_KEY, "true");
+          if (!cancelled) {
+            setEntryGranted(true);
+            window.history.replaceState({}, "", "/panel");
+          }
+        } catch {
+          window.location.replace("/");
+          return;
         }
-      })
-      .catch(() => {
-        if (!cancelled) {
+      }
+
+      if (token) {
+        try {
+          const response = await fetch(`${API_BASE}/admin/auth/status`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          const data = (await response.json()) as { authenticated?: boolean };
+
+          if (!data.authenticated) {
+            localStorage.removeItem(ADMIN_TOKEN_KEY);
+            if (!cancelled) {
+              setToken("");
+            }
+          }
+        } catch {
           localStorage.removeItem(ADMIN_TOKEN_KEY);
-          setToken("");
+          if (!cancelled) {
+            setToken("");
+          }
         }
-      });
+      }
+
+      if (!cancelled) {
+        setEntryCheckComplete(true);
+      }
+    }
+
+    void verifyAccess();
 
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [entrySecret, token]);
+
+  useEffect(() => {
+    if (!entryCheckComplete) {
+      return;
+    }
+
+    if (!entryGranted && !token) {
+      window.location.replace("/");
+    }
+  }, [entryCheckComplete, entryGranted, token]);
 
   useEffect(() => {
     if (!token) return;
@@ -134,17 +188,15 @@ export default function AdminArticles() {
 
   const readMin = useMemo(() => estimateReadMinutes(editor.markdown), [editor.markdown]);
 
-  if (!entrySecret) {
+  if (!entryCheckComplete) {
     return (
       <div className="min-h-screen bg-[#f4f1ea] pt-28 pb-16 px-4">
         <div className="max-w-md mx-auto bg-white rounded-[28px] shadow-sm border border-[#e7e1d6] p-8 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78] mb-3">
             Panel redakcyjny
           </p>
-          <h1 className="text-3xl font-bold text-primary mb-3">Brak dostępu</h1>
-          <p className="text-sm text-gray-500">
-            Ten panel wymaga ukrytego sekretu w adresie URL.
-          </p>
+          <h1 className="text-3xl font-bold text-primary mb-3">Sprawdzanie dostępu</h1>
+          <p className="text-sm text-gray-500">Chwila…</p>
         </div>
       </div>
     );
@@ -186,6 +238,9 @@ export default function AdminArticles() {
     localStorage.removeItem(ADMIN_TOKEN_KEY);
     setToken("");
     setStatus("");
+    sessionStorage.removeItem(ADMIN_ENTRY_GRANTED_KEY);
+    setEntryGranted(false);
+    window.location.replace("/");
   }
 
   function startNewArticle() {

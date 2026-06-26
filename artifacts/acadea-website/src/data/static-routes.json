@@ -1,0 +1,15 @@
+[
+  { "path": "/", "source": "pages/Home.tsx", "includeInSitemap": true },
+  { "path": "/jak-to-dziala", "source": "pages/HowItWorks.tsx", "includeInSitemap": true },
+  { "path": "/kraje", "source": "pages/Countries.tsx", "includeInSitemap": true },
+  { "path": "/o-nas", "source": "pages/AboutUs.tsx", "includeInSitemap": true },
+  { "path": "/kontakt", "source": "pages/Contact.tsx", "includeInSitemap": true },
+  { "path": "/baza-wiedzy", "source": "pages/Blog.tsx", "includeInSitemap": true },
+  { "path": "/stypendium", "source": "pages/Scholarship.tsx", "includeInSitemap": true },
+  { "path": "/stypendium/aplikacja", "source": "pages/ScholarshipForm.tsx", "includeInSitemap": true },
+  { "path": "/umow-spotkanie", "source": "pages/Booking.tsx", "includeInSitemap": true },
+  { "path": "/mentoruj", "source": "pages/MentorForm.tsx", "includeInSitemap": true },
+  { "path": "/polityka-prywatnosci", "source": "pages/PrivacyPolicy.tsx", "includeInSitemap": true },
+  { "path": "/regulamin", "source": "pages/Regulamin.tsx", "includeInSitemap": true },
+  { "path": "/panel", "source": "pages/AdminArticles.tsx", "includeInSitemap": false }
+]

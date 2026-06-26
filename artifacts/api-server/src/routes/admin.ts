@@ -21,6 +21,10 @@ const adminLoginSchema = z.object({
   password: z.string().min(1),
 });
 
+const adminEntrySchema = z.object({
+  entrySecret: z.string().min(1),
+});
+
 const adminArticleSchema = z.object({
   sortOrder: z.number().int().min(0).default(0),
   category: z.enum(ARTICLE_CATEGORIES),
@@ -130,6 +134,19 @@ router.post("/admin/auth/login", async (req, res) => {
   }
 
   return res.json({ token: createAdminSessionToken() });
+});
+
+router.post("/admin/auth/entry", (req, res) => {
+  const parsed = adminEntrySchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(422).json({ error: parsed.error.message });
+  }
+
+  if (!secretsMatch(parsed.data.entrySecret, getAdminEntrySecret())) {
+    return res.status(404).json({ error: "Not found." });
+  }
+
+  return res.status(204).end();
 });
 
 router.get("/admin/auth/status", (req, res) => {

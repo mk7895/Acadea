@@ -13,35 +13,16 @@ const publicRoot = path.join(projectRoot, "public");
 
 const siteUrl = (process.env.SITE_URL ?? "https://acadea.org").replace(/\/+$/, "");
 
-const staticRoutes = [
-  "/",
-  "/jak-to-dziala",
-  "/kraje",
-  "/o-nas",
-  "/kontakt",
-  "/baza-wiedzy",
-  "/stypendium",
-  "/stypendium/aplikacja",
-  "/umow-spotkanie",
-  "/mentoruj",
-  "/polityka-prywatnosci",
-  "/regulamin",
-];
+const staticRoutesConfig = JSON.parse(
+  await readFile(path.join(srcRoot, "data", "static-routes.json"), "utf8"),
+);
+const staticRoutes = staticRoutesConfig
+  .filter((route) => route.includeInSitemap)
+  .map((route) => route.path);
 
-const routeSourceMap = {
-  "/": "pages/Home.tsx",
-  "/jak-to-dziala": "pages/HowItWorks.tsx",
-  "/kraje": "pages/Countries.tsx",
-  "/o-nas": "pages/AboutUs.tsx",
-  "/kontakt": "pages/Contact.tsx",
-  "/baza-wiedzy": "pages/Blog.tsx",
-  "/stypendium": "pages/Scholarship.tsx",
-  "/stypendium/aplikacja": "pages/ScholarshipForm.tsx",
-  "/umow-spotkanie": "pages/Booking.tsx",
-  "/mentoruj": "pages/MentorForm.tsx",
-  "/polityka-prywatnosci": "pages/PrivacyPolicy.tsx",
-  "/regulamin": "pages/Regulamin.tsx",
-};
+const routeSourceMap = Object.fromEntries(
+  staticRoutesConfig.map((route) => [route.path, route.source]),
+);
 
 async function readSource(relativePath) {
   return readFile(path.join(srcRoot, relativePath), "utf8");
