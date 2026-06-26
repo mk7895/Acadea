@@ -66,13 +66,15 @@ async function fileToDataUrl(file: File) {
 }
 
 export default function AdminArticles() {
-  const entrySecret = new URLSearchParams(window.location.search).get("secret")?.trim() ?? "";
+  const querySecret = new URLSearchParams(window.location.search).get("secret")?.trim() ?? "";
   const [token, setToken] = useState(() => localStorage.getItem(ADMIN_TOKEN_KEY) ?? "");
   const [entryGranted, setEntryGranted] = useState(
     () => sessionStorage.getItem(ADMIN_ENTRY_GRANTED_KEY) === "true",
   );
   const [entryCheckComplete, setEntryCheckComplete] = useState(false);
   const [accessError, setAccessError] = useState("");
+  const [secretInput, setSecretInput] = useState(querySecret);
+  const [isCheckingSecret, setIsCheckingSecret] = useState(false);
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [articles, setArticles] = useState<ArticleEditorRecord[]>([]);
@@ -85,41 +87,7 @@ export default function AdminArticles() {
   useEffect(() => {
     let cancelled = false;
 
-    async function verifyAccess() {
-      if (entrySecret) {
-        try {
-          const response = await fetch(`${API_BASE}/admin/auth/entry`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              entrySecret,
-            }),
-          });
-
-          if (!response.ok) {
-            if (!cancelled) {
-              setAccessError("Nieprawidłowy sekret dostępu. Za 5 sekund nastąpi przekierowanie.");
-              setEntryCheckComplete(true);
-            }
-            return;
-          }
-
-          sessionStorage.setItem(ADMIN_ENTRY_GRANTED_KEY, "true");
-          if (!cancelled) {
-            setEntryGranted(true);
-            window.history.replaceState({}, "", "/panel");
-          }
-        } catch {
-          if (!cancelled) {
-            setAccessError("Nie udało się potwierdzić dostępu. Za 5 sekund nastąpi przekierowanie.");
-            setEntryCheckComplete(true);
-          }
-          return;
-        }
-      }
-
+    async function verifyExistingSession() {
       if (token) {
         try {
           const response = await fetch(`${API_BASE}/admin/auth/status`, {
@@ -148,36 +116,20 @@ export default function AdminArticles() {
       }
     }
 
-    void verifyAccess();
+    void verifyExistingSession();
 
     return () => {
       cancelled = true;
     };
-  }, [entrySecret, token]);
+  }, [token]);
 
   useEffect(() => {
-    if (!entryCheckComplete) {
+    if (!querySecret || entryGranted) {
       return;
     }
 
-    if (!entryGranted && !token) {
-      if (!accessError) {
-        setAccessError("Brak aktywnego dostępu do panelu. Za 5 sekund nastąpi przekierowanie.");
-      }
-    }
-  }, [accessError, entryCheckComplete, entryGranted, token]);
-
-  useEffect(() => {
-    if (!accessError) {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      window.location.replace("/");
-    }, 5000);
-
-    return () => window.clearTimeout(timeout);
-  }, [accessError]);
+    void verifySecret(querySecret, true);
+  }, [entryGranted, querySecret]);
 
   useEffect(() => {
     if (!token) return;
@@ -209,6 +161,41 @@ export default function AdminArticles() {
 
   const readMin = useMemo(() => estimateReadMinutes(editor.markdown), [editor.markdown]);
 
+  async function verifySecret(secretValue: string, clearUrlOnSuccess = false) {
+    setAccessError("");
+    setIsCheckingSecret(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/admin/auth/entry`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          entrySecret: secretValue,
+        }),
+      });
+
+      if (!response.ok) {
+        setAccessError("Nieprawidłowy sekret dostępu.");
+        setIsCheckingSecret(false);
+        return;
+      }
+
+      sessionStorage.setItem(ADMIN_ENTRY_GRANTED_KEY, "true");
+      setEntryGranted(true);
+      setSecretInput(secretValue);
+      setIsCheckingSecret(false);
+
+      if (clearUrlOnSuccess) {
+        window.history.replaceState({}, "", "/panel");
+      }
+    } catch {
+      setAccessError("Nie udało się potwierdzić dostępu.");
+      setIsCheckingSecret(false);
+    }
+  }
+
   if (!entryCheckComplete) {
     return (
       <div className="min-h-screen bg-[#f4f1ea] pt-28 pb-16 px-4">
@@ -223,15 +210,33 @@ export default function AdminArticles() {
     );
   }
 
-  if (accessError && !entryGranted && !token) {
+  if (!entryGranted && !token) {
     return (
       <div className="min-h-screen bg-[#f4f1ea] pt-28 pb-16 px-4">
-        <div className="max-w-md mx-auto bg-white rounded-[28px] shadow-sm border border-[#e7e1d6] p-8 text-center">
+        <div className="max-w-md mx-auto bg-white rounded-[28px] shadow-sm border border-[#e7e1d6] p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78] mb-3">
             Panel redakcyjny
           </p>
-          <h1 className="text-3xl font-bold text-primary mb-3">Brak dostępu</h1>
-          <p className="text-sm text-gray-500">{accessError}</p>
+          <h1 className="text-3xl font-bold text-primary mb-3">Odblokuj panel</h1>
+          <p className="text-sm text-gray-500 mb-6">
+            Wpisz ukryty sekret dostępu, aby przejść do logowania administratora.
+          </p>
+          <input
+            type="password"
+            value={secretInput}
+            onChange={(e) => setSecretInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && void verifySecret(secretInput, true)}
+            placeholder="Sekret dostępu"
+            className="w-full h-12 px-4 rounded-2xl border border-[#ded7c9] focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          {accessError ? <p className="mt-3 text-sm text-red-600">{accessError}</p> : null}
+          <button
+            onClick={() => void verifySecret(secretInput, true)}
+            disabled={isCheckingSecret || !secretInput.trim()}
+            className="mt-5 w-full h-12 rounded-2xl bg-primary text-white font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
+          >
+            {isCheckingSecret ? "Sprawdzanie…" : "Odblokuj panel"}
+          </button>
         </div>
       </div>
     );
@@ -253,7 +258,7 @@ export default function AdminArticles() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        entrySecret,
+        entrySecret: secretInput,
         password,
       }),
     });
@@ -275,7 +280,8 @@ export default function AdminArticles() {
     setStatus("");
     sessionStorage.removeItem(ADMIN_ENTRY_GRANTED_KEY);
     setEntryGranted(false);
-    window.location.replace("/");
+    setPassword("");
+    setLoginError("");
   }
 
   function startNewArticle() {
