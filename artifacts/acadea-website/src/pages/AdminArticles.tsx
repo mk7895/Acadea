@@ -14,7 +14,6 @@ import {
 
 const API_BASE = getApiBase();
 const ADMIN_TOKEN_KEY = "acadea-admin-session";
-const ADMIN_ENTRY_GRANTED_KEY = "acadea-admin-entry-granted";
 
 type EditorState = {
   id?: number;
@@ -68,12 +67,9 @@ async function fileToDataUrl(file: File) {
 export default function AdminArticles() {
   const querySecret = new URLSearchParams(window.location.search).get("secret")?.trim() ?? "";
   const [token, setToken] = useState(() => localStorage.getItem(ADMIN_TOKEN_KEY) ?? "");
-  const [entryGranted, setEntryGranted] = useState(
-    () => sessionStorage.getItem(ADMIN_ENTRY_GRANTED_KEY) === "true",
-  );
+  const [entryGranted, setEntryGranted] = useState(false);
   const [entryCheckComplete, setEntryCheckComplete] = useState(false);
   const [accessError, setAccessError] = useState("");
-  const [secretInput, setSecretInput] = useState(querySecret);
   const [isCheckingSecret, setIsCheckingSecret] = useState(false);
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -87,7 +83,23 @@ export default function AdminArticles() {
   useEffect(() => {
     let cancelled = false;
 
-    async function verifyExistingSession() {
+    async function verifyAccess() {
+      if (!querySecret) {
+        if (!cancelled) {
+          setAccessError("Brak sekretu dostępu w adresie URL. Za 5 sekund nastąpi przekierowanie.");
+          setEntryCheckComplete(true);
+        }
+        return;
+      }
+
+      const secretOk = await verifySecret(querySecret);
+      if (!secretOk) {
+        if (!cancelled) {
+          setEntryCheckComplete(true);
+        }
+        return;
+      }
+
       if (token) {
         try {
           const response = await fetch(`${API_BASE}/admin/auth/status`, {
@@ -116,20 +128,24 @@ export default function AdminArticles() {
       }
     }
 
-    void verifyExistingSession();
+    void verifyAccess();
 
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [querySecret, token]);
 
   useEffect(() => {
-    if (!querySecret || entryGranted) {
+    if (!accessError) {
       return;
     }
 
-    void verifySecret(querySecret, true);
-  }, [entryGranted, querySecret]);
+    const timeout = window.setTimeout(() => {
+      window.location.replace("/");
+    }, 5000);
+
+    return () => window.clearTimeout(timeout);
+  }, [accessError]);
 
   useEffect(() => {
     if (!token) return;
@@ -161,7 +177,7 @@ export default function AdminArticles() {
 
   const readMin = useMemo(() => estimateReadMinutes(editor.markdown), [editor.markdown]);
 
-  async function verifySecret(secretValue: string, clearUrlOnSuccess = false) {
+  async function verifySecret(secretValue: string) {
     setAccessError("");
     setIsCheckingSecret(true);
 
@@ -179,20 +195,16 @@ export default function AdminArticles() {
       if (!response.ok) {
         setAccessError("Nieprawidłowy sekret dostępu.");
         setIsCheckingSecret(false);
-        return;
+        return false;
       }
 
-      sessionStorage.setItem(ADMIN_ENTRY_GRANTED_KEY, "true");
       setEntryGranted(true);
-      setSecretInput(secretValue);
       setIsCheckingSecret(false);
-
-      if (clearUrlOnSuccess) {
-        window.history.replaceState({}, "", "/panel");
-      }
+      return true;
     } catch {
       setAccessError("Nie udało się potwierdzić dostępu.");
       setIsCheckingSecret(false);
+      return false;
     }
   }
 
@@ -210,33 +222,15 @@ export default function AdminArticles() {
     );
   }
 
-  if (!entryGranted && !token) {
+  if (accessError && !entryGranted) {
     return (
       <div className="min-h-screen bg-[#f4f1ea] pt-28 pb-16 px-4">
-        <div className="max-w-md mx-auto bg-white rounded-[28px] shadow-sm border border-[#e7e1d6] p-8">
+        <div className="max-w-md mx-auto bg-white rounded-[28px] shadow-sm border border-[#e7e1d6] p-8 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78] mb-3">
             Panel redakcyjny
           </p>
-          <h1 className="text-3xl font-bold text-primary mb-3">Odblokuj panel</h1>
-          <p className="text-sm text-gray-500 mb-6">
-            Wpisz ukryty sekret dostępu, aby przejść do logowania administratora.
-          </p>
-          <input
-            type="password"
-            value={secretInput}
-            onChange={(e) => setSecretInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && void verifySecret(secretInput, true)}
-            placeholder="Sekret dostępu"
-            className="w-full h-12 px-4 rounded-2xl border border-[#ded7c9] focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-          {accessError ? <p className="mt-3 text-sm text-red-600">{accessError}</p> : null}
-          <button
-            onClick={() => void verifySecret(secretInput, true)}
-            disabled={isCheckingSecret || !secretInput.trim()}
-            className="mt-5 w-full h-12 rounded-2xl bg-primary text-white font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
-          >
-            {isCheckingSecret ? "Sprawdzanie…" : "Odblokuj panel"}
-          </button>
+          <h1 className="text-3xl font-bold text-primary mb-3">Brak dostępu</h1>
+          <p className="text-sm text-gray-500">{accessError}</p>
         </div>
       </div>
     );
@@ -258,7 +252,7 @@ export default function AdminArticles() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        entrySecret: secretInput,
+        entrySecret: querySecret,
         password,
       }),
     });
@@ -278,7 +272,6 @@ export default function AdminArticles() {
     localStorage.removeItem(ADMIN_TOKEN_KEY);
     setToken("");
     setStatus("");
-    sessionStorage.removeItem(ADMIN_ENTRY_GRANTED_KEY);
     setEntryGranted(false);
     setPassword("");
     setLoginError("");
