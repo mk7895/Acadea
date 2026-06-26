@@ -76,7 +76,7 @@ function buildSlotsFromBusy(busy: BusyWindow[]) {
 router.get("/slots", async (req, res) => {
   if (!(await hasGoogleOAuthCredentials())) {
     logger.warn(
-      "Replit connector identity unavailable; serving local development booking slots",
+      "Calendar connector credentials unavailable; serving local development booking slots",
     );
     return res.json({ slots: buildLocalSlots(), mode: "local" });
   }
@@ -137,7 +137,7 @@ router.post("/create", async (req, res) => {
   if (!(await hasGoogleOAuthCredentials())) {
     logger.warn(
       { start, email },
-      "Replit connector identity unavailable; confirming local development booking without calendar sync",
+      "Calendar connector credentials unavailable; confirming local development booking without calendar sync",
     );
 
     if (process.env.DATABASE_URL) {
