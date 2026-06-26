@@ -41,7 +41,7 @@ export function Navbar() {
       }`}
     >
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 z-50 relative">
+        <Link href="/" className="flex cursor-pointer items-center gap-2 z-50 relative">
           <img
             src={isScrolled ? logoGreen : logoGreen}
             alt="ACADEA Logo"
@@ -56,7 +56,7 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-semibold transition-colors px-3 py-1 rounded-full border ${
+                className={`cursor-pointer text-sm font-semibold transition-colors px-3 py-1 rounded-full border ${
                   location === link.href
                     ? "bg-accent text-primary border-accent"
                     : "text-accent border-accent/40 hover:bg-accent hover:text-primary"
@@ -68,7 +68,7 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-medium transition-colors hover:text-accent ${
+                className={`cursor-pointer text-sm font-medium transition-colors hover:text-accent ${
                   location === link.href ? "text-primary" : "text-gray-600"
                 }`}
               >
@@ -88,7 +88,7 @@ export function Navbar() {
 
         {/* Mobile Toggle */}
         <button
-          className="md:hidden z-50 relative p-2 text-primary"
+          className="md:hidden z-50 relative cursor-pointer p-2 text-primary"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle Menu"
         >
@@ -110,7 +110,7 @@ export function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`text-2xl font-semibold transition-colors ${
+                    className={`cursor-pointer text-2xl font-semibold transition-colors ${
                       link.highlight
                         ? "text-accent"
                         : location === link.href

@@ -124,7 +124,7 @@ export default function Booking() {
     : "";
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-20">
+    <div className="min-h-screen bg-gray-50 pt-28 md:pt-32 pb-20">
       <div className="container mx-auto px-4 max-w-2xl">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
@@ -173,6 +173,10 @@ export default function Booking() {
                 <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
                   <Calendar size={20} /> Wybierz dzień
                 </h2>
+                <p className="text-sm text-gray-500 mb-5">
+                  Wszystkie godziny są podane w polskiej strefie czasowej:{" "}
+                  <strong className="text-primary">Europe/Warsaw</strong>.
+                </p>
                 {loadingSlots && (
                   <div className="flex items-center justify-center py-16 text-gray-400 gap-3">
                     <Loader2 size={24} className="animate-spin" />
@@ -213,6 +217,9 @@ export default function Booking() {
                   <Clock size={20} /> Wybierz godzinę
                 </h2>
                 <p className="text-sm text-gray-400 mb-6 capitalize">{selectedDay.label}</p>
+                <p className="text-sm text-gray-500 mb-5">
+                  Godziny poniżej są wyświetlane w polskim czasie.
+                </p>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                   {selectedDay.slots.map((slot) => (
                     <button

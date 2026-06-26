@@ -86,7 +86,7 @@ export default function Home() {
   return (
     <div className="w-full">
       {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex items-center overflow-hidden bg-white pt-36 md:pt-44">
+      <section className="relative min-h-screen flex items-center overflow-x-hidden bg-white pt-28 md:pt-36 pb-10 md:pb-14">
         {/* Background accent shapes */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute -top-40 -right-40 w-[700px] h-[700px] rounded-full bg-primary/6" />
@@ -94,7 +94,7 @@ export default function Home() {
         </div>
 
         <div className="container mx-auto px-4 md:px-6 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-12 lg:gap-20 items-center">
 
             {/* Left — copy */}
             <motion.div
@@ -117,7 +117,7 @@ export default function Home() {
                 Pomagamy dostać się na wymarzone uczelnie na całym świecie. 
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 mb-14">
+              <div className="flex flex-col sm:flex-row gap-4 mb-10 md:mb-14">
                 <Link href="/umow-spotkanie">
                   <Button
                     size="lg"
@@ -160,7 +160,7 @@ export default function Home() {
       </section>
 
       {/* ── SERVICES ─────────────────────────────────────────────────── */}
-      <section className="py-24 bg-gray-50">
+      <section className="py-12 md:py-16 bg-gray-50">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-3xl mx-auto text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold text-primary mb-6">W czym Ci pomożemy?</h2>
@@ -194,9 +194,9 @@ export default function Home() {
       </section>
 
       {/* ── SCHOLARSHIP ──────────────────────────────────────────────── */}
-      <section className="py-24 bg-white overflow-hidden">
+      <section className="py-12 md:py-16 bg-white overflow-hidden">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-12 lg:gap-16 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -236,6 +236,20 @@ export default function Home() {
                 <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent/10 blur-[80px]" />
                 <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-primary/8 blur-[60px]" />
               </div>
+              <div className="relative z-10 mb-8 overflow-hidden rounded-[28px] border border-primary/10 bg-white/70 aspect-[4/3] shadow-[0_18px_40px_rgba(22,101,52,0.08)]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(252,188,30,0.20),transparent_30%),linear-gradient(135deg,rgba(22,101,52,0.12),rgba(255,255,255,0.65))]" />
+                <div className="relative flex h-full flex-col items-center justify-center px-8 text-center">
+                  <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-5">
+                    <GraduationCap size={32} className="text-primary" />
+                  </div>
+                  <p className="text-primary/55 text-xs uppercase tracking-[0.26em] font-semibold mb-3">
+                    Placeholder zdjęcia
+                  </p>
+                  <p className="text-primary text-xl md:text-2xl font-bold leading-tight">
+                    Miejsce na zdjęcie programu stypendialnego
+                  </p>
+                </div>
+              </div>
               <div className="relative z-10">
                 <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
                   <GraduationCap size={28} className="text-primary" />
@@ -248,7 +262,7 @@ export default function Home() {
       </section>
 
       {/* ── DLA RODZICÓW ─────────────────────────────────────────────── */}
-      <section className="py-24 bg-gray-50">
+      <section className="py-12 md:py-16 bg-gray-50">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-3xl mx-auto text-center mb-14">
             <motion.div
@@ -306,7 +320,7 @@ export default function Home() {
       </section>
 
       {/* ── WHATSAPP ─────────────────────────────────────────────────── */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-12 md:py-16 bg-gray-50">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
@@ -376,9 +390,9 @@ export default function Home() {
       </section>
 
       {/* ── BECOME A MENTOR ──────────────────────────────────────────── */}
-      <section className="py-24 bg-white">
+      <section className="py-12 md:py-16 bg-white">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-12 lg:gap-16 items-center">
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -456,7 +470,7 @@ export default function Home() {
       </section>
 
       {/* ── FINAL CTA ────────────────────────────────────────────────── */}
-      <section className="py-24 relative overflow-hidden bg-primary text-white">
+      <section className="py-12 md:py-16 relative overflow-hidden bg-primary text-white">
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-accent rounded-full blur-[120px] opacity-20 pointer-events-none" />
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-white/10 rounded-full blur-[120px] opacity-20 pointer-events-none" />
         <div className="container mx-auto px-4 md:px-6 relative z-10 text-center">

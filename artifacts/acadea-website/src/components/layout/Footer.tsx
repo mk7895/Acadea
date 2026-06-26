@@ -1,8 +1,33 @@
+import type { MouseEvent } from "react";
 import { Link } from "wouter";
 import logo from "@/assets/logo-white.png";
 import { Facebook, Instagram, Linkedin, Mail, Phone, Heart } from "lucide-react";
 
+const serviceLinks = [
+  { label: "Doradztwo Uczelni", href: "/jak-to-dziala#profilowanie-i-wybor-uczelni" },
+  { label: "Egzaminy i Certyfikaty", href: "/jak-to-dziala#egzaminy-i-certyfikaty" },
+  { label: "Przygotowanie Dokumentów", href: "/jak-to-dziala#przygotowanie-dokumentow" },
+  { label: "Eseje i Motywacje", href: "/jak-to-dziala#eseje-i-personal-statement" },
+  { label: "Tłumaczenia i Legalizacja", href: "/jak-to-dziala#aplikacja-i-formalnosci" },
+  { label: "Wizy i Zakwaterowanie", href: "/jak-to-dziala#po-przyjeciu" },
+];
+
 export function Footer() {
+  const handleServiceClick = (
+    event: MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) => {
+    const [path, hash] = href.split("#");
+    if (window.location.pathname !== path || !hash) return;
+
+    event.preventDefault();
+    const target = document.getElementById(hash);
+    if (!target) return;
+
+    window.history.replaceState(null, "", href);
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <footer className="bg-primary text-white pt-16 pb-8">
       <div className="container mx-auto px-4 md:px-6">
@@ -89,18 +114,15 @@ export function Footer() {
           <div>
             <h4 className="text-lg font-semibold mb-6">Usługi</h4>
             <ul className="space-y-4">
-              {[
-                "Doradztwo Uczelni",
-                "Egzaminy i Certyfikaty",
-                "Przygotowanie Dokumentów",
-                "Eseje i Motywacje",
-                "Tłumaczenia i Legalizacja",
-                "Wizy i Zakwaterowanie",
-              ].map((svc) => (
-                <li key={svc}>
-                  <Link href="/jak-to-dziala" className="text-gray-300 hover:text-white transition-colors">
-                    {svc}
-                  </Link>
+              {serviceLinks.map((svc) => (
+                <li key={svc.href}>
+                  <a
+                    href={svc.href}
+                    onClick={(event) => handleServiceClick(event, svc.href)}
+                    className="text-gray-300 hover:text-white transition-colors"
+                  >
+                    {svc.label}
+                  </a>
                 </li>
               ))}
             </ul>

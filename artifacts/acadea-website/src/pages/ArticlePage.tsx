@@ -5,8 +5,6 @@ import { Link } from "wouter";
 import { ArrowRight, Clock, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-
 export default function ArticlePage() {
   const params = useParams<{ slug: string }>();
   const slug = `/${params.slug}`;
@@ -30,18 +28,18 @@ export default function ArticlePage() {
     .slice(0, 3);
 
   return (
-    <div className="bg-white min-h-screen pt-28 md:pt-32 pb-20">
+    <div className="bg-white min-h-screen pt-24 md:pt-28 pb-16 md:pb-20">
       <div className="container mx-auto px-4 md:px-6 max-w-3xl">
 
         {/* Breadcrumb */}
         <div className="mb-8">
-          <a
-            href={`${BASE}/baza-wiedzy`}
+          <Link
+            href="/baza-wiedzy"
             className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary transition-colors"
           >
             <ChevronLeft size={16} />
             Baza Wiedzy
-          </a>
+          </Link>
         </div>
 
         {/* Header */}
@@ -96,7 +94,7 @@ export default function ArticlePage() {
                   );
                 }
                 return (
-                  <a href={href} target="_blank" rel="noopener noreferrer">
+                  <a href={href}>
                     {children}
                   </a>
                 );
@@ -109,7 +107,7 @@ export default function ArticlePage() {
 
         {/* Related articles */}
         {related.length > 0 && (
-          <div className="mt-16 pt-10 border-t border-gray-100">
+          <div className="mt-12 md:mt-16 pt-8 md:pt-10 border-t border-gray-100">
             <h3 className="text-xl font-bold text-primary mb-6">Czytaj też</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {related.map((r) => (
@@ -144,7 +142,7 @@ export default function ArticlePage() {
         )}
 
         {/* CTA */}
-        <div className="mt-16 rounded-3xl bg-gradient-to-br from-primary to-primary/85 p-10 text-center text-white">
+        <div className="mt-12 md:mt-16 rounded-3xl bg-gradient-to-br from-primary to-primary/85 p-8 md:p-10 text-center text-white">
           <h3 className="text-2xl font-bold mb-3">
             Chcesz porozmawiać o swojej aplikacji?
           </h3>
@@ -152,18 +150,18 @@ export default function ArticlePage() {
             Bezpłatna konsultacja z doradcą ACADEA — odpowiemy na Twoje pytania i pomożemy zaplanować kolejne kroki.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href={`${BASE}/umow-spotkanie`}
+            <Link
+              href="/umow-spotkanie"
               className="inline-flex items-center justify-center gap-2 bg-accent text-primary font-bold px-8 py-4 rounded-full hover:bg-white transition-colors text-base"
             >
               Umów bezpłatną konsultację <ArrowRight size={18} />
-            </a>
-            <a
-              href={`${BASE}/jak-to-dziala`}
+            </Link>
+            <Link
+              href="/jak-to-dziala"
               className="inline-flex items-center justify-center gap-2 bg-white/15 text-white font-semibold px-8 py-4 rounded-full hover:bg-white/25 transition-colors text-base"
             >
               Zapoznaj się z naszą ofertą
-            </a>
+            </Link>
           </div>
         </div>
       </div>

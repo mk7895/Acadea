@@ -1,6 +1,13 @@
 import { motion, type Variants } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Heart, BookOpen, GraduationCap, Star, Clock, Calendar } from "lucide-react";
+import {
+  ArrowRight,
+  Heart,
+  PlayCircle,
+  Star,
+  Clock,
+  Calendar,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const containerVariants: Variants = {
@@ -36,36 +43,65 @@ export default function Scholarship() {
   return (
     <div className="w-full">
       {/* Hero */}
-      <section className="pt-28 pb-16 bg-white border-b border-gray-100">
+      <section className="pt-24 md:pt-28 pb-10 md:pb-12 bg-white border-b border-gray-100">
         <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/20 text-primary text-xs font-semibold mb-6 uppercase tracking-widest border border-accent/40">
-              <Heart size={13} className="fill-accent text-accent" />
-              <span>Program Stypendialny ACADEA</span>
-            </div>
-            <h1 className="text-5xl md:text-7xl font-bold text-gray-900 leading-[1.05] tracking-tight mb-5">
-              Twoja pasja.<br />
-              <span className="text-primary">Nasze wsparcie.</span>
-            </h1>
-            <p className="text-xl text-gray-500 leading-relaxed max-w-2xl mb-10">
-              Program Stypendialny ACADEA to mentoring i wsparcie dla ambitnych, zmotywowanych osób — niezależnie od tego, czy marzą o studiach za granicą, czy chcą rozwijać inną pasję, jak lotnictwo czy taniec. Pomagamy wybrać i przejść własną ścieżkę.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <a href="#konkurs">
-                <Button
-                  size="lg"
-                  data-testid="button-scholarship-hero-cta"
-                  className="h-14 px-8 text-base bg-primary text-white hover:bg-gray-900 transition-colors border-none rounded-full font-bold"
-                >
-                  Zobacz konkurs stypendialny <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </a>
-            </div>
-          </motion.div>
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.02fr)_minmax(340px,0.98fr)] gap-10 lg:gap-14 items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/20 text-primary text-xs font-semibold mb-6 uppercase tracking-widest border border-accent/40">
+                <Heart size={13} className="fill-accent text-accent" />
+                <span>Program Stypendialny ACADEA</span>
+              </div>
+              <h1 className="text-5xl md:text-7xl font-bold text-gray-900 leading-[1.05] tracking-tight mb-5">
+                Twoja pasja.<br />
+                <span className="text-primary">Nasze wsparcie.</span>
+              </h1>
+              <p className="text-xl text-gray-500 leading-relaxed max-w-2xl mb-8 md:mb-10">
+                Program Stypendialny ACADEA to mentoring i wsparcie dla ambitnych, zmotywowanych osób — niezależnie od tego, czy marzą o studiach za granicą, czy chcą rozwijać inną pasję, jak lotnictwo czy taniec. Pomagamy wybrać i przejść własną ścieżkę.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <a href="#konkurs">
+                  <Button
+                    size="lg"
+                    data-testid="button-scholarship-hero-cta"
+                    className="h-14 px-8 text-base bg-primary text-white hover:bg-gray-900 transition-colors border-none rounded-full font-bold"
+                  >
+                    Zobacz konkurs stypendialny <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </a>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
+              className="relative flex justify-center xl:justify-end xl:-translate-x-6"
+            >
+              <div className="w-full max-w-[340px] rounded-[32px] border border-primary/10 bg-gradient-to-br from-primary/[0.04] via-white to-accent/10 p-4 md:p-5 shadow-[0_22px_60px_rgba(22,101,52,0.08)]">
+                <div className="relative overflow-hidden rounded-3xl border border-primary/10 bg-gradient-to-br from-primary to-primary/85 aspect-[9/16]">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(252,188,30,0.30),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.14),transparent_32%)]" />
+                  <div className="relative z-10 flex h-full flex-col items-center justify-center gap-4 text-center text-white px-6">
+                    <PlayCircle size={64} className="text-accent drop-shadow-[0_10px_30px_rgba(0,0,0,0.2)]" />
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-accent/90 mb-2">
+                        Placeholder wideo
+                      </p>
+                      <h2 className="text-2xl md:text-3xl font-bold leading-tight">
+                        Miejsce na film o programie stypendialnym
+                      </h2>
+                    </div>
+                    <span className="inline-flex items-center justify-center rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/90 border border-white/20">
+                      9:16
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
@@ -91,7 +127,7 @@ export default function Scholarship() {
       </section>
 
       {/* Mission statement */}
-      <section className="py-20 bg-white">
+      <section className="py-12 md:py-14 bg-white">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-4xl mx-auto">
             <motion.div
@@ -119,7 +155,7 @@ export default function Scholarship() {
       </section>
 
       {/* Competition section */}
-      <section className="py-24 bg-primary relative overflow-hidden">
+      <section className="py-12 md:py-16 bg-primary relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-accent blur-[120px]" />
         </div>
@@ -193,7 +229,7 @@ export default function Scholarship() {
       </section>
 
       {/* Apply CTA */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-12 md:py-16 bg-gray-50">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
             initial={{ opacity: 0, y: 24 }}

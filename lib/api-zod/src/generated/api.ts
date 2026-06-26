@@ -32,7 +32,6 @@ export const SubmitContactBody = zod.object({
   "email": zod.string().email(),
   "phone": zod.string().optional(),
   "message": zod.string().min(submitContactBodyMessageMin),
-  "type": zod.enum(['consultation', 'mentor', 'scholarship']).default(submitContactBodyTypeDefault)
+  "type": zod.enum(['consultation', 'mentor', 'mentor_application', 'scholarship']).default(submitContactBodyTypeDefault)
 })
-
 

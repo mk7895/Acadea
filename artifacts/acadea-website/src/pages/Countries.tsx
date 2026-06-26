@@ -7,11 +7,11 @@ import { countries } from "@/data/countries";
 
 export default function Countries() {
   return (
-    <div className="w-full pt-28 pb-20 bg-gray-50 min-h-screen">
+    <div className="w-full pt-24 md:pt-28 pb-12 md:pb-16 bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 md:px-6">
 
         {/* Hero with globe */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10 items-center mb-10 md:mb-14">
           <div className="max-w-xl">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -82,7 +82,7 @@ export default function Countries() {
         </motion.div>
 
         {/* CTA */}
-        <div className="mt-20 pt-16 border-t border-gray-200 text-center">
+        <div className="mt-12 md:mt-16 pt-10 md:pt-12 border-t border-gray-200 text-center">
           <h2 className="text-2xl font-bold text-primary mb-4">Nie wiesz, który kraj wybrać?</h2>
           <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
             Podczas pierwszej bezpłatnej konsultacji przeanalizujemy Twój profil i doradzimy, który kraj i system edukacji najlepiej odpowiada Twoim oczekiwaniom.

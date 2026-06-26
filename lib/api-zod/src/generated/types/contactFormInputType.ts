@@ -12,5 +12,6 @@ export type ContactFormInputType = typeof ContactFormInputType[keyof typeof Cont
 export const ContactFormInputType = {
   consultation: 'consultation',
   mentor: 'mentor',
+  mentor_application: 'mentor_application',
   scholarship: 'scholarship',
 } as const;

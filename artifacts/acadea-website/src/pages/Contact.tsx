@@ -7,8 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, MapPin, Phone, Loader2 } from "lucide-react";
+import { Mail, Phone, Loader2 } from "lucide-react";
 import { useSubmitContact } from "@workspace/api-client-react";
+
+const CONTACT_EMAIL = "kontakt@acadea.org";
+const CONTACT_PHONE = "+48 728 492 936";
+const CONTACT_PHONE_HREF = "+48728492936";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Imię jest wymagane"),
@@ -57,7 +61,7 @@ export default function Contact() {
           toast({
             title: "Błąd wysyłania",
             description:
-              "Nie udało się wysłać wiadomości. Spróbuj ponownie lub napisz bezpośrednio na kontakt@acadea.pl.",
+              `Nie udało się wysłać wiadomości. Spróbuj ponownie lub napisz bezpośrednio na ${CONTACT_EMAIL}.`,
             variant: "destructive",
           });
         },
@@ -66,7 +70,7 @@ export default function Contact() {
   }
 
   return (
-    <div className="w-full pt-28 pb-20 bg-gray-50 min-h-screen">
+    <div className="w-full pt-28 md:pt-32 pb-20 bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 md:px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -104,10 +108,10 @@ export default function Contact() {
                     <div>
                       <p className="font-semibold mb-1">Email</p>
                       <a
-                        href="mailto:kontakt@acadea.pl"
+                        href={`mailto:${CONTACT_EMAIL}`}
                         className="text-gray-300 hover:text-white transition-colors"
                       >
-                        kontakt@acadea.pl
+                        {CONTACT_EMAIL}
                       </a>
                     </div>
                   </div>
@@ -117,10 +121,10 @@ export default function Contact() {
                     <div>
                       <p className="font-semibold mb-1">Telefon</p>
                       <a
-                        href="tel:+48123456789"
+                        href={`tel:${CONTACT_PHONE_HREF}`}
                         className="text-gray-300 hover:text-white transition-colors"
                       >
-                        +48 123 456 789
+                        {CONTACT_PHONE}
                       </a>
                     </div>
                   </div>

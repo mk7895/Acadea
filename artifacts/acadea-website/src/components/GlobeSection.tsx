@@ -1,5 +1,10 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
-import { geoOrthographic, geoPath, geoGraticule, type GeoPermissibleObjects } from "d3-geo";
+import {
+  geoOrthographic,
+  geoPath,
+  geoGraticule,
+  type GeoPermissibleObjects,
+} from "d3-geo";
 import { feature } from "topojson-client";
 import topologyJson from "world-atlas/countries-110m.json";
 import { Link, useLocation } from "wouter";
@@ -21,11 +26,6 @@ const SIZE = 480;
 const SCALE = SIZE / 2 - 16;
 const INITIAL_ROT: Rotation = [-10, -50, 0];
 
-const countriesGeo = feature(topologyJson, (topologyJson as Record<string, unknown>).objects
-  ? (topologyJson as Record<string, { type: string }>).objects
-  // @ts-expect-error world-atlas shape
-  : topologyJson.objects.countries) as { features: CountryFeature[] };
-
 // Handle world-atlas topology correctly
 const getCountries = (): { features: CountryFeature[] } => {
   const topo = topologyJson as Record<string, unknown>;
@@ -35,7 +35,39 @@ const getCountries = (): { features: CountryFeature[] } => {
 };
 
 const COUNTRIES_GEO = getCountries();
+const COUNTRIES_GEO_IDS = new Set(
+  COUNTRIES_GEO.features.map((feature) => String(feature.id ?? "").padStart(3, "0")),
+);
 const GRATICULE = geoGraticule()();
+const MANUAL_MARKERS: Record<string, { coordinates: [number, number]; radius: number }> = {
+  "344": { coordinates: [114.1694, 22.3193], radius: 4.5 },
+  "470": { coordinates: [14.3754, 35.9375], radius: 4.5 },
+  "702": { coordinates: [103.8198, 1.3521], radius: 4.5 },
+};
+
+const toRadians = (value: number) => (value * Math.PI) / 180;
+
+function isFrontHemisphere(
+  coordinates: [number, number],
+  rotation: Rotation,
+) {
+  const [lon, lat] = coordinates;
+  const centerLon = -rotation[0];
+  const centerLat = -rotation[1];
+
+  const lonRad = toRadians(lon);
+  const latRad = toRadians(lat);
+  const centerLonRad = toRadians(centerLon);
+  const centerLatRad = toRadians(centerLat);
+
+  const dot =
+    Math.sin(latRad) * Math.sin(centerLatRad) +
+    Math.cos(latRad) *
+      Math.cos(centerLatRad) *
+      Math.cos(lonRad - centerLonRad);
+
+  return dot > 0;
+}
 
 export function GlobeSection() {
   const [rotation, setRotation] = useState<Rotation>(INITIAL_ROT);
@@ -118,18 +150,34 @@ export function GlobeSection() {
     [rotation],
   );
   const pathGen = useMemo(() => geoPath(projection), [projection]);
+  const fallbackMarkers = useMemo(
+    () =>
+      Object.entries(ACADEA)
+        .filter(([iso]) => !COUNTRIES_GEO_IDS.has(iso) && MANUAL_MARKERS[iso])
+        .map(([iso, country]) => ({
+          iso,
+          country,
+          ...MANUAL_MARKERS[iso],
+        })),
+    [],
+  );
 
   const hoveredData = hovered ? ACADEA[hovered] : null;
 
   return (
-    <div className="relative select-none w-full max-w-[500px] mx-auto">
-      {/* Static drop-shadow underneath so it doesn't repaint every animation frame */}
-      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-black/15 rounded-full blur-2xl pointer-events-none" />
+    <div className="relative select-none w-full max-w-[500px] mx-auto pb-8">
+      <div
+        className="absolute left-1/2 top-[calc(100%-0.9rem)] h-16 w-[82%] -translate-x-1/2 rounded-full pointer-events-none blur-2xl"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(22,101,52,0.28) 0%, rgba(22,101,52,0.18) 40%, rgba(22,101,52,0.04) 62%, rgba(22,101,52,0) 80%)",
+        }}
+      />
       <svg
         width={SIZE}
         height={SIZE}
         viewBox={`0 0 ${SIZE} ${SIZE}`}
-        className="w-full h-auto cursor-grab active:cursor-grabbing rounded-full"
+        className="w-full h-auto cursor-grab active:cursor-grabbing rounded-full drop-shadow-[0_18px_30px_rgba(22,101,52,0.08)]"
         onMouseDown={onPointerDown}
         onTouchStart={onPointerDown}
         style={{ touchAction: "none" }}
@@ -147,7 +195,7 @@ export function GlobeSection() {
         />
 
         {/* Countries */}
-        {COUNTRIES_GEO.features.map((f: CountryFeature) => {
+        {COUNTRIES_GEO.features.map((f: CountryFeature, index) => {
           const id = String(f.id ?? "");
           const isAcadea = !!ACADEA[id] || !!ACADEA[id.padStart(3, "0")];
           const resolvedId = ACADEA[id] ? id : id.padStart(3, "0");
@@ -171,7 +219,7 @@ export function GlobeSection() {
           if (!d) return null;
           return (
             <path
-              key={id || Math.random()}
+              key={id || index}
               d={d}
               fill={isHov ? "#FCBC1E" : isAcadea ? "#166534" : "#c8d8e8"}
               stroke="#fff"
@@ -184,6 +232,36 @@ export function GlobeSection() {
                 if (!isAcadea || didDrag.current) return;
                 const c = ACADEA[resolvedId];
                 if (c) navigate(`/kraje/${c.slug}`);
+              }}
+            />
+          );
+        })}
+
+        {fallbackMarkers.map((marker) => {
+          if (!isFrontHemisphere(marker.coordinates, rotation)) return null;
+
+          const point = projection(marker.coordinates);
+          if (!point) return null;
+
+          const isHovered = hovered === marker.iso;
+          return (
+            <circle
+              key={marker.iso}
+              cx={point[0]}
+              cy={point[1]}
+              r={marker.radius}
+              fill={isHovered ? "#FCBC1E" : "#166534"}
+              stroke="#ffffff"
+              strokeWidth={1.5}
+              style={{ cursor: "pointer", transition: "fill 0.12s ease" }}
+              onMouseEnter={() => {
+                cancelClear();
+                setHovered(marker.iso);
+              }}
+              onMouseLeave={scheduleClear}
+              onClick={() => {
+                if (didDrag.current) return;
+                navigate(`/kraje/${marker.country.slug}`);
               }}
             />
           );

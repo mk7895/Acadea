@@ -49,7 +49,7 @@ export default function Blog() {
   return (
     <div className="w-full">
       {/* Hero */}
-      <section className="pt-28 pb-16 bg-white border-b border-gray-100">
+      <section className="pt-24 md:pt-28 pb-10 md:pb-12 bg-white border-b border-gray-100">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -95,7 +95,7 @@ export default function Blog() {
       </section>
 
       {/* Articles Grid */}
-      <section className="py-20 bg-gray-50 min-h-[50vh]">
+      <section className="py-12 md:py-16 bg-gray-50 min-h-[50vh]">
         <div className="container mx-auto px-4 md:px-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -156,7 +156,7 @@ export default function Blog() {
       </section>
 
       {/* Newsletter CTA */}
-      <section className="py-20 bg-white">
+      <section className="py-12 md:py-16 bg-white">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
             initial={{ opacity: 0, y: 24 }}

@@ -9,7 +9,21 @@ export interface Article {
   markdown: string;
 }
 
-export const articles: Article[] = [
+function estimateReadMinutes(markdown: string) {
+  const plainText = markdown
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, " ")
+    .replace(/\[[^\]]+\]\(([^)]+)\)/g, " ")
+    .replace(/[#>*_~-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const words = plainText ? plainText.split(" ").length : 0;
+  return Math.max(3, Math.ceil(words / 180));
+}
+
+const rawArticles: Article[] = [
   {
     order: 1,
     category: "Poradniki",
@@ -411,6 +425,11 @@ export const articles: Article[] = [
     markdown: "# Jak aplikować na informatykę za granicą?\n\nInformatyka to nie tylko kodowanie — programy różnią się matematyką, teorią, projektami i specjalizacjami.\n\n## Wymagania\n\nInformatyka to nie tylko kodowanie — programy różnią się matematyką, teorią, projektami i specjalizacjami. Trzeba sprawdzić konkretne przedmioty, poziomy i strukturę programu, zanim wybierze się listę uczelni.\n\n## Jak pokazać zainteresowanie\n\nNie wystarczy napisać, że kierunek jest ciekawy. Warto pokazać książki, projekty, konkursy, kursy, doświadczenia albo pytania, które realnie rozwinęły zainteresowanie.\n\n## Wybór kraju\n\nUK, USA i Europa kontynentalna mogą mieć zupełnie różne podejście do tego samego kierunku. Warto sprawdzić elastyczność programu, praktyki i dalsze ścieżki.\n\n## Najczęstsze błędy\n\nNajczęstsze błędy to wybór programu po nazwie, ignorowanie wymagań i brak sprawdzenia perspektyw zawodowych.\n\n## Jak myśleć strategicznie\n\nLista uczelni powinna wynikać z profilu ucznia, wymagań programu, kosztów i planów po studiach.\n\n## Jak może pomóc Acadea?\n\nTen artykuł pokazuje najważniejsze zasady, ale nie zastąpi indywidualnej strategii. W aplikacji znaczenie mają kraj, kierunek, system edukacji, wyniki, budżet, dokumenty, terminy i historia konkretnego ucznia.\n\nW Acadea pomagamy wybrać kraje, uczelnie i kierunki, uporządkować dokumenty, przygotować teksty aplikacyjne i szukać finansowania. Oferujemy również **stypendia na wsparcie aplikacyjne** dla osób, które potrzebują pomocy finansowej.\n\n## Czytaj też\n\n- [Jak wybrać kierunek studiów za granicą?](/jak-wybrac-kierunek-studiow-za-granica)\n- [Studia za granicą z polską maturą, IB albo A-levels](/studia-za-granica-polska-matura-ib-a-levels)",
   },
 ];
+
+export const articles: Article[] = rawArticles.map((article) => ({
+  ...article,
+  readMin: estimateReadMinutes(article.markdown),
+}));
 
 export function findArticle(slug: string): Article | undefined {
   return articles.find(a => a.slug === slug || a.slug === `/${slug}`);

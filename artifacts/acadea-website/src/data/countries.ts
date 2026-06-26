@@ -837,5 +837,13 @@ export const countryBySlug: Record<string, Country> = Object.fromEntries(
 );
 
 export const countryByIso: Record<string, Country> = Object.fromEntries(
-  countries.flatMap((c) => c.iso.map((iso) => [iso, c])),
+  countries.flatMap((c) =>
+    c.iso.flatMap((iso) => {
+      const normalized = String(Number.parseInt(iso, 10)).padStart(3, "0");
+      return [
+        [iso, c],
+        [normalized, c],
+      ];
+    }),
+  ),
 );
