@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { getApiBase } from "@/lib/api-base";
+import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
 
 const API_BASE = getApiBase();
 
@@ -47,6 +48,8 @@ export default function ScholarshipForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -67,6 +70,10 @@ export default function ScholarshipForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    if (isTurnstileEnabled() && !turnstileToken) {
+      setSubmitError("Potwierdź zabezpieczenie formularza przed wysłaniem zgłoszenia.");
+      return;
+    }
     setSubmitting(true);
     setSubmitError("");
     try {
@@ -92,16 +99,23 @@ export default function ScholarshipForm() {
             .filter(Boolean)
             .join("\n"),
           type: "scholarship",
+          turnstileToken,
         }),
       });
       const data = (await res.json()) as { id?: number; error?: string };
       if (!data.id) {
         setSubmitError(data.error ?? "Błąd. Spróbuj ponownie.");
+        setTurnstileToken("");
+        setTurnstileResetKey((value) => value + 1);
         return;
       }
       setSubmitted(true);
+      setTurnstileToken("");
+      setTurnstileResetKey((value) => value + 1);
     } catch {
       setSubmitError("Błąd sieci. Sprawdź połączenie i spróbuj ponownie.");
+      setTurnstileToken("");
+      setTurnstileResetKey((value) => value + 1);
     } finally {
       setSubmitting(false);
     }
@@ -312,6 +326,18 @@ export default function ScholarshipForm() {
                   {submitError}
                 </div>
               )}
+
+              <div className="space-y-2">
+                <TurnstileWidget
+                  onTokenChange={setTurnstileToken}
+                  resetKey={turnstileResetKey}
+                />
+                {isTurnstileEnabled() ? (
+                  <p className="text-xs text-gray-400">
+                    Weryfikacja antybotowa pomaga nam utrzymać uczciwy nabór.
+                  </p>
+                ) : null}
+              </div>
 
               <Button
                 type="submit"

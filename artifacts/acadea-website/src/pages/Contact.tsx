@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,12 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Phone, Loader2 } from "lucide-react";
-import { useSubmitContact } from "@workspace/api-client-react";
 import { Link } from "wouter";
+import { getApiBase } from "@/lib/api-base";
+import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
 
 const CONTACT_EMAIL = "kontakt@acadea.org";
 const CONTACT_PHONE = "+48 728 492 936";
 const CONTACT_PHONE_HREF = "+48728492936";
+const API_BASE = getApiBase();
 
 const contactSchema = z.object({
   name: z.string().min(2, "Imię jest wymagane"),
@@ -29,7 +32,9 @@ type ContactFormValues = z.infer<typeof contactSchema>;
 
 export default function Contact() {
   const { toast } = useToast();
-  const { mutate: submitContact, isPending } = useSubmitContact();
+  const [isPending, setIsPending] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(contactSchema),
@@ -42,36 +47,58 @@ export default function Contact() {
     },
   });
 
-  function onSubmit(data: ContactFormValues) {
-    submitContact(
-      {
-        data: {
+  async function onSubmit(data: ContactFormValues) {
+    if (isTurnstileEnabled() && !turnstileToken) {
+      toast({
+        title: "Potwierdź zabezpieczenie",
+        description: "Zaznacz weryfikację antybotową przed wysłaniem formularza.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsPending(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/contact`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           name: data.name,
           email: data.email,
           phone: data.phone || undefined,
           message: `${data.message}\n\nZgoda na politykę prywatności: tak`,
           type: "consultation",
-        },
-      },
-      {
-        onSuccess: () => {
-          toast({
-            title: "Wiadomość wysłana!",
-            description:
-              "Dziękujemy za kontakt. Odezwiemy się najszybciej jak to możliwe.",
-          });
-          form.reset();
-        },
-        onError: () => {
-          toast({
-            title: "Błąd wysyłania",
-            description:
-              `Nie udało się wysłać wiadomości. Spróbuj ponownie lub napisz bezpośrednio na ${CONTACT_EMAIL}.`,
-            variant: "destructive",
-          });
-        },
+          turnstileToken,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Contact submission failed");
       }
-    );
+
+      toast({
+        title: "Wiadomość wysłana!",
+        description:
+          "Dziękujemy za kontakt. Odezwiemy się najszybciej jak to możliwe.",
+      });
+      form.reset();
+      setTurnstileToken("");
+      setTurnstileResetKey((value) => value + 1);
+    } catch {
+      toast({
+        title: "Błąd wysyłania",
+        description:
+          `Nie udało się wysłać wiadomości. Spróbuj ponownie lub napisz bezpośrednio na ${CONTACT_EMAIL}.`,
+        variant: "destructive",
+      });
+      setTurnstileToken("");
+      setTurnstileResetKey((value) => value + 1);
+    } finally {
+      setIsPending(false);
+    }
   }
 
   return (
@@ -258,6 +285,18 @@ export default function Contact() {
                       </FormItem>
                     )}
                   />
+
+                  <div className="space-y-2">
+                    <TurnstileWidget
+                      onTokenChange={setTurnstileToken}
+                      resetKey={turnstileResetKey}
+                    />
+                    {isTurnstileEnabled() ? (
+                      <p className="text-xs text-gray-400">
+                        To zabezpieczenie pomaga nam ograniczać spam w formularzach.
+                      </p>
+                    ) : null}
+                  </div>
 
                   <Button
                     type="submit"

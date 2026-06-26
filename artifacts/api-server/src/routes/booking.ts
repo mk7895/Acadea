@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { logger } from "../lib/logger";
 import { sendBookingEmails } from "../lib/mailer";
+import { verifyTurnstileToken } from "../lib/turnstile";
 import {
   getGoogleAccountEmail,
   getGoogleCalendarId,
@@ -123,6 +124,7 @@ const CreateSchema = z.object({
   email: z.string().email(),
   phone: z.string().optional(),
   topic: z.string().min(2),
+  turnstileToken: z.string().min(1).optional(),
 });
 
 router.post("/create", async (req, res) => {
@@ -133,6 +135,11 @@ router.post("/create", async (req, res) => {
       .json({ error: "Nieprawidłowe dane", details: parsed.error.flatten() });
   }
   const { start, end, name, email, phone, topic } = parsed.data;
+
+  const turnstile = await verifyTurnstileToken(req, parsed.data.turnstileToken);
+  if (!turnstile.ok) {
+    return res.status(400).json({ error: turnstile.message });
+  }
 
   if (!(await hasGoogleOAuthCredentials())) {
     logger.warn(

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { getApiBase } from "@/lib/api-base";
 import { fetchPublishedArticles, type ArticleSummary } from "@/lib/article-api";
+import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
 
 const API_BASE = getApiBase();
 
@@ -26,6 +27,8 @@ export default function Blog() {
   const [email, setEmail] = useState("");
   const [newsStatus, setNewsStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [articleItems, setArticleItems] = useState<ArticleSummary[]>([]);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +55,10 @@ export default function Blog() {
   async function handleSubscribe() {
     const trimmed = email.trim();
     if (!trimmed || !trimmed.includes("@")) return;
+    if (isTurnstileEnabled() && !turnstileToken) {
+      setNewsStatus("error");
+      return;
+    }
     setNewsStatus("loading");
     try {
       const res = await fetch(`${API_BASE}/contact`, {
@@ -62,11 +69,16 @@ export default function Blog() {
           email: trimmed,
           message: `Zapis do newslettera ACADEA z adresu ${trimmed}.`,
           type: "newsletter",
+          turnstileToken,
         }),
       });
       setNewsStatus(res.ok ? "ok" : "error");
+      setTurnstileToken("");
+      setTurnstileResetKey((value) => value + 1);
     } catch {
       setNewsStatus("error");
+      setTurnstileToken("");
+      setTurnstileResetKey((value) => value + 1);
     }
   }
 
@@ -224,9 +236,18 @@ export default function Blog() {
                       {newsStatus === "loading" ? "Zapisywanie…" : "Zapisz się"}
                     </button>
                   </div>
+                  <div className="mt-4 flex justify-center">
+                    <TurnstileWidget
+                      onTokenChange={setTurnstileToken}
+                      resetKey={turnstileResetKey}
+                      theme="dark"
+                    />
+                  </div>
                   {newsStatus === "error" && (
                     <p className="text-red-300 text-sm mt-3">
-                      Coś poszło nie tak. Spróbuj ponownie lub napisz do nas bezpośrednio.
+                      {isTurnstileEnabled() && !turnstileToken
+                        ? "Potwierdź zabezpieczenie formularza i spróbuj ponownie."
+                        : "Coś poszło nie tak. Spróbuj ponownie lub napisz do nas bezpośrednio."}
                     </p>
                   )}
                 </>

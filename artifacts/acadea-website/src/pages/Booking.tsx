@@ -15,6 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { getApiBase } from "@/lib/api-base";
+import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
 
 const API_BASE = getApiBase();
 
@@ -69,6 +70,8 @@ export default function Booking() {
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState<{ start: string; calendarLink?: string } | null>(null);
   const [submitError, setSubmitError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
   useEffect(() => {
     fetch(`${API_BASE}/booking/slots`)
@@ -95,6 +98,10 @@ export default function Booking() {
   const handleSubmit = async () => {
     if (!validateForm()) return;
     if (!selectedSlot) return;
+    if (isTurnstileEnabled() && !turnstileToken) {
+      setSubmitError("Potwierdź zabezpieczenie formularza przed rezerwacją.");
+      return;
+    }
     setSubmitting(true);
     setSubmitError("");
     try {
@@ -105,14 +112,23 @@ export default function Booking() {
       const res = await fetch(`${API_BASE}/booking/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...selectedSlot, ...form, topic: topicValue, consent }),
+        body: JSON.stringify({ ...selectedSlot, ...form, topic: topicValue, consent, turnstileToken }),
       });
       const data = await res.json() as { success?: boolean; start?: string; calendarLink?: string; error?: string };
-      if (!data.success) { setSubmitError(data.error ?? "Błąd. Spróbuj ponownie."); return; }
+      if (!data.success) {
+        setSubmitError(data.error ?? "Błąd. Spróbuj ponownie.");
+        setTurnstileToken("");
+        setTurnstileResetKey((value) => value + 1);
+        return;
+      }
       setConfirmed({ start: data.start ?? selectedSlot.start, calendarLink: data.calendarLink });
       setStep(3);
+      setTurnstileToken("");
+      setTurnstileResetKey((value) => value + 1);
     } catch {
       setSubmitError("Błąd sieci. Sprawdź połączenie i spróbuj ponownie.");
+      setTurnstileToken("");
+      setTurnstileResetKey((value) => value + 1);
     } finally {
       setSubmitting(false);
     }
@@ -356,6 +372,18 @@ export default function Booking() {
                       {submitError}
                     </div>
                   )}
+
+                  <div className="space-y-2">
+                    <TurnstileWidget
+                      onTokenChange={setTurnstileToken}
+                      resetKey={turnstileResetKey}
+                    />
+                    {isTurnstileEnabled() ? (
+                      <p className="text-xs text-gray-400">
+                        Szybkie potwierdzenie antybotowe przed wysłaniem rezerwacji.
+                      </p>
+                    ) : null}
+                  </div>
 
                   <Button
                     onClick={handleSubmit}

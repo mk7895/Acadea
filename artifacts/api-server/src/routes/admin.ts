@@ -13,12 +13,14 @@ import {
   verifyAdminSessionToken,
   verifyPassword,
 } from "../lib/adminAuth";
+import { verifyTurnstileToken } from "../lib/turnstile";
 
 const router = Router();
 
 const adminLoginSchema = z.object({
   entrySecret: z.string().min(1),
   password: z.string().min(1),
+  turnstileToken: z.string().min(1).optional(),
 });
 
 const adminEntrySchema = z.object({
@@ -110,6 +112,11 @@ router.post("/admin/auth/login", async (req, res) => {
   const parsed = adminLoginSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(422).json({ error: parsed.error.message });
+  }
+
+  const turnstile = await verifyTurnstileToken(req, parsed.data.turnstileToken);
+  if (!turnstile.ok) {
+    return res.status(400).json({ error: turnstile.message });
   }
 
   if (!secretsMatch(parsed.data.entrySecret, getAdminEntrySecret())) {

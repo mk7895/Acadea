@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { getApiBase } from "@/lib/api-base";
+import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
 import {
   fetchAdminArticles,
   type ArticleEditorRecord,
@@ -76,6 +77,8 @@ export default function AdminArticles() {
   const [isCheckingSecret, setIsCheckingSecret] = useState(false);
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [loginTurnstileToken, setLoginTurnstileToken] = useState("");
+  const [loginTurnstileResetKey, setLoginTurnstileResetKey] = useState(0);
   const [articles, setArticles] = useState<ArticleEditorRecord[]>([]);
   const [selectedId, setSelectedId] = useState<number | "new">("new");
   const [editor, setEditor] = useState<EditorState>(emptyEditor);
@@ -248,6 +251,10 @@ export default function AdminArticles() {
 
   async function handleLogin() {
     setLoginError("");
+    if (isTurnstileEnabled() && !loginTurnstileToken) {
+      setLoginError("Potwierdź zabezpieczenie formularza logowania.");
+      return;
+    }
     const response = await fetch(`${API_BASE}/admin/auth/login`, {
       method: "POST",
       headers: {
@@ -256,18 +263,23 @@ export default function AdminArticles() {
       body: JSON.stringify({
         entrySecret: querySecret,
         password,
+        turnstileToken: loginTurnstileToken,
       }),
     });
 
     const data = (await response.json().catch(() => ({}))) as { token?: string; error?: string };
     if (!response.ok || !data.token) {
       setLoginError(data.error ?? "Logowanie nie powiodło się.");
+      setLoginTurnstileToken("");
+      setLoginTurnstileResetKey((value) => value + 1);
       return;
     }
 
     localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
     setToken(data.token);
     setPassword("");
+    setLoginTurnstileToken("");
+    setLoginTurnstileResetKey((value) => value + 1);
   }
 
   function logout() {
@@ -431,6 +443,12 @@ export default function AdminArticles() {
             placeholder="Hasło administratora"
             className="w-full h-12 px-4 rounded-2xl border border-[#ded7c9] focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
+          <div className="mt-5">
+            <TurnstileWidget
+              onTokenChange={setLoginTurnstileToken}
+              resetKey={loginTurnstileResetKey}
+            />
+          </div>
           {loginError ? <p className="mt-3 text-sm text-red-600">{loginError}</p> : null}
           <button
             onClick={handleLogin}

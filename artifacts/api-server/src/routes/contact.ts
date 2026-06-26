@@ -1,7 +1,9 @@
 import { Router, type IRouter } from "express";
 import { SubmitContactBody } from "@workspace/api-zod";
+import { z } from "zod";
 import { logger } from "../lib/logger";
 import { sendContactEmails } from "../lib/mailer";
+import { verifyTurnstileToken } from "../lib/turnstile";
 
 const router: IRouter = Router();
 let nextSubmissionId = 1;
@@ -17,6 +19,11 @@ type LocalSubmission = {
 };
 
 const localSubmissions: LocalSubmission[] = [];
+const contactRequestSchema = SubmitContactBody.and(
+  z.object({
+    turnstileToken: z.string().min(1).optional(),
+  }),
+);
 
 function shapeSubmissionResponse(row: {
   id: number;
@@ -37,9 +44,15 @@ function shapeSubmissionResponse(row: {
 }
 
 router.post("/contact", async (req, res) => {
-  const parsed = SubmitContactBody.safeParse(req.body);
+  const parsed = contactRequestSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(422).json({ error: parsed.error.message });
+    return;
+  }
+
+  const turnstile = await verifyTurnstileToken(req, parsed.data.turnstileToken);
+  if (!turnstile.ok) {
+    res.status(400).json({ error: turnstile.message });
     return;
   }
 
