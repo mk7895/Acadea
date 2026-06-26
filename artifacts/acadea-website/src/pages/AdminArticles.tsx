@@ -72,6 +72,7 @@ export default function AdminArticles() {
     () => sessionStorage.getItem(ADMIN_ENTRY_GRANTED_KEY) === "true",
   );
   const [entryCheckComplete, setEntryCheckComplete] = useState(false);
+  const [accessError, setAccessError] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [articles, setArticles] = useState<ArticleEditorRecord[]>([]);
@@ -98,7 +99,10 @@ export default function AdminArticles() {
           });
 
           if (!response.ok) {
-            window.location.replace("/");
+            if (!cancelled) {
+              setAccessError("Nieprawidłowy sekret dostępu. Za 5 sekund nastąpi przekierowanie.");
+              setEntryCheckComplete(true);
+            }
             return;
           }
 
@@ -108,7 +112,10 @@ export default function AdminArticles() {
             window.history.replaceState({}, "", "/panel");
           }
         } catch {
-          window.location.replace("/");
+          if (!cancelled) {
+            setAccessError("Nie udało się potwierdzić dostępu. Za 5 sekund nastąpi przekierowanie.");
+            setEntryCheckComplete(true);
+          }
           return;
         }
       }
@@ -154,9 +161,23 @@ export default function AdminArticles() {
     }
 
     if (!entryGranted && !token) {
-      window.location.replace("/");
+      if (!accessError) {
+        setAccessError("Brak aktywnego dostępu do panelu. Za 5 sekund nastąpi przekierowanie.");
+      }
     }
-  }, [entryCheckComplete, entryGranted, token]);
+  }, [accessError, entryCheckComplete, entryGranted, token]);
+
+  useEffect(() => {
+    if (!accessError) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      window.location.replace("/");
+    }, 5000);
+
+    return () => window.clearTimeout(timeout);
+  }, [accessError]);
 
   useEffect(() => {
     if (!token) return;
@@ -197,6 +218,20 @@ export default function AdminArticles() {
           </p>
           <h1 className="text-3xl font-bold text-primary mb-3">Sprawdzanie dostępu</h1>
           <p className="text-sm text-gray-500">Chwila…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (accessError && !entryGranted && !token) {
+    return (
+      <div className="min-h-screen bg-[#f4f1ea] pt-28 pb-16 px-4">
+        <div className="max-w-md mx-auto bg-white rounded-[28px] shadow-sm border border-[#e7e1d6] p-8 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78] mb-3">
+            Panel redakcyjny
+          </p>
+          <h1 className="text-3xl font-bold text-primary mb-3">Brak dostępu</h1>
+          <p className="text-sm text-gray-500">{accessError}</p>
         </div>
       </div>
     );
