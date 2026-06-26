@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "wouter";
 import ReactMarkdown from "react-markdown";
 import { getApiBase } from "@/lib/api-base";
 import {
@@ -66,8 +65,7 @@ async function fileToDataUrl(file: File) {
 }
 
 export default function AdminArticles() {
-  const params = useParams<{ secret: string }>();
-  const entrySecret = params.secret;
+  const entrySecret = new URLSearchParams(window.location.search).get("secret")?.trim() ?? "";
   const [token, setToken] = useState(() => localStorage.getItem(ADMIN_TOKEN_KEY) ?? "");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -135,6 +133,22 @@ export default function AdminArticles() {
   }, [token, selectedId]);
 
   const readMin = useMemo(() => estimateReadMinutes(editor.markdown), [editor.markdown]);
+
+  if (!entrySecret) {
+    return (
+      <div className="min-h-screen bg-[#f4f1ea] pt-28 pb-16 px-4">
+        <div className="max-w-md mx-auto bg-white rounded-[28px] shadow-sm border border-[#e7e1d6] p-8 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78] mb-3">
+            Panel redakcyjny
+          </p>
+          <h1 className="text-3xl font-bold text-primary mb-3">Brak dostępu</h1>
+          <p className="text-sm text-gray-500">
+            Ten panel wymaga ukrytego sekretu w adresie URL.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const sortedArticles = useMemo(
     () =>

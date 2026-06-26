@@ -91,7 +91,7 @@ function Router() {
         <Route path="/mentoruj" component={MentorForm} />
         <Route path="/polityka-prywatnosci" component={PrivacyPolicy} />
         <Route path="/regulamin" component={Regulamin} />
-        <Route path="/panel/:secret" component={AdminArticles} />
+        <Route path="/panel" component={AdminArticles} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
