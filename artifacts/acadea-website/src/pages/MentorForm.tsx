@@ -13,8 +13,9 @@ import {
   Briefcase,
 } from "lucide-react";
 import { Link } from "wouter";
+import { getApiBase } from "@/lib/api-base";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const API_BASE = getApiBase();
 
 const COUNTRIES = [
   "Wielka Brytania", "Holandia", "Niemcy", "Francja", "Szwajcaria",
@@ -62,7 +63,7 @@ export default function MentorForm() {
     setSubmitting(true);
     setSubmitError("");
     try {
-      const res = await fetch(`${BASE}/api/contact`, {
+      const res = await fetch(`${API_BASE}/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

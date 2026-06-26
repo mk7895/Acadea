@@ -4,8 +4,9 @@ import { BookOpen, Clock, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { articles } from "@/data/articles";
+import { getApiBase } from "@/lib/api-base";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const API_BASE = getApiBase();
 
 const categories = ["Wszystkie", "Poradniki", "Kraje", "Stypendia"] as const;
 type Filter = (typeof categories)[number];
@@ -35,7 +36,7 @@ export default function Blog() {
     if (!trimmed || !trimmed.includes("@")) return;
     setNewsStatus("loading");
     try {
-      const res = await fetch(`${BASE}/api/contact`, {
+      const res = await fetch(`${API_BASE}/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "newsletter", email: trimmed }),

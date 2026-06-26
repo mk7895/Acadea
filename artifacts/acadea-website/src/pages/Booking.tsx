@@ -14,8 +14,9 @@ import {
   ArrowRight,
   Loader2,
 } from "lucide-react";
+import { getApiBase } from "@/lib/api-base";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const API_BASE = getApiBase();
 
 type Slot = { start: string; end: string; label: string };
 
@@ -70,7 +71,7 @@ export default function Booking() {
   const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
-    fetch(`${BASE}/api/booking/slots`)
+    fetch(`${API_BASE}/booking/slots`)
       .then((r) => r.json())
       .then((data: { slots?: Slot[]; error?: string }) => {
         if (data.error) { setSlotsError(data.error); return; }
@@ -101,7 +102,7 @@ export default function Booking() {
         form.topic === "Inne" && form.otherDetail.trim()
           ? `Inne — ${form.otherDetail.trim()}`
           : form.topic;
-      const res = await fetch(`${BASE}/api/booking/create`, {
+      const res = await fetch(`${API_BASE}/booking/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...selectedSlot, ...form, topic: topicValue, consent }),
