@@ -1,8 +1,19 @@
+import { readFile, stat } from "node:fs/promises";
+import path from "node:path";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { asc, eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
+const siteUrl = (process.env.SITE_URL ?? "https://acadea.org").replace(/\/+$/, "");
+const frontendRoot = path.resolve(import.meta.dirname, "..", "..", "acadea-website");
+const staticRoutesConfigPath = path.join(frontendRoot, "src", "data", "static-routes.json");
+
+type StaticRouteConfig = {
+  path: string;
+  source: string;
+  includeInSitemap: boolean;
+};
 
 function getRequestOrigin(req: Request) {
   const forwardedProto = req.get("x-forwarded-proto");
@@ -51,6 +62,31 @@ function shapeSummary(
     updatedAt: row.updatedAt.toISOString().slice(0, 10),
     isPublished: row.isPublished,
   };
+}
+
+async function loadStaticRoutesForSitemap() {
+  const raw = await readFile(staticRoutesConfigPath, "utf8");
+  return JSON.parse(raw) as StaticRouteConfig[];
+}
+
+async function getStaticRouteLastmod(source: string) {
+  try {
+    const filePath = path.join(frontendRoot, "src", source);
+    const fileStat = await stat(filePath);
+    return fileStat.mtime.toISOString().slice(0, 10);
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+function toSitemapEntry(route: string, lastmod: string) {
+  const normalizedRoute = route === "/" ? "" : route;
+  return [
+    "  <url>",
+    `    <loc>${siteUrl}${normalizedRoute}</loc>`,
+    `    <lastmod>${lastmod}</lastmod>`,
+    "  </url>",
+  ].join("\n");
 }
 
 router.get("/articles", async (req, res) => {
@@ -105,6 +141,48 @@ router.get("/articles/:slug", async (req, res) => {
     relatedSlugs: article.relatedSlugs,
     relatedArticles,
   });
+});
+
+router.get("/content/sitemap.xml", async (_req, res) => {
+  try {
+    const staticRoutes = (await loadStaticRoutesForSitemap()).filter((route) => route.includeInSitemap);
+
+    let dynamicArticles: Array<{ slug: string; updatedAt: Date }> = [];
+    if (process.env.DATABASE_URL) {
+      const { db, articlesTable } = await import("@workspace/db");
+      dynamicArticles = await db
+        .select({
+          slug: articlesTable.slug,
+          updatedAt: articlesTable.updatedAt,
+        })
+        .from(articlesTable)
+        .where(eq(articlesTable.isPublished, true))
+        .orderBy(asc(articlesTable.sortOrder), asc(articlesTable.id));
+    }
+
+    const staticEntries = await Promise.all(
+      staticRoutes.map(async (route) => toSitemapEntry(route.path, await getStaticRouteLastmod(route.source))),
+    );
+    const articleEntries = dynamicArticles.map((article) =>
+      toSitemapEntry(`/baza-wiedzy${article.slug}`, article.updatedAt.toISOString().slice(0, 10)),
+    );
+
+    const xml = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+      ...staticEntries,
+      ...articleEntries,
+      "</urlset>",
+      "",
+    ].join("\n");
+
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    return res.send(xml);
+  } catch (error) {
+    logger.error({ err: error }, "failed to generate live sitemap");
+    return res.status(500).send("Failed to generate sitemap.");
+  }
 });
 
 async function sendArticleAsset(req: Request, res: Response) {

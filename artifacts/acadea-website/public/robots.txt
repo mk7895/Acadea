@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
 Sitemap: https://acadea.org/sitemap.xml
+Sitemap: https://acadea.onrender.com/api/content/sitemap.xml

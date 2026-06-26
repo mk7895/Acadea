@@ -24,6 +24,7 @@ type EditorState = {
   excerpt: string;
   coverImage: string;
   markdown: string;
+  readMin: number;
   relatedSlugs: string[];
   isPublished: boolean;
 };
@@ -36,6 +37,7 @@ const emptyEditor: EditorState = {
   excerpt: "",
   coverImage: "",
   markdown: "",
+  readMin: 3,
   relatedSlugs: [],
   isPublished: true,
 };
@@ -50,6 +52,7 @@ function toEditorState(article: ArticleEditorRecord): EditorState {
     excerpt: article.excerpt,
     coverImage: article.coverImage,
     markdown: article.markdown,
+    readMin: article.readMin,
     relatedSlugs: article.relatedSlugs,
     isPublished: article.isPublished,
   };
@@ -86,7 +89,7 @@ export default function AdminArticles() {
     async function verifyAccess() {
       if (!querySecret) {
         if (!cancelled) {
-          setAccessError("Brak sekretu dostępu w adresie URL. Za 5 sekund nastąpi przekierowanie.");
+          setAccessError("Brak kodu dostępu. Za 5 sekund nastąpi przekierowanie.");
           setEntryCheckComplete(true);
         }
         return;
@@ -175,7 +178,7 @@ export default function AdminArticles() {
     };
   }, [token, selectedId]);
 
-  const readMin = useMemo(() => estimateReadMinutes(editor.markdown), [editor.markdown]);
+  const estimatedReadMin = useMemo(() => estimateReadMinutes(editor.markdown), [editor.markdown]);
   const sortedArticles = useMemo(
     () =>
       [...articles].sort((a, b) =>
@@ -200,7 +203,7 @@ export default function AdminArticles() {
       });
 
       if (!response.ok) {
-        setAccessError("Nieprawidłowy sekret dostępu.");
+        setAccessError("Nieprawidłowy kod dostępu. Za 5 sekund nastąpi przekierowanie.");
         setIsCheckingSecret(false);
         return false;
       }
@@ -624,7 +627,34 @@ export default function AdminArticles() {
                 />
                 Artykuł opublikowany
               </label>
-              <span className="text-sm text-gray-500">Szacowany czas czytania: {readMin} min</span>
+              <label className="inline-flex items-center gap-3 text-sm font-semibold text-primary">
+                <span>Czas czytania</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={editor.readMin}
+                  onChange={(e) =>
+                    setEditor((current) => ({
+                      ...current,
+                      readMin: Math.max(1, Number(e.target.value || 1)),
+                    }))
+                  }
+                  className="h-10 w-24 px-3 rounded-xl border border-[#ded7c9] text-primary font-medium"
+                />
+                <span className="text-gray-500 font-normal">min</span>
+              </label>
+              <button
+                type="button"
+                onClick={() =>
+                  setEditor((current) => ({
+                    ...current,
+                    readMin: estimatedReadMin,
+                  }))
+                }
+                className="px-4 py-2 rounded-full border border-[#d8cfbf] text-primary text-sm font-semibold"
+              >
+                Użyj estymacji ({estimatedReadMin} min)
+              </button>
             </div>
 
             <div className="mt-6 grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-6">

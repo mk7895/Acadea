@@ -33,6 +33,7 @@ const adminArticleSchema = z.object({
   excerpt: z.string().trim().min(1),
   coverImage: z.string().trim().min(1),
   markdown: z.string().trim().min(1),
+  readMin: z.number().int().min(1).max(120).optional(),
   relatedSlugs: z.array(z.string().trim().min(1)).default([]),
   isPublished: z.boolean().default(true),
 });
@@ -187,7 +188,7 @@ router.post("/admin/articles", requireAdmin, async (req, res) => {
   const relatedSlugs = Array.from(
     new Set(parsed.data.relatedSlugs.map((value) => normalizeArticleSlug(value)).filter((value) => value !== slug)),
   );
-  const readMin = estimateReadMinutes(parsed.data.markdown);
+  const readMin = parsed.data.readMin ?? estimateReadMinutes(parsed.data.markdown);
   const { db, articlesTable } = await import("@workspace/db");
 
   const [row] = await db
@@ -232,7 +233,7 @@ router.put("/admin/articles/:id", requireAdmin, async (req, res) => {
   const relatedSlugs = Array.from(
     new Set(parsed.data.relatedSlugs.map((value) => normalizeArticleSlug(value)).filter((value) => value !== slug)),
   );
-  const readMin = estimateReadMinutes(parsed.data.markdown);
+  const readMin = parsed.data.readMin ?? estimateReadMinutes(parsed.data.markdown);
   const { db, articlesTable } = await import("@workspace/db");
 
   const [row] = await db
