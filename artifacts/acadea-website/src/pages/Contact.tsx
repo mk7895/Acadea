@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Phone, Loader2 } from "lucide-react";
 import { useSubmitContact } from "@workspace/api-client-react";
+import { Link } from "wouter";
 
 const CONTACT_EMAIL = "kontakt@acadea.org";
 const CONTACT_PHONE = "+48 728 492 936";
@@ -19,6 +20,9 @@ const contactSchema = z.object({
   email: z.string().email("Niepoprawny adres email"),
   phone: z.string().min(9, "Numer telefonu jest za krótki").optional().or(z.literal("")),
   message: z.string().min(10, "Wiadomość musi mieć minimum 10 znaków"),
+  consent: z.boolean().refine((value) => value, {
+    message: "Zgoda na politykę prywatności jest wymagana",
+  }),
 });
 
 type ContactFormValues = z.infer<typeof contactSchema>;
@@ -34,6 +38,7 @@ export default function Contact() {
       email: "",
       phone: "",
       message: "",
+      consent: false,
     },
   });
 
@@ -44,7 +49,7 @@ export default function Contact() {
           name: data.name,
           email: data.email,
           phone: data.phone || undefined,
-          message: data.message,
+          message: `${data.message}\n\nZgoda na politykę prywatności: tak`,
           type: "consultation",
         },
       },
@@ -202,6 +207,33 @@ export default function Contact() {
                             {...field}
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="consent"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
+                          <FormControl>
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                              className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                            />
+                          </FormControl>
+                          <div className="text-sm text-gray-600 leading-relaxed">
+                            Wyrażam zgodę na przetwarzanie moich danych osobowych zgodnie z{" "}
+                            <Link href="/polityka-prywatnosci" className="font-semibold text-primary hover:underline">
+                              polityką prywatności
+                            </Link>
+                            .
+                          </div>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}

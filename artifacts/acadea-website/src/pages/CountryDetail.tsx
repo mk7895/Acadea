@@ -151,7 +151,7 @@ export default function CountryDetail() {
             <p className="text-white/70 mb-8 max-w-2xl mx-auto">
               Podczas bezpłatnej konsultacji sprawdzimy, które uczelnie pasują do Twojego profilu, i ułożymy plan aplikacji krok po kroku.
             </p>
-            <Link href="/kontakt">
+            <Link href="/umow-spotkanie">
               <Button
                 size="lg"
                 className="h-14 px-8 rounded-full bg-accent text-primary hover:bg-white transition-colors font-bold border-none"

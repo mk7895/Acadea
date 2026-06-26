@@ -11,6 +11,10 @@ type MailRecipient = {
   name?: string;
 };
 
+const BRAND_LOGO_URL = "https://acadea.org/images/logo-dark.png";
+const BRAND_PRIMARY = "#166534";
+const BRAND_ACCENT = "#FCBC1E";
+
 function encodeHeader(value: string) {
   return `=?UTF-8?B?${Buffer.from(value, "utf8").toString("base64")}?=`;
 }
@@ -30,34 +34,136 @@ function toBase64Lines(input: string) {
     ?.join("\r\n") ?? "";
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function nl2br(value: string) {
+  return escapeHtml(value).replace(/\n/g, "<br />");
+}
+
+function renderEmailShell({
+  title,
+  intro,
+  summaryRows,
+  bodyHtml,
+  closing,
+}: {
+  title: string;
+  intro: string;
+  summaryRows?: Array<{ label: string; value: string | null | undefined }>;
+  bodyHtml?: string;
+  closing?: string;
+}) {
+  const summaryHtml = (summaryRows ?? [])
+    .filter((row) => row.value)
+    .map(
+      (row) => `
+        <tr>
+          <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 150px; vertical-align: top;">${escapeHtml(row.label)}</td>
+          <td style="padding: 8px 0; color: #111827; font-size: 14px; font-weight: 600;">${escapeHtml(row.value ?? "")}</td>
+        </tr>`,
+    )
+    .join("");
+
+  return `
+    <div style="margin:0; padding:32px 16px; background:#f4f7f3; font-family:Arial,Helvetica,sans-serif; color:#111827;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:24px; overflow:hidden;">
+        <tr>
+          <td style="padding:28px 32px 20px; background:linear-gradient(135deg, #ffffff 0%, #f5fbf7 100%); border-bottom:1px solid #e5efe9;">
+            <img src="${BRAND_LOGO_URL}" alt="ACADEA" style="display:block; width:180px; max-width:100%; height:auto; margin-bottom:22px;" />
+            <div style="display:inline-block; padding:6px 12px; border-radius:999px; background:rgba(252,188,30,0.16); color:${BRAND_PRIMARY}; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:16px;">
+              ACADEA
+            </div>
+            <h1 style="margin:0 0 10px; font-size:28px; line-height:1.2; color:${BRAND_PRIMARY};">${escapeHtml(title)}</h1>
+            <p style="margin:0; font-size:16px; line-height:1.6; color:#4b5563;">${escapeHtml(intro)}</p>
+          </td>
+        </tr>
+        ${
+          summaryHtml
+            ? `<tr><td style="padding:24px 32px 8px;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${summaryHtml}</table></td></tr>`
+            : ""
+        }
+        ${
+          bodyHtml
+            ? `<tr><td style="padding:16px 32px 8px;"><div style="background:#f8faf8; border:1px solid #e5efe9; border-radius:18px; padding:18px 20px; font-size:14px; line-height:1.7; color:#374151;">${bodyHtml}</div></td></tr>`
+            : ""
+        }
+        <tr>
+          <td style="padding:24px 32px 30px;">
+            <p style="margin:0; font-size:14px; line-height:1.7; color:#4b5563;">${escapeHtml(closing ?? "Pozdrawiamy,")}<br /><strong style="color:${BRAND_PRIMARY};">Zespół ACADEA</strong></p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:18px 32px; background:${BRAND_PRIMARY}; color:#ffffff; font-size:12px; line-height:1.6;">
+            ACADEA • wsparcie w aplikacji na studia za granicą
+          </td>
+        </tr>
+      </table>
+    </div>`;
+}
+
 async function sendGmailMessage({
   from,
   to,
   subject,
   text,
+  html,
   replyTo,
 }: {
   from: string;
   to: MailRecipient;
   subject: string;
   text: string;
+  html?: string;
   replyTo?: string;
 }) {
   if (!(await hasGoogleGmailCredentials())) {
     return false;
   }
 
-  const lines = [
-    `From: ACADEA <${from}>`,
-    `To: ${to.name ? `${encodeHeader(to.name)} <${to.email}>` : to.email}`,
-    `Subject: ${encodeHeader(subject)}`,
-    "MIME-Version: 1.0",
-    'Content-Type: text/plain; charset="UTF-8"',
-    "Content-Transfer-Encoding: base64",
-    ...(replyTo ? [`Reply-To: ${replyTo}`] : []),
-    "",
-    toBase64Lines(text),
-  ];
+  const lines = html
+    ? (() => {
+        const boundary = `acadea_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        return [
+          `From: ACADEA <${from}>`,
+          `To: ${to.name ? `${encodeHeader(to.name)} <${to.email}>` : to.email}`,
+          `Subject: ${encodeHeader(subject)}`,
+          "MIME-Version: 1.0",
+          `Content-Type: multipart/alternative; boundary="${boundary}"`,
+          ...(replyTo ? [`Reply-To: ${replyTo}`] : []),
+          "",
+          `--${boundary}`,
+          'Content-Type: text/plain; charset="UTF-8"',
+          "Content-Transfer-Encoding: base64",
+          "",
+          toBase64Lines(text),
+          "",
+          `--${boundary}`,
+          'Content-Type: text/html; charset="UTF-8"',
+          "Content-Transfer-Encoding: base64",
+          "",
+          toBase64Lines(html),
+          "",
+          `--${boundary}--`,
+        ];
+      })()
+    : [
+        `From: ACADEA <${from}>`,
+        `To: ${to.name ? `${encodeHeader(to.name)} <${to.email}>` : to.email}`,
+        `Subject: ${encodeHeader(subject)}`,
+        "MIME-Version: 1.0",
+        'Content-Type: text/plain; charset="UTF-8"',
+        "Content-Transfer-Encoding: base64",
+        ...(replyTo ? [`Reply-To: ${replyTo}`] : []),
+        "",
+        toBase64Lines(text),
+      ];
 
   const raw = toBase64Url(lines.join("\r\n"));
   const accessToken = await getGoogleGmailAccessToken();
@@ -141,6 +247,31 @@ export async function sendBookingEmails(input: {
     "Zespół ACADEA",
   ].join("\n");
 
+  const organizerHtml = renderEmailShell({
+    title: "Nowa rezerwacja konsultacji",
+    intro: "Na stronie ACADEA pojawiła się nowa rezerwacja konsultacji.",
+    summaryRows: [
+      { label: "Imię i nazwisko", value: input.name },
+      { label: "E-mail", value: input.email },
+      { label: "Telefon", value: input.phone ?? null },
+      { label: "Temat", value: input.topic },
+      { label: "Termin", value: `${startLabel} - ${endLabel} (czas polski)` },
+      { label: "Zoom", value: input.zoomLink },
+    ],
+  });
+
+  const guestHtml = renderEmailShell({
+    title: "Potwierdzenie rezerwacji konsultacji",
+    intro: `Cześć ${input.name}, potwierdzamy rezerwację konsultacji ACADEA.`,
+    summaryRows: [
+      { label: "Termin", value: `${startLabel} - ${endLabel} (czas polski)` },
+      { label: "Temat", value: input.topic },
+      { label: "Link do spotkania", value: input.zoomLink },
+    ],
+    bodyHtml:
+      "<p style=\"margin:0;\">Dodatkowo Google Calendar powinien wysłać Ci zaproszenie kalendarzowe.</p>",
+  });
+
   let organizerSent = false;
   let guestSent = false;
 
@@ -150,6 +281,7 @@ export async function sendBookingEmails(input: {
       to: { email: notifyEmail, name: "ACADEA" },
       subject: `Nowa rezerwacja konsultacji: ${input.name}`,
       text: organizerBody,
+      html: organizerHtml,
       replyTo: input.email,
     });
   } catch (err) {
@@ -162,6 +294,7 @@ export async function sendBookingEmails(input: {
       to: { email: input.email, name: input.name },
       subject: "ACADEA: potwierdzenie rezerwacji konsultacji",
       text: guestBody,
+      html: guestHtml,
     });
   } catch (err) {
     logger.warn({ err }, "booking guest confirmation email failed");
@@ -179,6 +312,7 @@ export async function sendContactEmails(input: {
 }) {
   const senderEmail = getGoogleGmailSendAs() ?? (await getGoogleAccountEmail());
   const notifyEmail = process.env.CONTACT_NOTIFY_EMAIL ?? senderEmail ?? null;
+  const greetingName = input.type === "newsletter" ? "tam" : input.name;
 
   if (!notifyEmail || !senderEmail || !(await hasGoogleGmailCredentials())) {
     logger.warn(
@@ -192,6 +326,8 @@ export async function sendContactEmails(input: {
       ? "aplikacja mentorska"
       : input.type === "scholarship"
         ? "zgłoszenie stypendialne"
+        : input.type === "newsletter"
+          ? "zapis do newslettera"
         : input.type === "booking"
           ? "rezerwacja konsultacji"
           : "wiadomość kontaktowa";
@@ -201,6 +337,8 @@ export async function sendContactEmails(input: {
       ? `Nowa aplikacja mentorska ACADEA: ${input.name}`
       : input.type === "scholarship"
         ? `Nowe zgłoszenie do programu stypendialnego ACADEA: ${input.name}`
+        : input.type === "newsletter"
+          ? `Nowy zapis do newslettera ACADEA: ${input.email}`
         : `Nowe zgłoszenie kontaktowe: ${input.name}`;
 
   const autoresponseSubject =
@@ -208,6 +346,8 @@ export async function sendContactEmails(input: {
       ? "ACADEA: dziękujemy za zgłoszenie mentorskie"
       : input.type === "scholarship"
         ? "ACADEA: dziękujemy za zgłoszenie do programu stypendialnego"
+        : input.type === "newsletter"
+          ? "ACADEA: potwierdzenie zapisu do newslettera"
         : "ACADEA: potwierdzenie otrzymania wiadomości";
 
   const organizerBody = [
@@ -227,6 +367,8 @@ export async function sendContactEmails(input: {
       ? "dziękujemy za przesłanie aplikacji mentorskiej do ACADEA."
       : input.type === "scholarship"
         ? "dziękujemy za przesłanie zgłoszenia do programu stypendialnego ACADEA."
+        : input.type === "newsletter"
+          ? "dziękujemy za zapis do newslettera ACADEA."
         : "dziękujemy za wiadomość do ACADEA.";
 
   const autoresponseNextStep =
@@ -234,10 +376,12 @@ export async function sendContactEmails(input: {
       ? "Zapoznaliśmy się z Twoją aplikacją i wrócimy do Ciebie, gdy przejdziemy przez zgłoszenia."
       : input.type === "scholarship"
         ? "Otrzymaliśmy Twoje zgłoszenie i wrócimy do Ciebie po zakończeniu analizy aplikacji."
+        : input.type === "newsletter"
+          ? "Będziemy wysyłać Ci nowe poradniki, aktualności o studiach za granicą i informacje o stypendiach."
         : "Otrzymaliśmy Twoje zgłoszenie i wrócimy do Ciebie tak szybko, jak to możliwe.";
 
   const autoresponseBody = [
-    `Cześć ${input.name},`,
+    `Cześć ${greetingName},`,
     "",
     autoresponseIntro,
     autoresponseNextStep,
@@ -250,6 +394,41 @@ export async function sendContactEmails(input: {
     "Zespół ACADEA",
   ].join("\n");
 
+  const organizerHtml = renderEmailShell({
+    title:
+      input.type === "mentor_application" || input.type === "mentor"
+        ? "Nowa aplikacja mentorska"
+        : input.type === "scholarship"
+          ? "Nowe zgłoszenie stypendialne"
+          : input.type === "newsletter"
+            ? "Nowy zapis do newslettera"
+            : "Nowa wiadomość kontaktowa",
+    intro: `Na stronie ACADEA pojawiło się nowe zgłoszenie: ${submissionKind}.`,
+    summaryRows: [
+      { label: "Typ", value: input.type },
+      { label: "Imię i nazwisko", value: input.name },
+      { label: "E-mail", value: input.email },
+      { label: "Telefon", value: input.phone ?? null },
+    ],
+    bodyHtml: `<strong>Treść zgłoszenia:</strong><br /><br />${nl2br(input.message)}`,
+  });
+
+  const autoresponseHtml = renderEmailShell({
+    title:
+      input.type === "mentor_application" || input.type === "mentor"
+        ? "Dziękujemy za zgłoszenie mentorskie"
+        : input.type === "scholarship"
+          ? "Dziękujemy za zgłoszenie do programu stypendialnego"
+          : input.type === "newsletter"
+            ? "Potwierdzenie zapisu do newslettera"
+            : "Potwierdzenie otrzymania wiadomości",
+    intro: `Cześć ${greetingName}, ${autoresponseIntro} ${autoresponseNextStep}`,
+    bodyHtml:
+      input.type === "newsletter"
+        ? "<p style=\"margin:0;\">Jeśli chcesz kiedyś zrezygnować, po prostu odpisz na wiadomość lub napisz do nas na kontakt@acadea.org.</p>"
+        : `<strong>Dla porządku zapisujemy poniżej treść Twojego zgłoszenia:</strong><br /><br />${nl2br(input.message)}`,
+  });
+
   let organizerSent = false;
   let autoresponseSent = false;
 
@@ -259,6 +438,7 @@ export async function sendContactEmails(input: {
       to: { email: notifyEmail, name: "ACADEA" },
       subject: organizerSubject,
       text: organizerBody,
+      html: organizerHtml,
       replyTo: input.email,
     });
   } catch (err) {
@@ -271,6 +451,7 @@ export async function sendContactEmails(input: {
       to: { email: input.email, name: input.name },
       subject: autoresponseSubject,
       text: autoresponseBody,
+      html: autoresponseHtml,
     });
   } catch (err) {
     logger.warn({ err }, "contact autoresponse email failed");

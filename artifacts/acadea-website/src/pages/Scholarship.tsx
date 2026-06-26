@@ -79,7 +79,7 @@ export default function Scholarship() {
               initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-              className="relative flex justify-center xl:justify-end xl:-translate-x-6"
+              className="relative flex justify-center xl:justify-end xl:-translate-x-12"
             >
               <div className="w-full max-w-[340px] rounded-[32px] border border-primary/10 bg-gradient-to-br from-primary/[0.04] via-white to-accent/10 p-4 md:p-5 shadow-[0_22px_60px_rgba(22,101,52,0.08)]">
                 <div className="relative overflow-hidden rounded-3xl border border-primary/10 bg-gradient-to-br from-primary to-primary/85 aspect-[9/16]">
@@ -120,7 +120,7 @@ export default function Scholarship() {
             </div>
             <div className="flex items-center gap-2 bg-primary/10 rounded-full px-5 py-2 font-bold text-base">
               <Clock size={18} className="shrink-0" />
-              <span>Zgłoszenia do: 20 czerwca 2026</span>
+              <span>Zgłoszenia do: 10 lipca 2026</span>
             </div>
           </motion.div>
         </div>
@@ -189,7 +189,7 @@ export default function Scholarship() {
               <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12">
                 <div>
                   <div className="text-sm font-semibold uppercase tracking-widest mb-2 text-primary/70">Termin zgłoszeń</div>
-                  <div className="text-4xl md:text-5xl font-bold">20 czerwca 2026</div>
+                  <div className="text-4xl md:text-5xl font-bold">10 lipca 2026</div>
                 </div>
                 <div className="hidden md:block w-px h-16 bg-primary/20" />
                 <div>
@@ -242,7 +242,7 @@ export default function Scholarship() {
               Jeśli masz wybitne wyniki, pasję i wielkie marzenia, ten konkurs jest dla Ciebie.
             </p>
             <p className="text-base text-gray-500 mb-10">
-              Nabór trwa do <strong className="text-primary">20 czerwca 2026</strong>. Wypełnij formularz — rozpatrujemy zgłoszenia indywidualnie, z pełnym szacunkiem dla każdej historii.
+              Nabór trwa do <strong className="text-primary">10 lipca 2026</strong>. Wypełnij formularz — rozpatrujemy zgłoszenia indywidualnie, z pełnym szacunkiem dla każdej historii.
             </p>
             <Link href="/stypendium/aplikacja">
               <Button

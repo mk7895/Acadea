@@ -120,7 +120,7 @@ export default function AboutUs() {
                 desc: "Nauczyciel języka angielskiego z certyfikatem TEFL, absolwent prawa. Pomaga osiągnąć wymagane wyniki w egzaminach językowych.",
                 initials: "BK",
                 linkedin: "https://www.linkedin.com/in/bartosz-ku%C5%BAma-243945259/",
-                color: "#FCBC1E",
+                color: "#14532d",
               },
             ].map((member, idx) => (
               <motion.div

@@ -38,6 +38,7 @@ export default function MentorForm() {
     role: "" as Role,
     hoursPerWeek: "", motivation: "",
   });
+  const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -54,6 +55,7 @@ export default function MentorForm() {
     if (!form.field.trim()) e.field = "Podaj kierunek studiów.";
     if (!form.role) e.role = "Wybierz preferowany model współpracy.";
     if (!form.motivation.trim() || form.motivation.trim().length < 20) e.motivation = "Napisz kilka zdań o sobie (min. 20 znaków).";
+    if (!consent) e.consent = "Zgoda na politykę prywatności jest wymagana.";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -77,6 +79,7 @@ export default function MentorForm() {
             `Model: ${form.role}`,
             form.hoursPerWeek ? `Dostępność: ${form.hoursPerWeek} h/tydzień` : null,
             `Motywacja: ${form.motivation}`,
+            "Zgoda na politykę prywatności: tak",
           ].filter(Boolean).join("\n"),
           type: "mentor_application",
         }),
@@ -197,7 +200,7 @@ export default function MentorForm() {
                     <select
                       value={form.country}
                       onChange={e => set("country", e.target.value)}
-                      className={`w-full rounded-xl border px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.country ? "border-red-400" : "border-input"}`}
+                      className={`w-full rounded-xl border bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40 h-11 ${errors.country ? "border-red-400" : "border-input"}`}
                     >
                       <option value="">Kraj uczelni *</option>
                       {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -266,6 +269,27 @@ export default function MentorForm() {
                     {errors.motivation && <p className="text-red-500 text-xs mt-1">{errors.motivation}</p>}
                   </div>
                 </div>
+              </div>
+
+              <div className="border-t border-gray-100" />
+
+              <div className="space-y-2">
+                <label className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 leading-relaxed">
+                  <input
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <span>
+                    Wyrażam zgodę na przetwarzanie moich danych osobowych zgodnie z{" "}
+                    <Link href="/polityka-prywatnosci" className="font-semibold text-primary hover:underline">
+                      polityką prywatności
+                    </Link>
+                    .
+                  </span>
+                </label>
+                {errors.consent && <p className="text-red-500 text-xs">{errors.consent}</p>}
               </div>
 
               {submitError && (

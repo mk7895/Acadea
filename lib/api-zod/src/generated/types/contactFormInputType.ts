@@ -14,4 +14,5 @@ export const ContactFormInputType = {
   mentor: 'mentor',
   mentor_application: 'mentor_application',
   scholarship: 'scholarship',
+  newsletter: 'newsletter',
 } as const;

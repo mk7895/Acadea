@@ -15,7 +15,9 @@ export type ContactFormInputType = typeof ContactFormInputType[keyof typeof Cont
 export const ContactFormInputType = {
   consultation: 'consultation',
   mentor: 'mentor',
+  mentor_application: 'mentor_application',
   scholarship: 'scholarship',
+  newsletter: 'newsletter',
 } as const;
 
 export interface ContactFormInput {
@@ -41,4 +43,3 @@ export interface ContactSubmission {
 export interface ValidationError {
   error: string;
 }
-

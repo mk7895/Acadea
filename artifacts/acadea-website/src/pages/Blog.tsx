@@ -39,7 +39,12 @@ export default function Blog() {
       const res = await fetch(`${API_BASE}/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "newsletter", email: trimmed }),
+        body: JSON.stringify({
+          name: "Newsletter ACADEA",
+          email: trimmed,
+          message: `Zapis do newslettera ACADEA z adresu ${trimmed}.`,
+          type: "newsletter",
+        }),
       });
       setNewsStatus(res.ok ? "ok" : "error");
     } catch {

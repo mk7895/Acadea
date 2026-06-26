@@ -230,13 +230,13 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.7, delay: 0.1 }}
-              className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary/5 to-accent/10 border border-primary/10 min-h-[380px] flex flex-col justify-end p-10"
+              className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary/5 to-accent/10 border border-primary/10 min-h-[360px] flex flex-col justify-end p-10"
             >
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent/10 blur-[80px]" />
                 <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-primary/8 blur-[60px]" />
               </div>
-              <div className="relative z-10 mb-8 overflow-hidden rounded-[28px] border border-primary/10 bg-white/70 aspect-[4/3] shadow-[0_18px_40px_rgba(22,101,52,0.08)]">
+              <div className="relative z-10 mb-8 overflow-hidden rounded-[28px] border border-primary/10 bg-white/70 aspect-[5/3] shadow-[0_18px_40px_rgba(22,101,52,0.08)]">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(252,188,30,0.20),transparent_30%),linear-gradient(135deg,rgba(22,101,52,0.12),rgba(255,255,255,0.65))]" />
                 <div className="relative flex h-full flex-col items-center justify-center px-8 text-center">
                   <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-5">

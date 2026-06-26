@@ -74,9 +74,11 @@ export function GlobeSection() {
   const [hovered, setHovered] = useState<string | null>(null);
 
   const rotRef = useRef<Rotation>(INITIAL_ROT);
+  const velocityRef = useRef({ x: 0, y: 0 });
   const dragging = useRef(false);
   const didDrag = useRef(false);
   const dragStart = useRef<{ x: number; y: number; rot: Rotation }>({ x: 0, y: 0, rot: INITIAL_ROT });
+  const lastPointer = useRef<{ x: number; y: number; time: number } | null>(null);
   const animRef = useRef<number | null>(null);
   const clearTimer = useRef<number | null>(null);
   const [, navigate] = useLocation();
@@ -102,7 +104,19 @@ export function GlobeSection() {
       if (dragging.current) { lastT = t; return; }
       if (t - lastT < 30) return;
       lastT = t;
-      setRotation(r => [r[0] + 0.18, r[1], r[2]]);
+      if (Math.abs(velocityRef.current.x) > 0.02 || Math.abs(velocityRef.current.y) > 0.02) {
+        setRotation((r) => [
+          r[0] + velocityRef.current.x,
+          Math.max(-85, Math.min(85, r[1] + velocityRef.current.y)),
+          r[2],
+        ]);
+        velocityRef.current.x *= 0.94;
+        velocityRef.current.y *= 0.94;
+        return;
+      }
+      velocityRef.current.x = 0;
+      velocityRef.current.y = 0;
+      setRotation(r => [r[0] + 0.12, r[1], r[2]]);
     };
     animRef.current = requestAnimationFrame(loop);
     return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
@@ -116,15 +130,27 @@ export function GlobeSection() {
       const cy = "touches" in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
       const dx = cx - dragStart.current.x;
       const dy = cy - dragStart.current.y;
+      const now = performance.now();
       if (Math.abs(dx) > 4 || Math.abs(dy) > 4) didDrag.current = true;
       const { rot } = dragStart.current;
+      if (lastPointer.current) {
+        const dt = Math.max(now - lastPointer.current.time, 16);
+        velocityRef.current = {
+          x: ((cx - lastPointer.current.x) * 0.4 * 16) / dt,
+          y: ((lastPointer.current.y - cy) * 0.4 * 16) / dt,
+        };
+      }
+      lastPointer.current = { x: cx, y: cy, time: now };
       setRotation([
         rot[0] + dx * 0.4,
         Math.max(-85, Math.min(85, rot[1] - dy * 0.4)),
         0,
       ]);
     };
-    const onUp = () => { dragging.current = false; };
+    const onUp = () => {
+      dragging.current = false;
+      lastPointer.current = null;
+    };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     window.addEventListener("touchmove", onMove, { passive: true });
@@ -142,6 +168,8 @@ export function GlobeSection() {
     didDrag.current = false;
     const cx = "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
     const cy = "touches" in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+    velocityRef.current = { x: 0, y: 0 };
+    lastPointer.current = { x: cx, y: cy, time: performance.now() };
     dragStart.current = { x: cx, y: cy, rot: rotRef.current };
   }, []);
 
@@ -167,12 +195,13 @@ export function GlobeSection() {
   return (
     <div className="relative select-none w-full max-w-[500px] mx-auto pb-8">
       <div
-        className="absolute left-1/2 top-[calc(100%-0.9rem)] h-16 w-[82%] -translate-x-1/2 rounded-full pointer-events-none blur-2xl"
+        className="absolute left-1/2 top-[calc(100%-0.6rem)] h-10 w-[70%] -translate-x-1/2 rounded-full pointer-events-none blur-xl"
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(22,101,52,0.28) 0%, rgba(22,101,52,0.18) 40%, rgba(22,101,52,0.04) 62%, rgba(22,101,52,0) 80%)",
+            "radial-gradient(ellipse at center, rgba(22,101,52,0.22) 0%, rgba(22,101,52,0.12) 44%, rgba(22,101,52,0.03) 68%, rgba(22,101,52,0) 84%)",
         }}
       />
+      <div className="absolute left-1/2 top-[calc(100%-0.15rem)] h-4 w-[38%] -translate-x-1/2 rounded-full bg-primary/15 pointer-events-none blur-md" />
       <svg
         width={SIZE}
         height={SIZE}

@@ -42,6 +42,7 @@ export default function ScholarshipForm() {
     projects: "",
     motivation: "",
   });
+  const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -58,6 +59,7 @@ export default function ScholarshipForm() {
     if (!form.mentor) e.mentor = "Wybierz mentora (lub „Nie mam preferencji”).";
     if (!form.achievements.trim() || form.achievements.trim().length < 10) e.achievements = "Opisz swoje osiągnięcia (min. 10 znaków).";
     if (!form.motivation.trim() || form.motivation.trim().length < 20) e.motivation = "Napisz kilka zdań o sobie (min. 20 znaków).";
+    if (!consent) e.consent = "Zgoda na politykę prywatności jest wymagana.";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -85,6 +87,7 @@ export default function ScholarshipForm() {
             `Osiągnięcia (konkursy, nagrody, olimpiady, publikacje): ${form.achievements}`,
             form.projects ? `Projekty stworzone w wolnym czasie: ${form.projects}` : null,
             `Motywacja: ${form.motivation}`,
+            "Zgoda na politykę prywatności: tak",
           ]
             .filter(Boolean)
             .join("\n"),
@@ -117,7 +120,7 @@ export default function ScholarshipForm() {
             Aplikuj o stypendium
           </h1>
           <p className="text-gray-500 text-lg max-w-lg mx-auto">
-            Wypełnij formularz, a my zapoznamy się z Twoją historią. Nabór trwa do <strong className="text-primary">20 czerwca 2026</strong>.
+            Wypełnij formularz, a my zapoznamy się z Twoją historią. Nabór trwa do <strong className="text-primary">10 lipca 2026</strong>.
           </p>
         </motion.div>
 
@@ -281,6 +284,27 @@ export default function ScholarshipForm() {
                   />
                   {errors.motivation && <p className="text-red-500 text-xs mt-1">{errors.motivation}</p>}
                 </div>
+              </div>
+
+              <div className="border-t border-gray-100" />
+
+              <div className="space-y-2">
+                <label className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 leading-relaxed">
+                  <input
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <span>
+                    Wyrażam zgodę na przetwarzanie moich danych osobowych zgodnie z{" "}
+                    <Link href="/polityka-prywatnosci" className="font-semibold text-primary hover:underline">
+                      polityką prywatności
+                    </Link>
+                    .
+                  </span>
+                </label>
+                {errors.consent && <p className="text-red-500 text-xs">{errors.consent}</p>}
               </div>
 
               {submitError && (

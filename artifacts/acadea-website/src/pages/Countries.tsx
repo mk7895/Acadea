@@ -87,7 +87,7 @@ export default function Countries() {
           <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
             Podczas pierwszej bezpłatnej konsultacji przeanalizujemy Twój profil i doradzimy, który kraj i system edukacji najlepiej odpowiada Twoim oczekiwaniom.
           </p>
-          <Link href="/kontakt">
+          <Link href="/umow-spotkanie">
             <Button size="lg" className="rounded-full px-8">Umów darmową konsultację</Button>
           </Link>
         </div>

@@ -76,7 +76,7 @@ components:
           minLength: 10
         type:
           type: string
-          enum: [consultation, mentor, scholarship]
+          enum: [consultation, mentor, mentor_application, scholarship, newsletter]
           default: consultation
       required:
         - name
