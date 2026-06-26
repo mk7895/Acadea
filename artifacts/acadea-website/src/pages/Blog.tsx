@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { BookOpen, Clock, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { articles } from "@/data/articles";
 import { getApiBase } from "@/lib/api-base";
+import { fetchPublishedArticles, type ArticleSummary } from "@/lib/article-api";
 
 const API_BASE = getApiBase();
 
@@ -25,10 +25,28 @@ export default function Blog() {
   const [filter, setFilter] = useState<Filter>("Wszystkie");
   const [email, setEmail] = useState("");
   const [newsStatus, setNewsStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
+  const [articleItems, setArticleItems] = useState<ArticleSummary[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void fetchPublishedArticles().then((rows) => {
+      if (!cancelled) {
+        setArticleItems(rows);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const visible = useMemo(
-    () => (filter === "Wszystkie" ? articles : articles.filter((a) => a.category === filter)),
-    [filter],
+    () =>
+      filter === "Wszystkie"
+        ? articleItems
+        : articleItems.filter((a) => a.category === filter),
+    [articleItems, filter],
   );
 
   async function handleSubscribe() {

@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "admin:set-password": "tsx ./src/set-admin-password.ts",
+    "articles:seed": "tsx ./src/seed-articles.ts",
     "db:read": "tsx ./src/read-db.ts",
     "hello": "tsx ./src/hello.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"

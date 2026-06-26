@@ -101,9 +101,9 @@ router.post("/contact", async (req, res) => {
     void sendContactEmails({
       name: row.name,
       email: row.email,
-      phone: row.phone ?? null,
+      phone: parsed.data.phone ?? null,
       message: row.message,
-      type: row.type,
+      type: parsed.data.type,
     });
     return;
   }

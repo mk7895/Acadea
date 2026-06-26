@@ -1,14 +1,38 @@
 import ReactMarkdown from "react-markdown";
+import { useEffect, useState } from "react";
 import { useParams } from "wouter";
-import { articles, findArticle } from "@/data/articles";
 import { Link } from "wouter";
 import { ArrowRight, Clock, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { fetchArticleDetail, type ArticleDetail } from "@/lib/article-api";
 
 export default function ArticlePage() {
   const params = useParams<{ slug: string }>();
   const slug = `/${params.slug}`;
-  const article = findArticle(slug);
+  const [article, setArticle] = useState<ArticleDetail | null | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    setArticle(undefined);
+
+    void fetchArticleDetail(slug).then((value) => {
+      if (!cancelled) {
+        setArticle(value);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  if (article === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center pt-28">
+        <div className="text-center text-gray-500">Ładowanie artykułu…</div>
+      </div>
+    );
+  }
 
   if (!article) {
     return (
@@ -23,9 +47,7 @@ export default function ArticlePage() {
     );
   }
 
-  const related = articles
-    .filter((a) => a.category === article.category && a.slug !== article.slug)
-    .slice(0, 3);
+  const related = article.relatedArticles;
 
   return (
     <div className="bg-white min-h-screen pt-24 md:pt-28 pb-16 md:pb-20">
