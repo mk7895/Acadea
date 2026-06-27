@@ -145,6 +145,52 @@ export const menteeProfilesTable = pgTable(
   }),
 );
 
+export const platformMentorAssignmentsTable = pgTable(
+  "platform_mentor_assignments",
+  {
+    id: serial("id").primaryKey(),
+    menteeUserId: integer("mentee_user_id")
+      .references(() => platformUsersTable.id, { onDelete: "cascade" })
+      .notNull(),
+    mentorUserId: integer("mentor_user_id")
+      .references(() => platformUsersTable.id, { onDelete: "cascade" })
+      .notNull(),
+    grantedByUserId: integer("granted_by_user_id").references(() => platformUsersTable.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    menteeMentorUnique: uniqueIndex("platform_mentor_assignments_unique").on(
+      table.menteeUserId,
+      table.mentorUserId,
+    ),
+  }),
+);
+
+export const platformGuideAssignmentsTable = pgTable(
+  "platform_guide_assignments",
+  {
+    id: serial("id").primaryKey(),
+    guideId: integer("guide_id")
+      .references(() => platformGuidesTable.id, { onDelete: "cascade" })
+      .notNull(),
+    menteeUserId: integer("mentee_user_id")
+      .references(() => platformUsersTable.id, { onDelete: "cascade" })
+      .notNull(),
+    grantedByUserId: integer("granted_by_user_id").references(() => platformUsersTable.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    guideMenteeUnique: uniqueIndex("platform_guide_assignments_unique").on(
+      table.guideId,
+      table.menteeUserId,
+    ),
+  }),
+);
+
 export const mentorAvailabilityRulesTable = pgTable("mentor_availability_rules", {
   id: serial("id").primaryKey(),
   mentorUserId: integer("mentor_user_id")

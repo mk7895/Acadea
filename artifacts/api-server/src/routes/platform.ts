@@ -11,9 +11,11 @@ import {
   mentorUniversitiesTable,
   newsletterSignupsTable,
   platformGoogleConnectionsTable,
+  platformGuideAssignmentsTable,
   platformGuideChecklistItemsTable,
   platformGuidesTable,
   platformMeetingsTable,
+  platformMentorAssignmentsTable,
   platformPasswordResetTokensTable,
   platformUsersTable,
   scholarshipApplicationsTable,
@@ -150,6 +152,20 @@ const guideSchema = z.object({
 const assignGuideSchema = z.object({
   menteeUserId: z.number().int().positive(),
   mentorUserId: z.number().int().positive().nullable().optional(),
+});
+
+const assignGuideAccessSchema = z.object({
+  guideId: z.number().int().positive(),
+  menteeUserId: z.number().int().positive(),
+});
+
+const assignMentorAccessSchema = z.object({
+  menteeUserId: z.number().int().positive(),
+  mentorUserId: z.number().int().positive(),
+});
+
+const approvalSchema = z.object({
+  approved: z.boolean(),
 });
 
 const googleConnectionSchema = z.object({
@@ -1127,6 +1143,17 @@ router.get(
       .from(menteeProfilesTable)
       .where(eq(menteeProfilesTable.userId, req.platformUser!.id))
       .limit(1);
+    const assignedMentors = await db
+      .select({
+        assignmentId: platformMentorAssignmentsTable.id,
+        mentorId: platformUsersTable.id,
+        fullName: platformUsersTable.fullName,
+        email: platformUsersTable.email,
+      })
+      .from(platformMentorAssignmentsTable)
+      .innerJoin(platformUsersTable, eq(platformUsersTable.id, platformMentorAssignmentsTable.mentorUserId))
+      .where(eq(platformMentorAssignmentsTable.menteeUserId, req.platformUser!.id))
+      .orderBy(asc(platformUsersTable.fullName));
     const meetings = await db
       .select()
       .from(platformMeetingsTable)
@@ -1135,25 +1162,33 @@ router.get(
     const guides = await db
       .select()
       .from(platformGuidesTable)
-      .where(
-        or(
-          eq(platformGuidesTable.menteeUserId, req.platformUser!.id),
-          and(
-            eq(platformGuidesTable.guideType, "admin_template"),
-            eq(platformGuidesTable.status, "published"),
-          ),
-        ),
-      )
+      .where(eq(platformGuidesTable.menteeUserId, req.platformUser!.id))
       .orderBy(desc(platformGuidesTable.updatedAt));
+    const assignedGuideAccess = await db
+      .select()
+      .from(platformGuideAssignmentsTable)
+      .where(eq(platformGuideAssignmentsTable.menteeUserId, req.platformUser!.id))
+      .orderBy(desc(platformGuideAssignmentsTable.createdAt));
+    const assignedGuideIds = assignedGuideAccess.map((row) => row.guideId);
+    const assignedGuideTemplates = assignedGuideIds.length
+      ? await db
+          .select()
+          .from(platformGuidesTable)
+          .where(inArray(platformGuidesTable.id, assignedGuideIds))
+          .orderBy(desc(platformGuidesTable.updatedAt))
+      : [];
 
     return res.json({
       profile,
+      assignedMentors,
+      assignedGuideAccess,
       meetings: meetings.map((meeting) => ({
         ...meeting,
         startsAt: meeting.startsAt.toISOString(),
         endsAt: meeting.endsAt.toISOString(),
       })),
       guides: await shapeGuideList(db, guides),
+      assignedGuideTemplates: await shapeGuideList(db, assignedGuideTemplates),
     });
   },
 );
@@ -1196,6 +1231,21 @@ router.post(
 
     if (!mentorProfile?.adminApproved) {
       return res.status(400).json({ error: "Wybrany mentor nie jest jeszcze aktywny." });
+    }
+
+    const [assignment] = await db
+      .select()
+      .from(platformMentorAssignmentsTable)
+      .where(
+        and(
+          eq(platformMentorAssignmentsTable.menteeUserId, req.platformUser!.id),
+          eq(platformMentorAssignmentsTable.mentorUserId, parsed.data.mentorUserId),
+        ),
+      )
+      .limit(1);
+
+    if (!assignment) {
+      return res.status(403).json({ error: "Nie masz jeszcze dostępu do spotkań z tym mentorem." });
     }
 
     const [meeting] = await db
@@ -1242,6 +1292,21 @@ router.post(
 
     if (!sourceGuide) {
       return res.status(404).json({ error: "Nie znaleziono przewodnika." });
+    }
+
+    const [guideAccess] = await db
+      .select()
+      .from(platformGuideAssignmentsTable)
+      .where(
+        and(
+          eq(platformGuideAssignmentsTable.guideId, sourceGuide.id),
+          eq(platformGuideAssignmentsTable.menteeUserId, req.platformUser!.id),
+        ),
+      )
+      .limit(1);
+
+    if (!guideAccess) {
+      return res.status(403).json({ error: "Nie masz jeszcze dostępu do tego przewodnika." });
     }
 
     const sourceItems = await db
@@ -1355,10 +1420,14 @@ router.get(
     const users = await db.select().from(platformUsersTable).orderBy(asc(platformUsersTable.role), asc(platformUsersTable.fullName));
     const mentorProfiles = await db.select().from(mentorProfilesTable);
     const menteeProfiles = await db.select().from(menteeProfilesTable);
+    const mentorAssignments = await db.select().from(platformMentorAssignmentsTable);
+    const guideAssignments = await db.select().from(platformGuideAssignmentsTable);
     return res.json({
       users: users.map(serializeUser),
       mentorProfiles,
       menteeProfiles,
+      mentorAssignments,
+      guideAssignments,
     });
   },
 );
@@ -1471,6 +1540,101 @@ router.put(
   },
 );
 
+router.delete(
+  "/platform/admin/users/:id",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req: AuthenticatedRequest, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: "Invalid user id." });
+    }
+    if (req.platformUser?.id === id) {
+      return res.status(400).json({ error: "Nie możesz usunąć własnego konta administratora." });
+    }
+    const { db } = await import("@workspace/db");
+    await db.delete(platformUsersTable).where(eq(platformUsersTable.id, id));
+    return res.status(204).end();
+  },
+);
+
+router.patch(
+  "/platform/admin/mentors/:id/approve",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = approvalSchema.safeParse(req.body);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid mentor id." : parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [profile] = await db
+      .insert(mentorProfilesTable)
+      .values({
+        userId: id,
+        bio: "",
+        adminApproved: parsed.data.approved,
+      })
+      .onConflictDoUpdate({
+        target: mentorProfilesTable.userId,
+        set: {
+          adminApproved: parsed.data.approved,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    await db
+      .update(platformUsersTable)
+      .set({
+        status: parsed.data.approved ? "active" : "pending",
+        updatedAt: new Date(),
+      })
+      .where(eq(platformUsersTable.id, id));
+
+    return res.json(profile);
+  },
+);
+
+router.patch(
+  "/platform/admin/mentees/:id/approve",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = approvalSchema.safeParse(req.body);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid mentee id." : parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [profile] = await db
+      .insert(menteeProfilesTable)
+      .values({
+        userId: id,
+        adminApproved: parsed.data.approved,
+      })
+      .onConflictDoUpdate({
+        target: menteeProfilesTable.userId,
+        set: {
+          adminApproved: parsed.data.approved,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    await db
+      .update(platformUsersTable)
+      .set({
+        status: parsed.data.approved ? "active" : "pending",
+        updatedAt: new Date(),
+      })
+      .where(eq(platformUsersTable.id, id));
+
+    return res.json(profile);
+  },
+);
+
 router.put(
   "/platform/admin/mentees/:id/assign-mentor",
   requirePlatformAuth,
@@ -1499,6 +1663,112 @@ router.put(
       })
       .returning();
     return res.json(profile);
+  },
+);
+
+router.post(
+  "/platform/admin/mentor-access",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = assignMentorAccessSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [row] = await db
+      .insert(platformMentorAssignmentsTable)
+      .values({
+        menteeUserId: parsed.data.menteeUserId,
+        mentorUserId: parsed.data.mentorUserId,
+        grantedByUserId: req.platformUser!.id,
+      })
+      .onConflictDoNothing()
+      .returning();
+
+    if (!row) {
+      const [existing] = await db
+        .select()
+        .from(platformMentorAssignmentsTable)
+        .where(
+          and(
+            eq(platformMentorAssignmentsTable.menteeUserId, parsed.data.menteeUserId),
+            eq(platformMentorAssignmentsTable.mentorUserId, parsed.data.mentorUserId),
+          ),
+        )
+        .limit(1);
+      return res.json(existing);
+    }
+
+    return res.status(201).json(row);
+  },
+);
+
+router.delete(
+  "/platform/admin/mentor-access/:id",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: "Invalid assignment id." });
+    }
+    const { db } = await import("@workspace/db");
+    await db.delete(platformMentorAssignmentsTable).where(eq(platformMentorAssignmentsTable.id, id));
+    return res.status(204).end();
+  },
+);
+
+router.post(
+  "/platform/admin/guide-access",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = assignGuideAccessSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [row] = await db
+      .insert(platformGuideAssignmentsTable)
+      .values({
+        guideId: parsed.data.guideId,
+        menteeUserId: parsed.data.menteeUserId,
+        grantedByUserId: req.platformUser!.id,
+      })
+      .onConflictDoNothing()
+      .returning();
+
+    if (!row) {
+      const [existing] = await db
+        .select()
+        .from(platformGuideAssignmentsTable)
+        .where(
+          and(
+            eq(platformGuideAssignmentsTable.guideId, parsed.data.guideId),
+            eq(platformGuideAssignmentsTable.menteeUserId, parsed.data.menteeUserId),
+          ),
+        )
+        .limit(1);
+      return res.json(existing);
+    }
+
+    return res.status(201).json(row);
+  },
+);
+
+router.delete(
+  "/platform/admin/guide-access/:id",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: "Invalid guide assignment id." });
+    }
+    const { db } = await import("@workspace/db");
+    await db.delete(platformGuideAssignmentsTable).where(eq(platformGuideAssignmentsTable.id, id));
+    return res.status(204).end();
   },
 );
 
@@ -1545,6 +1815,61 @@ router.post(
     await upsertGuideItems(db, guide.id, parsed.data.items);
     const [shaped] = await shapeGuideList(db, [guide]);
     return res.status(201).json(shaped);
+  },
+);
+
+router.put(
+  "/platform/admin/guides/:id",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = guideSchema.safeParse(req.body);
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid guide id." : parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [guide] = await db
+      .update(platformGuidesTable)
+      .set({
+        guideType: parsed.data.guideType,
+        status: parsed.data.status,
+        title: parsed.data.title,
+        slug: normalizeSlug(parsed.data.slug),
+        country: parsed.data.country,
+        universityName: parsed.data.universityName,
+        summary: parsed.data.summary,
+        descriptionMarkdown: parsed.data.descriptionMarkdown,
+        estimatedReadMin: parsed.data.estimatedReadMin,
+        menteeUserId: parsed.data.menteeUserId ?? null,
+        sourceGuideId: parsed.data.sourceGuideId ?? null,
+        driveFolderUrl: parsed.data.driveFolderUrl || null,
+        isVisibleToUnapprovedUsers: parsed.data.isVisibleToUnapprovedUsers,
+        updatedAt: new Date(),
+      })
+      .where(eq(platformGuidesTable.id, id))
+      .returning();
+    if (!guide) {
+      return res.status(404).json({ error: "Nie znaleziono przewodnika." });
+    }
+    await upsertGuideItems(db, guide.id, parsed.data.items);
+    const [shaped] = await shapeGuideList(db, [guide]);
+    return res.json(shaped);
+  },
+);
+
+router.delete(
+  "/platform/admin/guides/:id",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: "Invalid guide id." });
+    }
+    const { db } = await import("@workspace/db");
+    await db.delete(platformGuidesTable).where(eq(platformGuidesTable.id, id));
+    return res.status(204).end();
   },
 );
 

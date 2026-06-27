@@ -521,25 +521,27 @@ function RoleSection({
   token: string;
 }) {
   if (session.user.role === "admin") {
-    return <AdminSection section={section} token={token} session={session} />;
+    return <AdminSection section={section} token={token} />;
   }
   if (session.user.role === "mentor") {
     return <MentorSection section={section} token={token} session={session} />;
   }
-  return <MenteeSection section={section} token={token} session={session} />;
+  return <MenteeSection section={section} token={token} />;
 }
 
 function AdminSection({
   section,
   token,
-  session,
 }: {
   section: string;
-  session: SessionPayload;
   token: string;
 }) {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [users, setUsers] = useState<any[]>([]);
+  const [mentorProfiles, setMentorProfiles] = useState<any[]>([]);
+  const [menteeProfiles, setMenteeProfiles] = useState<any[]>([]);
+  const [mentorAssignments, setMentorAssignments] = useState<any[]>([]);
+  const [guideAssignments, setGuideAssignments] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
   const [leadType, setLeadType] = useState<LeadKind>("contact");
   const [leads, setLeads] = useState<any[]>([]);
@@ -552,6 +554,8 @@ function AdminSection({
   });
   const [status, setStatus] = useState("");
   const [leadDeletingId, setLeadDeletingId] = useState<number | null>(null);
+  const [userActionId, setUserActionId] = useState<number | null>(null);
+  const [guideActionId, setGuideActionId] = useState<number | null>(null);
   const [userForm, setUserForm] = useState({
     email: "",
     fullName: "",
@@ -559,6 +563,116 @@ function AdminSection({
     role: "mentor",
     status: "active",
   });
+  const [accessForm, setAccessForm] = useState({
+    menteeUserId: "",
+    mentorUserId: "",
+  });
+  const [guideAccessForm, setGuideAccessForm] = useState({
+    guideId: "",
+    menteeUserId: "",
+  });
+  const [guideCloneForm, setGuideCloneForm] = useState({
+    guideId: "",
+    menteeUserId: "",
+    mentorUserId: "",
+  });
+  const [editingGuideId, setEditingGuideId] = useState<string>("new");
+  const [guideForm, setGuideForm] = useState({
+    guideType: "admin_template",
+    status: "draft",
+    title: "",
+    slug: "",
+    country: "",
+    universityName: "",
+    summary: "",
+    descriptionMarkdown: "",
+    estimatedReadMin: 8,
+    menteeUserId: "",
+    sourceGuideId: "",
+    driveFolderUrl: "",
+    isVisibleToUnapprovedUsers: false,
+    itemsText: "Checklist|Personal statement|Napisz pierwszy szkic eseju|document_template",
+  });
+
+  const mentorUsers = users.filter((user) => user.role === "mentor");
+  const menteeUsers = users.filter((user) => user.role === "mentee");
+  const adminUsers = users.filter((user) => user.role === "admin");
+
+  function serializeGuideItemsToText(items: any[] = []) {
+    return items
+      .map((item, index) =>
+        [
+          item.sectionTitle || "Checklist",
+          item.title || `Pozycja ${index + 1}`,
+          item.description || "",
+          item.itemType || "todo",
+        ].join("|"),
+      )
+      .join("\n");
+  }
+
+  function parseGuideItemsFromText(text: string) {
+    return text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line, index) => {
+        const [sectionTitle, title, description = "", itemType = "todo"] = line.split("|");
+        return {
+          sortOrder: index,
+          sectionTitle: sectionTitle || "Checklist",
+          title: title || line,
+          description,
+          itemType,
+          suggestedFilename: "",
+          externalUrl: "",
+          linkedGuideItemId: null,
+          isRequired: true,
+          isCompleted: false,
+          fileUrl: "",
+        };
+      });
+  }
+
+  function resetGuideForm() {
+    setEditingGuideId("new");
+    setGuideForm({
+      guideType: "admin_template",
+      status: "draft",
+      title: "",
+      slug: "",
+      country: "",
+      universityName: "",
+      summary: "",
+      descriptionMarkdown: "",
+      estimatedReadMin: 8,
+      menteeUserId: "",
+      sourceGuideId: "",
+      driveFolderUrl: "",
+      isVisibleToUnapprovedUsers: false,
+      itemsText: "Checklist|Personal statement|Napisz pierwszy szkic eseju|document_template",
+    });
+  }
+
+  function loadGuideIntoEditor(guide: any) {
+    setEditingGuideId(String(guide.id));
+    setGuideForm({
+      guideType: guide.guideType ?? "admin_template",
+      status: guide.status ?? "draft",
+      title: guide.title ?? "",
+      slug: guide.slug ?? "",
+      country: guide.country ?? "",
+      universityName: guide.universityName ?? "",
+      summary: guide.summary ?? "",
+      descriptionMarkdown: guide.descriptionMarkdown ?? "",
+      estimatedReadMin: guide.estimatedReadMin ?? 8,
+      menteeUserId: guide.menteeUserId ? String(guide.menteeUserId) : "",
+      sourceGuideId: guide.sourceGuideId ? String(guide.sourceGuideId) : "",
+      driveFolderUrl: guide.driveFolderUrl ?? "",
+      isVisibleToUnapprovedUsers: Boolean(guide.isVisibleToUnapprovedUsers),
+      itemsText: serializeGuideItemsToText(guide.items),
+    });
+  }
 
   async function refreshLeadState(selectedKind: LeadKind) {
     const [selectedRows, countEntries] = await Promise.all([
@@ -589,17 +703,37 @@ function AdminSection({
     );
   }
 
+  async function refreshUsers() {
+    const payload = await apiFetch<{
+      guideAssignments: any[];
+      menteeProfiles: any[];
+      mentorAssignments: any[];
+      mentorProfiles: any[];
+      users: any[];
+    }>("/admin/users", undefined, token);
+    setUsers(payload.users);
+    setMentorProfiles(payload.mentorProfiles);
+    setMenteeProfiles(payload.menteeProfiles);
+    setMentorAssignments(payload.mentorAssignments);
+    setGuideAssignments(payload.guideAssignments);
+  }
+
+  async function refreshGuides() {
+    const payload = await apiFetch<any[]>("/admin/guides", undefined, token);
+    setGuides(payload);
+  }
+
   useEffect(() => {
     if (section === "overview") {
-      void apiFetch<Overview>("/admin/overview", undefined, token).then(setOverview).catch((error) => setStatus(error.message));
-    }
-    if (section === "users") {
-      void apiFetch<{ users: any[] }>("/admin/users", undefined, token)
-        .then((payload) => setUsers(payload.users))
+      void apiFetch<Overview>("/admin/overview", undefined, token)
+        .then(setOverview)
         .catch((error) => setStatus(error.message));
     }
+    if (section === "users") {
+      void refreshUsers().catch((error) => setStatus(error.message));
+    }
     if (section === "guides") {
-      void apiFetch<any[]>("/admin/guides", undefined, token).then(setGuides).catch((error) => setStatus(error.message));
+      void refreshGuides().catch((error) => setStatus(error.message));
     }
     if (section === "leads") {
       void refreshLeadState(leadType).catch((error) => setStatus(error.message));
@@ -612,11 +746,79 @@ function AdminSection({
     try {
       await apiFetch("/admin/users", { method: "POST", body: JSON.stringify(userForm) }, token);
       setUserForm({ email: "", fullName: "", password: "", role: "mentor", status: "active" });
-      const refreshed = await apiFetch<{ users: any[] }>("/admin/users", undefined, token);
-      setUsers(refreshed.users);
+      await refreshUsers();
       setStatus("Użytkownik został utworzony.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się utworzyć użytkownika.");
+    }
+  }
+
+  async function runUserAction(userId: number, action: () => Promise<void>, message: string) {
+    setUserActionId(userId);
+    setStatus("");
+    try {
+      await action();
+      await refreshUsers();
+      setStatus(message);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać zmian.");
+    } finally {
+      setUserActionId(null);
+    }
+  }
+
+  async function runGuideAction(guideId: number, action: () => Promise<void>, message: string) {
+    setGuideActionId(guideId);
+    setStatus("");
+    try {
+      await action();
+      await Promise.all([refreshGuides(), refreshUsers()]);
+      setStatus(message);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać zmian.");
+    } finally {
+      setGuideActionId(null);
+    }
+  }
+
+  async function saveGuide(event: React.FormEvent) {
+    event.preventDefault();
+    setStatus("");
+    const payload = {
+      guideType: guideForm.guideType,
+      status: guideForm.status,
+      title: guideForm.title,
+      slug: guideForm.slug,
+      country: guideForm.country,
+      universityName: guideForm.universityName,
+      summary: guideForm.summary,
+      descriptionMarkdown: guideForm.descriptionMarkdown,
+      estimatedReadMin: Number(guideForm.estimatedReadMin),
+      menteeUserId: guideForm.menteeUserId ? Number(guideForm.menteeUserId) : null,
+      sourceGuideId: guideForm.sourceGuideId ? Number(guideForm.sourceGuideId) : null,
+      driveFolderUrl: guideForm.driveFolderUrl,
+      isVisibleToUnapprovedUsers: guideForm.isVisibleToUnapprovedUsers,
+      items: parseGuideItemsFromText(guideForm.itemsText),
+    };
+
+    try {
+      if (editingGuideId === "new") {
+        const created = await apiFetch<any>("/admin/guides", { method: "POST", body: JSON.stringify(payload) }, token);
+        await refreshGuides();
+        loadGuideIntoEditor(created);
+        setStatus("Przewodnik został utworzony.");
+        return;
+      }
+
+      const updated = await apiFetch<any>(`/admin/guides/${editingGuideId}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }, token);
+      await refreshGuides();
+      loadGuideIntoEditor(updated);
+      setStatus("Przewodnik został zaktualizowany.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać przewodnika.");
     }
   }
 
@@ -634,13 +836,16 @@ function AdminSection({
     }
   }
 
+  const mentorProfileMap = new Map(mentorProfiles.map((profile) => [profile.userId, profile]));
+  const menteeProfileMap = new Map(menteeProfiles.map((profile) => [profile.userId, profile]));
+
   return (
     <>
       {status ? <div className="status">{status}</div> : null}
       {section === "overview" && overview ? (
         <div className="dashboard-card">
           <h2>Przegląd platformy</h2>
-          <p className="muted">Najważniejsze dane operacyjne platformy w jednym miejscu.</p>
+          <p className="muted">Najważniejsze dane operacyjne i aktualny stan panelu administracyjnego.</p>
           <div className="stats-grid" style={{ marginTop: 18 }}>
             {Object.entries(overview.counts).map(([key, value]) => (
               <div className="stat" key={key}>
@@ -652,83 +857,532 @@ function AdminSection({
         </div>
       ) : null}
       {section === "users" ? (
-        <div className="split">
-          <div className="dashboard-card">
-            <h2>Utwórz konto</h2>
-            <form className="stack" onSubmit={createUser}>
-              <div className="field">
-                <label>Imię i nazwisko</label>
-                <input value={userForm.fullName} onChange={(event) => setUserForm((current) => ({ ...current, fullName: event.target.value }))} />
-              </div>
-              <div className="field">
-                <label>E-mail</label>
-                <input value={userForm.email} onChange={(event) => setUserForm((current) => ({ ...current, email: event.target.value }))} />
-              </div>
-              <div className="grid-2">
+        <div className="stack">
+          <div className="split">
+            <div className="dashboard-card">
+              <h2>Dodaj użytkownika</h2>
+              <form className="stack" onSubmit={createUser}>
                 <div className="field">
-                  <label>Rola</label>
-                  <select value={userForm.role} onChange={(event) => setUserForm((current) => ({ ...current, role: event.target.value }))}>
-                    <option value="mentor">mentor</option>
-                    <option value="mentee">mentee</option>
-                    <option value="admin">admin</option>
+                  <label>Imię i nazwisko</label>
+                  <input value={userForm.fullName} onChange={(event) => setUserForm((current) => ({ ...current, fullName: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>E-mail</label>
+                  <input value={userForm.email} onChange={(event) => setUserForm((current) => ({ ...current, email: event.target.value }))} />
+                </div>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Rola</label>
+                    <select value={userForm.role} onChange={(event) => setUserForm((current) => ({ ...current, role: event.target.value }))}>
+                      <option value="mentor">mentor</option>
+                      <option value="mentee">mentee</option>
+                      <option value="admin">admin</option>
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Status</label>
+                    <select value={userForm.status} onChange={(event) => setUserForm((current) => ({ ...current, status: event.target.value }))}>
+                      <option value="active">active</option>
+                      <option value="pending">pending</option>
+                      <option value="disabled">disabled</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="field">
+                  <label>Hasło startowe</label>
+                  <input value={userForm.password} type="password" onChange={(event) => setUserForm((current) => ({ ...current, password: event.target.value }))} />
+                </div>
+                <button className="btn btn-primary">Dodaj użytkownika</button>
+              </form>
+            </div>
+            <div className="dashboard-card">
+              <h2>Dostęp mentor → mentee</h2>
+              <form
+                className="stack"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!accessForm.menteeUserId || !accessForm.mentorUserId) {
+                    setStatus("Wybierz mentee i mentora.");
+                    return;
+                  }
+                  void runUserAction(
+                    Number(accessForm.menteeUserId),
+                    async () => {
+                      await apiFetch("/admin/mentor-access", {
+                        method: "POST",
+                        body: JSON.stringify({
+                          menteeUserId: Number(accessForm.menteeUserId),
+                          mentorUserId: Number(accessForm.mentorUserId),
+                        }),
+                      }, token);
+                    },
+                    "Dostęp mentora został nadany.",
+                  );
+                }}
+              >
+                <div className="field">
+                  <label>Mentee</label>
+                  <select value={accessForm.menteeUserId} onChange={(event) => setAccessForm((current) => ({ ...current, menteeUserId: event.target.value }))}>
+                    <option value="">Wybierz mentee</option>
+                    {menteeUsers.map((user) => (
+                      <option key={user.id} value={String(user.id)}>
+                        {user.fullName}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="field">
-                  <label>Status</label>
-                  <select value={userForm.status} onChange={(event) => setUserForm((current) => ({ ...current, status: event.target.value }))}>
-                    <option value="active">active</option>
-                    <option value="pending">pending</option>
-                    <option value="disabled">disabled</option>
+                  <label>Mentor</label>
+                  <select value={accessForm.mentorUserId} onChange={(event) => setAccessForm((current) => ({ ...current, mentorUserId: event.target.value }))}>
+                    <option value="">Wybierz mentora</option>
+                    {mentorUsers.map((user) => (
+                      <option key={user.id} value={String(user.id)}>
+                        {user.fullName}
+                      </option>
+                    ))}
                   </select>
                 </div>
+                <button className="btn btn-primary">Nadaj dostęp</button>
+              </form>
+              <div className="list" style={{ marginTop: 18 }}>
+                {mentorAssignments.map((assignment) => {
+                  const mentee = users.find((user) => user.id === assignment.menteeUserId);
+                  const mentor = users.find((user) => user.id === assignment.mentorUserId);
+                  return (
+                    <div className="list-item" key={assignment.id}>
+                      <header>
+                        <div>
+                          <h3>{mentor?.fullName ?? `Mentor #${assignment.mentorUserId}`}</h3>
+                          <div className="muted small">dla {mentee?.fullName ?? `Mentee #${assignment.menteeUserId}`}</div>
+                        </div>
+                        <button
+                          className="btn btn-secondary"
+                          disabled={userActionId === assignment.menteeUserId}
+                          onClick={() =>
+                            void runUserAction(
+                              assignment.menteeUserId,
+                              async () => {
+                                await apiFetch(`/admin/mentor-access/${assignment.id}`, { method: "DELETE" }, token);
+                              },
+                              "Dostęp mentora został usunięty.",
+                            )
+                          }
+                          type="button"
+                        >
+                          Usuń
+                        </button>
+                      </header>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="field">
-                <label>Hasło startowe</label>
-                <input value={userForm.password} type="password" onChange={(event) => setUserForm((current) => ({ ...current, password: event.target.value }))} />
-              </div>
-              <button className="btn btn-primary">Dodaj użytkownika</button>
-            </form>
+            </div>
           </div>
           <div className="dashboard-card">
-            <h2>Obecni użytkownicy</h2>
+            <h2>Użytkownicy</h2>
             <div className="list">
-              {users.map((user) => (
-                <div className="list-item" key={user.id}>
-                  <header>
-                    <div>
-                      <h3>{user.fullName}</h3>
-                      <div className="muted small">{user.email}</div>
+              {[...adminUsers, ...mentorUsers, ...menteeUsers].map((user) => {
+                const mentorProfile = mentorProfileMap.get(user.id);
+                const menteeProfile = menteeProfileMap.get(user.id);
+                const mentorApproved = Boolean(mentorProfile?.adminApproved);
+                const menteeApproved = Boolean(menteeProfile?.adminApproved);
+
+                return (
+                  <div className="list-item" key={user.id}>
+                    <header>
+                      <div>
+                        <h3>{user.fullName}</h3>
+                        <div className="muted small">{user.email}</div>
+                      </div>
+                      <span className="badge">
+                        {user.role} • {user.status}
+                      </span>
+                    </header>
+                    {user.role === "mentor" ? (
+                      <p className="muted">Akceptacja mentora: <strong>{mentorApproved ? "tak" : "nie"}</strong>.</p>
+                    ) : null}
+                    {user.role === "mentee" ? (
+                      <p className="muted">Akceptacja mentee: <strong>{menteeApproved ? "tak" : "nie"}</strong>.</p>
+                    ) : null}
+                    <div className="button-row">
+                      {user.role === "mentor" ? (
+                        <button
+                          className="btn btn-secondary"
+                          disabled={userActionId === user.id}
+                          onClick={() =>
+                            void runUserAction(
+                              user.id,
+                              async () => {
+                                await apiFetch(`/admin/mentors/${user.id}/approve`, {
+                                  method: "PATCH",
+                                  body: JSON.stringify({ approved: !mentorApproved }),
+                                }, token);
+                              },
+                              mentorApproved ? "Mentor został cofnięty do oczekujących." : "Mentor został zaakceptowany.",
+                            )
+                          }
+                          type="button"
+                        >
+                          {mentorApproved ? "Cofnij akceptację" : "Akceptuj mentora"}
+                        </button>
+                      ) : null}
+                      {user.role === "mentee" ? (
+                        <button
+                          className="btn btn-secondary"
+                          disabled={userActionId === user.id}
+                          onClick={() =>
+                            void runUserAction(
+                              user.id,
+                              async () => {
+                                await apiFetch(`/admin/mentees/${user.id}/approve`, {
+                                  method: "PATCH",
+                                  body: JSON.stringify({ approved: !menteeApproved }),
+                                }, token);
+                              },
+                              menteeApproved ? "Mentee został cofnięty do oczekujących." : "Mentee został zaakceptowany.",
+                            )
+                          }
+                          type="button"
+                        >
+                          {menteeApproved ? "Cofnij akceptację" : "Akceptuj mentee"}
+                        </button>
+                      ) : null}
+                      {user.role !== "admin" ? (
+                        <button
+                          className="btn btn-secondary"
+                          disabled={userActionId === user.id}
+                          onClick={() =>
+                            void runUserAction(
+                              user.id,
+                              async () => {
+                                await apiFetch(`/admin/users/${user.id}`, {
+                                  method: "PUT",
+                                  body: JSON.stringify({
+                                    fullName: user.fullName,
+                                    status: user.status === "disabled" ? "active" : "disabled",
+                                    notes: user.notes ?? "",
+                                    avatarUrl: user.avatarUrl ?? "",
+                                  }),
+                                }, token);
+                              },
+                              user.status === "disabled" ? "Konto zostało ponownie aktywowane." : "Konto zostało wyłączone.",
+                            )
+                          }
+                          type="button"
+                        >
+                          {user.status === "disabled" ? "Włącz konto" : "Wyłącz konto"}
+                        </button>
+                      ) : null}
+                      {user.role !== "admin" ? (
+                        <button
+                          className="btn btn-secondary"
+                          disabled={userActionId === user.id}
+                          onClick={() =>
+                            void runUserAction(
+                              user.id,
+                              async () => {
+                                await apiFetch(`/admin/users/${user.id}`, { method: "DELETE" }, token);
+                              },
+                              "Konto zostało usunięte.",
+                            )
+                          }
+                          type="button"
+                        >
+                          Usuń konto
+                        </button>
+                      ) : null}
                     </div>
-                    <span className="badge">
-                      {user.role} • {user.status}
-                    </span>
-                  </header>
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
       ) : null}
       {section === "guides" ? (
-        <div className="dashboard-card">
-          <h2>Przewodniki w systemie</h2>
-          <div className="list">
-            {guides.map((guide) => (
-              <div className="list-item" key={guide.id}>
-                <header>
-                  <div>
-                    <h3>{guide.title}</h3>
-                    <div className="muted small">
-                      {guide.country} • {guide.universityName}
+        <div className="stack">
+          <div className="split">
+            <div className="dashboard-card">
+              <h2>{editingGuideId === "new" ? "Nowy przewodnik" : "Edytor przewodnika"}</h2>
+              <form className="stack" onSubmit={saveGuide}>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Tytuł</label>
+                    <input value={guideForm.title} onChange={(event) => setGuideForm((current) => ({ ...current, title: event.target.value }))} />
+                  </div>
+                  <div className="field">
+                    <label>Slug</label>
+                    <input value={guideForm.slug} onChange={(event) => setGuideForm((current) => ({ ...current, slug: event.target.value }))} />
+                  </div>
+                </div>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Typ</label>
+                    <select value={guideForm.guideType} onChange={(event) => setGuideForm((current) => ({ ...current, guideType: event.target.value }))}>
+                      <option value="admin_template">admin_template</option>
+                      <option value="mentor_blueprint">mentor_blueprint</option>
+                      <option value="mentor_live">mentor_live</option>
+                      <option value="self_service_live">self_service_live</option>
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Status</label>
+                    <select value={guideForm.status} onChange={(event) => setGuideForm((current) => ({ ...current, status: event.target.value }))}>
+                      <option value="draft">draft</option>
+                      <option value="published">published</option>
+                      <option value="archived">archived</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Kraj</label>
+                    <input value={guideForm.country} onChange={(event) => setGuideForm((current) => ({ ...current, country: event.target.value }))} />
+                  </div>
+                  <div className="field">
+                    <label>Uczelnia</label>
+                    <input value={guideForm.universityName} onChange={(event) => setGuideForm((current) => ({ ...current, universityName: event.target.value }))} />
+                  </div>
+                </div>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Czas czytania (min)</label>
+                    <input
+                      min={1}
+                      type="number"
+                      value={guideForm.estimatedReadMin}
+                      onChange={(event) => setGuideForm((current) => ({ ...current, estimatedReadMin: Number(event.target.value) }))}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Widoczny przed akceptacją</label>
+                    <select
+                      value={String(guideForm.isVisibleToUnapprovedUsers)}
+                      onChange={(event) =>
+                        setGuideForm((current) => ({
+                          ...current,
+                          isVisibleToUnapprovedUsers: event.target.value === "true",
+                        }))
+                      }
+                    >
+                      <option value="false">nie</option>
+                      <option value="true">tak</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="field">
+                  <label>Krótki opis</label>
+                  <textarea value={guideForm.summary} onChange={(event) => setGuideForm((current) => ({ ...current, summary: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>Opis / treść</label>
+                  <textarea value={guideForm.descriptionMarkdown} onChange={(event) => setGuideForm((current) => ({ ...current, descriptionMarkdown: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>Checklist lines: sekcja|tytuł|opis|typ</label>
+                  <textarea value={guideForm.itemsText} onChange={(event) => setGuideForm((current) => ({ ...current, itemsText: event.target.value }))} />
+                </div>
+                <div className="button-row">
+                  <button className="btn btn-primary">{editingGuideId === "new" ? "Utwórz przewodnik" : "Zapisz zmiany"}</button>
+                  <button className="btn btn-secondary" onClick={resetGuideForm} type="button">
+                    Wyczyść formularz
+                  </button>
+                </div>
+              </form>
+            </div>
+            <div className="dashboard-card">
+              <h2>Dostęp do przewodników</h2>
+              <form
+                className="stack"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!guideAccessForm.guideId || !guideAccessForm.menteeUserId) {
+                    setStatus("Wybierz przewodnik i mentee.");
+                    return;
+                  }
+                  void runGuideAction(
+                    Number(guideAccessForm.guideId),
+                    async () => {
+                      await apiFetch("/admin/guide-access", {
+                        method: "POST",
+                        body: JSON.stringify({
+                          guideId: Number(guideAccessForm.guideId),
+                          menteeUserId: Number(guideAccessForm.menteeUserId),
+                        }),
+                      }, token);
+                    },
+                    "Dostęp do przewodnika został nadany.",
+                  );
+                }}
+              >
+                <div className="field">
+                  <label>Przewodnik</label>
+                  <select value={guideAccessForm.guideId} onChange={(event) => setGuideAccessForm((current) => ({ ...current, guideId: event.target.value }))}>
+                    <option value="">Wybierz przewodnik</option>
+                    {guides
+                      .filter((guide) => guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint")
+                      .map((guide) => (
+                        <option key={guide.id} value={String(guide.id)}>
+                          {guide.title}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Mentee</label>
+                  <select value={guideAccessForm.menteeUserId} onChange={(event) => setGuideAccessForm((current) => ({ ...current, menteeUserId: event.target.value }))}>
+                    <option value="">Wybierz mentee</option>
+                    {menteeUsers.map((user) => (
+                      <option key={user.id} value={String(user.id)}>
+                        {user.fullName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button className="btn btn-primary">Nadaj dostęp</button>
+              </form>
+              <div className="list" style={{ marginTop: 18 }}>
+                {guideAssignments.map((assignment) => {
+                  const guide = guides.find((entry) => entry.id === assignment.guideId);
+                  const mentee = users.find((user) => user.id === assignment.menteeUserId);
+                  return (
+                    <div className="list-item" key={assignment.id}>
+                      <header>
+                        <div>
+                          <h3>{guide?.title ?? `Guide #${assignment.guideId}`}</h3>
+                          <div className="muted small">dla {mentee?.fullName ?? `Mentee #${assignment.menteeUserId}`}</div>
+                        </div>
+                        <button
+                          className="btn btn-secondary"
+                          disabled={guideActionId === assignment.guideId}
+                          onClick={() =>
+                            void runGuideAction(
+                              assignment.guideId,
+                              async () => {
+                                await apiFetch(`/admin/guide-access/${assignment.id}`, { method: "DELETE" }, token);
+                              },
+                              "Dostęp do przewodnika został usunięty.",
+                            )
+                          }
+                          type="button"
+                        >
+                          Usuń
+                        </button>
+                      </header>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+          <div className="split">
+            <div className="dashboard-card">
+              <h2>Nadaj gotowy guide mentee</h2>
+              <form
+                className="stack"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!guideCloneForm.guideId || !guideCloneForm.menteeUserId) {
+                    setStatus("Wybierz przewodnik i mentee.");
+                    return;
+                  }
+                  void runGuideAction(
+                    Number(guideCloneForm.guideId),
+                    async () => {
+                      await apiFetch(`/admin/guides/${guideCloneForm.guideId}/assign`, {
+                        method: "POST",
+                        body: JSON.stringify({
+                          menteeUserId: Number(guideCloneForm.menteeUserId),
+                          mentorUserId: guideCloneForm.mentorUserId ? Number(guideCloneForm.mentorUserId) : null,
+                        }),
+                      }, token);
+                    },
+                    "Guide został skopiowany do mentee.",
+                  );
+                }}
+              >
+                <div className="field">
+                  <label>Źródłowy przewodnik</label>
+                  <select value={guideCloneForm.guideId} onChange={(event) => setGuideCloneForm((current) => ({ ...current, guideId: event.target.value }))}>
+                    <option value="">Wybierz przewodnik</option>
+                    {guides.map((guide) => (
+                      <option key={guide.id} value={String(guide.id)}>
+                        {guide.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Mentee</label>
+                  <select value={guideCloneForm.menteeUserId} onChange={(event) => setGuideCloneForm((current) => ({ ...current, menteeUserId: event.target.value }))}>
+                    <option value="">Wybierz mentee</option>
+                    {menteeUsers.map((user) => (
+                      <option key={user.id} value={String(user.id)}>
+                        {user.fullName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Mentor docelowy (opcjonalnie)</label>
+                  <select value={guideCloneForm.mentorUserId} onChange={(event) => setGuideCloneForm((current) => ({ ...current, mentorUserId: event.target.value }))}>
+                    <option value="">Brak mentora</option>
+                    {mentorUsers.map((user) => (
+                      <option key={user.id} value={String(user.id)}>
+                        {user.fullName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button className="btn btn-primary">Przydziel guide</button>
+              </form>
+            </div>
+            <div className="dashboard-card">
+              <h2>Przewodniki w systemie</h2>
+              <div className="list">
+                {guides.map((guide) => (
+                  <div className="list-item" key={guide.id}>
+                    <header>
+                      <div>
+                        <h3>{guide.title}</h3>
+                        <div className="muted small">
+                          {guide.country} • {guide.universityName}
+                        </div>
+                      </div>
+                      <span className="badge">
+                        {guide.guideType} • {guide.status}
+                      </span>
+                    </header>
+                    <p className="muted">{guide.summary}</p>
+                    <div className="small muted">{guide.items?.length ?? 0} pozycji checklisty • {guide.estimatedReadMin} min czytania</div>
+                    <div className="button-row" style={{ marginTop: 12 }}>
+                      <button className="btn btn-secondary" onClick={() => loadGuideIntoEditor(guide)} type="button">
+                        Edytuj
+                      </button>
+                      <button
+                        className="btn btn-secondary"
+                        disabled={guideActionId === guide.id}
+                        onClick={() =>
+                          void runGuideAction(
+                            guide.id,
+                            async () => {
+                              await apiFetch(`/admin/guides/${guide.id}`, { method: "DELETE" }, token);
+                              if (editingGuideId === String(guide.id)) {
+                                resetGuideForm();
+                              }
+                            },
+                            "Przewodnik został usunięty.",
+                          )
+                        }
+                        type="button"
+                      >
+                        Usuń
+                      </button>
                     </div>
                   </div>
-                  <span className="badge">
-                    {guide.guideType} • {guide.status}
-                  </span>
-                </header>
-                <p className="muted">{guide.summary}</p>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       ) : null}
@@ -1186,14 +1840,13 @@ function MentorSection({
 function MenteeSection({
   section,
   token,
-  session,
 }: {
   section: string;
-  session: SessionPayload;
   token: string;
 }) {
   const [overview, setOverview] = useState<any>(null);
   const [mentors, setMentors] = useState<any[]>([]);
+  const [publicGuides, setPublicGuides] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
   const [status, setStatus] = useState("");
   const [meetingForm, setMeetingForm] = useState({
@@ -1207,8 +1860,10 @@ function MenteeSection({
     meetingUrl: "",
   });
 
-  const selectedMentor = mentors.find(
-    (mentor) => String(mentor.id) === String(meetingForm.mentorUserId),
+  const assignedMentors = overview?.assignedMentors ?? [];
+  const assignedGuideTemplates = overview?.assignedGuideTemplates ?? [];
+  const selectedMentor = assignedMentors.find(
+    (mentor: any) => String(mentor.mentorId) === String(meetingForm.mentorUserId),
   );
 
   useEffect(() => {
@@ -1220,6 +1875,9 @@ function MenteeSection({
     }
     if (section === "mentors") {
       void apiFetch<any[]>("/public/mentors").then(setMentors).catch((error) => setStatus(error.message));
+    }
+    if (section === "guides" || section === "overview") {
+      void apiFetch<any[]>("/public/guides").then(setPublicGuides).catch((error) => setStatus(error.message));
     }
   }, [section, token]);
 
@@ -1248,11 +1906,15 @@ function MenteeSection({
       {section === "overview" && overview ? (
         <div className="dashboard-card">
           <h2>Twoje konto mentee</h2>
-          <p className="muted">W tym panelu zarządzasz swoimi przewodnikami, dostępem i spotkaniami.</p>
+          <p className="muted">W tym panelu zarządzasz przewodnikami, dostępami i spotkaniami przypisanymi konkretnie do Ciebie.</p>
           <div className="tile-grid" style={{ marginTop: 18 }}>
             <div className="tile">
               <div className="small muted">Przewodniki</div>
               <strong>{overview.guides?.length ?? 0}</strong>
+            </div>
+            <div className="tile">
+              <div className="small muted">Przydzielone blueprinty</div>
+              <strong>{assignedGuideTemplates.length}</strong>
             </div>
             <div className="tile">
               <div className="small muted">Spotkania</div>
@@ -1262,6 +1924,10 @@ function MenteeSection({
               <div className="small muted">Akceptacja admina</div>
               <strong>{(overview.profile as any)?.adminApproved ? "tak" : "nie"}</strong>
             </div>
+            <div className="tile">
+              <div className="small muted">Przydzieleni mentorzy</div>
+              <strong>{assignedMentors.length}</strong>
+            </div>
           </div>
         </div>
       ) : null}
@@ -1269,9 +1935,7 @@ function MenteeSection({
         <div className="split">
           <div className="dashboard-card">
             <h2>Mentorzy</h2>
-            <p className="muted">
-              Aktualnie wysyłasz prośbę o spotkanie ręcznie. Docelowo ten widok zostanie podłączony do rzeczywistych dostępnych terminów mentorów.
-            </p>
+            <p className="muted">Tutaj widzisz profile mentorów. Spotkanie możesz umawiać tylko z tymi, do których administrator nadał Ci dostęp.</p>
             <div className="list">
               {mentors.map((mentor) => (
                 <div className="list-item" key={mentor.id}>
@@ -1283,20 +1947,22 @@ function MenteeSection({
                     <span className="badge">{mentor.approved ? "approved" : "preview"}</span>
                   </header>
                   <p className="muted">{mentor.bio}</p>
-                  <div className="button-row">
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() =>
-                        setMeetingForm((current) => ({
-                          ...current,
-                          mentorUserId: String(mentor.id),
-                        }))
-                      }
-                      type="button"
-                    >
-                      Wybierz tego mentora
-                    </button>
-                  </div>
+                  {assignedMentors.some((assignedMentor: any) => assignedMentor.mentorId === mentor.id) ? (
+                    <div className="button-row">
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() =>
+                          setMeetingForm((current) => ({
+                            ...current,
+                            mentorUserId: String(mentor.id),
+                          }))
+                        }
+                        type="button"
+                      >
+                        Wybierz do spotkania
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -1305,14 +1971,14 @@ function MenteeSection({
             <h2>Umów spotkanie</h2>
             <form className="stack" onSubmit={requestMeeting}>
               <div className="field">
-                <label>Mentor</label>
+                <label>Przydzielony mentor</label>
                 <select
                   value={meetingForm.mentorUserId}
                   onChange={(event) => setMeetingForm((current) => ({ ...current, mentorUserId: event.target.value }))}
                 >
                   <option value="">Wybierz mentora</option>
-                  {mentors.map((mentor) => (
-                    <option key={mentor.id} value={String(mentor.id)}>
+                  {assignedMentors.map((mentor: any) => (
+                    <option key={mentor.mentorId} value={String(mentor.mentorId)}>
                       {mentor.fullName}
                     </option>
                   ))}
@@ -1320,7 +1986,7 @@ function MenteeSection({
               </div>
               {selectedMentor ? (
                 <div className="status">
-                  Wybrany mentor: <strong>{selectedMentor.fullName}</strong>. Po wdrożeniu integracji Google to tutaj pojawią się jego rzeczywiste wolne terminy.
+                  Wybrany mentor: <strong>{selectedMentor.fullName}</strong>. Na tym etapie zapisujesz prośbę o spotkanie, a po integracji Google pojawią się tu realne sloty kalendarzowe.
                 </div>
               ) : null}
               <div className="grid-2">
@@ -1343,25 +2009,81 @@ function MenteeSection({
         </div>
       ) : null}
       {section === "guides" ? (
-        <div className="dashboard-card">
-          <h2>Twoje przewodniki</h2>
-          <div className="list">
-            {guides.map((guide) => (
-              <div className="list-item" key={guide.id}>
-                <header>
-                  <div>
-                    <h3>{guide.title}</h3>
-                    <div className="muted small">
-                      {guide.country} • {guide.universityName}
+        <div className="split">
+          <div className="dashboard-card">
+            <h2>Twoje przewodniki</h2>
+            <div className="list">
+              {guides.map((guide) => (
+                <div className="list-item" key={guide.id}>
+                  <header>
+                    <div>
+                      <h3>{guide.title}</h3>
+                      <div className="muted small">
+                        {guide.country} • {guide.universityName}
+                      </div>
                     </div>
+                    <span className="badge">
+                      {guide.guideType} • {guide.status}
+                    </span>
+                  </header>
+                  <p className="muted">{guide.summary}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="dashboard-card">
+            <h2>Dostępne guide’y do aktywacji</h2>
+            <div className="list">
+              {assignedGuideTemplates.map((guide: any) => (
+                <div className="list-item" key={guide.id}>
+                  <header>
+                    <div>
+                      <h3>{guide.title}</h3>
+                      <div className="muted small">
+                        {guide.country} • {guide.universityName}
+                      </div>
+                    </div>
+                    <span className="badge">{guide.guideType}</span>
+                  </header>
+                  <p className="muted">{guide.summary}</p>
+                  <div className="button-row">
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() =>
+                        void apiFetch(`/mentee/guides/${guide.id}/adopt`, { method: "POST" }, token)
+                          .then(() => apiFetch<any>("/mentee/overview", undefined, token))
+                          .then((payload) => {
+                            setOverview(payload);
+                            setGuides(payload.guides ?? []);
+                            setStatus("Przewodnik został dodany do Twojego konta.");
+                          })
+                          .catch((error: Error) => setStatus(error.message))
+                      }
+                      type="button"
+                    >
+                      Dodaj do mojego panelu
+                    </button>
                   </div>
-                  <span className="badge">
-                    {guide.guideType} • {guide.status}
-                  </span>
-                </header>
-                <p className="muted">{guide.summary}</p>
-              </div>
-            ))}
+                </div>
+              ))}
+              {!(overview?.profile as any)?.adminApproved ? (
+                <div className="list-item">
+                  <h3>Podgląd guide’ów ACADEA</h3>
+                  <p className="muted">Dopóki administrator nie zatwierdzi Twojego konta lub nie nada konkretnego dostępu, widzisz tylko nazwy i krótkie opisy.</p>
+                  <div className="list" style={{ marginTop: 12 }}>
+                    {publicGuides.map((guide) => (
+                      <div className="list-item" key={guide.id}>
+                        <h3>{guide.title}</h3>
+                        <div className="muted small">
+                          {guide.country} • {guide.universityName}
+                        </div>
+                        <p className="muted">{guide.summary}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       ) : null}
