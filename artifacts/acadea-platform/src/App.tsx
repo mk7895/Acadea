@@ -46,6 +46,63 @@ type Overview = {
   };
 };
 
+type LeadKind = "contact" | "mentor" | "scholarship" | "newsletter" | "booking";
+
+function formatDate(value: string | null | undefined) {
+  if (!value) {
+    return "brak";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString("pl-PL");
+}
+
+function renderLeadSummary(kind: LeadKind, lead: Record<string, unknown>) {
+  const name = typeof lead.name === "string" && lead.name ? lead.name : "Brak imienia";
+  const email = typeof lead.email === "string" && lead.email ? lead.email : "Brak e-maila";
+  const message = typeof lead.message === "string" && lead.message ? lead.message : "";
+  const phone = typeof lead.phone === "string" && lead.phone ? lead.phone : null;
+  const type = typeof lead.type === "string" && lead.type ? lead.type : null;
+
+  switch (kind) {
+    case "newsletter":
+      return {
+        title: email,
+        meta: name,
+        body: message || "Zapis do newslettera bez dodatkowej wiadomości.",
+      };
+    case "booking":
+      return {
+        title: name,
+        meta: [email, phone].filter(Boolean).join(" • "),
+        body: message || "Lead z formularza umawiania konsultacji.",
+      };
+    case "mentor":
+      return {
+        title: name,
+        meta: [email, phone].filter(Boolean).join(" • "),
+        body: message || "Aplikacja mentorska bez dodatkowej treści.",
+      };
+    case "scholarship":
+      return {
+        title: name,
+        meta: [email, phone].filter(Boolean).join(" • "),
+        body: message || "Zgłoszenie stypendialne bez dodatkowej treści.",
+      };
+    case "contact":
+    default:
+      return {
+        title: name,
+        meta: [email, phone, type].filter(Boolean).join(" • "),
+        body: message || "Wiadomość kontaktowa bez treści.",
+      };
+  }
+}
+
 function usePlatformSession() {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY) ?? "");
   const [session, setSession] = useState<SessionPayload | null>(null);
@@ -433,8 +490,15 @@ function AdminSection({
   const [overview, setOverview] = useState<Overview | null>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
-  const [leadType, setLeadType] = useState("contact");
+  const [leadType, setLeadType] = useState<LeadKind>("contact");
   const [leads, setLeads] = useState<any[]>([]);
+  const [leadCounts, setLeadCounts] = useState<Record<LeadKind, number>>({
+    booking: 0,
+    contact: 0,
+    mentor: 0,
+    newsletter: 0,
+    scholarship: 0,
+  });
   const [status, setStatus] = useState("");
   const [userForm, setUserForm] = useState({
     email: "",
@@ -457,7 +521,34 @@ function AdminSection({
       void apiFetch<any[]>("/admin/guides", undefined, token).then(setGuides).catch((error) => setStatus(error.message));
     }
     if (section === "leads") {
-      void apiFetch<any[]>(`/admin/leads/${leadType}`, undefined, token).then(setLeads).catch((error) => setStatus(error.message));
+      void Promise.all([
+        apiFetch<any[]>(`/admin/leads/${leadType}`, undefined, token),
+        Promise.all(
+          (["contact", "mentor", "scholarship", "newsletter", "booking"] as LeadKind[]).map(async (kind) => {
+            const rows = await apiFetch<any[]>(`/admin/leads/${kind}`, undefined, token);
+            return [kind, rows.length] as const;
+          }),
+        ),
+      ])
+        .then(([selectedRows, countEntries]) => {
+          setLeads(selectedRows);
+          setLeadCounts(
+            countEntries.reduce(
+              (accumulator, [kind, count]) => {
+                accumulator[kind] = count;
+                return accumulator;
+              },
+              {
+                booking: 0,
+                contact: 0,
+                mentor: 0,
+                newsletter: 0,
+                scholarship: 0,
+              } as Record<LeadKind, number>,
+            ),
+          );
+        })
+        .catch((error) => setStatus(error.message));
     }
   }, [leadType, section, token]);
 
@@ -579,16 +670,42 @@ function AdminSection({
         <div className="dashboard-card">
           <h2>Leady i formularze</h2>
           <div className="button-row" style={{ marginBottom: 16 }}>
-            {["contact", "mentor", "scholarship", "newsletter", "booking"].map((value) => (
+            {(["contact", "mentor", "scholarship", "newsletter", "booking"] as LeadKind[]).map((value) => (
               <button className="btn btn-secondary" key={value} onClick={() => setLeadType(value)} type="button">
-                {value}
+                {value} ({leadCounts[value]})
               </button>
             ))}
           </div>
+          {!leads.length ? (
+            <div className="list-item">
+              <h3 style={{ marginTop: 0 }}>Brak rekordów</h3>
+              <p className="muted" style={{ marginBottom: 0 }}>
+                W produkcyjnej bazie Render obecnie nie ma jeszcze żadnych wpisów dla kategorii <strong>{leadType}</strong>.
+              </p>
+            </div>
+          ) : null}
           <div className="list">
             {leads.map((lead, index) => (
               <div className="list-item" key={lead.id ?? index}>
-                <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{JSON.stringify(lead, null, 2)}</pre>
+                {(() => {
+                  const summary = renderLeadSummary(leadType, lead);
+                  return (
+                    <>
+                      <header>
+                        <div>
+                          <h3>{summary.title}</h3>
+                          <div className="muted small">{summary.meta}</div>
+                        </div>
+                        <span className="badge">{formatDate(typeof lead.createdAt === "string" ? lead.createdAt : null)}</span>
+                      </header>
+                      <p className="muted">{summary.body}</p>
+                      <details className="small">
+                        <summary>Zobacz pełny rekord</summary>
+                        <pre style={{ margin: "10px 0 0", whiteSpace: "pre-wrap" }}>{JSON.stringify(lead, null, 2)}</pre>
+                      </details>
+                    </>
+                  );
+                })()}
               </div>
             ))}
           </div>
@@ -1024,6 +1141,10 @@ function MenteeSection({
     meetingUrl: "",
   });
 
+  const selectedMentor = mentors.find(
+    (mentor) => String(mentor.id) === String(meetingForm.mentorUserId),
+  );
+
   useEffect(() => {
     if (section === "overview" || section === "guides" || section === "meetings") {
       void apiFetch<any>("/mentee/overview", undefined, token).then((payload) => {
@@ -1084,6 +1205,9 @@ function MenteeSection({
         <div className="split">
           <div className="dashboard-card">
             <h2>Mentorzy</h2>
+            <p className="muted">
+              Ten etap jest tymczasowy: teraz zapisujesz prośbę o spotkanie ręcznie, a po wdrożeniu Google Calendar/OAuth to miejsce zostanie podmienione na prawdziwe wolne sloty mentorów.
+            </p>
             <div className="list">
               {mentors.map((mentor) => (
                 <div className="list-item" key={mentor.id}>
@@ -1095,6 +1219,20 @@ function MenteeSection({
                     <span className="badge">{mentor.approved ? "approved" : "preview"}</span>
                   </header>
                   <p className="muted">{mentor.bio}</p>
+                  <div className="button-row">
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() =>
+                        setMeetingForm((current) => ({
+                          ...current,
+                          mentorUserId: String(mentor.id),
+                        }))
+                      }
+                      type="button"
+                    >
+                      Wybierz tego mentora
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1103,9 +1241,24 @@ function MenteeSection({
             <h2>Umów spotkanie</h2>
             <form className="stack" onSubmit={requestMeeting}>
               <div className="field">
-                <label>ID mentora</label>
-                <input value={meetingForm.mentorUserId} onChange={(event) => setMeetingForm((current) => ({ ...current, mentorUserId: event.target.value }))} />
+                <label>Mentor</label>
+                <select
+                  value={meetingForm.mentorUserId}
+                  onChange={(event) => setMeetingForm((current) => ({ ...current, mentorUserId: event.target.value }))}
+                >
+                  <option value="">Wybierz mentora</option>
+                  {mentors.map((mentor) => (
+                    <option key={mentor.id} value={String(mentor.id)}>
+                      {mentor.fullName}
+                    </option>
+                  ))}
+                </select>
               </div>
+              {selectedMentor ? (
+                <div className="status">
+                  Wybrany mentor: <strong>{selectedMentor.fullName}</strong>. Po wdrożeniu integracji Google to tutaj pojawią się jego rzeczywiste wolne terminy.
+                </div>
+              ) : null}
               <div className="grid-2">
                 <div className="field">
                   <label>Start</label>
