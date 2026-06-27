@@ -15,8 +15,11 @@ import {
   platformGuideChecklistItemsTable,
   platformGuidesTable,
   platformMeetingsTable,
+  platformMaterialTemplatesTable,
   platformMentorAssignmentsTable,
   platformPasswordResetTokensTable,
+  platformProfileFieldsTable,
+  platformProfileResponsesTable,
   platformUsersTable,
   scholarshipApplicationsTable,
   PLATFORM_CHECKLIST_ITEM_TYPES,
@@ -24,8 +27,10 @@ import {
   PLATFORM_GOOGLE_CONNECTION_TYPES,
   PLATFORM_GUIDE_STATUSES,
   PLATFORM_GUIDE_TYPES,
+  PLATFORM_MATERIAL_TEMPLATE_TYPES,
   PLATFORM_MEETING_METHODS,
   PLATFORM_MEETING_STATUSES,
+  PLATFORM_PROFILE_FIELD_TYPES,
   PLATFORM_USER_ROLES,
   PLATFORM_USER_STATUSES,
   type PlatformUserRole,
@@ -157,6 +162,37 @@ const assignGuideSchema = z.object({
 const assignGuideAccessSchema = z.object({
   guideId: z.number().int().positive(),
   menteeUserId: z.number().int().positive(),
+});
+
+const profileFieldSchema = z.object({
+  key: z.string().trim().min(1),
+  label: z.string().trim().min(1),
+  description: z.string().trim().optional().default(""),
+  fieldType: z.enum(PLATFORM_PROFILE_FIELD_TYPES).default("text"),
+  sectionTitle: z.string().trim().min(1).default("Dane podstawowe"),
+  placeholder: z.string().trim().optional().default(""),
+  isRequired: z.boolean().default(false),
+  sortOrder: z.number().int().min(0).default(0),
+});
+
+const profileResponseSchema = z.object({
+  responses: z.array(
+    z.object({
+      fieldId: z.number().int().positive(),
+      value: z.string().default(""),
+    }),
+  ).default([]),
+});
+
+const materialTemplateSchema = z.object({
+  title: z.string().trim().min(1),
+  description: z.string().trim().optional().default(""),
+  templateType: z.enum(PLATFORM_MATERIAL_TEMPLATE_TYPES).default("passport_like"),
+  guideId: z.number().int().positive().nullable().optional(),
+  appliesToGuideIds: z.array(z.number().int().positive()).default([]),
+  structure: z.array(z.record(z.string(), z.unknown())).default([]),
+  alternativeOptions: z.array(z.string().trim().min(1)).default([]),
+  isActive: z.boolean().default(true),
 });
 
 const assignMentorAccessSchema = z.object({
@@ -748,6 +784,171 @@ router.get("/platform/public/guides", async (_req, res) => {
 });
 
 router.get(
+  "/platform/admin/profile-fields",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (_req, res) => {
+    const { db } = await import("@workspace/db");
+    const fields = await db
+      .select()
+      .from(platformProfileFieldsTable)
+      .orderBy(asc(platformProfileFieldsTable.sectionTitle), asc(platformProfileFieldsTable.sortOrder));
+    return res.json(fields);
+  },
+);
+
+router.post(
+  "/platform/admin/profile-fields",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const parsed = profileFieldSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [field] = await db.insert(platformProfileFieldsTable).values({
+      key: parsed.data.key,
+      label: parsed.data.label,
+      description: parsed.data.description,
+      fieldType: parsed.data.fieldType,
+      sectionTitle: parsed.data.sectionTitle,
+      placeholder: parsed.data.placeholder || null,
+      isRequired: parsed.data.isRequired,
+      sortOrder: parsed.data.sortOrder,
+    }).returning();
+    return res.status(201).json(field);
+  },
+);
+
+router.put(
+  "/platform/admin/profile-fields/:id",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = profileFieldSchema.safeParse(req.body);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid field id." : parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [field] = await db.update(platformProfileFieldsTable).set({
+      key: parsed.data.key,
+      label: parsed.data.label,
+      description: parsed.data.description,
+      fieldType: parsed.data.fieldType,
+      sectionTitle: parsed.data.sectionTitle,
+      placeholder: parsed.data.placeholder || null,
+      isRequired: parsed.data.isRequired,
+      sortOrder: parsed.data.sortOrder,
+      updatedAt: new Date(),
+    }).where(eq(platformProfileFieldsTable.id, id)).returning();
+    if (!field) {
+      return res.status(404).json({ error: "Nie znaleziono pola." });
+    }
+    return res.json(field);
+  },
+);
+
+router.delete(
+  "/platform/admin/profile-fields/:id",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: "Invalid field id." });
+    }
+    const { db } = await import("@workspace/db");
+    await db.delete(platformProfileFieldsTable).where(eq(platformProfileFieldsTable.id, id));
+    return res.status(204).end();
+  },
+);
+
+router.get(
+  "/platform/admin/material-templates",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (_req, res) => {
+    const { db } = await import("@workspace/db");
+    const templates = await db
+      .select()
+      .from(platformMaterialTemplatesTable)
+      .orderBy(asc(platformMaterialTemplatesTable.templateType), asc(platformMaterialTemplatesTable.title));
+    return res.json(templates);
+  },
+);
+
+router.post(
+  "/platform/admin/material-templates",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = materialTemplateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [template] = await db.insert(platformMaterialTemplatesTable).values({
+      ownerUserId: req.platformUser!.id,
+      title: parsed.data.title,
+      description: parsed.data.description,
+      templateType: parsed.data.templateType,
+      guideId: parsed.data.guideId ?? null,
+      appliesToGuideIds: parsed.data.appliesToGuideIds,
+      structure: parsed.data.structure,
+      alternativeOptions: parsed.data.alternativeOptions,
+      isActive: parsed.data.isActive,
+    }).returning();
+    return res.status(201).json(template);
+  },
+);
+
+router.put(
+  "/platform/admin/material-templates/:id",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = materialTemplateSchema.safeParse(req.body);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid material template id." : parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [template] = await db.update(platformMaterialTemplatesTable).set({
+      title: parsed.data.title,
+      description: parsed.data.description,
+      templateType: parsed.data.templateType,
+      guideId: parsed.data.guideId ?? null,
+      appliesToGuideIds: parsed.data.appliesToGuideIds,
+      structure: parsed.data.structure,
+      alternativeOptions: parsed.data.alternativeOptions,
+      isActive: parsed.data.isActive,
+      updatedAt: new Date(),
+    }).where(eq(platformMaterialTemplatesTable.id, id)).returning();
+    if (!template) {
+      return res.status(404).json({ error: "Nie znaleziono szablonu materiału." });
+    }
+    return res.json(template);
+  },
+);
+
+router.delete(
+  "/platform/admin/material-templates/:id",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: "Invalid material template id." });
+    }
+    const { db } = await import("@workspace/db");
+    await db.delete(platformMaterialTemplatesTable).where(eq(platformMaterialTemplatesTable.id, id));
+    return res.status(204).end();
+  },
+);
+
+router.get(
   "/platform/mentor/profile",
   requirePlatformAuth,
   requirePlatformRole("mentor"),
@@ -1177,11 +1378,38 @@ router.get(
           .where(inArray(platformGuidesTable.id, assignedGuideIds))
           .orderBy(desc(platformGuidesTable.updatedAt))
       : [];
+    const profileFields = await db
+      .select()
+      .from(platformProfileFieldsTable)
+      .orderBy(asc(platformProfileFieldsTable.sectionTitle), asc(platformProfileFieldsTable.sortOrder));
+    const profileResponses = profileFields.length
+      ? await db
+          .select()
+          .from(platformProfileResponsesTable)
+          .where(eq(platformProfileResponsesTable.menteeUserId, req.platformUser!.id))
+      : [];
+    const accessibleGuideIds = Array.from(new Set([
+      ...guides.map((guide) => guide.id),
+      ...assignedGuideTemplates.map((guide) => guide.id),
+    ]));
+    const materialTemplates = accessibleGuideIds.length
+      ? await db
+          .select()
+          .from(platformMaterialTemplatesTable)
+          .where(eq(platformMaterialTemplatesTable.isActive, true))
+          .orderBy(asc(platformMaterialTemplatesTable.templateType), asc(platformMaterialTemplatesTable.title))
+      : [];
+    const visibleMaterials = materialTemplates.filter((template) => {
+      const applies = template.appliesToGuideIds ?? [];
+      return applies.length === 0 || applies.some((guideId: number) => accessibleGuideIds.includes(guideId));
+    });
 
     return res.json({
       profile,
       assignedMentors,
       assignedGuideAccess,
+      profileFields,
+      profileResponses,
       meetings: meetings.map((meeting) => ({
         ...meeting,
         startsAt: meeting.startsAt.toISOString(),
@@ -1189,7 +1417,38 @@ router.get(
       })),
       guides: await shapeGuideList(db, guides),
       assignedGuideTemplates: await shapeGuideList(db, assignedGuideTemplates),
+      materialTemplates: visibleMaterials,
     });
+  },
+);
+
+router.put(
+  "/platform/mentee/profile-responses",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = profileResponseSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    for (const response of parsed.data.responses) {
+      await db
+        .insert(platformProfileResponsesTable)
+        .values({
+          menteeUserId: req.platformUser!.id,
+          fieldId: response.fieldId,
+          value: response.value,
+        })
+        .onConflictDoUpdate({
+          target: [platformProfileResponsesTable.menteeUserId, platformProfileResponsesTable.fieldId] as never,
+          set: {
+            value: response.value,
+            updatedAt: new Date(),
+          },
+        });
+    }
+    return res.status(204).end();
   },
 );
 
@@ -1307,6 +1566,15 @@ router.post(
 
     if (!guideAccess) {
       return res.status(403).json({ error: "Nie masz jeszcze dostępu do tego przewodnika." });
+    }
+
+    const existingLiveGuides = await db
+      .select({ id: platformGuidesTable.id })
+      .from(platformGuidesTable)
+      .where(eq(platformGuidesTable.menteeUserId, req.platformUser!.id));
+
+    if (existingLiveGuides.length >= 3) {
+      return res.status(400).json({ error: "Na ten moment możesz mieć jednocześnie maksymalnie 3 aktywne przewodniki." });
     }
 
     const sourceItems = await db
@@ -1899,13 +2167,18 @@ router.post(
       .from(platformGuideChecklistItemsTable)
       .where(eq(platformGuideChecklistItemsTable.guideId, sourceGuide.id))
       .orderBy(asc(platformGuideChecklistItemsTable.sortOrder));
+    const [mentee] = await db
+      .select({ fullName: platformUsersTable.fullName })
+      .from(platformUsersTable)
+      .where(eq(platformUsersTable.id, parsed.data.menteeUserId))
+      .limit(1);
 
     const [guide] = await db
       .insert(platformGuidesTable)
       .values({
         guideType: parsed.data.mentorUserId ? "mentor_live" : "self_service_live",
         status: "published",
-        title: sourceGuide.title,
+        title: parsed.data.mentorUserId && mentee ? `${sourceGuide.title} - ${mentee.fullName}` : sourceGuide.title,
         slug: `${sourceGuide.slug}-${parsed.data.menteeUserId}-${Date.now()}`,
         country: sourceGuide.country,
         universityName: sourceGuide.universityName,

@@ -44,6 +44,8 @@ export const PLATFORM_CHECKLIST_ITEM_TYPES = [
 ] as const;
 export const PLATFORM_GOOGLE_CONNECTION_TYPES = ["calendar", "drive"] as const;
 export const PLATFORM_CONNECTION_STATUSES = ["disconnected", "pending", "connected"] as const;
+export const PLATFORM_PROFILE_FIELD_TYPES = ["text", "textarea", "date"] as const;
+export const PLATFORM_MATERIAL_TEMPLATE_TYPES = ["passport_like", "essay_like"] as const;
 
 export const platformUsersTable = pgTable(
   "platform_users",
@@ -264,6 +266,58 @@ export const platformGuidesTable = pgTable("platform_guides", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const platformProfileFieldsTable = pgTable("platform_profile_fields", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull(),
+  label: text("label").notNull(),
+  description: text("description").notNull().default(""),
+  fieldType: text("field_type").notNull().default("text"),
+  sectionTitle: text("section_title").notNull().default("Dane podstawowe"),
+  placeholder: text("placeholder"),
+  isRequired: boolean("is_required").notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  keyUnique: uniqueIndex("platform_profile_fields_key_unique").on(table.key),
+}));
+
+export const platformProfileResponsesTable = pgTable("platform_profile_responses", {
+  id: serial("id").primaryKey(),
+  menteeUserId: integer("mentee_user_id")
+    .references(() => platformUsersTable.id, { onDelete: "cascade" })
+    .notNull(),
+  fieldId: integer("field_id")
+    .references(() => platformProfileFieldsTable.id, { onDelete: "cascade" })
+    .notNull(),
+  value: text("value").notNull().default(""),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  menteeFieldUnique: uniqueIndex("platform_profile_responses_unique").on(
+    table.menteeUserId,
+    table.fieldId,
+  ),
+}));
+
+export const platformMaterialTemplatesTable = pgTable("platform_material_templates", {
+  id: serial("id").primaryKey(),
+  ownerUserId: integer("owner_user_id").references(() => platformUsersTable.id, {
+    onDelete: "set null",
+  }),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  templateType: text("template_type").notNull().default("passport_like"),
+  guideId: integer("guide_id").references(() => platformGuidesTable.id, {
+    onDelete: "set null",
+  }),
+  appliesToGuideIds: jsonb("applies_to_guide_ids").$type<number[]>().notNull().default(sql`'[]'::jsonb`),
+  structure: jsonb("structure").$type<Array<Record<string, unknown>>>().notNull().default(sql`'[]'::jsonb`),
+  alternativeOptions: jsonb("alternative_options").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const platformGuideChecklistItemsTable = pgTable("platform_guide_checklist_items", {
   id: serial("id").primaryKey(),
   guideId: integer("guide_id")
@@ -349,5 +403,7 @@ export type PlatformGuideStatus = (typeof PLATFORM_GUIDE_STATUSES)[number];
 export type PlatformChecklistItemType = (typeof PLATFORM_CHECKLIST_ITEM_TYPES)[number];
 export type PlatformGoogleConnectionType = (typeof PLATFORM_GOOGLE_CONNECTION_TYPES)[number];
 export type PlatformConnectionStatus = (typeof PLATFORM_CONNECTION_STATUSES)[number];
+export type PlatformProfileFieldType = (typeof PLATFORM_PROFILE_FIELD_TYPES)[number];
+export type PlatformMaterialTemplateType = (typeof PLATFORM_MATERIAL_TEMPLATE_TYPES)[number];
 export type InsertPlatformUser = z.infer<typeof insertPlatformUserSchema>;
 export type PlatformUser = typeof platformUsersTable.$inferSelect;

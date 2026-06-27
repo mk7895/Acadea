@@ -441,14 +441,16 @@ function Dashboard({
   session: SessionPayload;
   token: string;
 }) {
-  const [section, setSection] = useState("overview");
+  const defaultSection = session.user.role === "mentee" ? "universities" : "overview";
+  const [section, setSection] = useState(defaultSection);
 
   const menu = useMemo(() => {
     if (session.user.role === "admin") {
       return [
         ["overview", "Przegląd"],
         ["users", "Użytkownicy"],
-        ["guides", "Przewodniki"],
+        ["guides", "Uczelnie i guide'y"],
+        ["designer", "Projektant"],
         ["leads", "Leady"],
       ];
     }
@@ -462,10 +464,11 @@ function Dashboard({
       ];
     }
     return [
-      ["overview", "Przegląd"],
+      ["universities", "Twoje Uczelnie"],
       ["mentors", "Mentorzy"],
-      ["guides", "Przewodniki"],
-      ["meetings", "Spotkania"],
+      ["meetings", "Twoje Spotkania"],
+      ["profile", "Twoje Dane"],
+      ["materials", "Twoje Materiały"],
     ];
   }, [session.user.role]);
 
@@ -543,6 +546,8 @@ function AdminSection({
   const [mentorAssignments, setMentorAssignments] = useState<any[]>([]);
   const [guideAssignments, setGuideAssignments] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
+  const [profileFields, setProfileFields] = useState<any[]>([]);
+  const [materialTemplates, setMaterialTemplates] = useState<any[]>([]);
   const [leadType, setLeadType] = useState<LeadKind>("contact");
   const [leads, setLeads] = useState<any[]>([]);
   const [leadCounts, setLeadCounts] = useState<Record<LeadKind, number>>({
@@ -556,6 +561,7 @@ function AdminSection({
   const [leadDeletingId, setLeadDeletingId] = useState<number | null>(null);
   const [userActionId, setUserActionId] = useState<number | null>(null);
   const [guideActionId, setGuideActionId] = useState<number | null>(null);
+  const [designerActionId, setDesignerActionId] = useState<number | null>(null);
   const [userForm, setUserForm] = useState({
     email: "",
     fullName: "",
@@ -592,6 +598,29 @@ function AdminSection({
     driveFolderUrl: "",
     isVisibleToUnapprovedUsers: false,
     itemsText: "Checklist|Personal statement|Napisz pierwszy szkic eseju|document_template",
+  });
+  const [fieldEditorId, setFieldEditorId] = useState<string>("new");
+  const [profileFieldForm, setProfileFieldForm] = useState({
+    key: "",
+    label: "",
+    description: "",
+    fieldType: "text",
+    sectionTitle: "Dane podstawowe",
+    placeholder: "",
+    isRequired: false,
+    sortOrder: 0,
+  });
+  const [materialEditorId, setMaterialEditorId] = useState<string>("new");
+  const [materialForm, setMaterialForm] = useState({
+    title: "",
+    description: "",
+    templateType: "passport_like",
+    guideId: "",
+    appliesToGuideIdsText: "",
+    structureText:
+      "Polska > University College London > Personal statement\nPolska > University College London > Recommendation letter",
+    alternativeOptionsText: "dodane bezpośrednio do systemu uczelni\nomówione z mentorem",
+    isActive: true,
   });
 
   const mentorUsers = users.filter((user) => user.role === "mentor");
@@ -723,6 +752,74 @@ function AdminSection({
     setGuides(payload);
   }
 
+  async function refreshDesigner() {
+    const [fieldsPayload, materialsPayload] = await Promise.all([
+      apiFetch<any[]>("/admin/profile-fields", undefined, token),
+      apiFetch<any[]>("/admin/material-templates", undefined, token),
+    ]);
+    setProfileFields(fieldsPayload);
+    setMaterialTemplates(materialsPayload);
+  }
+
+  function resetProfileFieldForm() {
+    setFieldEditorId("new");
+    setProfileFieldForm({
+      key: "",
+      label: "",
+      description: "",
+      fieldType: "text",
+      sectionTitle: "Dane podstawowe",
+      placeholder: "",
+      isRequired: false,
+      sortOrder: 0,
+    });
+  }
+
+  function loadProfileFieldIntoEditor(field: any) {
+    setFieldEditorId(String(field.id));
+    setProfileFieldForm({
+      key: field.key ?? "",
+      label: field.label ?? "",
+      description: field.description ?? "",
+      fieldType: field.fieldType ?? "text",
+      sectionTitle: field.sectionTitle ?? "Dane podstawowe",
+      placeholder: field.placeholder ?? "",
+      isRequired: Boolean(field.isRequired),
+      sortOrder: field.sortOrder ?? 0,
+    });
+  }
+
+  function resetMaterialForm() {
+    setMaterialEditorId("new");
+    setMaterialForm({
+      title: "",
+      description: "",
+      templateType: "passport_like",
+      guideId: "",
+      appliesToGuideIdsText: "",
+      structureText:
+        "Polska > University College London > Personal statement\nPolska > University College London > Recommendation letter",
+      alternativeOptionsText: "dodane bezpośrednio do systemu uczelni\nomówione z mentorem",
+      isActive: true,
+    });
+  }
+
+  function loadMaterialIntoEditor(material: any) {
+    setMaterialEditorId(String(material.id));
+    setMaterialForm({
+      title: material.title ?? "",
+      description: material.description ?? "",
+      templateType: material.templateType ?? "passport_like",
+      guideId: material.guideId ? String(material.guideId) : "",
+      appliesToGuideIdsText: (material.appliesToGuideIds ?? []).join(", "),
+      structureText: (material.structure ?? [])
+        .map((row: any) => [row.country, row.university, row.task].filter(Boolean).join(" > "))
+        .join("\n"),
+      alternativeOptionsText: (material.alternativeOptions ?? []).join("\n"),
+      isActive: Boolean(material.isActive),
+    });
+  }
+
   useEffect(() => {
     if (section === "overview") {
       void apiFetch<Overview>("/admin/overview", undefined, token)
@@ -734,6 +831,9 @@ function AdminSection({
     }
     if (section === "guides") {
       void refreshGuides().catch((error) => setStatus(error.message));
+    }
+    if (section === "designer") {
+      void Promise.all([refreshGuides(), refreshDesigner()]).catch((error) => setStatus(error.message));
     }
     if (section === "leads") {
       void refreshLeadState(leadType).catch((error) => setStatus(error.message));
@@ -819,6 +919,74 @@ function AdminSection({
       setStatus("Przewodnik został zaktualizowany.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać przewodnika.");
+    }
+  }
+
+  async function saveProfileField(event: React.FormEvent) {
+    event.preventDefault();
+    setStatus("");
+    const payload = {
+      ...profileFieldForm,
+      sortOrder: Number(profileFieldForm.sortOrder),
+    };
+    try {
+      if (fieldEditorId === "new") {
+        await apiFetch("/admin/profile-fields", { method: "POST", body: JSON.stringify(payload) }, token);
+        await refreshDesigner();
+        resetProfileFieldForm();
+        setStatus("Pole formularza zostało dodane.");
+        return;
+      }
+      await apiFetch(`/admin/profile-fields/${fieldEditorId}`, { method: "PUT", body: JSON.stringify(payload) }, token);
+      await refreshDesigner();
+      setStatus("Pole formularza zostało zaktualizowane.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać pola formularza.");
+    }
+  }
+
+  async function saveMaterialTemplate(event: React.FormEvent) {
+    event.preventDefault();
+    setStatus("");
+    const appliesToGuideIds = materialForm.appliesToGuideIdsText
+      .split(",")
+      .map((value) => Number(value.trim()))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    const structure = materialForm.structureText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [country = "", university = "", task = ""] = line.split(">").map((part) => part.trim());
+        return { country, university, task };
+      });
+    const alternativeOptions = materialForm.alternativeOptionsText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const payload = {
+      title: materialForm.title,
+      description: materialForm.description,
+      templateType: materialForm.templateType,
+      guideId: materialForm.guideId ? Number(materialForm.guideId) : null,
+      appliesToGuideIds,
+      structure,
+      alternativeOptions,
+      isActive: materialForm.isActive,
+    };
+    try {
+      if (materialEditorId === "new") {
+        await apiFetch("/admin/material-templates", { method: "POST", body: JSON.stringify(payload) }, token);
+        await refreshDesigner();
+        resetMaterialForm();
+        setStatus("Szablon materiału został dodany.");
+        return;
+      }
+      await apiFetch(`/admin/material-templates/${materialEditorId}`, { method: "PUT", body: JSON.stringify(payload) }, token);
+      await refreshDesigner();
+      setStatus("Szablon materiału został zaktualizowany.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać szablonu materiału.");
     }
   }
 
@@ -1386,6 +1554,216 @@ function AdminSection({
           </div>
         </div>
       ) : null}
+      {section === "designer" ? (
+        <div className="stack">
+          <div className="split">
+            <div className="dashboard-card">
+              <h2>Projektant formularza „Twoje Dane”</h2>
+              <form className="stack" onSubmit={saveProfileField}>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Klucz pola</label>
+                    <input value={profileFieldForm.key} onChange={(event) => setProfileFieldForm((current) => ({ ...current, key: event.target.value }))} />
+                  </div>
+                  <div className="field">
+                    <label>Etykieta</label>
+                    <input value={profileFieldForm.label} onChange={(event) => setProfileFieldForm((current) => ({ ...current, label: event.target.value }))} />
+                  </div>
+                </div>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Sekcja</label>
+                    <input value={profileFieldForm.sectionTitle} onChange={(event) => setProfileFieldForm((current) => ({ ...current, sectionTitle: event.target.value }))} />
+                  </div>
+                  <div className="field">
+                    <label>Typ pola</label>
+                    <select value={profileFieldForm.fieldType} onChange={(event) => setProfileFieldForm((current) => ({ ...current, fieldType: event.target.value }))}>
+                      <option value="text">text</option>
+                      <option value="textarea">textarea</option>
+                      <option value="date">date</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Placeholder</label>
+                    <input value={profileFieldForm.placeholder} onChange={(event) => setProfileFieldForm((current) => ({ ...current, placeholder: event.target.value }))} />
+                  </div>
+                  <div className="field">
+                    <label>Sortowanie</label>
+                    <input type="number" value={profileFieldForm.sortOrder} onChange={(event) => setProfileFieldForm((current) => ({ ...current, sortOrder: Number(event.target.value) }))} />
+                  </div>
+                </div>
+                <div className="field">
+                  <label>Opis</label>
+                  <textarea value={profileFieldForm.description} onChange={(event) => setProfileFieldForm((current) => ({ ...current, description: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>Wymagane</label>
+                  <select value={String(profileFieldForm.isRequired)} onChange={(event) => setProfileFieldForm((current) => ({ ...current, isRequired: event.target.value === "true" }))}>
+                    <option value="false">nie</option>
+                    <option value="true">tak</option>
+                  </select>
+                </div>
+                <div className="button-row">
+                  <button className="btn btn-primary">{fieldEditorId === "new" ? "Dodaj pole" : "Zapisz pole"}</button>
+                  <button className="btn btn-secondary" onClick={resetProfileFieldForm} type="button">
+                    Nowe pole
+                  </button>
+                </div>
+              </form>
+            </div>
+            <div className="dashboard-card">
+              <h2>Pola formularza</h2>
+              <div className="list">
+                {profileFields.map((field) => (
+                  <div className="list-item" key={field.id}>
+                    <header>
+                      <div>
+                        <h3>{field.label}</h3>
+                        <div className="muted small">{field.sectionTitle} • {field.fieldType} • {field.key}</div>
+                      </div>
+                      <span className="badge">{field.isRequired ? "required" : "optional"}</span>
+                    </header>
+                    <p className="muted">{field.description}</p>
+                    <div className="button-row">
+                      <button className="btn btn-secondary" onClick={() => loadProfileFieldIntoEditor(field)} type="button">
+                        Edytuj
+                      </button>
+                      <button
+                        className="btn btn-secondary"
+                        disabled={designerActionId === field.id}
+                        onClick={async () => {
+                          setDesignerActionId(field.id);
+                          try {
+                            await apiFetch(`/admin/profile-fields/${field.id}`, { method: "DELETE" }, token);
+                            await refreshDesigner();
+                            if (fieldEditorId === String(field.id)) {
+                              resetProfileFieldForm();
+                            }
+                            setStatus("Pole formularza zostało usunięte.");
+                          } catch (error) {
+                            setStatus(error instanceof Error ? error.message : "Nie udało się usunąć pola formularza.");
+                          } finally {
+                            setDesignerActionId(null);
+                          }
+                        }}
+                        type="button"
+                      >
+                        Usuń
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="split">
+            <div className="dashboard-card">
+              <h2>Projektant „Twoich Materiałów”</h2>
+              <form className="stack" onSubmit={saveMaterialTemplate}>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Nazwa tile’a</label>
+                    <input value={materialForm.title} onChange={(event) => setMaterialForm((current) => ({ ...current, title: event.target.value }))} />
+                  </div>
+                  <div className="field">
+                    <label>Typ</label>
+                    <select value={materialForm.templateType} onChange={(event) => setMaterialForm((current) => ({ ...current, templateType: event.target.value }))}>
+                      <option value="passport_like">passport_like</option>
+                      <option value="essay_like">essay_like</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="field">
+                  <label>Opis</label>
+                  <textarea value={materialForm.description} onChange={(event) => setMaterialForm((current) => ({ ...current, description: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>Powiązany guide pomocniczy (opcjonalnie)</label>
+                  <select value={materialForm.guideId} onChange={(event) => setMaterialForm((current) => ({ ...current, guideId: event.target.value }))}>
+                    <option value="">Brak</option>
+                    {guides.map((guide) => (
+                      <option key={guide.id} value={String(guide.id)}>
+                        #{guide.id} {guide.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>ID guide’ów, do których materiał się stosuje (po przecinku)</label>
+                  <input value={materialForm.appliesToGuideIdsText} onChange={(event) => setMaterialForm((current) => ({ ...current, appliesToGuideIdsText: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>Struktura materiału, linie w formacie: kraj &gt; uczelnia &gt; zadanie</label>
+                  <textarea value={materialForm.structureText} onChange={(event) => setMaterialForm((current) => ({ ...current, structureText: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>Alternatywne oznaczenia wykonania, po jednej opcji w linii</label>
+                  <textarea value={materialForm.alternativeOptionsText} onChange={(event) => setMaterialForm((current) => ({ ...current, alternativeOptionsText: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>Aktywny</label>
+                  <select value={String(materialForm.isActive)} onChange={(event) => setMaterialForm((current) => ({ ...current, isActive: event.target.value === "true" }))}>
+                    <option value="true">tak</option>
+                    <option value="false">nie</option>
+                  </select>
+                </div>
+                <div className="button-row">
+                  <button className="btn btn-primary">{materialEditorId === "new" ? "Dodaj materiał" : "Zapisz materiał"}</button>
+                  <button className="btn btn-secondary" onClick={resetMaterialForm} type="button">
+                    Nowy materiał
+                  </button>
+                </div>
+              </form>
+            </div>
+            <div className="dashboard-card">
+              <h2>Szablony materiałów</h2>
+              <div className="list">
+                {materialTemplates.map((template) => (
+                  <div className="list-item" key={template.id}>
+                    <header>
+                      <div>
+                        <h3>{template.title}</h3>
+                        <div className="muted small">{template.templateType} • {(template.appliesToGuideIds ?? []).length} powiązań guide</div>
+                      </div>
+                      <span className="badge">{template.isActive ? "active" : "inactive"}</span>
+                    </header>
+                    <p className="muted">{template.description}</p>
+                    <div className="button-row">
+                      <button className="btn btn-secondary" onClick={() => loadMaterialIntoEditor(template)} type="button">
+                        Edytuj
+                      </button>
+                      <button
+                        className="btn btn-secondary"
+                        disabled={designerActionId === template.id}
+                        onClick={async () => {
+                          setDesignerActionId(template.id);
+                          try {
+                            await apiFetch(`/admin/material-templates/${template.id}`, { method: "DELETE" }, token);
+                            await refreshDesigner();
+                            if (materialEditorId === String(template.id)) {
+                              resetMaterialForm();
+                            }
+                            setStatus("Szablon materiału został usunięty.");
+                          } catch (error) {
+                            setStatus(error instanceof Error ? error.message : "Nie udało się usunąć szablonu materiału.");
+                          } finally {
+                            setDesignerActionId(null);
+                          }
+                        }}
+                        type="button"
+                      >
+                        Usuń
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {section === "leads" ? (
         <div className="dashboard-card">
           <h2>Leady i formularze</h2>
@@ -1848,6 +2226,7 @@ function MenteeSection({
   const [mentors, setMentors] = useState<any[]>([]);
   const [publicGuides, setPublicGuides] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
+  const [profileValues, setProfileValues] = useState<Record<string, string>>({});
   const [status, setStatus] = useState("");
   const [meetingForm, setMeetingForm] = useState({
     mentorUserId: "",
@@ -1860,23 +2239,38 @@ function MenteeSection({
     meetingUrl: "",
   });
 
+  const profileFields = overview?.profileFields ?? [];
   const assignedMentors = overview?.assignedMentors ?? [];
   const assignedGuideTemplates = overview?.assignedGuideTemplates ?? [];
+  const materialTemplates = overview?.materialTemplates ?? [];
   const selectedMentor = assignedMentors.find(
     (mentor: any) => String(mentor.mentorId) === String(meetingForm.mentorUserId),
   );
+  const universityTiles = [
+    ...(assignedGuideTemplates ?? []),
+    ...(guides ?? []),
+  ].filter(
+    (guide: any, index: number, array: any[]) =>
+      array.findIndex((entry) => entry.id === guide.id) === index,
+  );
 
   useEffect(() => {
-    if (section === "overview" || section === "guides" || section === "meetings") {
+    if (section === "universities" || section === "materials" || section === "profile" || section === "meetings") {
       void apiFetch<any>("/mentee/overview", undefined, token).then((payload) => {
         setOverview(payload);
         setGuides(payload.guides ?? []);
+        const nextValues: Record<string, string> = {};
+        const responses = new Map<number, string>((payload.profileResponses ?? []).map((entry: any) => [entry.fieldId, String(entry.value ?? "")]));
+        for (const field of payload.profileFields ?? []) {
+          nextValues[String(field.id)] = responses.get(field.id) ?? "";
+        }
+        setProfileValues(nextValues);
       }).catch((error) => setStatus(error.message));
     }
     if (section === "mentors") {
       void apiFetch<any[]>("/public/mentors").then(setMentors).catch((error) => setStatus(error.message));
     }
-    if (section === "guides" || section === "overview") {
+    if (section === "universities" || section === "materials") {
       void apiFetch<any[]>("/public/guides").then(setPublicGuides).catch((error) => setStatus(error.message));
     }
   }, [section, token]);
@@ -1894,41 +2288,80 @@ function MenteeSection({
           endsAt: new Date(meetingForm.endsAt).toISOString(),
         }),
       }, token);
-      setStatus("Spotkanie zostało zapisane w shellu platformy.");
+      setStatus("Prośba o spotkanie została zapisana.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać spotkania.");
+    }
+  }
+
+  async function saveProfileResponses(event: React.FormEvent) {
+    event.preventDefault();
+    setStatus("");
+    try {
+      await apiFetch("/mentee/profile-responses", {
+        method: "PUT",
+        body: JSON.stringify({
+          responses: profileFields.map((field: any) => ({
+            fieldId: field.id,
+            value: profileValues[String(field.id)] ?? "",
+          })),
+        }),
+      }, token);
+      setStatus("Twoje dane zostały zapisane.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać danych.");
     }
   }
 
   return (
     <>
       {status ? <div className="status">{status}</div> : null}
-      {section === "overview" && overview ? (
-        <div className="dashboard-card">
-          <h2>Twoje konto mentee</h2>
-          <p className="muted">W tym panelu zarządzasz przewodnikami, dostępami i spotkaniami przypisanymi konkretnie do Ciebie.</p>
-          <div className="tile-grid" style={{ marginTop: 18 }}>
-            <div className="tile">
-              <div className="small muted">Przewodniki</div>
-              <strong>{overview.guides?.length ?? 0}</strong>
-            </div>
-            <div className="tile">
-              <div className="small muted">Przydzielone blueprinty</div>
-              <strong>{assignedGuideTemplates.length}</strong>
-            </div>
-            <div className="tile">
-              <div className="small muted">Spotkania</div>
-              <strong>{overview.meetings?.length ?? 0}</strong>
-            </div>
-            <div className="tile">
-              <div className="small muted">Akceptacja admina</div>
-              <strong>{(overview.profile as any)?.adminApproved ? "tak" : "nie"}</strong>
-            </div>
-            <div className="tile">
-              <div className="small muted">Przydzieleni mentorzy</div>
-              <strong>{assignedMentors.length}</strong>
+      {section === "universities" && overview ? (
+        <div className="stack">
+          <div className="dashboard-card">
+            <h2>Twoje Uczelnie</h2>
+            <p className="muted">Każda karta odpowiada jednej uczelni lub jednemu przydzielonemu guide’owi. Po kliknięciu otwierasz checklistę i materiały przypisane do tej konkretnej ścieżki aplikacyjnej.</p>
+            <div className="tile-grid" style={{ marginTop: 18 }}>
+              {universityTiles.map((guide: any) => (
+                <details className="tile tile-detail" key={guide.id}>
+                  <summary>
+                    <strong>{guide.universityName}</strong>
+                    <div className="small muted">{guide.country}</div>
+                    <div className="small muted">{guide.title}</div>
+                  </summary>
+                  <div style={{ marginTop: 12 }}>
+                    <p className="muted">{guide.summary}</p>
+                    <div className="list">
+                      {(guide.items ?? []).map((item: any) => (
+                        <div className="list-item" key={item.id ?? `${guide.id}-${item.title}`}>
+                          <h3>{item.title}</h3>
+                          <div className="muted small">{item.sectionTitle} • {item.itemType}</div>
+                          <p className="muted">{item.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </details>
+              ))}
             </div>
           </div>
+          {!(overview.profile as any)?.adminApproved ? (
+            <div className="dashboard-card">
+              <h2>Preview przed pełnym dostępem</h2>
+              <p className="muted">Dopóki administrator nie zatwierdzi Twojego konta lub nie nada konkretnych dostępów, widzisz tylko ograniczony podgląd guide’ów.</p>
+              <div className="list" style={{ marginTop: 16 }}>
+                {publicGuides.map((guide) => (
+                  <div className="list-item" key={guide.id}>
+                    <h3>{guide.title}</h3>
+                    <div className="muted small">
+                      {guide.country} • {guide.universityName}
+                    </div>
+                    <p className="muted">{guide.summary}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
       {section === "mentors" ? (
@@ -2008,85 +2441,6 @@ function MenteeSection({
           </div>
         </div>
       ) : null}
-      {section === "guides" ? (
-        <div className="split">
-          <div className="dashboard-card">
-            <h2>Twoje przewodniki</h2>
-            <div className="list">
-              {guides.map((guide) => (
-                <div className="list-item" key={guide.id}>
-                  <header>
-                    <div>
-                      <h3>{guide.title}</h3>
-                      <div className="muted small">
-                        {guide.country} • {guide.universityName}
-                      </div>
-                    </div>
-                    <span className="badge">
-                      {guide.guideType} • {guide.status}
-                    </span>
-                  </header>
-                  <p className="muted">{guide.summary}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="dashboard-card">
-            <h2>Dostępne guide’y do aktywacji</h2>
-            <div className="list">
-              {assignedGuideTemplates.map((guide: any) => (
-                <div className="list-item" key={guide.id}>
-                  <header>
-                    <div>
-                      <h3>{guide.title}</h3>
-                      <div className="muted small">
-                        {guide.country} • {guide.universityName}
-                      </div>
-                    </div>
-                    <span className="badge">{guide.guideType}</span>
-                  </header>
-                  <p className="muted">{guide.summary}</p>
-                  <div className="button-row">
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() =>
-                        void apiFetch(`/mentee/guides/${guide.id}/adopt`, { method: "POST" }, token)
-                          .then(() => apiFetch<any>("/mentee/overview", undefined, token))
-                          .then((payload) => {
-                            setOverview(payload);
-                            setGuides(payload.guides ?? []);
-                            setStatus("Przewodnik został dodany do Twojego konta.");
-                          })
-                          .catch((error: Error) => setStatus(error.message))
-                      }
-                      type="button"
-                    >
-                      Dodaj do mojego panelu
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {!(overview?.profile as any)?.adminApproved ? (
-                <div className="list-item">
-                  <h3>Podgląd guide’ów ACADEA</h3>
-                  <p className="muted">Dopóki administrator nie zatwierdzi Twojego konta lub nie nada konkretnego dostępu, widzisz tylko nazwy i krótkie opisy.</p>
-                  <div className="list" style={{ marginTop: 12 }}>
-                    {publicGuides.map((guide) => (
-                      <div className="list-item" key={guide.id}>
-                        <h3>{guide.title}</h3>
-                        <div className="muted small">
-                          {guide.country} • {guide.universityName}
-                        </div>
-                        <p className="muted">{guide.summary}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      ) : null}
       {section === "meetings" && overview ? (
         <div className="dashboard-card">
           <h2>Twoje spotkania</h2>
@@ -2103,6 +2457,97 @@ function MenteeSection({
                 <p className="muted">{meeting.description}</p>
               </div>
             ))}
+          </div>
+        </div>
+      ) : null}
+      {section === "profile" && overview ? (
+        <div className="dashboard-card">
+          <h2>Twoje Dane</h2>
+          <p className="muted">To jest pełny formularz danych aplikacyjnych. Administrator może z czasem dodawać tutaj kolejne pola wymagane przez uczelnie.</p>
+          <form className="stack" onSubmit={saveProfileResponses} style={{ marginTop: 18 }}>
+            {Array.from(new Set(profileFields.map((field: any) => String(field.sectionTitle)))) .map((sectionTitle: string) => (
+              <div className="stack" key={sectionTitle} style={{ paddingTop: 4 }}>
+                <h3 style={{ margin: "0 0 6px", color: "#153f2c" }}>{sectionTitle}</h3>
+                {profileFields
+                  .filter((field: any) => field.sectionTitle === sectionTitle)
+                  .map((field: any) => (
+                    <div className="field" key={field.id}>
+                      <label>{field.label}{field.isRequired ? " *" : ""}</label>
+                      {field.fieldType === "textarea" ? (
+                        <textarea
+                          placeholder={field.placeholder ?? ""}
+                          value={profileValues[String(field.id)] ?? ""}
+                          onChange={(event) => setProfileValues((current) => ({ ...current, [String(field.id)]: event.target.value }))}
+                        />
+                      ) : (
+                        <input
+                          type={field.fieldType === "date" ? "date" : "text"}
+                          placeholder={field.placeholder ?? ""}
+                          value={profileValues[String(field.id)] ?? ""}
+                          onChange={(event) => setProfileValues((current) => ({ ...current, [String(field.id)]: event.target.value }))}
+                        />
+                      )}
+                      {field.description ? <div className="small muted">{field.description}</div> : null}
+                    </div>
+                  ))}
+              </div>
+            ))}
+            <button className="btn btn-primary">Zapisz Twoje Dane</button>
+          </form>
+        </div>
+      ) : null}
+      {section === "materials" && overview ? (
+        <div className="stack">
+          <div className="dashboard-card">
+            <h2>Twoje Materiały</h2>
+            <p className="muted">Tutaj masz agregat materiałów z przypisanych uczelni. Passport-like są współdzielone między uczelniami, a essay-like pokazują strukturę per kraj/uczelnia/zadanie.</p>
+            <div className="tile-grid" style={{ marginTop: 18 }}>
+              {materialTemplates.map((template: any) => (
+                <details className="tile tile-detail" key={template.id}>
+                  <summary>
+                    <strong>{template.title}</strong>
+                    <div className="small muted">{template.templateType}</div>
+                    <div className="small muted">{(template.appliesToGuideIds ?? []).length} uczelni powiązanych</div>
+                  </summary>
+                  <div style={{ marginTop: 12 }}>
+                    <p className="muted">{template.description}</p>
+                    <div className="status">
+                      Placeholder upload box. W następnym etapie podmienimy to na Google Drive / pliki użytkownika.
+                    </div>
+                    {(template.alternativeOptions ?? []).length ? (
+                      <div className="list" style={{ marginTop: 12 }}>
+                        {(template.alternativeOptions ?? []).map((option: string, index: number) => (
+                          <div className="list-item" key={`${template.id}-${index}`}>
+                            <h3>Alternatywa</h3>
+                            <p className="muted">{option}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    {(template.structure ?? []).length ? (
+                      <div className="list" style={{ marginTop: 12 }}>
+                        {(template.structure ?? []).map((row: any, index: number) => (
+                          <div className="list-item" key={`${template.id}-row-${index}`}>
+                            <h3>{row.task || "Zadanie"}</h3>
+                            <div className="small muted">
+                              {[row.country, row.university].filter(Boolean).join(" • ")}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    {template.guideId ? (
+                      <details className="small" style={{ marginTop: 12 }}>
+                        <summary>Otwórz wskazówki do tego materiału</summary>
+                        <div className="muted" style={{ marginTop: 8 }}>
+                          Ten materiał ma podpięty guide pomocniczy `#{template.guideId}`. Docelowo to będzie popup z pełną treścią wskazówek.
+                        </div>
+                      </details>
+                    ) : null}
+                  </div>
+                </details>
+              ))}
+            </div>
           </div>
         </div>
       ) : null}

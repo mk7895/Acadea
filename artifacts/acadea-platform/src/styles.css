@@ -230,6 +230,15 @@ textarea {
   border-radius: 20px;
 }
 
+.tile-detail summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.tile-detail summary::-webkit-details-marker {
+  display: none;
+}
+
 .stat,
 .tile {
   padding: 18px;
