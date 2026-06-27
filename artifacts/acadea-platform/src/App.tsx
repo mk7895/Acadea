@@ -1358,7 +1358,7 @@ function AdminSection({
       {section === "users" ? (
         <div className="stack">
           <div className="split">
-            <div className="dashboard-card">
+            <div className="dashboard-card panel-scroll">
               <h2>Dodaj użytkownika</h2>
               <form className="stack" onSubmit={createUser}>
                 <div className="field">
@@ -1394,7 +1394,7 @@ function AdminSection({
                 <button className="btn btn-primary">Dodaj użytkownika</button>
               </form>
             </div>
-            <div className="dashboard-card">
+            <div className="dashboard-card panel-scroll">
               <h2>Dostęp mentor → mentee</h2>
               <form
                 className="stack"
@@ -1477,7 +1477,7 @@ function AdminSection({
               </div>
             </div>
           </div>
-          <div className="dashboard-card">
+          <div className="dashboard-card panel-scroll">
             <h2>Użytkownicy</h2>
             <div className="list">
               {[...adminUsers, ...mentorUsers, ...menteeUsers].map((user) => {
@@ -1601,7 +1601,7 @@ function AdminSection({
       {section === "guides" ? (
         <div className="stack">
           <div className="split">
-            <div className="dashboard-card">
+            <div className="dashboard-card panel-scroll">
               <h2>{editingGuideId === "new" ? "Nowy szablon uczelni" : "Edytor szablonu uczelni"}</h2>
               <form className="stack" onSubmit={saveGuide}>
                 <div className="grid-2">
@@ -1692,7 +1692,6 @@ function AdminSection({
                           <header>
                             <div>
                               <h3>{template.title}</h3>
-                              <div className="muted small">{materialTemplateTypeLabel(template.templateType)}</div>
                             </div>
                             <button
                               className="btn btn-secondary"
@@ -1734,7 +1733,7 @@ function AdminSection({
                 </div>
               ) : null}
             </div>
-            <div className="dashboard-card">
+            <div className="dashboard-card panel-scroll">
               <h2>Szablony uczelni w systemie</h2>
               <div className="list">
                 {editableGuideTemplates.map((guide) => (
@@ -1785,7 +1784,7 @@ function AdminSection({
       {section === "profile-designer" ? (
         <div className="stack">
           <div className="split">
-            <div className="dashboard-card">
+            <div className="dashboard-card panel-scroll">
               <h2>Projektant formularza „Twoje Dane”</h2>
               <form className="stack" onSubmit={saveProfileField}>
                 <div className="grid-2">
@@ -1890,7 +1889,7 @@ function AdminSection({
       ) : null}
       {section === "materials-designer" ? (
         <div className="split">
-          <div className="dashboard-card">
+          <div className="dashboard-card panel-scroll">
             <h2>Projektant Kafli Materiałów</h2>
             <p className="muted">
               Tutaj tworzysz kafle materiałów widoczne u mentee. Najpierw zakładasz kafel, potem zaznaczasz, dla których uczelni ma się pokazywać.
@@ -2118,7 +2117,7 @@ function AdminSection({
               </div>
             </form>
           </div>
-          <div className="dashboard-card">
+          <div className="dashboard-card panel-scroll">
             <h2>Szablony materiałów</h2>
             <div className="list">
               {materialTemplates.map((template) => (
@@ -2164,7 +2163,7 @@ function AdminSection({
       ) : null}
       {section === "item-guides" ? (
         <div className="split">
-          <div className="dashboard-card">
+          <div className="dashboard-card panel-scroll">
             <h2>Wskazówki do Elementów</h2>
             <p className="muted">Tutaj tworzysz osobne treści pomocnicze, które potem można podpiąć do konkretnego wiersza w kaflu materiałów.</p>
             <form className="stack" onSubmit={saveItemGuide}>
@@ -3125,7 +3124,6 @@ function MenteeSection({
                           <details className="list-item nested-detail" key={`${guide.id}-${template.id}`}>
                             <summary>
                               <h3>{template.title}</h3>
-                              <div className="muted small">{materialTemplateTypeLabel(template.templateType)}</div>
                             </summary>
                             {template.description ? <p className="muted" style={{ marginTop: 10 }}>{template.description}</p> : null}
                             {template.visibleRows?.length ? (
@@ -3180,7 +3178,7 @@ function MenteeSection({
             {!guides.length ? <div className="status">Nie masz jeszcze żadnej aktywnej uczelni.</div> : null}
           </div>
           {availableGuideTemplates.length ? (
-            <div className="dashboard-card">
+            <div className="dashboard-card panel-scroll">
               <h2>Dodaj kolejną uczelnię</h2>
               <p className="muted">Te uczelnie ACADEA możesz samodzielnie dodać do swojego panelu.</p>
               <div className="tile-grid" style={{ marginTop: 18 }}>
@@ -3365,7 +3363,6 @@ function MenteeSection({
                 <details className="tile tile-detail" key={template.id}>
                   <summary>
                     <strong>{template.title}</strong>
-                    <div className="small muted">{materialTemplateTypeLabel(template.templateType)}</div>
                     <div className="small muted">
                       {guides.filter((guide: any) => templateAppliesToGuide(template, guide)).length} uczelni powiązanych
                     </div>
@@ -3400,20 +3397,25 @@ function MenteeSection({
                           const showHints =
                             row.guideId &&
                             applicableGuides.some((guide: any) => hintEligibleTemplateIds.includes(getGuideTemplateId(guide)));
+                          if (row.level === "country") {
+                            return (
+                              <div className="material-heading material-heading-country" key={`${template.id}-row-${index}`}>
+                                <h3>{headline}</h3>
+                              </div>
+                            );
+                          }
+                          if (row.level === "university") {
+                            return (
+                              <div className="material-heading material-heading-university" key={`${template.id}-row-${index}`}>
+                                <h3>{headline}</h3>
+                              </div>
+                            );
+                          }
                           return (
-                            <div className={`list-item material-row material-row-${row.level ?? "item"}`} key={`${template.id}-row-${index}`}>
+                            <div className="list-item material-row material-row-item" key={`${template.id}-row-${index}`}>
                               <h3>{headline}</h3>
-                              {row.level === "item" && universityNames.length ? (
+                              {universityNames.length ? (
                                 <div className="small muted">{universityNames.join(" • ")}</div>
-                              ) : null}
-                              {row.level === "country" ? (
-                                <div className="small muted">Poziom kraju</div>
-                              ) : null}
-                              {row.level === "university" ? (
-                                <div className="small muted">Poziom uczelni</div>
-                              ) : null}
-                              {row.level === "item" ? (
-                                <div className="small muted">Poziom zadania</div>
                               ) : null}
                               {Array.isArray(row.alternativeOptions) && row.alternativeOptions.length ? (
                                 <div className="small muted" style={{ marginTop: 8 }}>

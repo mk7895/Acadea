@@ -210,6 +210,11 @@ textarea {
   padding: 24px;
 }
 
+.panel-scroll {
+  max-height: 78vh;
+  overflow-y: auto;
+}
+
 .dashboard-card h2 {
   margin: 0 0 8px;
   color: #153f2c;
@@ -270,6 +275,22 @@ textarea {
   padding: 18px;
 }
 
+.material-heading {
+  padding: 4px 2px;
+}
+
+.material-heading-country h3 {
+  margin: 4px 0 2px;
+  font-size: 1.24rem;
+  color: #153f2c;
+}
+
+.material-heading-university h3 {
+  margin: 2px 0 0;
+  font-size: 1.05rem;
+  color: #1f3e30;
+}
+
 .material-row-country h3 {
   font-size: 1.2rem;
   color: #153f2c;
@@ -281,6 +302,7 @@ textarea {
 }
 
 .material-row-item h3 {
+  margin: 0 0 6px;
   font-size: 1rem;
 }
 
