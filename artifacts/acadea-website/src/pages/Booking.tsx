@@ -272,11 +272,6 @@ export default function Booking() {
                 </select>
               </div>
             </div>
-            {canUsePreferencesCookies ? (
-              <p className="text-xs text-gray-400 mt-3">
-                Wybrana strefa czasowa będzie zapamiętana w cookies preferencji.
-              </p>
-            ) : null}
           </div>
         )}
 

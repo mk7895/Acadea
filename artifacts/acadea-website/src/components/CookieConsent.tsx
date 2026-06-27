@@ -152,19 +152,19 @@ function CookieConsentBanner() {
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
             <button
               onClick={rejectOptional}
-              className="h-11 px-5 rounded-full border border-[#ddd3c1] text-primary font-semibold hover:bg-[#f6f1e7] transition-colors"
+              className="h-11 px-4 rounded-full border border-[#ddd3c1] text-primary text-sm leading-tight font-semibold hover:bg-[#f6f1e7] transition-colors"
             >
               Odrzuć opcjonalne
             </button>
             <button
               onClick={openPreferences}
-              className="h-11 px-5 rounded-full border border-[#ddd3c1] text-primary font-semibold hover:bg-[#f6f1e7] transition-colors"
+              className="h-11 px-4 rounded-full border border-[#ddd3c1] text-primary text-sm leading-tight font-semibold hover:bg-[#f6f1e7] transition-colors"
             >
               Dostosuj
             </button>
             <button
               onClick={acceptAll}
-              className="h-11 px-6 rounded-full bg-primary text-white font-semibold hover:bg-primary/90 transition-colors"
+              className="h-11 px-5 rounded-full bg-primary text-white text-sm leading-tight font-semibold hover:bg-primary/90 transition-colors"
             >
               Akceptuj wszystkie
             </button>

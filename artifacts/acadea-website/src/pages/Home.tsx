@@ -18,6 +18,7 @@ import {
 import QRCode from "react-qr-code";
 import { Link } from "wouter";
 import { GlobeSection } from "@/components/GlobeSection";
+import scholarshipHomePhoto from "@/assets/scholarship-home-photo.jpg";
 
 const services = [
   {
@@ -236,25 +237,13 @@ export default function Home() {
                 <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent/10 blur-[80px]" />
                 <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-primary/8 blur-[60px]" />
               </div>
-              <div className="relative z-10 mb-8 overflow-hidden rounded-[28px] border border-primary/10 bg-white/70 aspect-[5/3] shadow-[0_18px_40px_rgba(22,101,52,0.08)]">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(252,188,30,0.20),transparent_30%),linear-gradient(135deg,rgba(22,101,52,0.12),rgba(255,255,255,0.65))]" />
-                <div className="relative flex h-full flex-col items-center justify-center px-8 text-center">
-                  <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-5">
-                    <GraduationCap size={32} className="text-primary" />
-                  </div>
-                  <p className="text-primary/55 text-xs uppercase tracking-[0.26em] font-semibold mb-3">
-                    Placeholder zdjęcia
-                  </p>
-                  <p className="text-primary text-xl md:text-2xl font-bold leading-tight">
-                    Miejsce na zdjęcie programu stypendialnego
-                  </p>
-                </div>
-              </div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
-                  <GraduationCap size={28} className="text-primary" />
-                </div>
-                <p className="text-primary/50 text-xs uppercase tracking-widest font-semibold mb-3">Program Stypendialny</p>
+              <div className="relative z-10 overflow-hidden rounded-[28px] border border-primary/10 bg-white/70 aspect-[5/3] shadow-[0_18px_40px_rgba(22,101,52,0.08)]">
+                <img
+                  src={scholarshipHomePhoto}
+                  alt="Program Stypendialny ACADEA"
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
               </div>
             </motion.div>
           </div>
