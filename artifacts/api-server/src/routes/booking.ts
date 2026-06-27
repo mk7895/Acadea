@@ -15,6 +15,7 @@ const router = Router();
 const TZ = "Europe/Warsaw";
 const ZOOM_LINK = "https://nyu.zoom.us/j/5717075193";
 const SLOT_DURATION_MS = 20 * 60 * 1000;
+const BOOKING_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
 
 type BookingSlot = { start: string; end: string; label: string };
 type BusyWindow = { start: string; end: string };
@@ -29,6 +30,10 @@ type GoogleEventResponse = {
 
 function buildLocalSlots() {
   return buildSlotsFromBusy([]);
+}
+
+function isOutsideLeadWindow(start: Date, now = new Date()) {
+  return start.getTime() - now.getTime() >= BOOKING_LEAD_TIME_MS;
 }
 
 function buildSlotsFromBusy(busy: BusyWindow[]) {
@@ -46,6 +51,10 @@ function buildSlotsFromBusy(busy: BusyWindow[]) {
       const hour = cursor.getHours();
       if (hour >= 9 && hour < 17) {
         const slotEnd = new Date(cursor.getTime() + SLOT_DURATION_MS);
+        if (!isOutsideLeadWindow(cursor, now)) {
+          cursor.setHours(cursor.getHours() + 1);
+          continue;
+        }
         const overlaps = busy.some(({ start, end }) => {
           return cursor < new Date(end) && slotEnd > new Date(start);
         });
@@ -135,6 +144,18 @@ router.post("/create", async (req, res) => {
       .json({ error: "Nieprawidłowe dane", details: parsed.error.flatten() });
   }
   const { start, end, name, email, phone, topic } = parsed.data;
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate <= startDate) {
+    return res.status(400).json({ error: "Nieprawidłowy termin spotkania." });
+  }
+
+  if (!isOutsideLeadWindow(startDate)) {
+    return res.status(400).json({
+      error: "Można rezerwować tylko terminy oddalone o co najmniej 24 godziny.",
+    });
+  }
 
   const turnstile = await verifyTurnstileToken(req, parsed.data.turnstileToken);
   if (!turnstile.ok) {

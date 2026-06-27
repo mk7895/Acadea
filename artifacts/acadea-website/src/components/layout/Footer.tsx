@@ -2,6 +2,7 @@ import type { MouseEvent } from "react";
 import { Link } from "wouter";
 import logo from "@/assets/logo-white.png";
 import { Facebook, Instagram, Linkedin, Mail, Phone, Heart } from "lucide-react";
+import { useCookieConsent } from "@/components/CookieConsent";
 
 const serviceLinks = [
   { label: "Doradztwo Uczelni", href: "/jak-to-dziala#profilowanie-i-wybor-uczelni" },
@@ -13,6 +14,7 @@ const serviceLinks = [
 ];
 
 export function Footer() {
+  const { openPreferences } = useCookieConsent();
   const handleServiceClick = (
     event: MouseEvent<HTMLAnchorElement>,
     href: string,
@@ -151,7 +153,11 @@ export function Footer() {
           <p>&copy; {new Date().getFullYear()} ACADEA. Wszelkie prawa zastrzeżone.</p>
           <div className="flex items-center gap-6">
             <Link href="/polityka-prywatnosci" className="hover:text-white transition-colors">Polityka Prywatności</Link>
+            <Link href="/polityka-cookies" className="hover:text-white transition-colors">Polityka Cookies</Link>
             <Link href="/regulamin" className="hover:text-white transition-colors">Regulamin</Link>
+            <button onClick={openPreferences} className="hover:text-white transition-colors">
+              Ustawienia cookies
+            </button>
           </div>
         </div>
       </div>

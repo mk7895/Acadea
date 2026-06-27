@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,11 +13,28 @@ import {
   ArrowLeft,
   ArrowRight,
   Loader2,
+  Globe2,
 } from "lucide-react";
 import { getApiBase } from "@/lib/api-base";
 import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
+import { TIMEZONE_COOKIE_NAME, getCookie, setLongLivedCookie } from "@/lib/cookies";
+import { useCookieConsent } from "@/components/CookieConsent";
 
 const API_BASE = getApiBase();
+const DEFAULT_TIMEZONE = "Europe/Warsaw";
+const TIMEZONE_OPTIONS = [
+  { value: "Europe/Warsaw", label: "Polska (Europe/Warsaw)" },
+  { value: "Europe/London", label: "Wielka Brytania (Europe/London)" },
+  { value: "Europe/Paris", label: "Europa Zachodnia (Europe/Paris)" },
+  { value: "America/New_York", label: "USA Wschód (America/New_York)" },
+  { value: "America/Chicago", label: "USA Central (America/Chicago)" },
+  { value: "America/Denver", label: "USA Góry (America/Denver)" },
+  { value: "America/Los_Angeles", label: "USA Zachód (America/Los_Angeles)" },
+  { value: "Asia/Dubai", label: "Zatoka Perska (Asia/Dubai)" },
+  { value: "Asia/Singapore", label: "Singapur (Asia/Singapore)" },
+  { value: "Asia/Tokyo", label: "Japonia (Asia/Tokyo)" },
+  { value: "Australia/Sydney", label: "Australia (Australia/Sydney)" },
+] as const;
 
 type Slot = { start: string; end: string; label: string };
 
@@ -26,23 +43,6 @@ type DayGroup = {
   label: string;
   slots: Slot[];
 };
-
-function groupByDay(slots: Slot[]): DayGroup[] {
-  const map = new Map<string, DayGroup>();
-  for (const slot of slots) {
-    const d = new Date(slot.start);
-    const key = d.toLocaleDateString("pl-PL", { timeZone: "Europe/Warsaw" });
-    const label = d.toLocaleDateString("pl-PL", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      timeZone: "Europe/Warsaw",
-    });
-    if (!map.has(key)) map.set(key, { dateKey: key, label, slots: [] });
-    map.get(key)!.slots.push(slot);
-  }
-  return Array.from(map.values());
-}
 
 const TOPICS = [
   "Wybór uczelni i kierunku",
@@ -55,34 +55,113 @@ const TOPICS = [
 
 const steps = ["Termin", "Godzina", "Rezerwacja", "Potwierdzenie"];
 
+function formatDayLabel(value: string, timezone: string) {
+  return new Date(value).toLocaleDateString("pl-PL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: timezone,
+  });
+}
+
+function formatDayKey(value: string, timezone: string) {
+  return new Date(value).toLocaleDateString("pl-PL", { timeZone: timezone });
+}
+
+function formatTimeLabel(value: string, timezone: string) {
+  return new Date(value).toLocaleTimeString("pl-PL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: timezone,
+  });
+}
+
+function buildDayGroups(slots: Slot[], timezone: string) {
+  const grouped = new Map<string, DayGroup>();
+
+  for (const slot of slots) {
+    const dateKey = formatDayKey(slot.start, timezone);
+    if (!grouped.has(dateKey)) {
+      grouped.set(dateKey, {
+        dateKey,
+        label: formatDayLabel(slot.start, timezone),
+        slots: [],
+      });
+    }
+
+    grouped.get(dateKey)!.slots.push({
+      start: slot.start,
+      end: slot.end,
+      label: formatTimeLabel(slot.start, timezone),
+    });
+  }
+
+  return Array.from(grouped.values());
+}
+
+function findTimezoneOption(value: string) {
+  return TIMEZONE_OPTIONS.find((option) => option.value === value);
+}
+
 export default function Booking() {
+  const { canUsePreferencesCookies, consent } = useCookieConsent();
   const [step, setStep] = useState(0);
-  const [days, setDays] = useState<DayGroup[]>([]);
+  const [rawSlots, setRawSlots] = useState<Slot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(true);
   const [slotsError, setSlotsError] = useState("");
-
-  const [selectedDay, setSelectedDay] = useState<DayGroup | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
-
+  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
+  const [selectedSlotStart, setSelectedSlotStart] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "", topic: TOPICS[0], otherDetail: "" });
-  const [consent, setConsent] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState<{ start: string; calendarLink?: string } | null>(null);
   const [submitError, setSubmitError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [timezone, setTimezone] = useState(() => {
+    const saved = getCookie(TIMEZONE_COOKIE_NAME);
+    return saved && findTimezoneOption(saved) ? saved : DEFAULT_TIMEZONE;
+  });
 
   useEffect(() => {
     fetch(`${API_BASE}/booking/slots`)
       .then((r) => r.json())
       .then((data: { slots?: Slot[]; error?: string }) => {
-        if (data.error) { setSlotsError(data.error); return; }
-        setDays(groupByDay(data.slots ?? []));
+        if (data.error) {
+          setSlotsError(data.error);
+          return;
+        }
+        setRawSlots(data.slots ?? []);
       })
       .catch(() => setSlotsError("Nie udało się pobrać terminów. Spróbuj ponownie."))
       .finally(() => setLoadingSlots(false));
   }, []);
+
+  useEffect(() => {
+    if (canUsePreferencesCookies) {
+      setLongLivedCookie(TIMEZONE_COOKIE_NAME, timezone);
+    }
+  }, [canUsePreferencesCookies, timezone]);
+
+  useEffect(() => {
+    setSelectedDayKey(null);
+    setSelectedSlotStart(null);
+    if (step > 0 && step < 3) {
+      setStep(0);
+    }
+  }, [timezone]);
+
+  const days = useMemo(() => buildDayGroups(rawSlots, timezone), [rawSlots, timezone]);
+  const selectedDay = useMemo(
+    () => days.find((day) => day.dateKey === selectedDayKey) ?? null,
+    [days, selectedDayKey],
+  );
+  const selectedSlot = useMemo(
+    () => selectedDay?.slots.find((slot) => slot.start === selectedSlotStart) ?? null,
+    [selectedDay, selectedSlotStart],
+  );
+  const timezoneLabel = findTimezoneOption(timezone)?.label ?? timezone;
 
   const validateForm = () => {
     const err: Record<string, string> = {};
@@ -90,7 +169,7 @@ export default function Booking() {
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) err.email = "Podaj poprawny adres e-mail.";
     if (!form.topic) err.topic = "Wybierz temat.";
     if (form.topic === "Inne" && !form.otherDetail.trim()) err.otherDetail = "Napisz, w czym możemy pomóc.";
-    if (!consent) err.consent = "Zaznacz zgodę, aby umówić spotkanie.";
+    if (!consentChecked) err.consent = "Zaznacz zgodę, aby umówić spotkanie.";
     setFormErrors(err);
     return Object.keys(err).length === 0;
   };
@@ -102,8 +181,10 @@ export default function Booking() {
       setSubmitError("Potwierdź zabezpieczenie formularza przed rezerwacją.");
       return;
     }
+
     setSubmitting(true);
     setSubmitError("");
+
     try {
       const topicValue =
         form.topic === "Inne" && form.otherDetail.trim()
@@ -112,9 +193,20 @@ export default function Booking() {
       const res = await fetch(`${API_BASE}/booking/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...selectedSlot, ...form, topic: topicValue, consent, turnstileToken }),
+        body: JSON.stringify({
+          ...selectedSlot,
+          ...form,
+          topic: topicValue,
+          consent: consentChecked,
+          turnstileToken,
+        }),
       });
-      const data = await res.json() as { success?: boolean; start?: string; calendarLink?: string; error?: string };
+      const data = (await res.json()) as {
+        success?: boolean;
+        start?: string;
+        calendarLink?: string;
+        error?: string;
+      };
       if (!data.success) {
         setSubmitError(data.error ?? "Błąd. Spróbuj ponownie.");
         setTurnstileToken("");
@@ -136,14 +228,18 @@ export default function Booking() {
 
   const confirmedDate = confirmed
     ? new Date(confirmed.start).toLocaleString("pl-PL", {
-        weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Warsaw",
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: timezone,
       })
     : "";
 
   return (
     <div className="min-h-screen bg-gray-50 pt-28 md:pt-32 pb-20">
       <div className="container mx-auto px-4 max-w-2xl">
-        {/* Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 text-primary text-xs font-semibold mb-5 uppercase tracking-widest">
             <Calendar size={13} />
@@ -157,7 +253,48 @@ export default function Booking() {
           </p>
         </motion.div>
 
-        {/* Step progress */}
+        {step < 3 && (
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 mb-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#8d806b] mb-2">
+                  Strefa czasowa
+                </p>
+                <h2 className="text-lg font-bold text-primary flex items-center gap-2">
+                  <Globe2 size={18} /> Wyświetl dostępne terminy w swojej strefie
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Terminy konsultacji są pokazywane zgodnie z wybraną strefą czasową. Rezerwacje są
+                  dostępne dopiero od 24 godzin od teraz.
+                </p>
+              </div>
+              <div className="w-full md:w-[320px]">
+                <select
+                  value={timezone}
+                  onChange={(event) => setTimezone(event.target.value)}
+                  className="flex h-11 w-full appearance-none rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  {TIMEZONE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {!canUsePreferencesCookies ? (
+              <p className="text-xs text-gray-400 mt-3">
+                Ten wybór działa już teraz, ale zostanie zapamiętany na przyszłość dopiero po akceptacji
+                cookies preferencji.
+              </p>
+            ) : consent ? (
+              <p className="text-xs text-gray-400 mt-3">
+                Wybrana strefa czasowa będzie zapamiętana w cookies preferencji.
+              </p>
+            ) : null}
+          </div>
+        )}
+
         {step < 3 && (
           <div className="flex items-center justify-center gap-2 mb-10">
             {steps.slice(0, 3).map((s, i) => (
@@ -174,7 +311,6 @@ export default function Booking() {
           </div>
         )}
 
-        {/* Card */}
         <motion.div
           key={step}
           initial={{ opacity: 0, x: 20 }}
@@ -183,16 +319,14 @@ export default function Booking() {
           className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8"
         >
           <AnimatePresence mode="wait">
-
-            {/* ── STEP 0: Pick a day ─────────────────────────────────── */}
             {step === 0 && (
               <div>
                 <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
                   <Calendar size={20} /> Wybierz dzień
                 </h2>
                 <p className="text-sm text-gray-500 mb-5">
-                  Wszystkie godziny są podane w polskiej strefie czasowej:{" "}
-                  <strong className="text-primary">Europe/Warsaw</strong>.
+                  Godziny są teraz wyświetlane w strefie:{" "}
+                  <strong className="text-primary">{timezoneLabel}</strong>.
                 </p>
                 {loadingSlots && (
                   <div className="flex items-center justify-center py-16 text-gray-400 gap-3">
@@ -200,19 +334,19 @@ export default function Booking() {
                     Ładowanie dostępnych terminów…
                   </div>
                 )}
-                {slotsError && (
-                  <div className="text-red-500 text-center py-8">{slotsError}</div>
-                )}
+                {slotsError && <div className="text-red-500 text-center py-8">{slotsError}</div>}
                 {!loadingSlots && !slotsError && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {days.slice(0, 14).map((day) => (
                       <button
                         key={day.dateKey}
-                        onClick={() => { setSelectedDay(day); setSelectedSlot(null); setStep(1); }}
+                        onClick={() => {
+                          setSelectedDayKey(day.dateKey);
+                          setSelectedSlotStart(null);
+                          setStep(1);
+                        }}
                         className={`text-left p-4 rounded-xl border-2 transition-all hover:border-primary hover:bg-primary/4 ${
-                          selectedDay?.dateKey === day.dateKey
-                            ? "border-primary bg-primary/6"
-                            : "border-gray-100"
+                          selectedDayKey === day.dateKey ? "border-primary bg-primary/6" : "border-gray-100"
                         }`}
                       >
                         <p className="font-semibold text-gray-800 capitalize text-sm">{day.label}</p>
@@ -224,7 +358,6 @@ export default function Booking() {
               </div>
             )}
 
-            {/* ── STEP 1: Pick a time ────────────────────────────────── */}
             {step === 1 && selectedDay && (
               <div>
                 <button onClick={() => setStep(0)} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-primary mb-6 transition-colors">
@@ -235,15 +368,18 @@ export default function Booking() {
                 </h2>
                 <p className="text-sm text-gray-400 mb-6 capitalize">{selectedDay.label}</p>
                 <p className="text-sm text-gray-500 mb-5">
-                  Godziny poniżej są wyświetlane w polskim czasie.
+                  Godziny poniżej są wyświetlane w strefie: <strong className="text-primary">{timezoneLabel}</strong>.
                 </p>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                   {selectedDay.slots.map((slot) => (
                     <button
                       key={slot.start}
-                      onClick={() => { setSelectedSlot(slot); setStep(2); }}
+                      onClick={() => {
+                        setSelectedSlotStart(slot.start);
+                        setStep(2);
+                      }}
                       className={`py-3 px-2 rounded-xl border-2 text-sm font-semibold transition-all hover:border-primary hover:bg-primary/4 ${
-                        selectedSlot?.start === slot.start
+                        selectedSlotStart === slot.start
                           ? "border-primary bg-primary/6 text-primary"
                           : "border-gray-100 text-gray-700"
                       }`}
@@ -255,18 +391,16 @@ export default function Booking() {
               </div>
             )}
 
-            {/* ── STEP 2: Fill details ───────────────────────────────── */}
-            {step === 2 && selectedSlot && (
+            {step === 2 && selectedSlot && selectedDay && (
               <div>
                 <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-primary mb-6 transition-colors">
                   <ArrowLeft size={15} /> Zmień godzinę
                 </button>
 
-                {/* Selected slot summary */}
                 <div className="flex items-center gap-3 bg-primary/6 rounded-xl px-4 py-3 mb-6">
                   <Calendar size={18} className="text-primary shrink-0" />
                   <span className="text-sm font-semibold text-primary capitalize">
-                    {selectedDay?.label} · {selectedSlot.label}
+                    {selectedDay.label} · {selectedSlot.label}
                   </span>
                 </div>
 
@@ -356,12 +490,13 @@ export default function Booking() {
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={consent}
-                        onChange={(e) => setConsent(e.target.checked)}
+                        checked={consentChecked}
+                        onChange={(e) => setConsentChecked(e.target.checked)}
                         className="mt-0.5 h-4 w-4 shrink-0 accent-primary cursor-pointer"
                       />
                       <span className="text-xs text-gray-500 leading-relaxed">
-                        Umawiając spotkanie, zgadzam się na otrzymywanie informacji handlowych od Fundacji Acadea. Nigdy nie przekażemy Twoich danych dalej, zawsze możesz się wypisać.
+                        Umawiając spotkanie, zgadzam się na otrzymywanie informacji handlowych od Fundacji
+                        Acadea. Nigdy nie przekażemy Twoich danych dalej, zawsze możesz się wypisać.
                       </span>
                     </label>
                     {formErrors.consent && <p className="text-red-500 text-xs mt-1">{formErrors.consent}</p>}
@@ -403,7 +538,6 @@ export default function Booking() {
               </div>
             )}
 
-            {/* ── STEP 3: Confirmation ───────────────────────────────── */}
             {step === 3 && (
               <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6">
                 <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -433,11 +567,9 @@ export default function Booking() {
                 )}
               </motion.div>
             )}
-
           </AnimatePresence>
         </motion.div>
 
-        {/* Reassurance row */}
         {step < 3 && (
           <div className="flex flex-wrap justify-center gap-6 mt-8 text-sm text-gray-400">
             {["Bezpłatna konsultacja", "Zoom", "Bez zobowiązań"].map((item) => (

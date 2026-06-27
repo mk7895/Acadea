@@ -10,6 +10,7 @@
   { "path": "/umow-spotkanie", "source": "pages/Booking.tsx", "includeInSitemap": true },
   { "path": "/mentoruj", "source": "pages/MentorForm.tsx", "includeInSitemap": true },
   { "path": "/polityka-prywatnosci", "source": "pages/PrivacyPolicy.tsx", "includeInSitemap": true },
+  { "path": "/polityka-cookies", "source": "pages/CookiePolicy.tsx", "includeInSitemap": true },
   { "path": "/regulamin", "source": "pages/Regulamin.tsx", "includeInSitemap": true },
   { "path": "/panel", "source": "pages/AdminArticles.tsx", "includeInSitemap": false }
 ]
