@@ -48,6 +48,118 @@ type Overview = {
 
 type LeadKind = "contact" | "mentor" | "scholarship" | "newsletter" | "booking";
 
+function platformGuideTypeLabel(value: string) {
+  switch (value) {
+    case "admin_template":
+      return "Szablon uczelni ACADEA";
+    case "mentor_blueprint":
+      return "Szablon uczelni mentora";
+    case "mentor_live":
+      return "Uczelnia z mentorem";
+    case "self_service_live":
+      return "Uczelnia aktywna";
+    default:
+      return value;
+  }
+}
+
+function materialTemplateTypeLabel(value: string) {
+  switch (value) {
+    case "passport_like":
+      return "Wspólne dokumenty";
+    case "essay_like":
+      return "Eseje i zadania";
+    default:
+      return value;
+  }
+}
+
+function normalizeMaterialKey(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function guessMaterialTemplateType(...values: Array<string | null | undefined>) {
+  const haystack = values.join(" ").toLowerCase();
+  const passportLikePatterns = [
+    "paszport",
+    "passport",
+    "transcript",
+    "swiadect",
+    "świadect",
+    "certificate",
+    "certyfikat",
+    "photo",
+    "zdjec",
+    "zdjęc",
+    "diploma",
+    "dyplom",
+    "id",
+    "dowod",
+    "dowód",
+    "birth certificate",
+    "akt urodzenia",
+  ];
+
+  return passportLikePatterns.some((pattern) => haystack.includes(pattern))
+    ? "passport_like"
+    : "essay_like";
+}
+
+function buildDerivedMaterialTemplates(guides: any[], materialTemplates: any[]) {
+  const existingTitles = new Set(
+    materialTemplates.map((template: any) => normalizeMaterialKey(String(template.title ?? ""))),
+  );
+  const derived = new Map<string, any>();
+
+  for (const guide of guides) {
+    for (const item of guide.items ?? []) {
+      const title = String(item.title ?? "").trim();
+      if (!title) {
+        continue;
+      }
+
+      const normalizedTitle = normalizeMaterialKey(title);
+      if (!normalizedTitle || existingTitles.has(normalizedTitle)) {
+        continue;
+      }
+
+      const entry =
+        derived.get(normalizedTitle) ??
+        {
+          id: `derived-${normalizedTitle}`,
+          title,
+          description:
+            item.description?.trim() ||
+            "Ten kafel powstał automatycznie z wymagań przypisanych do Twoich uczelni.",
+          templateType: guessMaterialTemplateType(title, item.sectionTitle, item.description),
+          appliesToGuideIds: [],
+          alternativeOptions: [],
+          structure: [],
+          guideId: null,
+          isDerived: true,
+        };
+
+      if (!entry.appliesToGuideIds.includes(guide.id)) {
+        entry.appliesToGuideIds.push(guide.id);
+      }
+
+      entry.structure.push({
+        country: guide.country,
+        university: guide.universityName,
+        task: title,
+      });
+      derived.set(normalizedTitle, entry);
+    }
+  }
+
+  return Array.from(derived.values());
+}
+
 function formatDate(value: string | null | undefined) {
   if (!value) {
     return "brak";
@@ -449,7 +561,7 @@ function Dashboard({
       return [
         ["overview", "Przegląd"],
         ["users", "Użytkownicy"],
-        ["guides", "Uczelnie i guide'y"],
+        ["guides", "Szablony uczelni"],
         ["designer", "Projektant"],
         ["leads", "Leady"],
       ];
@@ -592,7 +704,6 @@ function AdminSection({
     universityName: "",
     summary: "",
     descriptionMarkdown: "",
-    estimatedReadMin: 8,
     menteeUserId: "",
     sourceGuideId: "",
     driveFolderUrl: "",
@@ -616,7 +727,7 @@ function AdminSection({
     description: "",
     templateType: "passport_like",
     guideId: "",
-    appliesToGuideIdsText: "",
+    appliesToGuideIds: [] as string[],
     structureText:
       "Polska > University College London > Personal statement\nPolska > University College London > Recommendation letter",
     alternativeOptionsText: "dodane bezpośrednio do systemu uczelni\nomówione z mentorem",
@@ -626,6 +737,9 @@ function AdminSection({
   const mentorUsers = users.filter((user) => user.role === "mentor");
   const menteeUsers = users.filter((user) => user.role === "mentee");
   const adminUsers = users.filter((user) => user.role === "admin");
+  const sourceGuideTemplates = guides.filter(
+    (guide) => guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint",
+  );
 
   function serializeGuideItemsToText(items: any[] = []) {
     return items
@@ -674,7 +788,6 @@ function AdminSection({
       universityName: "",
       summary: "",
       descriptionMarkdown: "",
-      estimatedReadMin: 8,
       menteeUserId: "",
       sourceGuideId: "",
       driveFolderUrl: "",
@@ -694,7 +807,6 @@ function AdminSection({
       universityName: guide.universityName ?? "",
       summary: guide.summary ?? "",
       descriptionMarkdown: guide.descriptionMarkdown ?? "",
-      estimatedReadMin: guide.estimatedReadMin ?? 8,
       menteeUserId: guide.menteeUserId ? String(guide.menteeUserId) : "",
       sourceGuideId: guide.sourceGuideId ? String(guide.sourceGuideId) : "",
       driveFolderUrl: guide.driveFolderUrl ?? "",
@@ -796,7 +908,7 @@ function AdminSection({
       description: "",
       templateType: "passport_like",
       guideId: "",
-      appliesToGuideIdsText: "",
+      appliesToGuideIds: [],
       structureText:
         "Polska > University College London > Personal statement\nPolska > University College London > Recommendation letter",
       alternativeOptionsText: "dodane bezpośrednio do systemu uczelni\nomówione z mentorem",
@@ -811,7 +923,7 @@ function AdminSection({
       description: material.description ?? "",
       templateType: material.templateType ?? "passport_like",
       guideId: material.guideId ? String(material.guideId) : "",
-      appliesToGuideIdsText: (material.appliesToGuideIds ?? []).join(", "),
+      appliesToGuideIds: (material.appliesToGuideIds ?? []).map((id: number) => String(id)),
       structureText: (material.structure ?? [])
         .map((row: any) => [row.country, row.university, row.task].filter(Boolean).join(" > "))
         .join("\n"),
@@ -893,7 +1005,7 @@ function AdminSection({
       universityName: guideForm.universityName,
       summary: guideForm.summary,
       descriptionMarkdown: guideForm.descriptionMarkdown,
-      estimatedReadMin: Number(guideForm.estimatedReadMin),
+      estimatedReadMin: 8,
       menteeUserId: guideForm.menteeUserId ? Number(guideForm.menteeUserId) : null,
       sourceGuideId: guideForm.sourceGuideId ? Number(guideForm.sourceGuideId) : null,
       driveFolderUrl: guideForm.driveFolderUrl,
@@ -948,9 +1060,8 @@ function AdminSection({
   async function saveMaterialTemplate(event: React.FormEvent) {
     event.preventDefault();
     setStatus("");
-    const appliesToGuideIds = materialForm.appliesToGuideIdsText
-      .split(",")
-      .map((value) => Number(value.trim()))
+    const appliesToGuideIds = materialForm.appliesToGuideIds
+      .map((value) => Number(value))
       .filter((value) => Number.isFinite(value) && value > 0);
     const structure = materialForm.structureText
       .split("\n")
@@ -1271,7 +1382,7 @@ function AdminSection({
         <div className="stack">
           <div className="split">
             <div className="dashboard-card">
-              <h2>{editingGuideId === "new" ? "Nowy przewodnik" : "Edytor przewodnika"}</h2>
+              <h2>{editingGuideId === "new" ? "Nowy szablon uczelni" : "Edytor szablonu uczelni"}</h2>
               <form className="stack" onSubmit={saveGuide}>
                 <div className="grid-2">
                   <div className="field">
@@ -1285,12 +1396,10 @@ function AdminSection({
                 </div>
                 <div className="grid-2">
                   <div className="field">
-                    <label>Typ</label>
+                    <label>Rodzaj szablonu</label>
                     <select value={guideForm.guideType} onChange={(event) => setGuideForm((current) => ({ ...current, guideType: event.target.value }))}>
-                      <option value="admin_template">admin_template</option>
-                      <option value="mentor_blueprint">mentor_blueprint</option>
-                      <option value="mentor_live">mentor_live</option>
-                      <option value="self_service_live">self_service_live</option>
+                      <option value="admin_template">Szablon ACADEA</option>
+                      <option value="mentor_blueprint">Szablon mentora</option>
                     </select>
                   </div>
                   <div className="field">
@@ -1312,31 +1421,20 @@ function AdminSection({
                     <input value={guideForm.universityName} onChange={(event) => setGuideForm((current) => ({ ...current, universityName: event.target.value }))} />
                   </div>
                 </div>
-                <div className="grid-2">
-                  <div className="field">
-                    <label>Czas czytania (min)</label>
-                    <input
-                      min={1}
-                      type="number"
-                      value={guideForm.estimatedReadMin}
-                      onChange={(event) => setGuideForm((current) => ({ ...current, estimatedReadMin: Number(event.target.value) }))}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Widoczny przed akceptacją</label>
-                    <select
-                      value={String(guideForm.isVisibleToUnapprovedUsers)}
-                      onChange={(event) =>
-                        setGuideForm((current) => ({
-                          ...current,
-                          isVisibleToUnapprovedUsers: event.target.value === "true",
-                        }))
-                      }
-                    >
-                      <option value="false">nie</option>
-                      <option value="true">tak</option>
-                    </select>
-                  </div>
+                <div className="field">
+                  <label>Widoczny przed akceptacją</label>
+                  <select
+                    value={String(guideForm.isVisibleToUnapprovedUsers)}
+                    onChange={(event) =>
+                      setGuideForm((current) => ({
+                        ...current,
+                        isVisibleToUnapprovedUsers: event.target.value === "true",
+                      }))
+                    }
+                  >
+                    <option value="false">nie</option>
+                    <option value="true">tak</option>
+                  </select>
                 </div>
                 <div className="field">
                   <label>Krótki opis</label>
@@ -1347,19 +1445,78 @@ function AdminSection({
                   <textarea value={guideForm.descriptionMarkdown} onChange={(event) => setGuideForm((current) => ({ ...current, descriptionMarkdown: event.target.value }))} />
                 </div>
                 <div className="field">
-                  <label>Checklist lines: sekcja|tytuł|opis|typ</label>
+                  <label>Lista zadań: sekcja|tytuł|opis|typ</label>
                   <textarea value={guideForm.itemsText} onChange={(event) => setGuideForm((current) => ({ ...current, itemsText: event.target.value }))} />
                 </div>
+                <div className="status">
+                  Każdy wiersz to jedno wymaganie uczelni. Typy techniczne są tymczasowe. W następnym kroku możemy zamienić to na pełen wizualny builder.
+                </div>
                 <div className="button-row">
-                  <button className="btn btn-primary">{editingGuideId === "new" ? "Utwórz przewodnik" : "Zapisz zmiany"}</button>
+                  <button className="btn btn-primary">{editingGuideId === "new" ? "Utwórz szablon uczelni" : "Zapisz zmiany"}</button>
                   <button className="btn btn-secondary" onClick={resetGuideForm} type="button">
                     Wyczyść formularz
                   </button>
                 </div>
               </form>
+              {editingGuideId !== "new" ? (
+                <div className="stack" style={{ marginTop: 18 }}>
+                  <h3 style={{ margin: 0, color: "#153f2c" }}>Powiąż uczelnię z istniejącymi kaflami materiałów</h3>
+                  <p className="muted" style={{ margin: 0 }}>
+                    Tutaj przypisujesz tę uczelnię do kafli takich jak paszport, personal essay, recommendation letters i podobnych.
+                  </p>
+                  <div className="list">
+                    {materialTemplates.map((template) => {
+                      const linkedIds: number[] = template.appliesToGuideIds ?? [];
+                      const isLinked = linkedIds.includes(Number(editingGuideId));
+                      return (
+                        <div className="list-item" key={`material-link-${template.id}`}>
+                          <header>
+                            <div>
+                              <h3>{template.title}</h3>
+                              <div className="muted small">{materialTemplateTypeLabel(template.templateType)}</div>
+                            </div>
+                            <button
+                              className="btn btn-secondary"
+                              disabled={guideActionId === template.id}
+                              onClick={() =>
+                                void runGuideAction(
+                                  template.id,
+                                  async () => {
+                                    const nextIds = isLinked
+                                      ? linkedIds.filter((id: number) => id !== Number(editingGuideId))
+                                      : [...linkedIds, Number(editingGuideId)];
+                                    await apiFetch(`/admin/material-templates/${template.id}`, {
+                                      method: "PUT",
+                                      body: JSON.stringify({
+                                        title: template.title,
+                                        description: template.description ?? "",
+                                        templateType: template.templateType,
+                                        guideId: template.guideId ?? null,
+                                        appliesToGuideIds: nextIds,
+                                        structure: template.structure ?? [],
+                                        alternativeOptions: template.alternativeOptions ?? [],
+                                        isActive: Boolean(template.isActive),
+                                      }),
+                                    }, token);
+                                    await refreshDesigner();
+                                  },
+                                  isLinked ? "Uczelnia została odpięta od kafla." : "Uczelnia została dodana do kafla.",
+                                )
+                              }
+                              type="button"
+                            >
+                              {isLinked ? "Odepnij uczelnię" : "Dodaj uczelnię do kafla"}
+                            </button>
+                          </header>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
             </div>
             <div className="dashboard-card">
-              <h2>Dostęp do przewodników</h2>
+              <h2>Dostęp do szablonów uczelni</h2>
               <form
                 className="stack"
                 onSubmit={(event) => {
@@ -1379,21 +1536,19 @@ function AdminSection({
                         }),
                       }, token);
                     },
-                    "Dostęp do przewodnika został nadany.",
+                    "Dostęp do szablonu uczelni został nadany.",
                   );
                 }}
               >
                 <div className="field">
-                  <label>Przewodnik</label>
+                  <label>Szablon uczelni</label>
                   <select value={guideAccessForm.guideId} onChange={(event) => setGuideAccessForm((current) => ({ ...current, guideId: event.target.value }))}>
-                    <option value="">Wybierz przewodnik</option>
-                    {guides
-                      .filter((guide) => guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint")
-                      .map((guide) => (
-                        <option key={guide.id} value={String(guide.id)}>
-                          {guide.title}
-                        </option>
-                      ))}
+                    <option value="">Wybierz szablon uczelni</option>
+                    {sourceGuideTemplates.map((guide) => (
+                      <option key={guide.id} value={String(guide.id)}>
+                        {guide.title}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="field">
@@ -1417,7 +1572,7 @@ function AdminSection({
                     <div className="list-item" key={assignment.id}>
                       <header>
                         <div>
-                          <h3>{guide?.title ?? `Guide #${assignment.guideId}`}</h3>
+                          <h3>{guide?.title ?? `Szablon #${assignment.guideId}`}</h3>
                           <div className="muted small">dla {mentee?.fullName ?? `Mentee #${assignment.menteeUserId}`}</div>
                         </div>
                         <button
@@ -1429,7 +1584,7 @@ function AdminSection({
                               async () => {
                                 await apiFetch(`/admin/guide-access/${assignment.id}`, { method: "DELETE" }, token);
                               },
-                              "Dostęp do przewodnika został usunięty.",
+                              "Dostęp do szablonu uczelni został usunięty.",
                             )
                           }
                           type="button"
@@ -1445,13 +1600,13 @@ function AdminSection({
           </div>
           <div className="split">
             <div className="dashboard-card">
-              <h2>Nadaj gotowy guide mentee</h2>
+              <h2>Dodaj uczelnię mentee</h2>
               <form
                 className="stack"
                 onSubmit={(event) => {
                   event.preventDefault();
                   if (!guideCloneForm.guideId || !guideCloneForm.menteeUserId) {
-                    setStatus("Wybierz przewodnik i mentee.");
+                    setStatus("Wybierz szablon uczelni i mentee.");
                     return;
                   }
                   void runGuideAction(
@@ -1465,15 +1620,15 @@ function AdminSection({
                         }),
                       }, token);
                     },
-                    "Guide został skopiowany do mentee.",
+                    "Uczelnia została dodana do mentee.",
                   );
                 }}
               >
                 <div className="field">
-                  <label>Źródłowy przewodnik</label>
+                  <label>Źródłowy szablon uczelni</label>
                   <select value={guideCloneForm.guideId} onChange={(event) => setGuideCloneForm((current) => ({ ...current, guideId: event.target.value }))}>
-                    <option value="">Wybierz przewodnik</option>
-                    {guides.map((guide) => (
+                    <option value="">Wybierz szablon uczelni</option>
+                    {sourceGuideTemplates.map((guide) => (
                       <option key={guide.id} value={String(guide.id)}>
                         {guide.title}
                       </option>
@@ -1502,11 +1657,11 @@ function AdminSection({
                     ))}
                   </select>
                 </div>
-                <button className="btn btn-primary">Przydziel guide</button>
+                <button className="btn btn-primary">Dodaj uczelnię</button>
               </form>
             </div>
             <div className="dashboard-card">
-              <h2>Przewodniki w systemie</h2>
+              <h2>Szablony uczelni w systemie</h2>
               <div className="list">
                 {guides.map((guide) => (
                   <div className="list-item" key={guide.id}>
@@ -1518,11 +1673,11 @@ function AdminSection({
                         </div>
                       </div>
                       <span className="badge">
-                        {guide.guideType} • {guide.status}
+                        {platformGuideTypeLabel(guide.guideType)} • {guide.status}
                       </span>
                     </header>
                     <p className="muted">{guide.summary}</p>
-                    <div className="small muted">{guide.items?.length ?? 0} pozycji checklisty • {guide.estimatedReadMin} min czytania</div>
+                    <div className="small muted">{guide.items?.length ?? 0} pozycji checklisty</div>
                     <div className="button-row" style={{ marginTop: 12 }}>
                       <button className="btn btn-secondary" onClick={() => loadGuideIntoEditor(guide)} type="button">
                         Edytuj
@@ -1661,6 +1816,9 @@ function AdminSection({
           <div className="split">
             <div className="dashboard-card">
               <h2>Projektant „Twoich Materiałów”</h2>
+              <p className="muted">
+                Tutaj tworzysz kafle materiałów widoczne u mentee. Najpierw zakładasz kafel, potem zaznaczasz, dla których uczelni ma się pokazywać.
+              </p>
               <form className="stack" onSubmit={saveMaterialTemplate}>
                 <div className="grid-2">
                   <div className="field">
@@ -1670,8 +1828,8 @@ function AdminSection({
                   <div className="field">
                     <label>Typ</label>
                     <select value={materialForm.templateType} onChange={(event) => setMaterialForm((current) => ({ ...current, templateType: event.target.value }))}>
-                      <option value="passport_like">passport_like</option>
-                      <option value="essay_like">essay_like</option>
+                      <option value="passport_like">Wspólne dokumenty</option>
+                      <option value="essay_like">Eseje i zadania</option>
                     </select>
                   </div>
                 </div>
@@ -1680,26 +1838,50 @@ function AdminSection({
                   <textarea value={materialForm.description} onChange={(event) => setMaterialForm((current) => ({ ...current, description: event.target.value }))} />
                 </div>
                 <div className="field">
-                  <label>Powiązany guide pomocniczy (opcjonalnie)</label>
+                  <label>Powiązane wskazówki pomocnicze (opcjonalnie)</label>
                   <select value={materialForm.guideId} onChange={(event) => setMaterialForm((current) => ({ ...current, guideId: event.target.value }))}>
                     <option value="">Brak</option>
                     {guides.map((guide) => (
                       <option key={guide.id} value={String(guide.id)}>
-                        #{guide.id} {guide.title}
+                        {guide.universityName} • {guide.title}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div className="field">
-                  <label>ID guide’ów, do których materiał się stosuje (po przecinku)</label>
-                  <input value={materialForm.appliesToGuideIdsText} onChange={(event) => setMaterialForm((current) => ({ ...current, appliesToGuideIdsText: event.target.value }))} />
+                  <label>Do których uczelni ten kafel się stosuje</label>
+                  <div className="list">
+                    {sourceGuideTemplates.map((guide) => {
+                      const checked = materialForm.appliesToGuideIds.includes(String(guide.id));
+                      return (
+                        <label className="list-item" key={`material-guide-checkbox-${guide.id}`} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <input
+                            checked={checked}
+                            type="checkbox"
+                            onChange={() =>
+                              setMaterialForm((current) => ({
+                                ...current,
+                                appliesToGuideIds: checked
+                                  ? current.appliesToGuideIds.filter((id) => id !== String(guide.id))
+                                  : [...current.appliesToGuideIds, String(guide.id)],
+                              }))
+                            }
+                          />
+                          <span>
+                            <strong>{guide.universityName}</strong>
+                            <span className="small muted" style={{ display: "block" }}>{guide.country} • {guide.title}</span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div className="field">
-                  <label>Struktura materiału, linie w formacie: kraj &gt; uczelnia &gt; zadanie</label>
+                  <label>Układ po otwarciu kafla, linie w formacie: kraj &gt; uczelnia &gt; zadanie</label>
                   <textarea value={materialForm.structureText} onChange={(event) => setMaterialForm((current) => ({ ...current, structureText: event.target.value }))} />
                 </div>
                 <div className="field">
-                  <label>Alternatywne oznaczenia wykonania, po jednej opcji w linii</label>
+                  <label>Alternatywne sposoby oznaczenia jako wykonane, po jednej opcji w linii</label>
                   <textarea value={materialForm.alternativeOptionsText} onChange={(event) => setMaterialForm((current) => ({ ...current, alternativeOptionsText: event.target.value }))} />
                 </div>
                 <div className="field">
@@ -1725,7 +1907,7 @@ function AdminSection({
                     <header>
                       <div>
                         <h3>{template.title}</h3>
-                        <div className="muted small">{template.templateType} • {(template.appliesToGuideIds ?? []).length} powiązań guide</div>
+                        <div className="muted small">{materialTemplateTypeLabel(template.templateType)} • {(template.appliesToGuideIds ?? []).length} powiązań uczelni</div>
                       </div>
                       <span className="badge">{template.isActive ? "active" : "inactive"}</span>
                     </header>
@@ -2246,13 +2428,15 @@ function MenteeSection({
   const selectedMentor = assignedMentors.find(
     (mentor: any) => String(mentor.mentorId) === String(meetingForm.mentorUserId),
   );
-  const universityTiles = [
-    ...(assignedGuideTemplates ?? []),
-    ...(guides ?? []),
-  ].filter(
-    (guide: any, index: number, array: any[]) =>
-      array.findIndex((entry) => entry.id === guide.id) === index,
+  const activeGuideIds = new Set((guides ?? []).map((guide: any) => guide.id));
+  const availableUniversityTemplates = (assignedGuideTemplates ?? []).filter(
+    (guide: any) => !activeGuideIds.has(guide.id),
   );
+  const derivedMaterialTemplates = buildDerivedMaterialTemplates(guides ?? [], materialTemplates ?? []);
+  const visibleMaterialTemplates = [
+    ...(materialTemplates ?? []),
+    ...derivedMaterialTemplates,
+  ];
 
   useEffect(() => {
     if (section === "universities" || section === "materials" || section === "profile" || section === "meetings") {
@@ -2313,6 +2497,19 @@ function MenteeSection({
     }
   }
 
+  async function adoptUniversity(templateId: number) {
+    setStatus("");
+    try {
+      await apiFetch(`/mentee/guides/${templateId}/adopt`, { method: "POST" }, token);
+      const payload = await apiFetch<any>("/mentee/overview", undefined, token);
+      setOverview(payload);
+      setGuides(payload.guides ?? []);
+      setStatus("Uczelnia została dodana do Twojego panelu.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się dodać uczelni.");
+    }
+  }
+
   return (
     <>
       {status ? <div className="status">{status}</div> : null}
@@ -2320,9 +2517,9 @@ function MenteeSection({
         <div className="stack">
           <div className="dashboard-card">
             <h2>Twoje Uczelnie</h2>
-            <p className="muted">Każda karta odpowiada jednej uczelni lub jednemu przydzielonemu guide’owi. Po kliknięciu otwierasz checklistę i materiały przypisane do tej konkretnej ścieżki aplikacyjnej.</p>
+            <p className="muted">Tutaj widzisz swoje aktywne uczelnie. Po kliknięciu kafla otwierasz checklistę i wymagania przypisane do tej konkretnej aplikacji.</p>
             <div className="tile-grid" style={{ marginTop: 18 }}>
-              {universityTiles.map((guide: any) => (
+              {guides.map((guide: any) => (
                 <details className="tile tile-detail" key={guide.id}>
                   <summary>
                     <strong>{guide.universityName}</strong>
@@ -2344,11 +2541,37 @@ function MenteeSection({
                 </details>
               ))}
             </div>
+            {!guides.length ? <div className="status">Nie masz jeszcze żadnej aktywnej uczelni.</div> : null}
           </div>
+          {availableUniversityTemplates.length ? (
+            <div className="dashboard-card">
+              <h2>Dodaj kolejną uczelnię</h2>
+              <p className="muted">Te uczelnie zostały Ci udostępnione i możesz włączyć je do swojego panelu.</p>
+              <div className="tile-grid" style={{ marginTop: 18 }}>
+                {availableUniversityTemplates.map((guide: any) => (
+                  <div className="tile" key={`available-${guide.id}`}>
+                    <strong>{guide.universityName}</strong>
+                    <div className="small muted">{guide.country}</div>
+                    <div className="small muted" style={{ marginTop: 4 }}>{guide.title}</div>
+                    <p className="muted" style={{ marginTop: 12 }}>{guide.summary}</p>
+                    <div className="button-row" style={{ marginTop: 14 }}>
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => void adoptUniversity(guide.id)}
+                        type="button"
+                      >
+                        Dodaj uczelnię
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {!(overview.profile as any)?.adminApproved ? (
             <div className="dashboard-card">
-              <h2>Preview przed pełnym dostępem</h2>
-              <p className="muted">Dopóki administrator nie zatwierdzi Twojego konta lub nie nada konkretnych dostępów, widzisz tylko ograniczony podgląd guide’ów.</p>
+              <h2>Podgląd przed pełnym dostępem</h2>
+              <p className="muted">Dopóki administrator nie zatwierdzi Twojego konta albo nie nada Ci dostępu do konkretnych uczelni, widzisz tylko ograniczony podgląd dostępnych opcji.</p>
               <div className="list" style={{ marginTop: 16 }}>
                 {publicGuides.map((guide) => (
                   <div className="list-item" key={guide.id}>
@@ -2419,7 +2642,7 @@ function MenteeSection({
               </div>
               {selectedMentor ? (
                 <div className="status">
-                  Wybrany mentor: <strong>{selectedMentor.fullName}</strong>. Na tym etapie zapisujesz prośbę o spotkanie, a po integracji Google pojawią się tu realne sloty kalendarzowe.
+                  Wybrany mentor: <strong>{selectedMentor.fullName}</strong>. Na tym etapie zapisujesz prośbę o spotkanie.
                 </div>
               ) : null}
               <div className="grid-2">
@@ -2500,13 +2723,13 @@ function MenteeSection({
         <div className="stack">
           <div className="dashboard-card">
             <h2>Twoje Materiały</h2>
-            <p className="muted">Tutaj masz agregat materiałów z przypisanych uczelni. Passport-like są współdzielone między uczelniami, a essay-like pokazują strukturę per kraj/uczelnia/zadanie.</p>
+            <p className="muted">Tutaj zbierają się wszystkie materiały wymagane przez Twoje uczelnie. Dokumenty wspólne są łączone razem, a eseje i zadania pokazują, do których krajów i uczelni należą.</p>
             <div className="tile-grid" style={{ marginTop: 18 }}>
-              {materialTemplates.map((template: any) => (
+              {visibleMaterialTemplates.map((template: any) => (
                 <details className="tile tile-detail" key={template.id}>
                   <summary>
                     <strong>{template.title}</strong>
-                    <div className="small muted">{template.templateType}</div>
+                    <div className="small muted">{materialTemplateTypeLabel(template.templateType)}</div>
                     <div className="small muted">{(template.appliesToGuideIds ?? []).length} uczelni powiązanych</div>
                   </summary>
                   <div style={{ marginTop: 12 }}>
@@ -2540,7 +2763,7 @@ function MenteeSection({
                       <details className="small" style={{ marginTop: 12 }}>
                         <summary>Otwórz wskazówki do tego materiału</summary>
                         <div className="muted" style={{ marginTop: 8 }}>
-                          Ten materiał ma podpięty guide pomocniczy `#{template.guideId}`. Docelowo to będzie popup z pełną treścią wskazówek.
+                          Ten materiał ma podpięte dodatkowe wskazówki. Docelowo to będzie popup z pełną treścią.
                         </div>
                       </details>
                     ) : null}
@@ -2548,6 +2771,9 @@ function MenteeSection({
                 </details>
               ))}
             </div>
+            {!visibleMaterialTemplates.length ? (
+              <div className="status">Nie ma jeszcze żadnych materiałów przypisanych do Twoich uczelni.</div>
+            ) : null}
           </div>
         </div>
       ) : null}
