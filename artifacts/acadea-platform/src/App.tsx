@@ -785,6 +785,7 @@ function AdminSection({
   const sourceGuideTemplates = guides.filter(
     (guide) => guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint",
   );
+  const materialGuideTemplates = guides.filter((guide) => guide.guideType === "admin_template");
   const itemGuides = guides.filter((guide) => guide.sourceGuideId);
 
   function serializeGuideItemsToText(items: any[] = []) {
@@ -2026,10 +2027,10 @@ function AdminSection({
               <div className="field">
                 <label>Do których uczelni ten kafel się stosuje</label>
                 <div className="list">
-                  {sourceGuideTemplates.map((guide) => {
+                  {materialGuideTemplates.map((guide) => {
                     const checked = materialForm.appliesToGuideIds.includes(String(guide.id));
                     return (
-                      <label className="list-item" key={`material-guide-checkbox-${guide.id}`} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <label className="selector-option" key={`material-guide-checkbox-${guide.id}`}>
                         <input
                           checked={checked}
                           type="checkbox"
@@ -2042,7 +2043,7 @@ function AdminSection({
                             }))
                           }
                         />
-                        <span>
+                        <span className="selector-copy">
                           <strong>{guide.universityName}</strong>
                           <span className="small muted" style={{ display: "block" }}>{guide.country} • {guide.title}</span>
                         </span>
@@ -2056,7 +2057,7 @@ function AdminSection({
                 <div className="stack">
                   {materialForm.rows.map((row, index) => {
                     const allowedGuideIds = new Set(materialForm.appliesToGuideIds);
-                    const rowGuideChoices = sourceGuideTemplates.filter((guide) => allowedGuideIds.has(String(guide.id)));
+                    const rowGuideChoices = materialGuideTemplates.filter((guide) => allowedGuideIds.has(String(guide.id)));
                     return (
                       <div className="list-item" key={`material-row-${index}`}>
                         <header>
@@ -2078,7 +2079,7 @@ function AdminSection({
                             {rowGuideChoices.map((guide) => {
                               const checked = row.appliesToGuideIds.includes(String(guide.id));
                               return (
-                                <label className="list-item" key={`row-guide-assignment-${index}-${guide.id}`} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                <label className="selector-option" key={`row-guide-assignment-${index}-${guide.id}`}>
                                   <input
                                     checked={checked}
                                     type="checkbox"
@@ -2091,7 +2092,7 @@ function AdminSection({
                                       }))
                                     }
                                   />
-                                  <span>
+                                  <span className="selector-copy">
                                     <strong>{guide.universityName}</strong>
                                     <span className="small muted" style={{ display: "block" }}>{guide.country} • {guide.title}</span>
                                   </span>
@@ -2108,7 +2109,11 @@ function AdminSection({
                             onChange={(event) =>
                               updateMaterialRow(index, (current) => ({
                                 ...current,
+                                country: event.target.value === "country" ? current.country : "",
+                                guideId: event.target.value === "item" ? current.guideId : "",
                                 level: event.target.value as MaterialRowEditor["level"],
+                                task: event.target.value === "item" ? current.task : "",
+                                university: event.target.value === "university" ? current.university : "",
                               }))
                             }
                           >
@@ -2117,19 +2122,21 @@ function AdminSection({
                             <option value="item">Element / zadanie</option>
                           </select>
                         </div>
-                        <div className="field">
-                          <label>Kraj</label>
-                          <input
-                            value={row.country}
-                            onChange={(event) =>
-                              updateMaterialRow(index, (current) => ({
-                                ...current,
-                                country: event.target.value,
-                              }))
-                            }
-                          />
-                        </div>
-                        {row.level !== "country" ? (
+                        {row.level === "country" ? (
+                          <div className="field">
+                            <label>Kraj</label>
+                            <input
+                              value={row.country}
+                              onChange={(event) =>
+                                updateMaterialRow(index, (current) => ({
+                                  ...current,
+                                  country: event.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                        ) : null}
+                        {row.level === "university" ? (
                           <div className="field">
                             <label>Uczelnia</label>
                             <input
@@ -2265,7 +2272,7 @@ function AdminSection({
                 <label>Uczelnia bazowa</label>
                 <select value={itemGuideForm.sourceGuideId} onChange={(event) => setItemGuideForm((current) => ({ ...current, sourceGuideId: event.target.value }))}>
                   <option value="">Wybierz uczelnię bazową</option>
-                  {sourceGuideTemplates.map((guide) => (
+                  {materialGuideTemplates.map((guide) => (
                     <option key={guide.id} value={String(guide.id)}>
                       {guide.universityName} • {guide.title}
                     </option>
@@ -3043,14 +3050,10 @@ function MenteeSection({
 
   const profileFields = overview?.profileFields ?? [];
   const assignedMentors = overview?.assignedMentors ?? [];
-  const assignedGuideTemplates = overview?.assignedGuideTemplates ?? [];
+  const availableGuideTemplates = overview?.availableGuideTemplates ?? [];
   const materialTemplates = overview?.materialTemplates ?? [];
   const selectedMentor = assignedMentors.find(
     (mentor: any) => String(mentor.mentorId) === String(meetingForm.mentorUserId),
-  );
-  const activeGuideIds = new Set((guides ?? []).map((guide: any) => guide.id));
-  const availableUniversityTemplates = (assignedGuideTemplates ?? []).filter(
-    (guide: any) => !activeGuideIds.has(guide.id),
   );
   const derivedMaterialTemplates = buildDerivedMaterialTemplates(guides ?? [], materialTemplates ?? []);
   const visibleMaterialTemplates = [
@@ -3163,12 +3166,12 @@ function MenteeSection({
             </div>
             {!guides.length ? <div className="status">Nie masz jeszcze żadnej aktywnej uczelni.</div> : null}
           </div>
-          {availableUniversityTemplates.length ? (
+          {availableGuideTemplates.length ? (
             <div className="dashboard-card">
               <h2>Dodaj kolejną uczelnię</h2>
-              <p className="muted">Te uczelnie zostały Ci udostępnione i możesz włączyć je do swojego panelu.</p>
+              <p className="muted">Te uczelnie ACADEA możesz samodzielnie dodać do swojego panelu.</p>
               <div className="tile-grid" style={{ marginTop: 18 }}>
-                {availableUniversityTemplates.map((guide: any) => (
+                {availableGuideTemplates.map((guide: any) => (
                   <div className="tile" key={`available-${guide.id}`}>
                     <strong>{guide.universityName}</strong>
                     <div className="small muted">{guide.country}</div>

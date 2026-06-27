@@ -260,6 +260,27 @@ textarea {
   padding: 18px;
 }
 
+.selector-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #dbe6dd;
+  background: #fbfdfb;
+  border-radius: 16px;
+}
+
+.selector-option input {
+  margin-top: 4px;
+  width: auto;
+}
+
+.selector-copy {
+  min-width: 0;
+  flex: 1;
+  word-break: break-word;
+}
+
 .list-item header {
   display: flex;
   justify-content: space-between;

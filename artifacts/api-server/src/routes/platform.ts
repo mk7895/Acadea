@@ -1486,6 +1486,10 @@ router.get(
       .from(platformGuidesTable)
       .where(eq(platformGuidesTable.menteeUserId, req.platformUser!.id))
       .orderBy(desc(platformGuidesTable.updatedAt));
+    const uniqueGuides = guides.filter((guide, index, array) => {
+      const sourceId = guide.sourceGuideId ?? guide.id;
+      return array.findIndex((entry) => (entry.sourceGuideId ?? entry.id) === sourceId) === index;
+    });
     const assignedGuideAccess = await db
       .select()
       .from(platformGuideAssignmentsTable)
@@ -1499,6 +1503,18 @@ router.get(
           .where(inArray(platformGuidesTable.id, assignedGuideIds))
           .orderBy(desc(platformGuidesTable.updatedAt))
       : [];
+    const publishedAdminTemplates = profile?.adminApproved
+      ? await db
+          .select()
+          .from(platformGuidesTable)
+          .where(
+            and(
+              eq(platformGuidesTable.guideType, "admin_template"),
+              eq(platformGuidesTable.status, "published"),
+            ),
+          )
+          .orderBy(asc(platformGuidesTable.country), asc(platformGuidesTable.universityName))
+      : [];
     const profileFields = await db
       .select()
       .from(platformProfileFieldsTable)
@@ -1510,9 +1526,23 @@ router.get(
           .where(eq(platformProfileResponsesTable.menteeUserId, req.platformUser!.id))
       : [];
     const accessibleGuideIds = Array.from(new Set([
-      ...guides.map((guide) => guide.id),
+      ...uniqueGuides.map((guide) => guide.id),
       ...assignedGuideTemplates.map((guide) => guide.id),
     ]));
+    const activeSourceGuideIds = new Set(
+      uniqueGuides.map((guide) => guide.sourceGuideId ?? guide.id).filter((value): value is number => Number.isFinite(value)),
+    );
+    const availableGuideTemplatesRaw = [
+      ...publishedAdminTemplates,
+      ...assignedGuideTemplates,
+    ];
+    const availableGuideTemplates = availableGuideTemplatesRaw.filter((guide, index, array) => {
+      const sourceId = guide.sourceGuideId ?? guide.id;
+      if (activeSourceGuideIds.has(sourceId)) {
+        return false;
+      }
+      return array.findIndex((entry) => (entry.sourceGuideId ?? entry.id) === sourceId) === index;
+    });
     const materialTemplates = accessibleGuideIds.length
       ? await db
           .select()
@@ -1536,8 +1566,9 @@ router.get(
         startsAt: meeting.startsAt.toISOString(),
         endsAt: meeting.endsAt.toISOString(),
       })),
-      guides: await shapeGuideList(db, guides),
+      guides: await shapeGuideList(db, uniqueGuides),
       assignedGuideTemplates: await shapeGuideList(db, assignedGuideTemplates),
+      availableGuideTemplates: await shapeGuideList(db, availableGuideTemplates),
       materialTemplates: visibleMaterials,
     });
   },
@@ -1667,26 +1698,40 @@ router.post(
     const [sourceGuide] = await db
       .select()
       .from(platformGuidesTable)
-      .where(and(eq(platformGuidesTable.id, sourceGuideId), eq(platformGuidesTable.guideType, "admin_template")))
+      .where(
+        and(
+          eq(platformGuidesTable.id, sourceGuideId),
+          eq(platformGuidesTable.guideType, "admin_template"),
+          eq(platformGuidesTable.status, "published"),
+        ),
+      )
       .limit(1);
 
     if (!sourceGuide) {
       return res.status(404).json({ error: "Nie znaleziono przewodnika." });
     }
 
-    const [guideAccess] = await db
+    const [menteeProfile] = await db
       .select()
-      .from(platformGuideAssignmentsTable)
+      .from(menteeProfilesTable)
+      .where(eq(menteeProfilesTable.userId, req.platformUser!.id))
+      .limit(1);
+    if (!menteeProfile?.adminApproved) {
+      return res.status(403).json({ error: "Najpierw potrzebujesz akceptacji administratora." });
+    }
+
+    const [existingBySource] = await db
+      .select({ id: platformGuidesTable.id })
+      .from(platformGuidesTable)
       .where(
         and(
-          eq(platformGuideAssignmentsTable.guideId, sourceGuide.id),
-          eq(platformGuideAssignmentsTable.menteeUserId, req.platformUser!.id),
+          eq(platformGuidesTable.menteeUserId, req.platformUser!.id),
+          eq(platformGuidesTable.sourceGuideId, sourceGuide.id),
         ),
       )
       .limit(1);
-
-    if (!guideAccess) {
-      return res.status(403).json({ error: "Nie masz jeszcze dostępu do tego przewodnika." });
+    if (existingBySource) {
+      return res.status(409).json({ error: "Ta uczelnia jest już dodana do Twojego panelu." });
     }
 
     const existingLiveGuides = await db
