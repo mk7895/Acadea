@@ -1484,7 +1484,12 @@ router.get(
     const guides = await db
       .select()
       .from(platformGuidesTable)
-      .where(eq(platformGuidesTable.menteeUserId, req.platformUser!.id))
+      .where(
+        and(
+          eq(platformGuidesTable.menteeUserId, req.platformUser!.id),
+          eq(platformGuidesTable.status, "published"),
+        ),
+      )
       .orderBy(desc(platformGuidesTable.updatedAt));
     const uniqueGuides = guides.filter((guide, index, array) => {
       const sourceId = guide.sourceGuideId ?? guide.id;
@@ -1560,6 +1565,19 @@ router.get(
       const applies = template.appliesToGuideIds ?? [];
       return applies.length === 0 || applies.some((guideId: number) => accessibleTemplateIds.includes(guideId));
     });
+    const hintEligibleTemplateIds = await db
+      .select({
+        sourceGuideId: platformGuidesTable.sourceGuideId,
+      })
+      .from(platformGuidesTable)
+      .where(
+        and(
+          eq(platformGuidesTable.menteeUserId, req.platformUser!.id),
+          inArray(platformGuidesTable.guideType, ["self_service_live", "mentor_live"]),
+        ),
+      )
+      .orderBy(asc(platformGuidesTable.createdAt))
+      .limit(3);
 
     return res.json({
       profile,
@@ -1575,6 +1593,9 @@ router.get(
       guides: await shapeGuideList(db, uniqueGuides),
       assignedGuideTemplates: await shapeGuideList(db, assignedGuideTemplates),
       availableGuideTemplates: await shapeGuideList(db, availableGuideTemplates),
+      hintEligibleTemplateIds: hintEligibleTemplateIds
+        .map((row) => row.sourceGuideId)
+        .filter((value): value is number => Number.isFinite(value)),
       materialTemplates: visibleMaterials,
     });
   },
@@ -1733,6 +1754,7 @@ router.post(
         and(
           eq(platformGuidesTable.menteeUserId, req.platformUser!.id),
           eq(platformGuidesTable.sourceGuideId, sourceGuide.id),
+          eq(platformGuidesTable.status, "published"),
         ),
       )
       .limit(1);
@@ -1793,6 +1815,37 @@ router.post(
 
     const [shaped] = await shapeGuideList(db, [guide]);
     return res.status(201).json(shaped);
+  },
+);
+
+router.patch(
+  "/platform/mentee/guides/:id/resign",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: "Invalid guide id." });
+    }
+    const { db } = await import("@workspace/db");
+    const [guide] = await db
+      .update(platformGuidesTable)
+      .set({
+        status: "archived",
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(platformGuidesTable.id, id),
+          eq(platformGuidesTable.menteeUserId, req.platformUser!.id),
+          inArray(platformGuidesTable.guideType, ["self_service_live", "mentor_live"]),
+        ),
+      )
+      .returning();
+    if (!guide) {
+      return res.status(404).json({ error: "Nie znaleziono uczelni do usunięcia." });
+    }
+    return res.status(204).end();
   },
 );
 

@@ -191,6 +191,21 @@ function rowAppliesToGuide(row: any, guide: any) {
   return applies.length === 0 || applies.includes(templateId);
 }
 
+function uniqueStrings(values: Array<string | null | undefined>) {
+  return Array.from(new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean)));
+}
+
+function parseGuideMeta(value: string | null | undefined) {
+  if (!value || !value.startsWith("__meta:")) {
+    return {};
+  }
+  try {
+    return JSON.parse(value.slice("__meta:".length));
+  } catch {
+    return {};
+  }
+}
+
 function createEmptyMaterialRow(): MaterialRowEditor {
   return {
     alternativeOptions: [],
@@ -761,6 +776,7 @@ function AdminSection({
   const [itemGuideEditorId, setItemGuideEditorId] = useState<string>("new");
   const [itemGuideForm, setItemGuideForm] = useState({
     sourceGuideId: "",
+    appliesToGuideIds: [] as string[],
     title: "",
     slug: "",
     summary: "",
@@ -789,13 +805,24 @@ function AdminSection({
   const menteeUsers = users.filter((user) => user.role === "mentee");
   const adminUsers = users.filter((user) => user.role === "admin");
   const sourceGuideTemplates = guides.filter(
-    (guide) => guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint",
+    (guide) =>
+      (guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint") &&
+      !guide.sourceGuideId,
   );
-  const materialGuideTemplates = guides.filter((guide) => guide.guideType === "admin_template");
+  const materialGuideTemplates = guides.filter(
+    (guide) => guide.guideType === "admin_template" && !guide.sourceGuideId,
+  );
   const editableGuideTemplates = guides.filter(
-    (guide) => guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint",
+    (guide) =>
+      (guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint") &&
+      !guide.sourceGuideId,
   );
-  const itemGuides = guides.filter((guide) => guide.sourceGuideId);
+  const itemGuides = guides.filter(
+    (guide) =>
+      Boolean(guide.sourceGuideId) &&
+      (guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint") &&
+      (!Array.isArray(guide.items) || guide.items.length === 0),
+  );
 
   function serializeGuideItemsToText(items: any[] = []) {
     return items
@@ -979,6 +1006,7 @@ function AdminSection({
     setItemGuideEditorId("new");
     setItemGuideForm({
       sourceGuideId: "",
+      appliesToGuideIds: [],
       title: "",
       slug: "",
       summary: "",
@@ -988,9 +1016,13 @@ function AdminSection({
   }
 
   function loadItemGuideIntoEditor(guide: any) {
+    const metadata = parseGuideMeta(guide.driveFolderUrl);
     setItemGuideEditorId(String(guide.id));
     setItemGuideForm({
       sourceGuideId: guide.sourceGuideId ? String(guide.sourceGuideId) : "",
+      appliesToGuideIds: Array.isArray((metadata as any).appliesToGuideIds)
+        ? (metadata as any).appliesToGuideIds.map((value: any) => String(value))
+        : [],
       title: guide.title ?? "",
       slug: guide.slug ?? "",
       summary: guide.summary ?? "",
@@ -1258,7 +1290,13 @@ function AdminSection({
       estimatedReadMin: 8,
       menteeUserId: null,
       sourceGuideId: sourceGuide.id,
-      driveFolderUrl: "",
+      driveFolderUrl: `__meta:${JSON.stringify({
+        appliesToGuideIds: (
+          itemGuideForm.appliesToGuideIds.length
+            ? itemGuideForm.appliesToGuideIds
+            : [String(sourceGuide.id)]
+        ).map((value) => Number(value)).filter(Number.isFinite),
+      })}`,
       isVisibleToUnapprovedUsers: false,
       items: [],
     };
@@ -2141,6 +2179,34 @@ function AdminSection({
                   ))}
                 </select>
               </div>
+              <div className="field">
+                <label>Do których uczelni te wskazówki mają się odnosić</label>
+                <div className="selector-grid">
+                  {materialGuideTemplates.map((guide) => {
+                    const checked = itemGuideForm.appliesToGuideIds.includes(String(guide.id));
+                    return (
+                      <label className="selector-option" key={`item-guide-apply-${guide.id}`}>
+                        <input
+                          checked={checked}
+                          onChange={() =>
+                            setItemGuideForm((current) => ({
+                              ...current,
+                              appliesToGuideIds: checked
+                                ? current.appliesToGuideIds.filter((id) => id !== String(guide.id))
+                                : [...current.appliesToGuideIds, String(guide.id)],
+                            }))
+                          }
+                          type="checkbox"
+                        />
+                        <div className="selector-copy">
+                          <strong>{guide.universityName}</strong>
+                          <span>{guide.country} • {guide.title}</span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
               <div className="grid-2">
                 <div className="field">
                   <label>Tytuł wskazówek</label>
@@ -2914,6 +2980,7 @@ function MenteeSection({
   const assignedMentors = overview?.assignedMentors ?? [];
   const availableGuideTemplates = overview?.availableGuideTemplates ?? [];
   const materialTemplates = overview?.materialTemplates ?? [];
+  const hintEligibleTemplateIds = (overview?.hintEligibleTemplateIds ?? []).map(String);
   const selectedMentor = assignedMentors.find(
     (mentor: any) => String(mentor.mentorId) === String(meetingForm.mentorUserId),
   );
@@ -2935,7 +3002,6 @@ function MenteeSection({
         })),
     ]),
   );
-
   useEffect(() => {
     if (section === "universities" || section === "materials" || section === "profile" || section === "meetings") {
       void apiFetch<any>("/mentee/overview", undefined, token).then((payload) => {
@@ -3008,6 +3074,19 @@ function MenteeSection({
     }
   }
 
+  async function resignUniversity(guideId: number) {
+    setStatus("");
+    try {
+      await apiFetch(`/mentee/guides/${guideId}/resign`, { method: "PATCH" }, token);
+      const payload = await apiFetch<any>("/mentee/overview", undefined, token);
+      setOverview(payload);
+      setGuides(payload.guides ?? []);
+      setStatus("Uczelnia została usunięta z Twojego panelu.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się usunąć uczelni.");
+    }
+  }
+
   return (
     <>
       {status ? <div className="status">{status}</div> : null}
@@ -3031,31 +3110,54 @@ function MenteeSection({
                         {guide.descriptionMarkdown}
                       </div>
                     ) : null}
+                    <div className="button-row" style={{ marginBottom: 12 }}>
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => void resignUniversity(guide.id)}
+                        type="button"
+                      >
+                        Zrezygnuj z tej uczelni
+                      </button>
+                    </div>
                     {guideMaterialsMap.get(guide.id)?.length ? (
                       <div className="list">
                         {guideMaterialsMap.get(guide.id)?.map((template: any) => (
-                          <div className="list-item" key={`${guide.id}-${template.id}`}>
-                            <h3>{template.title}</h3>
-                            <div className="muted small">{materialTemplateTypeLabel(template.templateType)}</div>
-                            {template.description ? <p className="muted">{template.description}</p> : null}
+                          <details className="list-item nested-detail" key={`${guide.id}-${template.id}`}>
+                            <summary>
+                              <h3>{template.title}</h3>
+                              <div className="muted small">{materialTemplateTypeLabel(template.templateType)}</div>
+                            </summary>
+                            {template.description ? <p className="muted" style={{ marginTop: 10 }}>{template.description}</p> : null}
                             {template.visibleRows?.length ? (
                               <div className="list" style={{ marginTop: 10 }}>
-                                {template.visibleRows.map((row: any, index: number) => (
-                                  <div className="list-item" key={`${guide.id}-${template.id}-row-${index}`}>
-                                    <h3>{row.task || "Zadanie"}</h3>
-                                    {row.guideId ? (
-                                      <div className="small muted">Do tego elementu są przypisane osobne wskazówki.</div>
-                                    ) : null}
-                                    {row.alternativeOptions?.length ? (
-                                      <div className="small muted" style={{ marginTop: 6 }}>
-                                        Alternatywnie: {row.alternativeOptions.join(" • ")}
+                                {template.visibleRows
+                                  .filter((row: any) => row.level === "item")
+                                  .map((row: any, index: number) => {
+                                    const applicableGuides = guides.filter((entry: any) => rowAppliesToGuide(row, entry));
+                                    const universityNames = uniqueStrings(applicableGuides.map((entry: any) => entry.universityName));
+                                    const showHints = row.guideId && hintEligibleTemplateIds.includes(getGuideTemplateId(guide));
+                                    return (
+                                      <div className="list-item" key={`${guide.id}-${template.id}-row-${index}`}>
+                                        <h3>{row.task || "Zadanie"}</h3>
+                                        {universityNames.length ? (
+                                          <div className="small muted">{universityNames.join(" • ")}</div>
+                                        ) : null}
+                                        {showHints ? (
+                                          <div className="small muted" style={{ marginTop: 6 }}>
+                                            Do tego elementu są przypisane osobne wskazówki.
+                                          </div>
+                                        ) : null}
+                                        {row.alternativeOptions?.length ? (
+                                          <div className="small muted" style={{ marginTop: 6 }}>
+                                            Alternatywnie: {row.alternativeOptions.join(" • ")}
+                                          </div>
+                                        ) : null}
                                       </div>
-                                    ) : null}
-                                  </div>
-                                ))}
+                                    );
+                                  })}
                               </div>
                             ) : null}
-                          </div>
+                          </details>
                         ))}
                       </div>
                     ) : (guide.items ?? []).length ? (
@@ -3264,7 +3366,9 @@ function MenteeSection({
                   <summary>
                     <strong>{template.title}</strong>
                     <div className="small muted">{materialTemplateTypeLabel(template.templateType)}</div>
-                    <div className="small muted">{(template.appliesToGuideIds ?? []).length} uczelni powiązanych</div>
+                    <div className="small muted">
+                      {guides.filter((guide: any) => templateAppliesToGuide(template, guide)).length} uczelni powiązanych
+                    </div>
                   </summary>
                   <div style={{ marginTop: 12 }}>
                     <p className="muted">{template.description}</p>
@@ -3283,38 +3387,47 @@ function MenteeSection({
                     ) : null}
                     {(template.structure ?? []).length ? (
                       <div className="list" style={{ marginTop: 12 }}>
-                        {(template.structure ?? []).map((row: any, index: number) => (
-                          <div className="list-item" key={`${template.id}-row-${index}`}>
-                            <h3>{row.task || "Zadanie"}</h3>
-                            <div className="small muted">
-                              {[row.country, row.university].filter(Boolean).join(" • ")}
+                        {(template.structure ?? []).map((row: any, index: number) => {
+                          const applicableGuides = guides.filter((guide: any) => rowAppliesToGuide(row, guide));
+                          const universityNames = uniqueStrings(applicableGuides.map((guide: any) => guide.universityName));
+                          const countryNames = uniqueStrings(applicableGuides.map((guide: any) => guide.country));
+                          const headline =
+                            row.level === "country"
+                              ? (row.country || countryNames[0] || "Kraj")
+                              : row.level === "university"
+                                ? (row.university || universityNames[0] || "Uczelnia")
+                                : (row.task || "Zadanie");
+                          const showHints =
+                            row.guideId &&
+                            applicableGuides.some((guide: any) => hintEligibleTemplateIds.includes(getGuideTemplateId(guide)));
+                          return (
+                            <div className={`list-item material-row material-row-${row.level ?? "item"}`} key={`${template.id}-row-${index}`}>
+                              <h3>{headline}</h3>
+                              {row.level === "item" && universityNames.length ? (
+                                <div className="small muted">{universityNames.join(" • ")}</div>
+                              ) : null}
+                              {row.level === "country" ? (
+                                <div className="small muted">Poziom kraju</div>
+                              ) : null}
+                              {row.level === "university" ? (
+                                <div className="small muted">Poziom uczelni</div>
+                              ) : null}
+                              {row.level === "item" ? (
+                                <div className="small muted">Poziom zadania</div>
+                              ) : null}
+                              {Array.isArray(row.alternativeOptions) && row.alternativeOptions.length ? (
+                                <div className="small muted" style={{ marginTop: 8 }}>
+                                  Alternatywnie: {row.alternativeOptions.join(" • ")}
+                                </div>
+                              ) : null}
+                              {showHints ? (
+                                <div className="small muted" style={{ marginTop: 8 }}>
+                                  Ten element ma osobne wskazówki pomocnicze.
+                                </div>
+                              ) : null}
                             </div>
-                            {row.level ? (
-                              <div className="small muted" style={{ marginTop: 4 }}>
-                                {row.level === "country"
-                                  ? "Poziom kraju"
-                                  : row.level === "university"
-                                    ? "Poziom uczelni"
-                                    : "Poziom zadania"}
-                              </div>
-                            ) : null}
-                            {Array.isArray(row.appliesToGuideIds) && row.appliesToGuideIds.length ? (
-                              <div className="small muted" style={{ marginTop: 4 }}>
-                                Dotyczy wybranych uczelni: {row.appliesToGuideIds.length}
-                              </div>
-                            ) : null}
-                            {Array.isArray(row.alternativeOptions) && row.alternativeOptions.length ? (
-                              <div className="small muted" style={{ marginTop: 8 }}>
-                                Alternatywnie: {row.alternativeOptions.join(" • ")}
-                              </div>
-                            ) : null}
-                            {row.guideId ? (
-                              <div className="small muted" style={{ marginTop: 8 }}>
-                                Ten wiersz ma osobne wskazówki pomocnicze.
-                              </div>
-                            ) : null}
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : null}
                     {template.guideId ? (

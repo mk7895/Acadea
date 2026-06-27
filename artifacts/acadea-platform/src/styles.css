@@ -220,6 +220,7 @@ textarea {
   display: grid;
   gap: 14px;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: start;
 }
 
 .stat,
@@ -233,6 +234,15 @@ textarea {
 .tile-detail summary {
   list-style: none;
   cursor: pointer;
+}
+
+.nested-detail > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.nested-detail > summary::-webkit-details-marker {
+  display: none;
 }
 
 .tile-detail summary::-webkit-details-marker {
@@ -258,6 +268,20 @@ textarea {
 
 .list-item {
   padding: 18px;
+}
+
+.material-row-country h3 {
+  font-size: 1.2rem;
+  color: #153f2c;
+}
+
+.material-row-university h3 {
+  font-size: 1.02rem;
+  color: #1f3e30;
+}
+
+.material-row-item h3 {
+  font-size: 1rem;
 }
 
 .selector-option {
