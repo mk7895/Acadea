@@ -175,6 +175,22 @@ function buildDerivedMaterialTemplates(guides: any[], materialTemplates: any[]) 
   return Array.from(derived.values());
 }
 
+function getGuideTemplateId(guide: any) {
+  return String(guide?.sourceGuideId ?? guide?.id ?? "");
+}
+
+function templateAppliesToGuide(template: any, guide: any) {
+  const templateId = getGuideTemplateId(guide);
+  const applies = Array.isArray(template?.appliesToGuideIds) ? template.appliesToGuideIds.map(String) : [];
+  return applies.length === 0 || applies.includes(templateId);
+}
+
+function rowAppliesToGuide(row: any, guide: any) {
+  const templateId = getGuideTemplateId(guide);
+  const applies = Array.isArray(row?.appliesToGuideIds) ? row.appliesToGuideIds.map(String) : [];
+  return applies.length === 0 || applies.includes(templateId);
+}
+
 function createEmptyMaterialRow(): MaterialRowEditor {
   return {
     alternativeOptions: [],
@@ -686,7 +702,6 @@ function AdminSection({
   const [mentorProfiles, setMentorProfiles] = useState<any[]>([]);
   const [menteeProfiles, setMenteeProfiles] = useState<any[]>([]);
   const [mentorAssignments, setMentorAssignments] = useState<any[]>([]);
-  const [guideAssignments, setGuideAssignments] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
   const [profileFields, setProfileFields] = useState<any[]>([]);
   const [materialTemplates, setMaterialTemplates] = useState<any[]>([]);
@@ -712,15 +727,6 @@ function AdminSection({
     status: "active",
   });
   const [accessForm, setAccessForm] = useState({
-    menteeUserId: "",
-    mentorUserId: "",
-  });
-  const [guideAccessForm, setGuideAccessForm] = useState({
-    guideId: "",
-    menteeUserId: "",
-  });
-  const [guideCloneForm, setGuideCloneForm] = useState({
-    guideId: "",
     menteeUserId: "",
     mentorUserId: "",
   });
@@ -786,6 +792,9 @@ function AdminSection({
     (guide) => guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint",
   );
   const materialGuideTemplates = guides.filter((guide) => guide.guideType === "admin_template");
+  const editableGuideTemplates = guides.filter(
+    (guide) => guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint",
+  );
   const itemGuides = guides.filter((guide) => guide.sourceGuideId);
 
   function serializeGuideItemsToText(items: any[] = []) {
@@ -893,7 +902,6 @@ function AdminSection({
 
   async function refreshUsers() {
     const payload = await apiFetch<{
-      guideAssignments: any[];
       menteeProfiles: any[];
       mentorAssignments: any[];
       mentorProfiles: any[];
@@ -903,7 +911,6 @@ function AdminSection({
     setMentorProfiles(payload.mentorProfiles);
     setMenteeProfiles(payload.menteeProfiles);
     setMentorAssignments(payload.mentorAssignments);
-    setGuideAssignments(payload.guideAssignments);
   }
 
   async function refreshGuides() {
@@ -1690,154 +1697,9 @@ function AdminSection({
               ) : null}
             </div>
             <div className="dashboard-card">
-              <h2>Dostęp do szablonów uczelni</h2>
-              <form
-                className="stack"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (!guideAccessForm.guideId || !guideAccessForm.menteeUserId) {
-                    setStatus("Wybierz przewodnik i mentee.");
-                    return;
-                  }
-                  void runGuideAction(
-                    Number(guideAccessForm.guideId),
-                    async () => {
-                      await apiFetch("/admin/guide-access", {
-                        method: "POST",
-                        body: JSON.stringify({
-                          guideId: Number(guideAccessForm.guideId),
-                          menteeUserId: Number(guideAccessForm.menteeUserId),
-                        }),
-                      }, token);
-                    },
-                    "Dostęp do szablonu uczelni został nadany.",
-                  );
-                }}
-              >
-                <div className="field">
-                  <label>Szablon uczelni</label>
-                  <select value={guideAccessForm.guideId} onChange={(event) => setGuideAccessForm((current) => ({ ...current, guideId: event.target.value }))}>
-                    <option value="">Wybierz szablon uczelni</option>
-                    {sourceGuideTemplates.map((guide) => (
-                      <option key={guide.id} value={String(guide.id)}>
-                        {guide.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label>Mentee</label>
-                  <select value={guideAccessForm.menteeUserId} onChange={(event) => setGuideAccessForm((current) => ({ ...current, menteeUserId: event.target.value }))}>
-                    <option value="">Wybierz mentee</option>
-                    {menteeUsers.map((user) => (
-                      <option key={user.id} value={String(user.id)}>
-                        {user.fullName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button className="btn btn-primary">Nadaj dostęp</button>
-              </form>
-              <div className="list" style={{ marginTop: 18 }}>
-                {guideAssignments.map((assignment) => {
-                  const guide = guides.find((entry) => entry.id === assignment.guideId);
-                  const mentee = users.find((user) => user.id === assignment.menteeUserId);
-                  return (
-                    <div className="list-item" key={assignment.id}>
-                      <header>
-                        <div>
-                          <h3>{guide?.title ?? `Szablon #${assignment.guideId}`}</h3>
-                          <div className="muted small">dla {mentee?.fullName ?? `Mentee #${assignment.menteeUserId}`}</div>
-                        </div>
-                        <button
-                          className="btn btn-secondary"
-                          disabled={guideActionId === assignment.guideId}
-                          onClick={() =>
-                            void runGuideAction(
-                              assignment.guideId,
-                              async () => {
-                                await apiFetch(`/admin/guide-access/${assignment.id}`, { method: "DELETE" }, token);
-                              },
-                              "Dostęp do szablonu uczelni został usunięty.",
-                            )
-                          }
-                          type="button"
-                        >
-                          Usuń
-                        </button>
-                      </header>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-          <div className="split">
-            <div className="dashboard-card">
-              <h2>Dodaj uczelnię mentee</h2>
-              <form
-                className="stack"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (!guideCloneForm.guideId || !guideCloneForm.menteeUserId) {
-                    setStatus("Wybierz szablon uczelni i mentee.");
-                    return;
-                  }
-                  void runGuideAction(
-                    Number(guideCloneForm.guideId),
-                    async () => {
-                      await apiFetch(`/admin/guides/${guideCloneForm.guideId}/assign`, {
-                        method: "POST",
-                        body: JSON.stringify({
-                          menteeUserId: Number(guideCloneForm.menteeUserId),
-                          mentorUserId: guideCloneForm.mentorUserId ? Number(guideCloneForm.mentorUserId) : null,
-                        }),
-                      }, token);
-                    },
-                    "Uczelnia została dodana do mentee.",
-                  );
-                }}
-              >
-                <div className="field">
-                  <label>Źródłowy szablon uczelni</label>
-                  <select value={guideCloneForm.guideId} onChange={(event) => setGuideCloneForm((current) => ({ ...current, guideId: event.target.value }))}>
-                    <option value="">Wybierz szablon uczelni</option>
-                    {sourceGuideTemplates.map((guide) => (
-                      <option key={guide.id} value={String(guide.id)}>
-                        {guide.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label>Mentee</label>
-                  <select value={guideCloneForm.menteeUserId} onChange={(event) => setGuideCloneForm((current) => ({ ...current, menteeUserId: event.target.value }))}>
-                    <option value="">Wybierz mentee</option>
-                    {menteeUsers.map((user) => (
-                      <option key={user.id} value={String(user.id)}>
-                        {user.fullName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label>Mentor docelowy (opcjonalnie)</label>
-                  <select value={guideCloneForm.mentorUserId} onChange={(event) => setGuideCloneForm((current) => ({ ...current, mentorUserId: event.target.value }))}>
-                    <option value="">Brak mentora</option>
-                    {mentorUsers.map((user) => (
-                      <option key={user.id} value={String(user.id)}>
-                        {user.fullName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button className="btn btn-primary">Dodaj uczelnię</button>
-              </form>
-            </div>
-            <div className="dashboard-card">
               <h2>Szablony uczelni w systemie</h2>
               <div className="list">
-                {guides.map((guide) => (
+                {editableGuideTemplates.map((guide) => (
                   <div className="list-item" key={guide.id}>
                     <header>
                       <div>
@@ -3060,6 +2922,19 @@ function MenteeSection({
     ...(materialTemplates ?? []),
     ...derivedMaterialTemplates,
   ];
+  const guideMaterialsMap = new Map(
+    (guides ?? []).map((guide: any) => [
+      guide.id,
+      visibleMaterialTemplates
+        .filter((template: any) => templateAppliesToGuide(template, guide))
+        .map((template: any) => ({
+          ...template,
+          visibleRows: Array.isArray(template.structure)
+            ? template.structure.filter((row: any) => rowAppliesToGuide(row, guide))
+            : [],
+        })),
+    ]),
+  );
 
   useEffect(() => {
     if (section === "universities" || section === "materials" || section === "profile" || section === "meetings") {
@@ -3151,15 +3026,51 @@ function MenteeSection({
                   </summary>
                   <div style={{ marginTop: 12 }}>
                     <p className="muted">{guide.summary}</p>
-                    <div className="list">
-                      {(guide.items ?? []).map((item: any) => (
-                        <div className="list-item" key={item.id ?? `${guide.id}-${item.title}`}>
-                          <h3>{item.title}</h3>
-                          <div className="muted small">{item.sectionTitle} • {item.itemType}</div>
-                          <p className="muted">{item.description}</p>
-                        </div>
-                      ))}
-                    </div>
+                    {guide.descriptionMarkdown ? (
+                      <div className="status" style={{ marginBottom: 12 }}>
+                        {guide.descriptionMarkdown}
+                      </div>
+                    ) : null}
+                    {guideMaterialsMap.get(guide.id)?.length ? (
+                      <div className="list">
+                        {guideMaterialsMap.get(guide.id)?.map((template: any) => (
+                          <div className="list-item" key={`${guide.id}-${template.id}`}>
+                            <h3>{template.title}</h3>
+                            <div className="muted small">{materialTemplateTypeLabel(template.templateType)}</div>
+                            {template.description ? <p className="muted">{template.description}</p> : null}
+                            {template.visibleRows?.length ? (
+                              <div className="list" style={{ marginTop: 10 }}>
+                                {template.visibleRows.map((row: any, index: number) => (
+                                  <div className="list-item" key={`${guide.id}-${template.id}-row-${index}`}>
+                                    <h3>{row.task || "Zadanie"}</h3>
+                                    {row.guideId ? (
+                                      <div className="small muted">Do tego elementu są przypisane osobne wskazówki.</div>
+                                    ) : null}
+                                    {row.alternativeOptions?.length ? (
+                                      <div className="small muted" style={{ marginTop: 6 }}>
+                                        Alternatywnie: {row.alternativeOptions.join(" • ")}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (guide.items ?? []).length ? (
+                      <div className="list">
+                        {(guide.items ?? []).map((item: any) => (
+                          <div className="list-item" key={item.id ?? `${guide.id}-${item.title}`}>
+                            <h3>{item.title}</h3>
+                            <div className="muted small">{item.sectionTitle} • {item.itemType}</div>
+                            <p className="muted">{item.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="status">Dla tej uczelni nie ma jeszcze przypiętych materiałów.</div>
+                    )}
                   </div>
                 </details>
               ))}

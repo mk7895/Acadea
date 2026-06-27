@@ -1529,6 +1529,12 @@ router.get(
       ...uniqueGuides.map((guide) => guide.id),
       ...assignedGuideTemplates.map((guide) => guide.id),
     ]));
+    const accessibleTemplateIds = Array.from(new Set([
+      ...assignedGuideTemplates.map((guide) => guide.id),
+      ...uniqueGuides
+        .map((guide) => guide.sourceGuideId ?? guide.id)
+        .filter((value): value is number => Number.isFinite(value)),
+    ]));
     const activeSourceGuideIds = new Set(
       uniqueGuides.map((guide) => guide.sourceGuideId ?? guide.id).filter((value): value is number => Number.isFinite(value)),
     );
@@ -1543,7 +1549,7 @@ router.get(
       }
       return array.findIndex((entry) => (entry.sourceGuideId ?? entry.id) === sourceId) === index;
     });
-    const materialTemplates = accessibleGuideIds.length
+    const materialTemplates = accessibleTemplateIds.length
       ? await db
           .select()
           .from(platformMaterialTemplatesTable)
@@ -1552,7 +1558,7 @@ router.get(
       : [];
     const visibleMaterials = materialTemplates.filter((template) => {
       const applies = template.appliesToGuideIds ?? [];
-      return applies.length === 0 || applies.some((guideId: number) => accessibleGuideIds.includes(guideId));
+      return applies.length === 0 || applies.some((guideId: number) => accessibleTemplateIds.includes(guideId));
     });
 
     return res.json({
