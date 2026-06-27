@@ -465,3 +465,52 @@ export async function sendContactEmails(input: {
 
   return { organizerSent, autoresponseSent };
 }
+
+export async function sendPlatformPasswordResetEmail(input: {
+  email: string;
+  fullName: string;
+  resetUrl: string;
+}) {
+  const senderEmail = getGoogleGmailSendAs() ?? (await getGoogleAccountEmail());
+
+  if (!senderEmail || !(await hasGoogleGmailCredentials())) {
+    logger.warn("Unable to send platform password reset email because Gmail credentials are incomplete");
+    return { sent: false };
+  }
+
+  const subject = "ACADEA Platform: zmiana hasła";
+  const text = [
+    `Cześć ${input.fullName},`,
+    "",
+    "otrzymaliśmy prośbę o ustawienie nowego hasła do platformy ACADEA.",
+    "Kliknij w poniższy link, aby ustawić nowe hasło:",
+    input.resetUrl,
+    "",
+    "Link wygaśnie za 30 minut.",
+    "",
+    "Jeśli to nie Ty wysłałeś prośbę, zignoruj tę wiadomość.",
+    "",
+    "Pozdrawiamy,",
+    "Zespół ACADEA",
+  ].join("\n");
+
+  const html = renderEmailShell({
+    title: "Zmiana hasła do platformy",
+    intro: `Cześć ${input.fullName}, otrzymaliśmy prośbę o ustawienie nowego hasła do platformy ACADEA.`,
+    bodyHtml: `<p style="margin:0 0 14px;">Kliknij w poniższy link, aby ustawić nowe hasło:</p><p style="margin:0;"><a href="${escapeHtml(input.resetUrl)}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:${BRAND_PRIMARY};color:#ffffff;text-decoration:none;font-weight:700;">Ustaw nowe hasło</a></p><p style="margin:16px 0 0;">Jeśli przycisk nie działa, skopiuj ten adres do przeglądarki:<br /><span style="word-break:break-all;">${escapeHtml(input.resetUrl)}</span></p><p style="margin:16px 0 0;">Link wygaśnie za 30 minut. Jeśli to nie Ty wysłałeś prośbę, po prostu zignoruj tę wiadomość.</p>`,
+  });
+
+  try {
+    const sent = await sendGmailMessage({
+      from: senderEmail,
+      to: { email: input.email, name: input.fullName },
+      subject,
+      text,
+      html,
+    });
+    return { sent };
+  } catch (err) {
+    logger.warn({ err }, "platform password reset email failed");
+    return { sent: false };
+  }
+}

@@ -5,6 +5,7 @@ import bookingRouter from "./booking";
 import googleAuthRouter from "./googleAuth";
 import articlesRouter from "./articles";
 import adminRouter from "./admin";
+import platformRouter from "./platform";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use("/booking", bookingRouter);
 router.use(googleAuthRouter);
 router.use(articlesRouter);
 router.use(adminRouter);
+router.use(platformRouter);
 
 export default router;

@@ -25,4 +25,5 @@ export * from "./contact";
 export * from "./google-auth";
 export * from "./mentor-application";
 export * from "./newsletter-signup";
+export * from "./platform";
 export * from "./scholarship-application";

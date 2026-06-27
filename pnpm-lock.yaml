@@ -57,6 +57,9 @@ catalogs:
     vite:
       specifier: ^7.3.2
       version: 7.3.3
+    wouter:
+      specifier: ^3.3.5
+      version: 3.10.0
     zod:
       specifier: 3.25.76
       version: 3.25.76
@@ -154,6 +157,34 @@ importers:
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
+
+  artifacts/acadea-platform:
+    dependencies:
+      react:
+        specifier: 'catalog:'
+        version: 19.1.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.1.0(react@19.1.0)
+      wouter:
+        specifier: 'catalog:'
+        version: 3.10.0(react@19.1.0)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.6.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.3(@types/react@19.2.14)
+      '@vitejs/plugin-react':
+        specifier: 'catalog:'
+        version: 5.2.0(vite@7.3.3(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4))
+      vite:
+        specifier: 'catalog:'
+        version: 7.3.3(@types/node@25.6.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.4)
 
   artifacts/acadea-website:
     dependencies:
