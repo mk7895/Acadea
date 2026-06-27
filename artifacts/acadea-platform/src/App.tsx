@@ -54,6 +54,7 @@ type MaterialRowEditor = {
   country: string;
   guideId: string;
   level: "country" | "university" | "item";
+  ownerUserId?: number | null;
   task: string;
   university: string;
 };
@@ -588,7 +589,9 @@ function Dashboard({
         ["overview", "Przegląd"],
         ["users", "Użytkownicy"],
         ["guides", "Szablony uczelni"],
-        ["designer", "Projektant"],
+        ["profile-designer", "Projektant Twoich Danych"],
+        ["materials-designer", "Projektant Kafli Materiałów"],
+        ["item-guides", "Wskazówki do Elementów"],
         ["leads", "Leady"],
       ];
     }
@@ -598,6 +601,7 @@ function Dashboard({
         ["profile", "Profil"],
         ["availability", "Dostępność"],
         ["guides", "Przewodniki"],
+        ["materials", "Kafle materiałów"],
         ["meetings", "Spotkania"],
       ];
     }
@@ -748,6 +752,15 @@ function AdminSection({
     sortOrder: 0,
   });
   const [materialEditorId, setMaterialEditorId] = useState<string>("new");
+  const [itemGuideEditorId, setItemGuideEditorId] = useState<string>("new");
+  const [itemGuideForm, setItemGuideForm] = useState({
+    sourceGuideId: "",
+    title: "",
+    slug: "",
+    summary: "",
+    descriptionMarkdown: "",
+    status: "draft",
+  });
   const [materialForm, setMaterialForm] = useState({
     title: "",
     description: "",
@@ -772,6 +785,7 @@ function AdminSection({
   const sourceGuideTemplates = guides.filter(
     (guide) => guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint",
   );
+  const itemGuides = guides.filter((guide) => guide.sourceGuideId);
 
   function serializeGuideItemsToText(items: any[] = []) {
     return items
@@ -953,6 +967,30 @@ function AdminSection({
     });
   }
 
+  function resetItemGuideForm() {
+    setItemGuideEditorId("new");
+    setItemGuideForm({
+      sourceGuideId: "",
+      title: "",
+      slug: "",
+      summary: "",
+      descriptionMarkdown: "",
+      status: "draft",
+    });
+  }
+
+  function loadItemGuideIntoEditor(guide: any) {
+    setItemGuideEditorId(String(guide.id));
+    setItemGuideForm({
+      sourceGuideId: guide.sourceGuideId ? String(guide.sourceGuideId) : "",
+      title: guide.title ?? "",
+      slug: guide.slug ?? "",
+      summary: guide.summary ?? "",
+      descriptionMarkdown: guide.descriptionMarkdown ?? "",
+      status: guide.status ?? "draft",
+    });
+  }
+
   function loadMaterialIntoEditor(material: any) {
     setMaterialEditorId(String(material.id));
     setMaterialForm({
@@ -961,13 +999,14 @@ function AdminSection({
       templateType: material.templateType ?? "passport_like",
       guideId: material.guideId ? String(material.guideId) : "",
       appliesToGuideIds: (material.appliesToGuideIds ?? []).map((id: number) => String(id)),
-      rows: (material.structure ?? []).length
+          rows: (material.structure ?? []).length
         ? (material.structure ?? []).map((row: any) => ({
             alternativeOptions: Array.isArray(row.alternativeOptions) ? row.alternativeOptions.filter(Boolean) : [],
             appliesToGuideIds: Array.isArray(row.appliesToGuideIds) ? row.appliesToGuideIds.map((id: any) => String(id)) : [],
             country: row.country ?? "",
             guideId: row.guideId ? String(row.guideId) : "",
             level: row.level === "country" || row.level === "university" || row.level === "item" ? row.level : "item",
+            ownerUserId: row.ownerUserId ?? null,
             task: row.task ?? "",
             university: row.university ?? "",
           }))
@@ -1030,7 +1069,7 @@ function AdminSection({
     if (section === "guides") {
       void refreshGuides().catch((error) => setStatus(error.message));
     }
-    if (section === "designer") {
+    if (section === "profile-designer" || section === "materials-designer" || section === "item-guides") {
       void Promise.all([refreshGuides(), refreshDesigner()]).catch((error) => setStatus(error.message));
     }
     if (section === "leads") {
@@ -1096,7 +1135,7 @@ function AdminSection({
       sourceGuideId: guideForm.sourceGuideId ? Number(guideForm.sourceGuideId) : null,
       driveFolderUrl: guideForm.driveFolderUrl,
       isVisibleToUnapprovedUsers: guideForm.isVisibleToUnapprovedUsers,
-      items: parseGuideItemsFromText(guideForm.itemsText),
+      items: [],
     };
 
     try {
@@ -1149,17 +1188,19 @@ function AdminSection({
     const appliesToGuideIds = materialForm.appliesToGuideIds
       .map((value) => Number(value))
       .filter((value) => Number.isFinite(value) && value > 0);
+    const allowedGuideIds = new Set(appliesToGuideIds);
     const structure = materialForm.rows
       .map((row) => ({
         alternativeOptions: row.alternativeOptions.filter(Boolean),
         appliesToGuideIds: row.appliesToGuideIds
           .map((value) => Number(value))
-          .filter((value) => Number.isFinite(value) && value > 0),
+          .filter((value) => Number.isFinite(value) && value > 0 && allowedGuideIds.has(value)),
         country: row.country.trim(),
-        guideId: row.guideId ? Number(row.guideId) : null,
+        guideId: row.level === "item" && row.guideId ? Number(row.guideId) : null,
         level: row.level,
-        task: row.task.trim(),
-        university: row.university.trim(),
+        ownerUserId: row.ownerUserId ?? null,
+        task: row.level === "item" ? row.task.trim() : "",
+        university: row.level === "country" ? "" : row.university.trim(),
       }))
       .filter((row) => row.country || row.university || row.task);
     const payload = {
@@ -1185,6 +1226,52 @@ function AdminSection({
       setStatus("Szablon materiału został zaktualizowany.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać szablonu materiału.");
+    }
+  }
+
+  async function saveItemGuide(event: React.FormEvent) {
+    event.preventDefault();
+    setStatus("");
+    const sourceGuide = sourceGuideTemplates.find((guide) => String(guide.id) === itemGuideForm.sourceGuideId);
+    if (!sourceGuide) {
+      setStatus("Wybierz uczelnię bazową dla tych wskazówek.");
+      return;
+    }
+
+    const payload = {
+      guideType: sourceGuide.guideType === "mentor_blueprint" ? "mentor_blueprint" : "admin_template",
+      status: itemGuideForm.status,
+      title: itemGuideForm.title,
+      slug: itemGuideForm.slug || itemGuideForm.title,
+      country: sourceGuide.country,
+      universityName: sourceGuide.universityName,
+      summary: itemGuideForm.summary,
+      descriptionMarkdown: itemGuideForm.descriptionMarkdown,
+      estimatedReadMin: 8,
+      menteeUserId: null,
+      sourceGuideId: sourceGuide.id,
+      driveFolderUrl: "",
+      isVisibleToUnapprovedUsers: false,
+      items: [],
+    };
+
+    try {
+      if (itemGuideEditorId === "new") {
+        await apiFetch("/admin/guides", { method: "POST", body: JSON.stringify(payload) }, token);
+        await refreshGuides();
+        resetItemGuideForm();
+        setStatus("Wskazówki do elementu zostały dodane.");
+        return;
+      }
+
+      await apiFetch(`/admin/guides/${itemGuideEditorId}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }, token);
+      await refreshGuides();
+      setStatus("Wskazówki do elementu zostały zaktualizowane.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać wskazówek.");
     }
   }
 
@@ -1532,11 +1619,10 @@ function AdminSection({
                   <textarea value={guideForm.descriptionMarkdown} onChange={(event) => setGuideForm((current) => ({ ...current, descriptionMarkdown: event.target.value }))} />
                 </div>
                 <div className="field">
-                  <label>Lista zadań: sekcja|tytuł|opis|typ</label>
-                  <textarea value={guideForm.itemsText} onChange={(event) => setGuideForm((current) => ({ ...current, itemsText: event.target.value }))} />
-                </div>
-                <div className="status">
-                  Każdy wiersz to jedno wymaganie uczelni. Typy techniczne są tymczasowe. W następnym kroku możemy zamienić to na pełen wizualny builder.
+                  <label>Zakres tego szablonu</label>
+                  <div className="status">
+                    Wymagania i materiały budujesz już wyłącznie w projektancie kafli materiałów. Tutaj ustawiasz tylko metadane uczelni oraz opis.
+                  </div>
                 </div>
                 <div className="button-row">
                   <button className="btn btn-primary">{editingGuideId === "new" ? "Utwórz szablon uczelni" : "Zapisz zmiany"}</button>
@@ -1764,7 +1850,6 @@ function AdminSection({
                       </span>
                     </header>
                     <p className="muted">{guide.summary}</p>
-                    <div className="small muted">{guide.items?.length ?? 0} pozycji checklisty</div>
                     <div className="button-row" style={{ marginTop: 12 }}>
                       <button className="btn btn-secondary" onClick={() => loadGuideIntoEditor(guide)} type="button">
                         Edytuj
@@ -1796,7 +1881,7 @@ function AdminSection({
           </div>
         </div>
       ) : null}
-      {section === "designer" ? (
+      {section === "profile-designer" ? (
         <div className="stack">
           <div className="split">
             <div className="dashboard-card">
@@ -1900,176 +1985,97 @@ function AdminSection({
               </div>
             </div>
           </div>
-          <div className="split">
-            <div className="dashboard-card">
-              <h2>Projektant „Twoich Materiałów”</h2>
-              <p className="muted">
-                Tutaj tworzysz kafle materiałów widoczne u mentee. Najpierw zakładasz kafel, potem zaznaczasz, dla których uczelni ma się pokazywać.
-              </p>
-              <form className="stack" onSubmit={saveMaterialTemplate}>
-                <div className="grid-2">
-                  <div className="field">
-                    <label>Nazwa tile’a</label>
-                    <input value={materialForm.title} onChange={(event) => setMaterialForm((current) => ({ ...current, title: event.target.value }))} />
-                  </div>
-                  <div className="field">
-                    <label>Typ</label>
-                    <select value={materialForm.templateType} onChange={(event) => setMaterialForm((current) => ({ ...current, templateType: event.target.value }))}>
-                      <option value="passport_like">Wspólne dokumenty</option>
-                      <option value="essay_like">Eseje i zadania</option>
-                    </select>
-                  </div>
+        </div>
+      ) : null}
+      {section === "materials-designer" ? (
+        <div className="split">
+          <div className="dashboard-card">
+            <h2>Projektant Kafli Materiałów</h2>
+            <p className="muted">
+              Tutaj tworzysz kafle materiałów widoczne u mentee. Najpierw zakładasz kafel, potem zaznaczasz, dla których uczelni ma się pokazywać.
+            </p>
+            <form className="stack" onSubmit={saveMaterialTemplate}>
+              <div className="grid-2">
+                <div className="field">
+                  <label>Nazwa kafla</label>
+                  <input value={materialForm.title} onChange={(event) => setMaterialForm((current) => ({ ...current, title: event.target.value }))} />
                 </div>
                 <div className="field">
-                  <label>Opis</label>
-                  <textarea value={materialForm.description} onChange={(event) => setMaterialForm((current) => ({ ...current, description: event.target.value }))} />
-                </div>
-                <div className="field">
-                  <label>Powiązane wskazówki pomocnicze (opcjonalnie)</label>
-                  <select value={materialForm.guideId} onChange={(event) => setMaterialForm((current) => ({ ...current, guideId: event.target.value }))}>
-                    <option value="">Brak</option>
-                    {guides.map((guide) => (
-                      <option key={guide.id} value={String(guide.id)}>
-                        {guide.universityName} • {guide.title}
-                      </option>
-                    ))}
+                  <label>Typ</label>
+                  <select value={materialForm.templateType} onChange={(event) => setMaterialForm((current) => ({ ...current, templateType: event.target.value }))}>
+                    <option value="passport_like">Wspólne dokumenty</option>
+                    <option value="essay_like">Eseje i zadania</option>
                   </select>
                 </div>
-                <div className="field">
-                  <label>Do których uczelni ten kafel się stosuje</label>
-                  <div className="list">
-                    {sourceGuideTemplates.map((guide) => {
-                      const checked = materialForm.appliesToGuideIds.includes(String(guide.id));
-                      return (
-                        <label className="list-item" key={`material-guide-checkbox-${guide.id}`} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <input
-                            checked={checked}
-                            type="checkbox"
-                            onChange={() =>
-                              setMaterialForm((current) => ({
-                                ...current,
-                                appliesToGuideIds: checked
-                                  ? current.appliesToGuideIds.filter((id) => id !== String(guide.id))
-                                  : [...current.appliesToGuideIds, String(guide.id)],
-                              }))
-                            }
-                          />
-                          <span>
-                            <strong>{guide.universityName}</strong>
-                            <span className="small muted" style={{ display: "block" }}>{guide.country} • {guide.title}</span>
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
+              </div>
+              <div className="field">
+                <label>Opis</label>
+                <textarea value={materialForm.description} onChange={(event) => setMaterialForm((current) => ({ ...current, description: event.target.value }))} />
+              </div>
+              <div className="field">
+                <label>Ogólne wskazówki dla całego kafla (opcjonalnie)</label>
+                <select value={materialForm.guideId} onChange={(event) => setMaterialForm((current) => ({ ...current, guideId: event.target.value }))}>
+                  <option value="">Brak</option>
+                  {itemGuides.map((guide) => (
+                    <option key={guide.id} value={String(guide.id)}>
+                      {guide.universityName} • {guide.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>Do których uczelni ten kafel się stosuje</label>
+                <div className="list">
+                  {sourceGuideTemplates.map((guide) => {
+                    const checked = materialForm.appliesToGuideIds.includes(String(guide.id));
+                    return (
+                      <label className="list-item" key={`material-guide-checkbox-${guide.id}`} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <input
+                          checked={checked}
+                          type="checkbox"
+                          onChange={() =>
+                            setMaterialForm((current) => ({
+                              ...current,
+                              appliesToGuideIds: checked
+                                ? current.appliesToGuideIds.filter((id) => id !== String(guide.id))
+                                : [...current.appliesToGuideIds, String(guide.id)],
+                            }))
+                          }
+                        />
+                        <span>
+                          <strong>{guide.universityName}</strong>
+                          <span className="small muted" style={{ display: "block" }}>{guide.country} • {guide.title}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
-                <div className="field">
-                  <label>Wiersze wewnątrz kafla</label>
-                  <div className="stack">
-                    {materialForm.rows.map((row, index) => (
+              </div>
+              <div className="field">
+                <label>Wiersze wewnątrz kafla</label>
+                <div className="stack">
+                  {materialForm.rows.map((row, index) => {
+                    const allowedGuideIds = new Set(materialForm.appliesToGuideIds);
+                    const rowGuideChoices = sourceGuideTemplates.filter((guide) => allowedGuideIds.has(String(guide.id)));
+                    return (
                       <div className="list-item" key={`material-row-${index}`}>
                         <header>
                           <div>
                             <h3>Wiersz {index + 1}</h3>
-                            <div className="muted small">Każdy wiersz może dotyczyć innych uczelni i mieć własne wskazówki.</div>
+                            <div className="muted small">Każdy wiersz może dotyczyć wielu uczelni z tego kafla i mieć własne wskazówki.</div>
                           </div>
                           <div className="button-row">
-                            <button className="btn btn-secondary" onClick={() => moveMaterialRow(index, -1)} type="button">
-                              W górę
-                            </button>
-                            <button className="btn btn-secondary" onClick={() => moveMaterialRow(index, 1)} type="button">
-                              W dół
-                            </button>
-                            <button className="btn btn-secondary" onClick={() => addMaterialRow(index)} type="button">
-                              Dodaj nad
-                            </button>
-                            <button className="btn btn-secondary" onClick={() => addMaterialRow(index + 1)} type="button">
-                              Dodaj pod
-                            </button>
-                            <button className="btn btn-secondary" onClick={() => removeMaterialRow(index)} type="button">
-                              Usuń
-                            </button>
+                            <button className="btn btn-secondary" onClick={() => moveMaterialRow(index, -1)} type="button">W górę</button>
+                            <button className="btn btn-secondary" onClick={() => moveMaterialRow(index, 1)} type="button">W dół</button>
+                            <button className="btn btn-secondary" onClick={() => addMaterialRow(index)} type="button">Dodaj nad</button>
+                            <button className="btn btn-secondary" onClick={() => addMaterialRow(index + 1)} type="button">Dodaj pod</button>
+                            <button className="btn btn-secondary" onClick={() => removeMaterialRow(index)} type="button">Usuń</button>
                           </div>
                         </header>
-                        <div className="grid-2">
-                          <div className="field">
-                            <label>Poziom formatowania</label>
-                            <select
-                              value={row.level}
-                              onChange={(event) =>
-                                updateMaterialRow(index, (current) => ({
-                                  ...current,
-                                  level: event.target.value as MaterialRowEditor["level"],
-                                }))
-                              }
-                            >
-                              <option value="country">Poziom kraju</option>
-                              <option value="university">Poziom uczelni</option>
-                              <option value="item">Poziom pojedynczego zadania</option>
-                            </select>
-                          </div>
-                          <div className="field">
-                            <label>Link do wskazówek dla tego wiersza</label>
-                            <select
-                              value={row.guideId}
-                              onChange={(event) =>
-                                updateMaterialRow(index, (current) => ({
-                                  ...current,
-                                  guideId: event.target.value,
-                                }))
-                              }
-                            >
-                              <option value="">Brak</option>
-                              {guides.map((guide) => (
-                                <option key={`row-guide-${guide.id}`} value={String(guide.id)}>
-                                  {guide.universityName} • {guide.title}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                        <div className="grid-2">
-                          <div className="field">
-                            <label>Kraj</label>
-                            <input
-                              value={row.country}
-                              onChange={(event) =>
-                                updateMaterialRow(index, (current) => ({
-                                  ...current,
-                                  country: event.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="field">
-                            <label>Uczelnia</label>
-                            <input
-                              value={row.university}
-                              onChange={(event) =>
-                                updateMaterialRow(index, (current) => ({
-                                  ...current,
-                                  university: event.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                        </div>
                         <div className="field">
-                          <label>Nazwa elementu / zadania</label>
-                          <input
-                            value={row.task}
-                            onChange={(event) =>
-                              updateMaterialRow(index, (current) => ({
-                                ...current,
-                                task: event.target.value,
-                              }))
-                            }
-                          />
-                        </div>
-                        <div className="field">
-                          <label>Dla których uczelni ten wiersz jest wymagany</label>
+                          <label>Do których uczelni ten wiersz jest wymagany</label>
                           <div className="list">
-                            {sourceGuideTemplates.map((guide) => {
+                            {rowGuideChoices.map((guide) => {
                               const checked = row.appliesToGuideIds.includes(String(guide.id));
                               return (
                                 <label className="list-item" key={`row-guide-assignment-${index}-${guide.id}`} style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -2092,90 +2098,249 @@ function AdminSection({
                                 </label>
                               );
                             })}
+                            {!rowGuideChoices.length ? <div className="small muted">Najpierw przypisz uczelnie do całego kafla.</div> : null}
                           </div>
                         </div>
                         <div className="field">
-                          <label>Alternatywne sposoby wykonania tego wiersza, po jednej opcji w linii</label>
-                          <textarea
-                            value={row.alternativeOptions.join("\n")}
+                          <label>Poziom formatowania</label>
+                          <select
+                            value={row.level}
                             onChange={(event) =>
                               updateMaterialRow(index, (current) => ({
                                 ...current,
-                                alternativeOptions: event.target.value
-                                  .split("\n")
-                                  .map((line) => line.trim())
-                                  .filter(Boolean),
+                                level: event.target.value as MaterialRowEditor["level"],
+                              }))
+                            }
+                          >
+                            <option value="country">Kraj</option>
+                            <option value="university">Uczelnia</option>
+                            <option value="item">Element / zadanie</option>
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label>Kraj</label>
+                          <input
+                            value={row.country}
+                            onChange={(event) =>
+                              updateMaterialRow(index, (current) => ({
+                                ...current,
+                                country: event.target.value,
                               }))
                             }
                           />
                         </div>
+                        {row.level !== "country" ? (
+                          <div className="field">
+                            <label>Uczelnia</label>
+                            <input
+                              value={row.university}
+                              onChange={(event) =>
+                                updateMaterialRow(index, (current) => ({
+                                  ...current,
+                                  university: event.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                        ) : null}
+                        {row.level === "item" ? (
+                          <>
+                            <div className="field">
+                              <label>Nazwa elementu / zadania</label>
+                              <input
+                                value={row.task}
+                                onChange={(event) =>
+                                  updateMaterialRow(index, (current) => ({
+                                    ...current,
+                                    task: event.target.value,
+                                  }))
+                                }
+                              />
+                            </div>
+                            <div className="field">
+                              <label>Link do wskazówek</label>
+                              <select
+                                value={row.guideId}
+                                onChange={(event) =>
+                                  updateMaterialRow(index, (current) => ({
+                                    ...current,
+                                    guideId: event.target.value,
+                                  }))
+                                }
+                              >
+                                <option value="">Brak</option>
+                                {itemGuides.map((guide) => (
+                                  <option key={`row-guide-${guide.id}`} value={String(guide.id)}>
+                                    {guide.universityName} • {guide.title}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="field">
+                              <label>Alternatywne sposoby wykonania, po jednej opcji w linii</label>
+                              <textarea
+                                value={row.alternativeOptions.join("\n")}
+                                onChange={(event) =>
+                                  updateMaterialRow(index, (current) => ({
+                                    ...current,
+                                    alternativeOptions: event.target.value.split("\n").map((line) => line.trim()).filter(Boolean),
+                                  }))
+                                }
+                              />
+                            </div>
+                          </>
+                        ) : null}
                       </div>
-                    ))}
-                  </div>
-                  <div className="button-row" style={{ marginTop: 12 }}>
-                    <button className="btn btn-secondary" onClick={() => addMaterialRow()} type="button">
-                      Dodaj nowy wiersz na końcu
+                    );
+                  })}
+                </div>
+                <div className="button-row" style={{ marginTop: 12 }}>
+                  <button className="btn btn-secondary" onClick={() => addMaterialRow()} type="button">Dodaj nowy wiersz na końcu</button>
+                </div>
+              </div>
+              <div className="field">
+                <label>Aktywny</label>
+                <select value={String(materialForm.isActive)} onChange={(event) => setMaterialForm((current) => ({ ...current, isActive: event.target.value === "true" }))}>
+                  <option value="true">tak</option>
+                  <option value="false">nie</option>
+                </select>
+              </div>
+              <div className="button-row">
+                <button className="btn btn-primary">{materialEditorId === "new" ? "Dodaj materiał" : "Zapisz materiał"}</button>
+                <button className="btn btn-secondary" onClick={resetMaterialForm} type="button">Nowy materiał</button>
+              </div>
+            </form>
+          </div>
+          <div className="dashboard-card">
+            <h2>Szablony materiałów</h2>
+            <div className="list">
+              {materialTemplates.map((template) => (
+                <div className="list-item" key={template.id}>
+                  <header>
+                    <div>
+                      <h3>{template.title}</h3>
+                      <div className="muted small">{materialTemplateTypeLabel(template.templateType)} • {(template.appliesToGuideIds ?? []).length} powiązań uczelni</div>
+                    </div>
+                    <span className="badge">{template.isActive ? "active" : "inactive"}</span>
+                  </header>
+                  <p className="muted">{template.description}</p>
+                  <div className="button-row">
+                    <button className="btn btn-secondary" onClick={() => loadMaterialIntoEditor(template)} type="button">Edytuj</button>
+                    <button
+                      className="btn btn-secondary"
+                      disabled={designerActionId === template.id}
+                      onClick={async () => {
+                        setDesignerActionId(template.id);
+                        try {
+                          await apiFetch(`/admin/material-templates/${template.id}`, { method: "DELETE" }, token);
+                          await refreshDesigner();
+                          if (materialEditorId === String(template.id)) {
+                            resetMaterialForm();
+                          }
+                          setStatus("Szablon materiału został usunięty.");
+                        } catch (error) {
+                          setStatus(error instanceof Error ? error.message : "Nie udało się usunąć szablonu materiału.");
+                        } finally {
+                          setDesignerActionId(null);
+                        }
+                      }}
+                      type="button"
+                    >
+                      Usuń
                     </button>
                   </div>
                 </div>
-                <div className="field">
-                  <label>Aktywny</label>
-                  <select value={String(materialForm.isActive)} onChange={(event) => setMaterialForm((current) => ({ ...current, isActive: event.target.value === "true" }))}>
-                    <option value="true">tak</option>
-                    <option value="false">nie</option>
-                  </select>
-                </div>
-                <div className="button-row">
-                  <button className="btn btn-primary">{materialEditorId === "new" ? "Dodaj materiał" : "Zapisz materiał"}</button>
-                  <button className="btn btn-secondary" onClick={resetMaterialForm} type="button">
-                    Nowy materiał
-                  </button>
-                </div>
-              </form>
+              ))}
             </div>
-            <div className="dashboard-card">
-              <h2>Szablony materiałów</h2>
-              <div className="list">
-                {materialTemplates.map((template) => (
-                  <div className="list-item" key={template.id}>
-                    <header>
-                      <div>
-                        <h3>{template.title}</h3>
-                        <div className="muted small">{materialTemplateTypeLabel(template.templateType)} • {(template.appliesToGuideIds ?? []).length} powiązań uczelni</div>
-                      </div>
-                      <span className="badge">{template.isActive ? "active" : "inactive"}</span>
-                    </header>
-                    <p className="muted">{template.description}</p>
-                    <div className="button-row">
-                      <button className="btn btn-secondary" onClick={() => loadMaterialIntoEditor(template)} type="button">
-                        Edytuj
-                      </button>
-                      <button
-                        className="btn btn-secondary"
-                        disabled={designerActionId === template.id}
-                        onClick={async () => {
-                          setDesignerActionId(template.id);
-                          try {
-                            await apiFetch(`/admin/material-templates/${template.id}`, { method: "DELETE" }, token);
-                            await refreshDesigner();
-                            if (materialEditorId === String(template.id)) {
-                              resetMaterialForm();
-                            }
-                            setStatus("Szablon materiału został usunięty.");
-                          } catch (error) {
-                            setStatus(error instanceof Error ? error.message : "Nie udało się usunąć szablonu materiału.");
-                          } finally {
-                            setDesignerActionId(null);
-                          }
-                        }}
-                        type="button"
-                      >
-                        Usuń
-                      </button>
-                    </div>
-                  </div>
-                ))}
+          </div>
+        </div>
+      ) : null}
+      {section === "item-guides" ? (
+        <div className="split">
+          <div className="dashboard-card">
+            <h2>Wskazówki do Elementów</h2>
+            <p className="muted">Tutaj tworzysz osobne treści pomocnicze, które potem można podpiąć do konkretnego wiersza w kaflu materiałów.</p>
+            <form className="stack" onSubmit={saveItemGuide}>
+              <div className="field">
+                <label>Uczelnia bazowa</label>
+                <select value={itemGuideForm.sourceGuideId} onChange={(event) => setItemGuideForm((current) => ({ ...current, sourceGuideId: event.target.value }))}>
+                  <option value="">Wybierz uczelnię bazową</option>
+                  {sourceGuideTemplates.map((guide) => (
+                    <option key={guide.id} value={String(guide.id)}>
+                      {guide.universityName} • {guide.title}
+                    </option>
+                  ))}
+                </select>
               </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label>Tytuł wskazówek</label>
+                  <input value={itemGuideForm.title} onChange={(event) => setItemGuideForm((current) => ({ ...current, title: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>Slug</label>
+                  <input value={itemGuideForm.slug} onChange={(event) => setItemGuideForm((current) => ({ ...current, slug: event.target.value }))} />
+                </div>
+              </div>
+              <div className="field">
+                <label>Krótki opis</label>
+                <textarea value={itemGuideForm.summary} onChange={(event) => setItemGuideForm((current) => ({ ...current, summary: event.target.value }))} />
+              </div>
+              <div className="field">
+                <label>Treść wskazówek</label>
+                <textarea value={itemGuideForm.descriptionMarkdown} onChange={(event) => setItemGuideForm((current) => ({ ...current, descriptionMarkdown: event.target.value }))} />
+              </div>
+              <div className="field">
+                <label>Status</label>
+                <select value={itemGuideForm.status} onChange={(event) => setItemGuideForm((current) => ({ ...current, status: event.target.value }))}>
+                  <option value="draft">draft</option>
+                  <option value="published">published</option>
+                  <option value="archived">archived</option>
+                </select>
+              </div>
+              <div className="button-row">
+                <button className="btn btn-primary">{itemGuideEditorId === "new" ? "Dodaj wskazówki" : "Zapisz wskazówki"}</button>
+                <button className="btn btn-secondary" onClick={resetItemGuideForm} type="button">Nowe wskazówki</button>
+              </div>
+            </form>
+          </div>
+          <div className="dashboard-card">
+            <h2>Istniejące wskazówki</h2>
+            <div className="list">
+              {itemGuides.map((guide) => (
+                <div className="list-item" key={guide.id}>
+                  <header>
+                    <div>
+                      <h3>{guide.title}</h3>
+                      <div className="muted small">{guide.country} • {guide.universityName}</div>
+                    </div>
+                    <span className="badge">{guide.status}</span>
+                  </header>
+                  <p className="muted">{guide.summary}</p>
+                  <div className="button-row">
+                    <button className="btn btn-secondary" onClick={() => loadItemGuideIntoEditor(guide)} type="button">Edytuj</button>
+                    <button
+                      className="btn btn-secondary"
+                      disabled={guideActionId === guide.id}
+                      onClick={() =>
+                        void runGuideAction(
+                          guide.id,
+                          async () => {
+                            await apiFetch(`/admin/guides/${guide.id}`, { method: "DELETE" }, token);
+                            if (itemGuideEditorId === String(guide.id)) {
+                              resetItemGuideForm();
+                            }
+                          },
+                          "Wskazówki zostały usunięte.",
+                        )
+                      }
+                      type="button"
+                    >
+                      Usuń
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -2254,21 +2419,22 @@ function MentorSection({
   const [availability, setAvailability] = useState([{ weekday: 1, startTime: "16:00", endTime: "18:00", isActive: true }]);
   const [universities, setUniversities] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
+  const [sourceGuides, setSourceGuides] = useState<any[]>([]);
+  const [mentorMaterialTemplates, setMentorMaterialTemplates] = useState<any[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [status, setStatus] = useState("");
   const [universityForm, setUniversityForm] = useState({ country: "", universityName: "", programName: "", summary: "" });
   const [guideForm, setGuideForm] = useState({
     guideType: "mentor_blueprint",
     status: "draft",
+    sourceGuideId: "",
     title: "",
     slug: "",
-    country: "",
-    universityName: "",
     summary: "",
     descriptionMarkdown: "",
-    estimatedReadMin: 8,
-    itemsText: "Checklist|Personal statement|Napisz pierwszy szkic eseju\ntodo",
   });
+  const [mentorMaterialEditorId, setMentorMaterialEditorId] = useState<string>("");
+  const [mentorMaterialRows, setMentorMaterialRows] = useState<MaterialRowEditor[]>([createEmptyMaterialRow()]);
 
   useEffect(() => {
     if (section === "profile" || section === "availability") {
@@ -2281,7 +2447,16 @@ function MentorSection({
         .catch((error) => setStatus(error.message));
     }
     if (section === "guides") {
-      void apiFetch<any[]>("/mentor/guides", undefined, token).then(setGuides).catch((error) => setStatus(error.message));
+      void Promise.all([
+        apiFetch<any[]>("/mentor/guides", undefined, token).then(setGuides),
+        apiFetch<any[]>("/mentor/source-guides", undefined, token).then(setSourceGuides),
+      ]).catch((error) => setStatus(error.message));
+    }
+    if (section === "materials") {
+      void Promise.all([
+        apiFetch<any[]>("/mentor/guides", undefined, token).then(setGuides),
+        apiFetch<any>("/mentor/material-templates", undefined, token).then((payload) => setMentorMaterialTemplates(payload.templates ?? [])),
+      ]).catch((error) => setStatus(error.message));
     }
     if (section === "meetings") {
       void apiFetch<any[]>("/mentor/meetings", undefined, token).then(setMeetings).catch((error) => setStatus(error.message));
@@ -2337,39 +2512,82 @@ function MentorSection({
 
   async function createGuide(event: React.FormEvent) {
     event.preventDefault();
-    const items = guideForm.itemsText
-      .split("\n")
-      .map((line, index) => line.trim())
-      .filter(Boolean)
-      .map((line, index) => {
-        const [sectionTitle, title, description = "", itemType = "todo"] = line.split("|");
-        return {
-          sortOrder: index,
-          sectionTitle: sectionTitle || "Checklist",
-          title: title || line,
-          description,
-          itemType,
-          suggestedFilename: "",
-          externalUrl: "",
-          linkedGuideItemId: null,
-          isRequired: true,
-          isCompleted: false,
-          fileUrl: "",
-        };
-      });
+    const sourceGuide = sourceGuides.find((guide) => String(guide.id) === guideForm.sourceGuideId);
+    if (!sourceGuide) {
+      setStatus("Wybierz bazową uczelnię dla tego case'u mentora.");
+      return;
+    }
 
     try {
       const created = await apiFetch<any>("/mentor/guides", {
         method: "POST",
         body: JSON.stringify({
-          ...guideForm,
-          items,
+          guideType: "mentor_blueprint",
+          status: guideForm.status,
+          title: guideForm.title,
+          slug: guideForm.slug || guideForm.title,
+          country: sourceGuide.country,
+          universityName: sourceGuide.universityName,
+          summary: guideForm.summary,
+          descriptionMarkdown: guideForm.descriptionMarkdown,
+          estimatedReadMin: 8,
+          sourceGuideId: Number(guideForm.sourceGuideId),
+          menteeUserId: null,
+          driveFolderUrl: "",
+          isVisibleToUnapprovedUsers: false,
+          items: [],
         }),
       }, token);
       setGuides((current) => [created, ...current]);
-      setStatus("Przewodnik został utworzony.");
+      setGuideForm({
+        guideType: "mentor_blueprint",
+        status: "draft",
+        sourceGuideId: "",
+        title: "",
+        slug: "",
+        summary: "",
+        descriptionMarkdown: "",
+      });
+      setStatus("Case mentora został utworzony.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się utworzyć przewodnika.");
+    }
+  }
+
+  function loadMentorMaterialTemplate(template: any) {
+    setMentorMaterialEditorId(String(template.id));
+    setMentorMaterialRows(
+      (template.structure ?? [])
+        .filter((row: any) => Number(row.ownerUserId ?? 0) === Number(session.user.id))
+        .map((row: any) => ({
+          alternativeOptions: Array.isArray(row.alternativeOptions) ? row.alternativeOptions.filter(Boolean) : [],
+          appliesToGuideIds: Array.isArray(row.appliesToGuideIds) ? row.appliesToGuideIds.map((id: any) => String(id)) : [],
+          country: row.country ?? "",
+          guideId: row.guideId ? String(row.guideId) : "",
+          level: row.level === "country" || row.level === "university" || row.level === "item" ? row.level : "item",
+          ownerUserId: row.ownerUserId ?? session.user.id,
+          task: row.task ?? "",
+          university: row.university ?? "",
+        })) || [createEmptyMaterialRow()],
+    );
+  }
+
+  async function saveMentorMaterialRows() {
+    if (!mentorMaterialEditorId) {
+      setStatus("Wybierz najpierw kafel materiałów.");
+      return;
+    }
+    setStatus("");
+    try {
+      await apiFetch(`/mentor/material-templates/${mentorMaterialEditorId}/rows`, {
+        method: "PUT",
+        body: JSON.stringify({ rows: mentorMaterialRows }),
+      }, token);
+      const payload = await apiFetch<any>("/mentor/material-templates", undefined, token);
+      setMentorMaterialTemplates(payload.templates ?? []);
+      setStatus("Twoje wiersze w kaflu materiałów zostały zapisane.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać wierszy materiałów.");
     }
   }
 
@@ -2550,11 +2768,22 @@ function MentorSection({
       {section === "guides" ? (
         <div className="split">
           <div className="dashboard-card">
-            <h2>Nowy blueprint aplikacji</h2>
+            <h2>Nowy case mentora</h2>
             <form className="stack" onSubmit={createGuide}>
+              <div className="field">
+                <label>Uczelnia bazowa</label>
+                <select value={guideForm.sourceGuideId} onChange={(event) => setGuideForm((current) => ({ ...current, sourceGuideId: event.target.value }))}>
+                  <option value="">Wybierz istniejącą uczelnię</option>
+                  {sourceGuides.map((guide) => (
+                      <option key={guide.id} value={String(guide.id)}>
+                        {guide.universityName} • {guide.country}
+                      </option>
+                    ))}
+                </select>
+              </div>
               <div className="grid-2">
                 <div className="field">
-                  <label>Tytuł</label>
+                  <label>Własna nazwa case'u</label>
                   <input value={guideForm.title} onChange={(event) => setGuideForm((current) => ({ ...current, title: event.target.value }))} />
                 </div>
                 <div className="field">
@@ -2562,29 +2791,22 @@ function MentorSection({
                   <input value={guideForm.slug} onChange={(event) => setGuideForm((current) => ({ ...current, slug: event.target.value }))} />
                 </div>
               </div>
-              <div className="grid-2">
-                <div className="field">
-                  <label>Kraj</label>
-                  <input value={guideForm.country} onChange={(event) => setGuideForm((current) => ({ ...current, country: event.target.value }))} />
-                </div>
-                <div className="field">
-                  <label>Uczelnia</label>
-                  <input value={guideForm.universityName} onChange={(event) => setGuideForm((current) => ({ ...current, universityName: event.target.value }))} />
-                </div>
+              <div className="field">
+                <label>Krótki opis</label>
+                <textarea value={guideForm.summary} onChange={(event) => setGuideForm((current) => ({ ...current, summary: event.target.value }))} />
               </div>
               <div className="field">
-                <label>Opis</label>
+                <label>Opis case'u</label>
                 <textarea value={guideForm.descriptionMarkdown} onChange={(event) => setGuideForm((current) => ({ ...current, descriptionMarkdown: event.target.value }))} />
               </div>
-              <div className="field">
-                <label>Checklist lines: sekcja|tytuł|opis|typ</label>
-                <textarea value={guideForm.itemsText} onChange={(event) => setGuideForm((current) => ({ ...current, itemsText: event.target.value }))} />
+              <div className="status">
+                Same wymagania i materiały dodajesz później przez kafle materiałów. Tutaj tworzysz tylko własny case dla istniejącej uczelni.
               </div>
-              <button className="btn btn-primary">Utwórz blueprint</button>
+              <button className="btn btn-primary">Utwórz case mentora</button>
             </form>
           </div>
           <div className="dashboard-card">
-            <h2>Twoje przewodniki</h2>
+            <h2>Twoje case'y</h2>
             <div className="list">
               {guides.map((guide) => (
                 <div className="list-item" key={guide.id}>
@@ -2600,10 +2822,174 @@ function MentorSection({
                     </span>
                   </header>
                   <p className="muted">{guide.summary}</p>
-                  <div className="small muted">{guide.items?.length ?? 0} pozycji checklisty</div>
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      ) : null}
+      {section === "materials" ? (
+        <div className="split">
+          <div className="dashboard-card">
+            <h2>Kafle materiałów mentora</h2>
+            <p className="muted">Wybierz istniejący kafel i dopisz do niego własne wiersze tylko dla swoich uczelni.</p>
+            <div className="list">
+              {mentorMaterialTemplates.map((template) => (
+                <div className="list-item" key={template.id}>
+                  <header>
+                    <div>
+                      <h3>{template.title}</h3>
+                      <div className="muted small">{materialTemplateTypeLabel(template.templateType)}</div>
+                    </div>
+                    <button className="btn btn-secondary" onClick={() => loadMentorMaterialTemplate(template)} type="button">
+                      Edytuj wiersze
+                    </button>
+                  </header>
+                  <p className="muted">{template.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="dashboard-card">
+            <h2>Twoje wiersze w wybranym kaflu</h2>
+            {!mentorMaterialEditorId ? (
+              <div className="status">Wybierz najpierw kafel materiałów z lewej strony.</div>
+            ) : (
+              <div className="stack">
+                {mentorMaterialRows.map((row, index) => (
+                  <div className="list-item" key={`mentor-row-${index}`}>
+                    <header>
+                      <h3>Wiersz {index + 1}</h3>
+                      <div className="button-row">
+                        <button className="btn btn-secondary" onClick={() => setMentorMaterialRows((current) => current.filter((_, rowIndex) => rowIndex !== index) || [createEmptyMaterialRow()])} type="button">Usuń</button>
+                      </div>
+                    </header>
+                    <div className="field">
+                      <label>Do których Twoich uczelni ten wiersz należy</label>
+                      <div className="list">
+                        {guides.filter((guide) => guide.guideType === "mentor_blueprint").map((guide) => {
+                          const checked = row.appliesToGuideIds.includes(String(guide.id));
+                          return (
+                            <label className="list-item" key={`mentor-row-guide-${index}-${guide.id}`} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <input
+                                checked={checked}
+                                type="checkbox"
+                                onChange={() =>
+                                  setMentorMaterialRows((current) =>
+                                    current.map((entry, rowIndex) =>
+                                      rowIndex === index
+                                        ? {
+                                            ...entry,
+                                            appliesToGuideIds: checked
+                                              ? entry.appliesToGuideIds.filter((id) => id !== String(guide.id))
+                                              : [...entry.appliesToGuideIds, String(guide.id)],
+                                          }
+                                        : entry,
+                                    ),
+                                  )
+                                }
+                              />
+                              <span>{guide.universityName} • {guide.title}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="field">
+                      <label>Poziom</label>
+                      <select
+                        value={row.level}
+                        onChange={(event) =>
+                          setMentorMaterialRows((current) =>
+                            current.map((entry, rowIndex) => rowIndex === index ? { ...entry, level: event.target.value as MaterialRowEditor["level"] } : entry),
+                          )
+                        }
+                      >
+                        <option value="country">Kraj</option>
+                        <option value="university">Uczelnia</option>
+                        <option value="item">Element / zadanie</option>
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label>Kraj</label>
+                      <input
+                        value={row.country}
+                        onChange={(event) =>
+                          setMentorMaterialRows((current) =>
+                            current.map((entry, rowIndex) => rowIndex === index ? { ...entry, country: event.target.value } : entry),
+                          )
+                        }
+                      />
+                    </div>
+                    {row.level !== "country" ? (
+                      <div className="field">
+                        <label>Uczelnia</label>
+                        <input
+                          value={row.university}
+                          onChange={(event) =>
+                            setMentorMaterialRows((current) =>
+                              current.map((entry, rowIndex) => rowIndex === index ? { ...entry, university: event.target.value } : entry),
+                            )
+                          }
+                        />
+                      </div>
+                    ) : null}
+                    {row.level === "item" ? (
+                      <>
+                        <div className="field">
+                          <label>Nazwa elementu / zadania</label>
+                          <input
+                            value={row.task}
+                            onChange={(event) =>
+                              setMentorMaterialRows((current) =>
+                                current.map((entry, rowIndex) => rowIndex === index ? { ...entry, task: event.target.value } : entry),
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="field">
+                          <label>Link do wskazówek</label>
+                          <select
+                            value={row.guideId}
+                            onChange={(event) =>
+                              setMentorMaterialRows((current) =>
+                                current.map((entry, rowIndex) => rowIndex === index ? { ...entry, guideId: event.target.value } : entry),
+                              )
+                            }
+                          >
+                            <option value="">Brak</option>
+                            {guides.filter((guide) => guide.guideType === "mentor_blueprint").map((guide) => (
+                              <option key={`mentor-item-guide-${guide.id}`} value={String(guide.id)}>
+                                {guide.universityName} • {guide.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label>Alternatywne sposoby wykonania, po jednej opcji w linii</label>
+                          <textarea
+                            value={row.alternativeOptions.join("\n")}
+                            onChange={(event) =>
+                              setMentorMaterialRows((current) =>
+                                current.map((entry, rowIndex) =>
+                                  rowIndex === index
+                                    ? { ...entry, alternativeOptions: event.target.value.split("\n").map((line) => line.trim()).filter(Boolean) }
+                                    : entry,
+                                ),
+                              )
+                            }
+                          />
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                ))}
+                <div className="button-row">
+                  <button className="btn btn-secondary" onClick={() => setMentorMaterialRows((current) => [...current, createEmptyMaterialRow()])} type="button">Dodaj wiersz</button>
+                  <button className="btn btn-primary" onClick={() => void saveMentorMaterialRows()} type="button">Zapisz wiersze</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : null}

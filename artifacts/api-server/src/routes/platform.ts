@@ -195,6 +195,10 @@ const materialTemplateSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
+const mentorMaterialRowsSchema = z.object({
+  rows: z.array(z.record(z.string(), z.unknown())).default([]),
+});
+
 const assignMentorAccessSchema = z.object({
   menteeUserId: z.number().int().positive(),
   mentorUserId: z.number().int().positive(),
@@ -1135,6 +1139,123 @@ router.get(
       .orderBy(desc(platformGuidesTable.updatedAt), asc(platformGuidesTable.title));
 
     return res.json(await shapeGuideList(db, guides));
+  },
+);
+
+router.get(
+  "/platform/mentor/source-guides",
+  requirePlatformAuth,
+  requirePlatformRole("mentor"),
+  async (_req, res) => {
+    const { db } = await import("@workspace/db");
+    const guides = await db
+      .select()
+      .from(platformGuidesTable)
+      .where(eq(platformGuidesTable.guideType, "admin_template"))
+      .orderBy(asc(platformGuidesTable.country), asc(platformGuidesTable.universityName));
+    return res.json(await shapeGuideList(db, guides));
+  },
+);
+
+router.get(
+  "/platform/mentor/material-templates",
+  requirePlatformAuth,
+  requirePlatformRole("mentor"),
+  async (req: AuthenticatedRequest, res) => {
+    const { db } = await import("@workspace/db");
+    const mentorGuides = await db
+      .select()
+      .from(platformGuidesTable)
+      .where(
+        and(
+          eq(platformGuidesTable.ownerUserId, req.platformUser!.id),
+          eq(platformGuidesTable.guideType, "mentor_blueprint"),
+        ),
+      )
+      .orderBy(desc(platformGuidesTable.updatedAt));
+    const templates = await db
+      .select()
+      .from(platformMaterialTemplatesTable)
+      .where(eq(platformMaterialTemplatesTable.isActive, true))
+      .orderBy(asc(platformMaterialTemplatesTable.templateType), asc(platformMaterialTemplatesTable.title));
+
+    return res.json({
+      guides: await shapeGuideList(db, mentorGuides),
+      templates,
+    });
+  },
+);
+
+router.put(
+  "/platform/mentor/material-templates/:id/rows",
+  requirePlatformAuth,
+  requirePlatformRole("mentor"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = mentorMaterialRowsSchema.safeParse(req.body);
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid material template id." : parsed.error.message });
+    }
+
+    const { db } = await import("@workspace/db");
+    const [template] = await db
+      .select()
+      .from(platformMaterialTemplatesTable)
+      .where(eq(platformMaterialTemplatesTable.id, id))
+      .limit(1);
+    if (!template) {
+      return res.status(404).json({ error: "Nie znaleziono kafla materiałów." });
+    }
+
+    const mentorGuides = await db
+      .select({ id: platformGuidesTable.id })
+      .from(platformGuidesTable)
+      .where(
+        and(
+          eq(platformGuidesTable.ownerUserId, req.platformUser!.id),
+          eq(platformGuidesTable.guideType, "mentor_blueprint"),
+        ),
+      );
+    const mentorGuideIds = new Set(mentorGuides.map((guide) => guide.id));
+
+    let sanitizedRows: Array<Record<string, unknown>>;
+    try {
+      sanitizedRows = parsed.data.rows.map((row) => {
+        const appliesToGuideIds = Array.isArray(row.appliesToGuideIds)
+          ? row.appliesToGuideIds.map((value) => Number(value)).filter((value) => Number.isFinite(value) && mentorGuideIds.has(value))
+          : [];
+        const guideId = row.guideId ? Number(row.guideId) : null;
+        if (guideId && !mentorGuideIds.has(guideId)) {
+          throw new Error("Mentor może podpinać własne wskazówki tylko do własnych uczelni.");
+        }
+        return {
+          alternativeOptions: Array.isArray(row.alternativeOptions) ? row.alternativeOptions.filter((value) => typeof value === "string") : [],
+          appliesToGuideIds,
+          country: typeof row.country === "string" ? row.country : "",
+          guideId,
+          level: row.level === "country" || row.level === "university" || row.level === "item" ? row.level : "item",
+          ownerUserId: req.platformUser!.id,
+          task: typeof row.task === "string" ? row.task : "",
+          university: typeof row.university === "string" ? row.university : "",
+        };
+      });
+    } catch (error) {
+      return res.status(422).json({ error: error instanceof Error ? error.message : "Nie udało się zapisać wierszy." });
+    }
+
+    const existingRows = Array.isArray(template.structure) ? template.structure : [];
+    const preservedRows = existingRows.filter((row: any) => Number(row?.ownerUserId ?? 0) !== req.platformUser!.id);
+
+    const [updated] = await db
+      .update(platformMaterialTemplatesTable)
+      .set({
+        structure: [...preservedRows, ...sanitizedRows],
+        updatedAt: new Date(),
+      })
+      .where(eq(platformMaterialTemplatesTable.id, id))
+      .returning();
+
+    return res.json(updated);
   },
 );
 
