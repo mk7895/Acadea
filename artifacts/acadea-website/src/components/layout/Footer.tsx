@@ -153,7 +153,6 @@ export function Footer() {
           <p>&copy; {new Date().getFullYear()} ACADEA. Wszelkie prawa zastrzeżone.</p>
           <div className="flex items-center gap-6">
             <Link href="/polityka-prywatnosci" className="hover:text-white transition-colors">Polityka Prywatności</Link>
-            <Link href="/polityka-cookies" className="hover:text-white transition-colors">Polityka Cookies</Link>
             <Link href="/regulamin" className="hover:text-white transition-colors">Regulamin</Link>
             <button onClick={openPreferences} className="hover:text-white transition-colors">
               Ustawienia cookies

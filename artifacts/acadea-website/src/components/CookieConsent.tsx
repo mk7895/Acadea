@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link } from "wouter";
 import {
   COOKIE_CONSENT_COOKIE_NAME,
   TIMEZONE_COOKIE_NAME,
@@ -147,12 +146,7 @@ function CookieConsentBanner() {
             <h2 className="text-2xl font-bold text-primary mb-2">Szanujemy Twoją prywatność</h2>
             <p className="text-sm text-gray-600 leading-relaxed">
               Używamy niezbędnych cookies do działania strony oraz opcjonalnych cookies preferencji,
-              analitycznych i marketingowych. Preferencje mogą zapamiętać np. wybraną strefę czasową.
-              Więcej informacji znajdziesz w{" "}
-              <Link href="/polityka-cookies" className="font-semibold text-primary hover:underline">
-                polityce cookies
-              </Link>
-              .
+              analitycznych i marketingowych. Więcej informacji znajdziesz w polityce prywatności.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
@@ -224,7 +218,7 @@ function CookiePreferencesModal() {
           />
           <CookieRow
             title="Preferencje"
-            description="Pozwalają zapamiętać np. wybraną strefę czasową przy rezerwacji konsultacji."
+            description="Pozwalają zapamiętać ustawienia strony, takie jak wybrana strefa czasowa."
             checked={draft.preferences}
             onChange={(checked) => updateDraft({ preferences: checked })}
           />

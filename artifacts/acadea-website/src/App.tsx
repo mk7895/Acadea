@@ -22,7 +22,6 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import Regulamin from "@/pages/Regulamin";
 import ArticlePage from "@/pages/ArticlePage";
 import AdminArticles from "@/pages/AdminArticles";
-import CookiePolicy from "@/pages/CookiePolicy";
 import { CookieConsentProvider } from "@/components/CookieConsent";
 
 const queryClient = new QueryClient();
@@ -92,7 +91,6 @@ function Router() {
         <Route path="/umow-spotkanie" component={Booking} />
         <Route path="/mentoruj" component={MentorForm} />
         <Route path="/polityka-prywatnosci" component={PrivacyPolicy} />
-        <Route path="/polityka-cookies" component={CookiePolicy} />
         <Route path="/regulamin" component={Regulamin} />
         <Route path="/panel" component={AdminArticles} />
         <Route component={NotFound} />

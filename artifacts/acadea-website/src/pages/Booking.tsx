@@ -23,17 +23,17 @@ import { useCookieConsent } from "@/components/CookieConsent";
 const API_BASE = getApiBase();
 const DEFAULT_TIMEZONE = "Europe/Warsaw";
 const TIMEZONE_OPTIONS = [
-  { value: "Europe/Warsaw", label: "Polska (Europe/Warsaw)" },
-  { value: "Europe/London", label: "Wielka Brytania (Europe/London)" },
-  { value: "Europe/Paris", label: "Europa Zachodnia (Europe/Paris)" },
-  { value: "America/New_York", label: "USA Wschód (America/New_York)" },
-  { value: "America/Chicago", label: "USA Central (America/Chicago)" },
-  { value: "America/Denver", label: "USA Góry (America/Denver)" },
-  { value: "America/Los_Angeles", label: "USA Zachód (America/Los_Angeles)" },
-  { value: "Asia/Dubai", label: "Zatoka Perska (Asia/Dubai)" },
-  { value: "Asia/Singapore", label: "Singapur (Asia/Singapore)" },
-  { value: "Asia/Tokyo", label: "Japonia (Asia/Tokyo)" },
-  { value: "Australia/Sydney", label: "Australia (Australia/Sydney)" },
+  { value: "Europe/Warsaw", label: "Polska" },
+  { value: "Europe/London", label: "Wielka Brytania" },
+  { value: "Europe/Paris", label: "Europa Zachodnia" },
+  { value: "America/New_York", label: "USA Wschód" },
+  { value: "America/Chicago", label: "USA Central" },
+  { value: "America/Denver", label: "USA Góry Skaliste" },
+  { value: "America/Los_Angeles", label: "USA Zachód" },
+  { value: "Asia/Dubai", label: "Zatoka Perska" },
+  { value: "Asia/Singapore", label: "Singapur" },
+  { value: "Asia/Tokyo", label: "Japonia" },
+  { value: "Australia/Sydney", label: "Australia" },
 ] as const;
 
 type Slot = { start: string; end: string; label: string };
@@ -104,7 +104,7 @@ function findTimezoneOption(value: string) {
 }
 
 export default function Booking() {
-  const { canUsePreferencesCookies, consent } = useCookieConsent();
+  const { canUsePreferencesCookies } = useCookieConsent();
   const [step, setStep] = useState(0);
   const [rawSlots, setRawSlots] = useState<Slot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(true);
@@ -161,8 +161,6 @@ export default function Booking() {
     () => selectedDay?.slots.find((slot) => slot.start === selectedSlotStart) ?? null,
     [selectedDay, selectedSlotStart],
   );
-  const timezoneLabel = findTimezoneOption(timezone)?.label ?? timezone;
-
   const validateForm = () => {
     const err: Record<string, string> = {};
     if (!form.name.trim() || form.name.trim().length < 2) err.name = "Wpisz imię i nazwisko.";
@@ -255,24 +253,16 @@ export default function Booking() {
 
         {step < 3 && (
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 mb-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#8d806b] mb-2">
-                  Strefa czasowa
-                </p>
-                <h2 className="text-lg font-bold text-primary flex items-center gap-2">
-                  <Globe2 size={18} /> Wyświetl dostępne terminy w swojej strefie
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Terminy konsultacji są pokazywane zgodnie z wybraną strefą czasową. Rezerwacje są
-                  dostępne dopiero od 24 godzin od teraz.
-                </p>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-2 text-base font-semibold text-primary">
+                <Globe2 size={18} />
+                <span>Wybierz strefę czasową</span>
               </div>
-              <div className="w-full md:w-[320px]">
+              <div className="w-full md:w-[360px]">
                 <select
                   value={timezone}
                   onChange={(event) => setTimezone(event.target.value)}
-                  className="flex h-11 w-full appearance-none rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="flex h-11 w-full appearance-none rounded-2xl border border-gray-200 bg-white px-4 pr-10 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   {TIMEZONE_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -282,12 +272,7 @@ export default function Booking() {
                 </select>
               </div>
             </div>
-            {!canUsePreferencesCookies ? (
-              <p className="text-xs text-gray-400 mt-3">
-                Ten wybór działa już teraz, ale zostanie zapamiętany na przyszłość dopiero po akceptacji
-                cookies preferencji.
-              </p>
-            ) : consent ? (
+            {canUsePreferencesCookies ? (
               <p className="text-xs text-gray-400 mt-3">
                 Wybrana strefa czasowa będzie zapamiętana w cookies preferencji.
               </p>
@@ -324,10 +309,6 @@ export default function Booking() {
                 <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
                   <Calendar size={20} /> Wybierz dzień
                 </h2>
-                <p className="text-sm text-gray-500 mb-5">
-                  Godziny są teraz wyświetlane w strefie:{" "}
-                  <strong className="text-primary">{timezoneLabel}</strong>.
-                </p>
                 {loadingSlots && (
                   <div className="flex items-center justify-center py-16 text-gray-400 gap-3">
                     <Loader2 size={24} className="animate-spin" />
@@ -367,9 +348,6 @@ export default function Booking() {
                   <Clock size={20} /> Wybierz godzinę
                 </h2>
                 <p className="text-sm text-gray-400 mb-6 capitalize">{selectedDay.label}</p>
-                <p className="text-sm text-gray-500 mb-5">
-                  Godziny poniżej są wyświetlane w strefie: <strong className="text-primary">{timezoneLabel}</strong>.
-                </p>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                   {selectedDay.slots.map((slot) => (
                     <button
