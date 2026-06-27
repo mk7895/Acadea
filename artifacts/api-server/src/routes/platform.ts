@@ -56,6 +56,13 @@ const resetRequestSchema = z.object({
   turnstileToken: z.string().optional(),
 });
 
+const menteeSignupSchema = z.object({
+  fullName: z.string().trim().min(1),
+  email: z.string().trim().email(),
+  password: z.string().min(8),
+  turnstileToken: z.string().optional(),
+});
+
 const resetPasswordSchema = z.object({
   token: z.string().min(1),
   password: z.string().min(8),
@@ -454,6 +461,54 @@ router.post("/platform/auth/login", async (req, res) => {
   return res.json({
     token: session.token,
     user: serializeUser(updatedUser),
+  });
+});
+
+router.post("/platform/auth/signup-mentee", async (req, res) => {
+  const parsed = menteeSignupSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(422).json({ error: parsed.error.message });
+  }
+
+  const turnstile = await verifyTurnstileToken(req, parsed.data.turnstileToken);
+  if (!turnstile.ok) {
+    return res.status(400).json({ error: turnstile.message });
+  }
+
+  const { db } = await import("@workspace/db");
+  const existing = await db
+    .select({ id: platformUsersTable.id })
+    .from(platformUsersTable)
+    .where(eq(platformUsersTable.email, parsed.data.email.toLowerCase()))
+    .limit(1);
+
+  if (existing.length > 0) {
+    return res.status(409).json({ error: "Konto z tym adresem e-mail już istnieje." });
+  }
+
+  const { hash, salt } = hashPassword(parsed.data.password);
+  const [user] = await db
+    .insert(platformUsersTable)
+    .values({
+      role: "mentee",
+      status: "pending",
+      fullName: parsed.data.fullName,
+      email: parsed.data.email.toLowerCase(),
+      passwordHash: hash,
+      passwordSalt: salt,
+    })
+    .returning();
+
+  await db.insert(menteeProfilesTable).values({
+    userId: user.id,
+    adminApproved: false,
+  });
+
+  const session = await createPlatformSession(user.id);
+
+  return res.status(201).json({
+    token: session.token,
+    user: serializeUser(user),
   });
 });
 

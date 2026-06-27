@@ -175,6 +175,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
   const [resetKey, setResetKey] = useState(0);
   const [status, setStatus] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [mode, setMode] = useState<"login" | "signup">("login");
 
   useEffect(() => {
     apiFetch<BootstrapStatus>("/bootstrap/status")
@@ -228,6 +229,30 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
     }
   }
 
+  async function handleSignup(event: React.FormEvent) {
+    event.preventDefault();
+    setSubmitting(true);
+    setStatus("");
+    try {
+      const payload = await apiFetch<{ token: string }>("/auth/signup-mentee", {
+        method: "POST",
+        body: JSON.stringify({
+          fullName,
+          email,
+          password,
+          turnstileToken,
+        }),
+      });
+      onLogin(payload.token);
+      navigate("/");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się utworzyć konta.");
+      setResetKey((current) => current + 1);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   const isBootstrap = bootstrapStatus?.hasAdmin === false;
 
   return (
@@ -236,10 +261,30 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
       subtitle={
         isBootstrap
           ? "To pierwsze uruchomienie platformy. Utwórz konto administratora, a potem z panelu dodasz mentorów i mentees."
-          : "Shell platformy jest już gotowy pod role admina, mentora i mentee, a integracje Google można później podpiąć bez zmiany architektury."
+          : mode === "signup"
+            ? "Załóż konto mentee. Konta mentorów są dodawane przez administratora."
+            : "Zaloguj się do panelu ACADEA."
       }
     >
-      <form className="stack" onSubmit={isBootstrap ? handleBootstrap : handleLogin}>
+      {!isBootstrap ? (
+        <div className="button-row" style={{ marginBottom: 18 }}>
+          <button
+            className={`btn ${mode === "login" ? "btn-primary" : "btn-secondary"}`}
+            onClick={() => setMode("login")}
+            type="button"
+          >
+            Logowanie
+          </button>
+          <button
+            className={`btn ${mode === "signup" ? "btn-primary" : "btn-secondary"}`}
+            onClick={() => setMode("signup")}
+            type="button"
+          >
+            Rejestracja mentee
+          </button>
+        </div>
+      ) : null}
+      <form className="stack" onSubmit={isBootstrap ? handleBootstrap : mode === "signup" ? handleSignup : handleLogin}>
         {isBootstrap && (
           <>
             <div className="field">
@@ -252,6 +297,12 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
             </div>
           </>
         )}
+        {!isBootstrap && mode === "signup" ? (
+          <div className="field">
+            <label>Imię i nazwisko</label>
+            <input value={fullName} onChange={(event) => setFullName(event.target.value)} />
+          </div>
+        ) : null}
         <div className="field">
           <label>E-mail</label>
           <input value={email} type="email" onChange={(event) => setEmail(event.target.value)} />
@@ -266,9 +317,9 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
         {status ? <div className="status">{status}</div> : null}
         <div className="button-row">
           <button className="btn btn-primary" disabled={submitting} type="submit">
-            {isBootstrap ? "Utwórz administratora" : "Zaloguj się"}
+            {isBootstrap ? "Utwórz administratora" : mode === "signup" ? "Załóż konto" : "Zaloguj się"}
           </button>
-          {!isBootstrap ? (
+          {!isBootstrap && mode === "login" ? (
             <Link className="btn btn-secondary" href="/forgot-password">
               Nie pamiętasz hasła?
             </Link>
@@ -500,6 +551,7 @@ function AdminSection({
     scholarship: 0,
   });
   const [status, setStatus] = useState("");
+  const [leadDeletingId, setLeadDeletingId] = useState<number | null>(null);
   const [userForm, setUserForm] = useState({
     email: "",
     fullName: "",
@@ -507,6 +559,35 @@ function AdminSection({
     role: "mentor",
     status: "active",
   });
+
+  async function refreshLeadState(selectedKind: LeadKind) {
+    const [selectedRows, countEntries] = await Promise.all([
+      apiFetch<any[]>(`/admin/leads/${selectedKind}`, undefined, token),
+      Promise.all(
+        (["contact", "mentor", "scholarship", "newsletter", "booking"] as LeadKind[]).map(async (kind) => {
+          const rows = await apiFetch<any[]>(`/admin/leads/${kind}`, undefined, token);
+          return [kind, rows.length] as const;
+        }),
+      ),
+    ]);
+
+    setLeads(selectedRows);
+    setLeadCounts(
+      countEntries.reduce(
+        (accumulator, [kind, count]) => {
+          accumulator[kind] = count;
+          return accumulator;
+        },
+        {
+          booking: 0,
+          contact: 0,
+          mentor: 0,
+          newsletter: 0,
+          scholarship: 0,
+        } as Record<LeadKind, number>,
+      ),
+    );
+  }
 
   useEffect(() => {
     if (section === "overview") {
@@ -521,34 +602,7 @@ function AdminSection({
       void apiFetch<any[]>("/admin/guides", undefined, token).then(setGuides).catch((error) => setStatus(error.message));
     }
     if (section === "leads") {
-      void Promise.all([
-        apiFetch<any[]>(`/admin/leads/${leadType}`, undefined, token),
-        Promise.all(
-          (["contact", "mentor", "scholarship", "newsletter", "booking"] as LeadKind[]).map(async (kind) => {
-            const rows = await apiFetch<any[]>(`/admin/leads/${kind}`, undefined, token);
-            return [kind, rows.length] as const;
-          }),
-        ),
-      ])
-        .then(([selectedRows, countEntries]) => {
-          setLeads(selectedRows);
-          setLeadCounts(
-            countEntries.reduce(
-              (accumulator, [kind, count]) => {
-                accumulator[kind] = count;
-                return accumulator;
-              },
-              {
-                booking: 0,
-                contact: 0,
-                mentor: 0,
-                newsletter: 0,
-                scholarship: 0,
-              } as Record<LeadKind, number>,
-            ),
-          );
-        })
-        .catch((error) => setStatus(error.message));
+      void refreshLeadState(leadType).catch((error) => setStatus(error.message));
     }
   }, [leadType, section, token]);
 
@@ -566,15 +620,27 @@ function AdminSection({
     }
   }
 
+  async function deleteLead(id: number) {
+    setLeadDeletingId(id);
+    setStatus("");
+    try {
+      await apiFetch(`/admin/leads/${leadType}/${id}`, { method: "DELETE" }, token);
+      await refreshLeadState(leadType);
+      setStatus("Rekord został usunięty.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się usunąć rekordu.");
+    } finally {
+      setLeadDeletingId(null);
+    }
+  }
+
   return (
     <>
       {status ? <div className="status">{status}</div> : null}
       {section === "overview" && overview ? (
         <div className="dashboard-card">
           <h2>Przegląd platformy</h2>
-          <p className="muted">
-            Ten shell ma już osobne role, osobne bazy danych dla aktywności, oraz warstwę pod późniejsze Google Calendar, Drive i Meet.
-          </p>
+          <p className="muted">Najważniejsze dane operacyjne platformy w jednym miejscu.</p>
           <div className="stats-grid" style={{ marginTop: 18 }}>
             {Object.entries(overview.counts).map(([key, value]) => (
               <div className="stat" key={key}>
@@ -696,7 +762,19 @@ function AdminSection({
                           <h3>{summary.title}</h3>
                           <div className="muted small">{summary.meta}</div>
                         </div>
-                        <span className="badge">{formatDate(typeof lead.createdAt === "string" ? lead.createdAt : null)}</span>
+                        <div className="button-row" style={{ justifyContent: "flex-end" }}>
+                          <span className="badge">{formatDate(typeof lead.createdAt === "string" ? lead.createdAt : null)}</span>
+                          {typeof lead.id === "number" ? (
+                            <button
+                              className="btn btn-secondary"
+                              disabled={leadDeletingId === lead.id}
+                              onClick={() => void deleteLead(lead.id)}
+                              type="button"
+                            >
+                              Usuń
+                            </button>
+                          ) : null}
+                        </div>
                       </header>
                       <p className="muted">{summary.body}</p>
                       <details className="small">
@@ -711,12 +789,6 @@ function AdminSection({
           </div>
         </div>
       ) : null}
-      <div className="dashboard-card">
-        <h2>Stan infrastruktury</h2>
-        <p className="muted">
-          R2: {session.storage.configured ? `gotowe (${session.storage.bucket})` : "jeszcze niepodpięte"}.
-        </p>
-      </div>
     </>
   );
 }
@@ -859,9 +931,7 @@ function MentorSection({
       {section === "overview" ? (
         <div className="dashboard-card">
           <h2>Mentor dashboard</h2>
-          <p className="muted">
-            Masz już miejsce na bio, uczelnie, dostępność, blueprinty guide’ów, statusy spotkań i przygotowane rekordy pod Google Calendar, Drive oraz auto-generated Meet.
-          </p>
+          <p className="muted">Tutaj zarządzasz profilem, przewodnikami, dostępnością i spotkaniami.</p>
           <div className="tile-grid" style={{ marginTop: 18 }}>
             <div className="tile">
               <div className="small muted">Połączenia Google</div>
@@ -870,10 +940,6 @@ function MentorSection({
             <div className="tile">
               <div className="small muted">Domyślny czas spotkania</div>
               <strong>30 min</strong>
-            </div>
-            <div className="tile">
-              <div className="small muted">R2 gotowe</div>
-              <strong>{session.storage.configured ? "tak" : "nie"}</strong>
             </div>
           </div>
         </div>
@@ -1182,9 +1248,7 @@ function MenteeSection({
       {section === "overview" && overview ? (
         <div className="dashboard-card">
           <h2>Twoje konto mentee</h2>
-          <p className="muted">
-            Jeśli administrator już Cię zatwierdził, możesz umawiać spotkania, adoptować adminowe guide’y i później przejść do pełnej współpracy z mentorem bez zmiany modelu danych.
-          </p>
+          <p className="muted">W tym panelu zarządzasz swoimi przewodnikami, dostępem i spotkaniami.</p>
           <div className="tile-grid" style={{ marginTop: 18 }}>
             <div className="tile">
               <div className="small muted">Przewodniki</div>
@@ -1196,7 +1260,7 @@ function MenteeSection({
             </div>
             <div className="tile">
               <div className="small muted">Akceptacja admina</div>
-              <strong>{String((overview.profile as any)?.adminApproved ?? false)}</strong>
+              <strong>{(overview.profile as any)?.adminApproved ? "tak" : "nie"}</strong>
             </div>
           </div>
         </div>
@@ -1206,7 +1270,7 @@ function MenteeSection({
           <div className="dashboard-card">
             <h2>Mentorzy</h2>
             <p className="muted">
-              Ten etap jest tymczasowy: teraz zapisujesz prośbę o spotkanie ręcznie, a po wdrożeniu Google Calendar/OAuth to miejsce zostanie podmienione na prawdziwe wolne sloty mentorów.
+              Aktualnie wysyłasz prośbę o spotkanie ręcznie. Docelowo ten widok zostanie podłączony do rzeczywistych dostępnych terminów mentorów.
             </p>
             <div className="list">
               {mentors.map((mentor) => (
