@@ -48,6 +48,16 @@ type Overview = {
 
 type LeadKind = "contact" | "mentor" | "scholarship" | "newsletter" | "booking";
 
+type MaterialRowEditor = {
+  alternativeOptions: string[];
+  appliesToGuideIds: string[];
+  country: string;
+  guideId: string;
+  level: "country" | "university" | "item";
+  task: string;
+  university: string;
+};
+
 function platformGuideTypeLabel(value: string) {
   switch (value) {
     case "admin_template":
@@ -149,15 +159,31 @@ function buildDerivedMaterialTemplates(guides: any[], materialTemplates: any[]) 
       }
 
       entry.structure.push({
+        alternativeOptions: [],
+        appliesToGuideIds: [String(guide.id)],
         country: guide.country,
-        university: guide.universityName,
+        guideId: "",
+        level: "item",
         task: title,
+        university: guide.universityName,
       });
       derived.set(normalizedTitle, entry);
     }
   }
 
   return Array.from(derived.values());
+}
+
+function createEmptyMaterialRow(): MaterialRowEditor {
+  return {
+    alternativeOptions: [],
+    appliesToGuideIds: [],
+    country: "",
+    guideId: "",
+    level: "item",
+    task: "",
+    university: "",
+  };
 }
 
 function formatDate(value: string | null | undefined) {
@@ -728,9 +754,15 @@ function AdminSection({
     templateType: "passport_like",
     guideId: "",
     appliesToGuideIds: [] as string[],
-    structureText:
-      "Polska > University College London > Personal statement\nPolska > University College London > Recommendation letter",
-    alternativeOptionsText: "dodane bezpośrednio do systemu uczelni\nomówione z mentorem",
+    rows: [
+      {
+        ...createEmptyMaterialRow(),
+        appliesToGuideIds: [],
+        country: "Polska",
+        task: "Personal statement",
+        university: "University College London",
+      },
+    ] as MaterialRowEditor[],
     isActive: true,
   });
 
@@ -909,9 +941,14 @@ function AdminSection({
       templateType: "passport_like",
       guideId: "",
       appliesToGuideIds: [],
-      structureText:
-        "Polska > University College London > Personal statement\nPolska > University College London > Recommendation letter",
-      alternativeOptionsText: "dodane bezpośrednio do systemu uczelni\nomówione z mentorem",
+      rows: [
+        {
+          ...createEmptyMaterialRow(),
+          country: "Polska",
+          task: "Personal statement",
+          university: "University College London",
+        },
+      ],
       isActive: true,
     });
   }
@@ -924,11 +961,60 @@ function AdminSection({
       templateType: material.templateType ?? "passport_like",
       guideId: material.guideId ? String(material.guideId) : "",
       appliesToGuideIds: (material.appliesToGuideIds ?? []).map((id: number) => String(id)),
-      structureText: (material.structure ?? [])
-        .map((row: any) => [row.country, row.university, row.task].filter(Boolean).join(" > "))
-        .join("\n"),
-      alternativeOptionsText: (material.alternativeOptions ?? []).join("\n"),
+      rows: (material.structure ?? []).length
+        ? (material.structure ?? []).map((row: any) => ({
+            alternativeOptions: Array.isArray(row.alternativeOptions) ? row.alternativeOptions.filter(Boolean) : [],
+            appliesToGuideIds: Array.isArray(row.appliesToGuideIds) ? row.appliesToGuideIds.map((id: any) => String(id)) : [],
+            country: row.country ?? "",
+            guideId: row.guideId ? String(row.guideId) : "",
+            level: row.level === "country" || row.level === "university" || row.level === "item" ? row.level : "item",
+            task: row.task ?? "",
+            university: row.university ?? "",
+          }))
+        : [createEmptyMaterialRow()],
       isActive: Boolean(material.isActive),
+    });
+  }
+
+  function updateMaterialRow(index: number, updater: (row: MaterialRowEditor) => MaterialRowEditor) {
+    setMaterialForm((current) => ({
+      ...current,
+      rows: current.rows.map((row, rowIndex) => (rowIndex === index ? updater(row) : row)),
+    }));
+  }
+
+  function addMaterialRow(index?: number) {
+    setMaterialForm((current) => {
+      const nextRows = [...current.rows];
+      const insertionIndex = typeof index === "number" ? index : nextRows.length;
+      nextRows.splice(insertionIndex, 0, createEmptyMaterialRow());
+      return {
+        ...current,
+        rows: nextRows,
+      };
+    });
+  }
+
+  function removeMaterialRow(index: number) {
+    setMaterialForm((current) => ({
+      ...current,
+      rows: current.rows.length === 1 ? [createEmptyMaterialRow()] : current.rows.filter((_, rowIndex) => rowIndex !== index),
+    }));
+  }
+
+  function moveMaterialRow(index: number, direction: -1 | 1) {
+    setMaterialForm((current) => {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= current.rows.length) {
+        return current;
+      }
+      const nextRows = [...current.rows];
+      const [moved] = nextRows.splice(index, 1);
+      nextRows.splice(targetIndex, 0, moved);
+      return {
+        ...current,
+        rows: nextRows,
+      };
     });
   }
 
@@ -1063,18 +1149,19 @@ function AdminSection({
     const appliesToGuideIds = materialForm.appliesToGuideIds
       .map((value) => Number(value))
       .filter((value) => Number.isFinite(value) && value > 0);
-    const structure = materialForm.structureText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const [country = "", university = "", task = ""] = line.split(">").map((part) => part.trim());
-        return { country, university, task };
-      });
-    const alternativeOptions = materialForm.alternativeOptionsText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
+    const structure = materialForm.rows
+      .map((row) => ({
+        alternativeOptions: row.alternativeOptions.filter(Boolean),
+        appliesToGuideIds: row.appliesToGuideIds
+          .map((value) => Number(value))
+          .filter((value) => Number.isFinite(value) && value > 0),
+        country: row.country.trim(),
+        guideId: row.guideId ? Number(row.guideId) : null,
+        level: row.level,
+        task: row.task.trim(),
+        university: row.university.trim(),
+      }))
+      .filter((row) => row.country || row.university || row.task);
     const payload = {
       title: materialForm.title,
       description: materialForm.description,
@@ -1082,7 +1169,7 @@ function AdminSection({
       guideId: materialForm.guideId ? Number(materialForm.guideId) : null,
       appliesToGuideIds,
       structure,
-      alternativeOptions,
+      alternativeOptions: [],
       isActive: materialForm.isActive,
     };
     try {
@@ -1877,12 +1964,159 @@ function AdminSection({
                   </div>
                 </div>
                 <div className="field">
-                  <label>Układ po otwarciu kafla, linie w formacie: kraj &gt; uczelnia &gt; zadanie</label>
-                  <textarea value={materialForm.structureText} onChange={(event) => setMaterialForm((current) => ({ ...current, structureText: event.target.value }))} />
-                </div>
-                <div className="field">
-                  <label>Alternatywne sposoby oznaczenia jako wykonane, po jednej opcji w linii</label>
-                  <textarea value={materialForm.alternativeOptionsText} onChange={(event) => setMaterialForm((current) => ({ ...current, alternativeOptionsText: event.target.value }))} />
+                  <label>Wiersze wewnątrz kafla</label>
+                  <div className="stack">
+                    {materialForm.rows.map((row, index) => (
+                      <div className="list-item" key={`material-row-${index}`}>
+                        <header>
+                          <div>
+                            <h3>Wiersz {index + 1}</h3>
+                            <div className="muted small">Każdy wiersz może dotyczyć innych uczelni i mieć własne wskazówki.</div>
+                          </div>
+                          <div className="button-row">
+                            <button className="btn btn-secondary" onClick={() => moveMaterialRow(index, -1)} type="button">
+                              W górę
+                            </button>
+                            <button className="btn btn-secondary" onClick={() => moveMaterialRow(index, 1)} type="button">
+                              W dół
+                            </button>
+                            <button className="btn btn-secondary" onClick={() => addMaterialRow(index)} type="button">
+                              Dodaj nad
+                            </button>
+                            <button className="btn btn-secondary" onClick={() => addMaterialRow(index + 1)} type="button">
+                              Dodaj pod
+                            </button>
+                            <button className="btn btn-secondary" onClick={() => removeMaterialRow(index)} type="button">
+                              Usuń
+                            </button>
+                          </div>
+                        </header>
+                        <div className="grid-2">
+                          <div className="field">
+                            <label>Poziom formatowania</label>
+                            <select
+                              value={row.level}
+                              onChange={(event) =>
+                                updateMaterialRow(index, (current) => ({
+                                  ...current,
+                                  level: event.target.value as MaterialRowEditor["level"],
+                                }))
+                              }
+                            >
+                              <option value="country">Poziom kraju</option>
+                              <option value="university">Poziom uczelni</option>
+                              <option value="item">Poziom pojedynczego zadania</option>
+                            </select>
+                          </div>
+                          <div className="field">
+                            <label>Link do wskazówek dla tego wiersza</label>
+                            <select
+                              value={row.guideId}
+                              onChange={(event) =>
+                                updateMaterialRow(index, (current) => ({
+                                  ...current,
+                                  guideId: event.target.value,
+                                }))
+                              }
+                            >
+                              <option value="">Brak</option>
+                              {guides.map((guide) => (
+                                <option key={`row-guide-${guide.id}`} value={String(guide.id)}>
+                                  {guide.universityName} • {guide.title}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="grid-2">
+                          <div className="field">
+                            <label>Kraj</label>
+                            <input
+                              value={row.country}
+                              onChange={(event) =>
+                                updateMaterialRow(index, (current) => ({
+                                  ...current,
+                                  country: event.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Uczelnia</label>
+                            <input
+                              value={row.university}
+                              onChange={(event) =>
+                                updateMaterialRow(index, (current) => ({
+                                  ...current,
+                                  university: event.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                        </div>
+                        <div className="field">
+                          <label>Nazwa elementu / zadania</label>
+                          <input
+                            value={row.task}
+                            onChange={(event) =>
+                              updateMaterialRow(index, (current) => ({
+                                ...current,
+                                task: event.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                        <div className="field">
+                          <label>Dla których uczelni ten wiersz jest wymagany</label>
+                          <div className="list">
+                            {sourceGuideTemplates.map((guide) => {
+                              const checked = row.appliesToGuideIds.includes(String(guide.id));
+                              return (
+                                <label className="list-item" key={`row-guide-assignment-${index}-${guide.id}`} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                  <input
+                                    checked={checked}
+                                    type="checkbox"
+                                    onChange={() =>
+                                      updateMaterialRow(index, (current) => ({
+                                        ...current,
+                                        appliesToGuideIds: checked
+                                          ? current.appliesToGuideIds.filter((id) => id !== String(guide.id))
+                                          : [...current.appliesToGuideIds, String(guide.id)],
+                                      }))
+                                    }
+                                  />
+                                  <span>
+                                    <strong>{guide.universityName}</strong>
+                                    <span className="small muted" style={{ display: "block" }}>{guide.country} • {guide.title}</span>
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div className="field">
+                          <label>Alternatywne sposoby wykonania tego wiersza, po jednej opcji w linii</label>
+                          <textarea
+                            value={row.alternativeOptions.join("\n")}
+                            onChange={(event) =>
+                              updateMaterialRow(index, (current) => ({
+                                ...current,
+                                alternativeOptions: event.target.value
+                                  .split("\n")
+                                  .map((line) => line.trim())
+                                  .filter(Boolean),
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="button-row" style={{ marginTop: 12 }}>
+                    <button className="btn btn-secondary" onClick={() => addMaterialRow()} type="button">
+                      Dodaj nowy wiersz na końcu
+                    </button>
+                  </div>
                 </div>
                 <div className="field">
                   <label>Aktywny</label>
@@ -2755,6 +2989,30 @@ function MenteeSection({
                             <div className="small muted">
                               {[row.country, row.university].filter(Boolean).join(" • ")}
                             </div>
+                            {row.level ? (
+                              <div className="small muted" style={{ marginTop: 4 }}>
+                                {row.level === "country"
+                                  ? "Poziom kraju"
+                                  : row.level === "university"
+                                    ? "Poziom uczelni"
+                                    : "Poziom zadania"}
+                              </div>
+                            ) : null}
+                            {Array.isArray(row.appliesToGuideIds) && row.appliesToGuideIds.length ? (
+                              <div className="small muted" style={{ marginTop: 4 }}>
+                                Dotyczy wybranych uczelni: {row.appliesToGuideIds.length}
+                              </div>
+                            ) : null}
+                            {Array.isArray(row.alternativeOptions) && row.alternativeOptions.length ? (
+                              <div className="small muted" style={{ marginTop: 8 }}>
+                                Alternatywnie: {row.alternativeOptions.join(" • ")}
+                              </div>
+                            ) : null}
+                            {row.guideId ? (
+                              <div className="small muted" style={{ marginTop: 8 }}>
+                                Ten wiersz ma osobne wskazówki pomocnicze.
+                              </div>
+                            ) : null}
                           </div>
                         ))}
                       </div>
