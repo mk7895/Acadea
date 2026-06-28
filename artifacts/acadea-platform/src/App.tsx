@@ -2645,7 +2645,7 @@ function MentorSection({
     descriptionMarkdown: "",
   });
   const [mentorMaterialEditorId, setMentorMaterialEditorId] = useState<string>("");
-  const [mentorMaterialRows, setMentorMaterialRows] = useState<MaterialRowEditor[]>([createEmptyMaterialRow()]);
+  const [mentorMaterialRows, setMentorMaterialRows] = useState<MaterialRowEditor[]>([]);
   const dedupedSourceGuides = useMemo(() => {
     const map = new Map<string, any>();
     for (const guide of sourceGuides) {
@@ -2910,7 +2910,7 @@ function MentorSection({
         .filter(Boolean)
         .map((row: any) => ({
           ...row,
-        })) || [createEmptyMaterialRow()],
+        })),
     );
   }
 
@@ -2967,7 +2967,7 @@ function MentorSection({
         readOnly: false,
       });
     }
-    return rebuilt.length ? rebuilt : [createEmptyMaterialRow()];
+    return rebuilt;
   }
 
   function moveMentorRow(displayKey: string, direction: -1 | 1) {

@@ -23,7 +23,7 @@ const ACADEA = countryByIso;
 type Rotation = [number, number, number];
 
 const SIZE = 480;
-const SCALE = SIZE / 2 - 16;
+const SCALE = SIZE / 2 - 4;
 const INITIAL_ROT: Rotation = [-10, -50, 0];
 
 // Handle world-atlas topology correctly
@@ -202,29 +202,30 @@ export function GlobeSection() {
         }}
       />
       <div className="absolute left-1/2 top-[calc(100%-0.15rem)] h-4 w-[38%] -translate-x-1/2 rounded-full bg-primary/15 pointer-events-none blur-md" />
-      <svg
-        width={SIZE}
-        height={SIZE}
-        viewBox={`0 0 ${SIZE} ${SIZE}`}
-        className="w-full h-auto cursor-grab active:cursor-grabbing rounded-full shadow-2xl"
-        onMouseDown={onPointerDown}
-        onTouchStart={onPointerDown}
-        style={{ touchAction: "none" }}
-        aria-label="Interaktywna mapa ACADEA"
-      >
-        {/* Ocean */}
-        <circle cx={SIZE / 2} cy={SIZE / 2} r={SCALE} fill="#e5f2ec" />
+      <div className="rounded-full shadow-2xl overflow-hidden">
+        <svg
+          width={SIZE}
+          height={SIZE}
+          viewBox={`0 0 ${SIZE} ${SIZE}`}
+          className="w-full h-auto cursor-grab active:cursor-grabbing block"
+          onMouseDown={onPointerDown}
+          onTouchStart={onPointerDown}
+          style={{ touchAction: "none" }}
+          aria-label="Interaktywna mapa ACADEA"
+        >
+          {/* Ocean */}
+          <circle cx={SIZE / 2} cy={SIZE / 2} r={SCALE} fill="#e5f2ec" />
 
-        {/* Graticule */}
-        <path
-          d={pathGen(GRATICULE as GeoPermissibleObjects) ?? ""}
-          fill="none"
-          stroke="#c3ddd4"
-          strokeWidth={0.4}
-        />
+          {/* Graticule */}
+          <path
+            d={pathGen(GRATICULE as GeoPermissibleObjects) ?? ""}
+            fill="none"
+            stroke="#c3ddd4"
+            strokeWidth={0.35}
+          />
 
-        {/* Countries */}
-        {COUNTRIES_GEO.features.map((f: CountryFeature, index) => {
+          {/* Countries */}
+          {COUNTRIES_GEO.features.map((f: CountryFeature, index) => {
           const id = String(f.id ?? "");
           const isAcadea = !!ACADEA[id] || !!ACADEA[id.padStart(3, "0")];
           const resolvedId = ACADEA[id] ? id : id.padStart(3, "0");
@@ -246,57 +247,57 @@ export function GlobeSection() {
 
           const d = pathGen(effectiveFeature as GeoPermissibleObjects);
           if (!d) return null;
-          return (
-            <path
-              key={id || index}
-              d={d}
-              fill={isHov ? "#FCBC1E" : isAcadea ? "#166534" : "#c8d8e8"}
-              stroke="#fff"
-              strokeWidth={isAcadea ? 0.7 : 0.3}
-              opacity={isAcadea ? 0.92 : 0.6}
-              style={{ transition: "fill 0.12s ease", cursor: isAcadea ? "pointer" : "grab" }}
-              onMouseEnter={() => { if (isAcadea) { cancelClear(); setHovered(resolvedId); } }}
-              onMouseLeave={() => isAcadea && scheduleClear()}
-              onClick={() => {
-                if (!isAcadea || didDrag.current) return;
-                const c = ACADEA[resolvedId];
-                if (c) navigate(`/kraje/${c.slug}`);
-              }}
-            />
-          );
-        })}
+            return (
+              <path
+                key={id || index}
+                d={d}
+                fill={isHov ? "#FCBC1E" : isAcadea ? "#166534" : "#c8d8e8"}
+                stroke="#fff"
+                strokeWidth={isAcadea ? 0.55 : 0.22}
+                opacity={isAcadea ? 0.92 : 0.6}
+                style={{ transition: "fill 0.12s ease", cursor: isAcadea ? "pointer" : "grab" }}
+                onMouseEnter={() => { if (isAcadea) { cancelClear(); setHovered(resolvedId); } }}
+                onMouseLeave={() => isAcadea && scheduleClear()}
+                onClick={() => {
+                  if (!isAcadea || didDrag.current) return;
+                  const c = ACADEA[resolvedId];
+                  if (c) navigate(`/kraje/${c.slug}`);
+                }}
+              />
+            );
+          })}
 
-        {fallbackMarkers.map((marker) => {
-          if (!isFrontHemisphere(marker.coordinates, rotation)) return null;
+          {fallbackMarkers.map((marker) => {
+            if (!isFrontHemisphere(marker.coordinates, rotation)) return null;
 
-          const point = projection(marker.coordinates);
-          if (!point) return null;
+            const point = projection(marker.coordinates);
+            if (!point) return null;
 
-          const isHovered = hovered === marker.iso;
-          return (
-            <circle
-              key={marker.iso}
-              cx={point[0]}
-              cy={point[1]}
-              r={marker.radius}
-              fill={isHovered ? "#FCBC1E" : "#166534"}
-              stroke="#ffffff"
-              strokeWidth={1.5}
-              style={{ cursor: "pointer", transition: "fill 0.12s ease" }}
-              onMouseEnter={() => {
-                cancelClear();
-                setHovered(marker.iso);
-              }}
-              onMouseLeave={scheduleClear}
-              onClick={() => {
-                if (didDrag.current) return;
-                navigate(`/kraje/${marker.country.slug}`);
-              }}
-            />
-          );
-        })}
-
-      </svg>
+            const isHovered = hovered === marker.iso;
+            return (
+              <circle
+                key={marker.iso}
+                cx={point[0]}
+                cy={point[1]}
+                r={marker.radius}
+                fill={isHovered ? "#FCBC1E" : "#166534"}
+                stroke="#ffffff"
+                strokeWidth={1.2}
+                style={{ cursor: "pointer", transition: "fill 0.12s ease" }}
+                onMouseEnter={() => {
+                  cancelClear();
+                  setHovered(marker.iso);
+                }}
+                onMouseLeave={scheduleClear}
+                onClick={() => {
+                  if (didDrag.current) return;
+                  navigate(`/kraje/${marker.country.slug}`);
+                }}
+              />
+            );
+          })}
+        </svg>
+      </div>
 
       {/* Country hover card */}
       {hoveredData && (

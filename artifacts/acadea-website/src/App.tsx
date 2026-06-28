@@ -23,6 +23,7 @@ import Regulamin from "@/pages/Regulamin";
 import ArticlePage from "@/pages/ArticlePage";
 import AdminArticles from "@/pages/AdminArticles";
 import { CookieConsentProvider } from "@/components/CookieConsent";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -103,6 +104,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <CookieConsentProvider>
+        <GoogleAnalytics />
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <ScrollManager />
