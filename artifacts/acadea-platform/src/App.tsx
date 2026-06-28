@@ -775,7 +775,6 @@ function AdminSection({
   const [materialEditorId, setMaterialEditorId] = useState<string>("new");
   const [itemGuideEditorId, setItemGuideEditorId] = useState<string>("new");
   const [itemGuideForm, setItemGuideForm] = useState({
-    sourceGuideId: "",
     appliesToGuideIds: [] as string[],
     title: "",
     slug: "",
@@ -804,11 +803,6 @@ function AdminSection({
   const mentorUsers = users.filter((user) => user.role === "mentor");
   const menteeUsers = users.filter((user) => user.role === "mentee");
   const adminUsers = users.filter((user) => user.role === "admin");
-  const sourceGuideTemplates = guides.filter(
-    (guide) =>
-      (guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint") &&
-      !guide.sourceGuideId,
-  );
   const materialGuideTemplates = guides.filter(
     (guide) => guide.guideType === "admin_template" && !guide.sourceGuideId,
   );
@@ -818,10 +812,14 @@ function AdminSection({
       !guide.sourceGuideId,
   );
   const itemGuides = guides.filter(
-    (guide) =>
-      Boolean(guide.sourceGuideId) &&
-      (guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint") &&
-      (!Array.isArray(guide.items) || guide.items.length === 0),
+    (guide) => {
+      const metadata = parseGuideMeta(guide.driveFolderUrl);
+      return (
+        (guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint") &&
+        (!Array.isArray(guide.items) || guide.items.length === 0) &&
+        (metadata as any).kind === "item_guide"
+      );
+    },
   );
 
   function serializeGuideItemsToText(items: any[] = []) {
@@ -1005,7 +1003,6 @@ function AdminSection({
   function resetItemGuideForm() {
     setItemGuideEditorId("new");
     setItemGuideForm({
-      sourceGuideId: "",
       appliesToGuideIds: [],
       title: "",
       slug: "",
@@ -1019,7 +1016,6 @@ function AdminSection({
     const metadata = parseGuideMeta(guide.driveFolderUrl);
     setItemGuideEditorId(String(guide.id));
     setItemGuideForm({
-      sourceGuideId: guide.sourceGuideId ? String(guide.sourceGuideId) : "",
       appliesToGuideIds: Array.isArray((metadata as any).appliesToGuideIds)
         ? (metadata as any).appliesToGuideIds.map((value: any) => String(value))
         : [],
@@ -1272,30 +1268,35 @@ function AdminSection({
   async function saveItemGuide(event: React.FormEvent) {
     event.preventDefault();
     setStatus("");
-    const sourceGuide = sourceGuideTemplates.find((guide) => String(guide.id) === itemGuideForm.sourceGuideId);
-    if (!sourceGuide) {
-      setStatus("Wybierz uczelnię bazową dla tych wskazówek.");
+    const selectedGuideIds = itemGuideForm.appliesToGuideIds
+      .map((value) => Number(value))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    if (!selectedGuideIds.length) {
+      setStatus("Wybierz przynajmniej jedną uczelnię dla tych wskazówek.");
+      return;
+    }
+    const selectedGuides = materialGuideTemplates.filter((guide) => selectedGuideIds.includes(Number(guide.id)));
+    const firstGuide = selectedGuides[0];
+    if (!firstGuide) {
+      setStatus("Nie udało się dopasować wybranych uczelni do wskazówek.");
       return;
     }
 
     const payload = {
-      guideType: sourceGuide.guideType === "mentor_blueprint" ? "mentor_blueprint" : "admin_template",
+      guideType: "admin_template",
       status: itemGuideForm.status,
       title: itemGuideForm.title,
       slug: itemGuideForm.slug || itemGuideForm.title,
-      country: sourceGuide.country,
-      universityName: sourceGuide.universityName,
+      country: firstGuide.country,
+      universityName: firstGuide.universityName,
       summary: itemGuideForm.summary,
       descriptionMarkdown: itemGuideForm.descriptionMarkdown,
       estimatedReadMin: 8,
       menteeUserId: null,
-      sourceGuideId: sourceGuide.id,
+      sourceGuideId: null,
       driveFolderUrl: `__meta:${JSON.stringify({
-        appliesToGuideIds: (
-          itemGuideForm.appliesToGuideIds.length
-            ? itemGuideForm.appliesToGuideIds
-            : [String(sourceGuide.id)]
-        ).map((value) => Number(value)).filter(Number.isFinite),
+        appliesToGuideIds: selectedGuideIds,
+        kind: "item_guide",
       })}`,
       isVisibleToUnapprovedUsers: false,
       items: [],
@@ -2168,17 +2169,6 @@ function AdminSection({
             <p className="muted">Tutaj tworzysz osobne treści pomocnicze, które potem można podpiąć do konkretnego wiersza w kaflu materiałów.</p>
             <form className="stack" onSubmit={saveItemGuide}>
               <div className="field">
-                <label>Uczelnia bazowa</label>
-                <select value={itemGuideForm.sourceGuideId} onChange={(event) => setItemGuideForm((current) => ({ ...current, sourceGuideId: event.target.value }))}>
-                  <option value="">Wybierz uczelnię bazową</option>
-                  {materialGuideTemplates.map((guide) => (
-                    <option key={guide.id} value={String(guide.id)}>
-                      {guide.universityName} • {guide.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
                 <label>Do których uczelni te wskazówki mają się odnosić</label>
                 <div className="selector-grid">
                   {materialGuideTemplates.map((guide) => {
@@ -2962,6 +2952,7 @@ function MenteeSection({
   const [mentors, setMentors] = useState<any[]>([]);
   const [publicGuides, setPublicGuides] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
+  const [openHintGuide, setOpenHintGuide] = useState<any | null>(null);
   const [profileValues, setProfileValues] = useState<Record<string, string>>({});
   const [status, setStatus] = useState("");
   const [meetingForm, setMeetingForm] = useState({
@@ -2979,7 +2970,9 @@ function MenteeSection({
   const assignedMentors = overview?.assignedMentors ?? [];
   const availableGuideTemplates = overview?.availableGuideTemplates ?? [];
   const materialTemplates = overview?.materialTemplates ?? [];
+  const hintGuides = overview?.hintGuides ?? [];
   const hintEligibleTemplateIds = (overview?.hintEligibleTemplateIds ?? []).map(String);
+  const hintGuideMap = new Map((hintGuides ?? []).map((guide: any) => [String(guide.id), guide]));
   const selectedMentor = assignedMentors.find(
     (mentor: any) => String(mentor.mentorId) === String(meetingForm.mentorUserId),
   );
@@ -3134,15 +3127,22 @@ function MenteeSection({
                                     const applicableGuides = guides.filter((entry: any) => rowAppliesToGuide(row, entry));
                                     const universityNames = uniqueStrings(applicableGuides.map((entry: any) => entry.universityName));
                                     const showHints = row.guideId && hintEligibleTemplateIds.includes(getGuideTemplateId(guide));
+                                    const hintGuide = row.guideId ? hintGuideMap.get(String(row.guideId)) : null;
                                     return (
                                       <div className="list-item" key={`${guide.id}-${template.id}-row-${index}`}>
                                         <h3>{row.task || "Zadanie"}</h3>
                                         {universityNames.length ? (
                                           <div className="small muted">{universityNames.join(" • ")}</div>
                                         ) : null}
-                                        {showHints ? (
-                                          <div className="small muted" style={{ marginTop: 6 }}>
-                                            Do tego elementu są przypisane osobne wskazówki.
+                                        {showHints && hintGuide ? (
+                                          <div className="button-row" style={{ marginTop: 8 }}>
+                                            <button
+                                              className="btn btn-secondary"
+                                              onClick={() => setOpenHintGuide(hintGuide)}
+                                              type="button"
+                                            >
+                                              Otwórz wskazówki
+                                            </button>
                                           </div>
                                         ) : null}
                                         {row.alternativeOptions?.length ? (
@@ -3397,6 +3397,7 @@ function MenteeSection({
                           const showHints =
                             row.guideId &&
                             applicableGuides.some((guide: any) => hintEligibleTemplateIds.includes(getGuideTemplateId(guide)));
+                          const hintGuide = row.guideId ? hintGuideMap.get(String(row.guideId)) : null;
                           if (row.level === "country") {
                             return (
                               <div className="material-heading material-heading-country" key={`${template.id}-row-${index}`}>
@@ -3422,9 +3423,15 @@ function MenteeSection({
                                   Alternatywnie: {row.alternativeOptions.join(" • ")}
                                 </div>
                               ) : null}
-                              {showHints ? (
-                                <div className="small muted" style={{ marginTop: 8 }}>
-                                  Ten element ma osobne wskazówki pomocnicze.
+                              {showHints && hintGuide ? (
+                                <div className="button-row" style={{ marginTop: 8 }}>
+                                  <button
+                                    className="btn btn-secondary"
+                                    onClick={() => setOpenHintGuide(hintGuide)}
+                                    type="button"
+                                  >
+                                    Otwórz wskazówki
+                                  </button>
                                 </div>
                               ) : null}
                             </div>
@@ -3447,6 +3454,30 @@ function MenteeSection({
             {!visibleMaterialTemplates.length ? (
               <div className="status">Nie ma jeszcze żadnych materiałów przypisanych do Twoich uczelni.</div>
             ) : null}
+          </div>
+        </div>
+      ) : null}
+      {openHintGuide ? (
+        <div className="modal-backdrop" onClick={() => setOpenHintGuide(null)} role="presentation">
+          <div className="modal-card" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="button-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div className="eyebrow">Wskazówki</div>
+                <h2 style={{ margin: "12px 0 6px", color: "#153f2c" }}>{openHintGuide.title}</h2>
+                <div className="small muted">{openHintGuide.country} • {openHintGuide.universityName}</div>
+              </div>
+              <button className="btn btn-secondary" onClick={() => setOpenHintGuide(null)} type="button">
+                Zamknij
+              </button>
+            </div>
+            {openHintGuide.summary ? (
+              <div className="status" style={{ marginTop: 16 }}>
+                {openHintGuide.summary}
+              </div>
+            ) : null}
+            <div className="modal-body" style={{ marginTop: 16 }}>
+              {openHintGuide.descriptionMarkdown || "Brak treści wskazówek."}
+            </div>
           </div>
         </div>
       ) : null}

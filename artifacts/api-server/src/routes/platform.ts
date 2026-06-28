@@ -1683,6 +1683,28 @@ router.get(
       const applies = template.appliesToGuideIds ?? [];
       return applies.length === 0 || applies.some((guideId: number) => accessibleTemplateIds.includes(guideId));
     });
+    const hintGuideIds = Array.from(
+      new Set(
+        visibleMaterials.flatMap((template) => [
+          ...(typeof template.guideId === "number" ? [template.guideId] : []),
+          ...((template.structure ?? [])
+            .map((row: any) => (typeof row?.guideId === "number" ? row.guideId : null))
+            .filter((value): value is number => Number.isFinite(value))),
+        ]),
+      ),
+    );
+    const hintGuides = hintGuideIds.length
+      ? await db
+          .select()
+          .from(platformGuidesTable)
+          .where(
+            and(
+              inArray(platformGuidesTable.id, hintGuideIds),
+              eq(platformGuidesTable.status, "published"),
+            ),
+          )
+          .orderBy(asc(platformGuidesTable.title))
+      : [];
     const hintEligibleTemplateIds = await db
       .select({
         sourceGuideId: platformGuidesTable.sourceGuideId,
@@ -1712,6 +1734,7 @@ router.get(
       guides: await shapeGuideList(db, uniqueGuides),
       assignedGuideTemplates: await shapeGuideList(db, assignedGuideTemplates),
       availableGuideTemplates: await shapeGuideList(db, availableGuideTemplates),
+      hintGuides: await shapeGuideList(db, hintGuides),
       hintEligibleTemplateIds: hintEligibleTemplateIds
         .map((row) => row.sourceGuideId)
         .filter((value): value is number => Number.isFinite(value)),
