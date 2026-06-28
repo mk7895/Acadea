@@ -147,6 +147,25 @@ textarea {
   border: 1px solid #cfe0d2;
 }
 
+.btn-compact {
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.btn-icon {
+  min-width: 36px;
+  padding-left: 0;
+  padding-right: 0;
+  text-align: center;
+}
+
+.row-tools {
+  gap: 8px;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
 .status {
   padding: 12px 14px;
   border-radius: 16px;

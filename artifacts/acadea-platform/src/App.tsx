@@ -260,13 +260,17 @@ function normalizePlatformSlug(value: string) {
     .replace(/-{2,}/g, "-");
 }
 
+function createEditorRowKey(prefix = "row") {
+  return `${prefix}:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function createEmptyMaterialRow(): MaterialRowEditor {
   return {
     alternativeOptions: [],
     appliesToGuideIds: [],
     anchorAfterKey: "",
     country: "",
-    displayKey: "",
+    displayKey: createEditorRowKey("mentor"),
     guideId: "",
     level: "item",
     readOnly: false,
@@ -2218,12 +2222,12 @@ function AdminSection({
                             <h3>Wiersz {index + 1}</h3>
                             <div className="muted small">Każdy wiersz może dotyczyć wielu uczelni z tego kafla i mieć własne wskazówki.</div>
                           </div>
-                          <div className="button-row">
-                            <button className="btn btn-secondary" onClick={() => moveMaterialRow(index, -1)} type="button">W górę</button>
-                            <button className="btn btn-secondary" onClick={() => moveMaterialRow(index, 1)} type="button">W dół</button>
-                            <button className="btn btn-secondary" onClick={() => addMaterialRow(index)} type="button">Dodaj nad</button>
-                            <button className="btn btn-secondary" onClick={() => addMaterialRow(index + 1)} type="button">Dodaj pod</button>
-                            <button className="btn btn-secondary" onClick={() => removeMaterialRow(index)} type="button">Usuń</button>
+                          <div className="button-row row-tools">
+                            <button className="btn btn-secondary btn-compact btn-icon" onClick={() => moveMaterialRow(index, -1)} type="button" title="Przesuń w górę">↑</button>
+                            <button className="btn btn-secondary btn-compact btn-icon" onClick={() => moveMaterialRow(index, 1)} type="button" title="Przesuń w dół">↓</button>
+                            <button className="btn btn-secondary btn-compact" onClick={() => addMaterialRow(index)} type="button">Dodaj nad</button>
+                            <button className="btn btn-secondary btn-compact" onClick={() => addMaterialRow(index + 1)} type="button">Dodaj pod</button>
+                            <button className="btn btn-secondary btn-compact" onClick={() => removeMaterialRow(index)} type="button">Usuń</button>
                           </div>
                         </header>
                         <div className="field">
@@ -2661,7 +2665,7 @@ function MentorSection({
 
     const mentorRows = mentorMaterialRows.map((row, index) => ({
       ...row,
-      displayKey: `mentor:${index}`,
+      displayKey: row.displayKey || `mentor:${index}`,
       ownerUserId: session.user.id,
       readOnly: false,
     }));
@@ -2865,7 +2869,7 @@ function MentorSection({
             anchorAfterKey: typeof row.anchorAfterKey === "string" ? row.anchorAfterKey : lastAdminKey,
             appliesToGuideIds: Array.isArray(row.appliesToGuideIds) ? row.appliesToGuideIds.map((id: any) => String(id)) : [],
             country: row.country ?? "",
-            displayKey: "",
+            displayKey: typeof row.displayKey === "string" && row.displayKey ? row.displayKey : createEditorRowKey("mentor"),
             guideId: row.guideId ? String(row.guideId) : "",
             level: row.level === "country" || row.level === "university" || row.level === "item" ? row.level : "item",
             ownerUserId: row.ownerUserId ?? session.user.id,
@@ -2912,6 +2916,42 @@ function MentorSection({
 
   function updateMentorRow(index: number, updater: (row: MaterialRowEditor) => MaterialRowEditor) {
     setMentorMaterialRows((current) => current.map((row, rowIndex) => (rowIndex === index ? updater(row) : row)));
+  }
+
+  function rebuildMentorRowsFromDisplay(rows: MaterialRowEditor[]) {
+    let lastAdminKey = "";
+    const rebuilt: MaterialRowEditor[] = [];
+    for (const row of rows) {
+      if (row.readOnly) {
+        lastAdminKey = row.displayKey ?? lastAdminKey;
+        continue;
+      }
+      rebuilt.push({
+        ...row,
+        anchorAfterKey: lastAdminKey,
+        displayKey: row.displayKey || createEditorRowKey("mentor"),
+        ownerUserId: session.user.id,
+        readOnly: false,
+      });
+    }
+    return rebuilt.length ? rebuilt : [createEmptyMaterialRow()];
+  }
+
+  function moveMentorRow(displayKey: string, direction: -1 | 1) {
+    const index = mentorMaterialDisplayRows.findIndex((row) => row.displayKey === displayKey);
+    const targetIndex = index + direction;
+    if (index < 0 || targetIndex < 0 || targetIndex >= mentorMaterialDisplayRows.length) {
+      return;
+    }
+    const nextRows = [...mentorMaterialDisplayRows];
+    const [moved] = nextRows.splice(index, 1);
+    nextRows.splice(targetIndex, 0, moved);
+    setMentorMaterialRows(rebuildMentorRowsFromDisplay(nextRows));
+  }
+
+  function removeMentorRow(displayKey: string) {
+    const nextRows = mentorMaterialDisplayRows.filter((row) => row.displayKey !== displayKey);
+    setMentorMaterialRows(rebuildMentorRowsFromDisplay(nextRows));
   }
 
   return (
@@ -3223,11 +3263,15 @@ function MentorSection({
                         <h3>{row.readOnly ? `Wiersz admina ${displayIndex + 1}` : `Twój wiersz ${mentorIndex + 1}`}</h3>
                         <div className="muted small">{row.readOnly ? "Ten wiersz pochodzi z głównego kafla i jest tylko do podglądu." : "Możesz edytować tylko własne wiersze."}</div>
                       </div>
-                      <div className="button-row">
-                        <button className="btn btn-secondary" onClick={() => addMentorRowAtAnchor(row.anchorAfterKey ?? "")} type="button">Dodaj przed</button>
-                        <button className="btn btn-secondary" onClick={() => addMentorRowAtAnchor(row.displayKey ?? "")} type="button">Dodaj pod</button>
+                      <div className="button-row row-tools">
+                        <button className="btn btn-secondary btn-compact" onClick={() => addMentorRowAtAnchor(row.anchorAfterKey ?? "")} type="button">Dodaj przed</button>
+                        <button className="btn btn-secondary btn-compact" onClick={() => addMentorRowAtAnchor(row.displayKey ?? "")} type="button">Dodaj pod</button>
                         {!row.readOnly ? (
-                          <button className="btn btn-secondary" onClick={() => setMentorMaterialRows((current) => current.filter((_, rowIndex) => rowIndex !== mentorIndex) || [createEmptyMaterialRow()])} type="button">Usuń</button>
+                          <>
+                            <button className="btn btn-secondary btn-compact btn-icon" onClick={() => moveMentorRow(row.displayKey ?? "", -1)} type="button" title="Przesuń w górę">↑</button>
+                            <button className="btn btn-secondary btn-compact btn-icon" onClick={() => moveMentorRow(row.displayKey ?? "", 1)} type="button" title="Przesuń w dół">↓</button>
+                            <button className="btn btn-secondary btn-compact" onClick={() => removeMentorRow(row.displayKey ?? "")} type="button">Usuń</button>
+                          </>
                         ) : null}
                       </div>
                     </header>
@@ -3334,8 +3378,8 @@ function MentorSection({
                   );
                 })}
                 <div className="button-row">
-                  <button className="btn btn-secondary" onClick={() => addMentorRowAtAnchor("")} type="button">Dodaj wiersz na górze</button>
-                  <button className="btn btn-secondary" onClick={() => addMentorRowAtAnchor(mentorMaterialDisplayRows.filter((row) => row.readOnly).slice(-1)[0]?.displayKey ?? "")} type="button">Dodaj wiersz na końcu</button>
+                  <button className="btn btn-secondary btn-compact" onClick={() => addMentorRowAtAnchor("")} type="button">Dodaj wiersz na górze</button>
+                  <button className="btn btn-secondary btn-compact" onClick={() => addMentorRowAtAnchor(mentorMaterialDisplayRows.filter((row) => row.readOnly).slice(-1)[0]?.displayKey ?? "")} type="button">Dodaj wiersz na końcu</button>
                   <button className="btn btn-primary" onClick={() => void saveMentorMaterialRows()} type="button">Zapisz wiersze</button>
                 </div>
               </div>

@@ -206,7 +206,7 @@ export function GlobeSection() {
         width={SIZE}
         height={SIZE}
         viewBox={`0 0 ${SIZE} ${SIZE}`}
-        className="w-full h-auto cursor-grab active:cursor-grabbing rounded-full drop-shadow-[0_18px_30px_rgba(22,101,52,0.08)]"
+        className="w-full h-auto cursor-grab active:cursor-grabbing rounded-full shadow-2xl"
         onMouseDown={onPointerDown}
         onTouchStart={onPointerDown}
         style={{ touchAction: "none" }}
