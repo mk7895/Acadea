@@ -342,6 +342,42 @@ function getEligibleHintTemplateIdsForGuides(
   return orderedTemplateIds.slice(0, limits.maxHintGuideCount);
 }
 
+function serializeMentorProfile(
+  profile:
+    | {
+        adminApproved?: boolean | null;
+        bio?: string | null;
+        googleCalendarEmail?: string | null;
+        googleDriveFolderUrl?: string | null;
+        headline?: string | null;
+        id?: number;
+        meetingLink?: string | null;
+        meetingMethod?: string | null;
+        timezone?: string | null;
+        updatedAt?: Date | null;
+        userId?: number;
+        whatsappNumber?: string | null;
+      }
+    | null
+    | undefined,
+) {
+  if (!profile) {
+    return null;
+  }
+
+  return {
+    ...profile,
+    bio: profile.bio ?? "",
+    googleCalendarEmail: profile.googleCalendarEmail ?? "",
+    googleDriveFolderUrl: profile.googleDriveFolderUrl ?? "",
+    headline: profile.headline ?? "",
+    meetingLink: profile.meetingLink ?? "",
+    meetingMethod: profile.meetingMethod ?? "zoom_link",
+    timezone: profile.timezone ?? "Europe/Warsaw",
+    whatsappNumber: profile.whatsappNumber ?? "",
+  };
+}
+
 function serializeUser(user: NonNullable<AuthenticatedRequest["platformUser"]>) {
   return {
     id: user.id,
@@ -1226,7 +1262,7 @@ router.get(
       .where(eq(mentorAvailabilityRulesTable.mentorUserId, req.platformUser!.id))
       .orderBy(asc(mentorAvailabilityRulesTable.weekday), asc(mentorAvailabilityRulesTable.startTime));
 
-    return res.json({ profile, universities, availability });
+    return res.json({ profile: serializeMentorProfile(profile), universities, availability });
   },
 );
 
@@ -1268,7 +1304,7 @@ router.put(
       })
       .returning();
 
-    return res.json(profile);
+    return res.json(serializeMentorProfile(profile));
   },
 );
 

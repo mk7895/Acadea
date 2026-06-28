@@ -2535,7 +2535,16 @@ function MentorSection({
   session: SessionPayload;
   token: string;
 }) {
-  const [profile, setProfile] = useState<any>(session.mentorProfile ?? {});
+  const [profile, setProfile] = useState<any>({
+    bio: "",
+    googleDriveFolderUrl: "",
+    headline: "",
+    meetingLink: "",
+    meetingMethod: "zoom_link",
+    timezone: "Europe/Warsaw",
+    whatsappNumber: "",
+    ...(session.mentorProfile ?? {}),
+  });
   const [availability, setAvailability] = useState([{ weekday: 1, startTime: "16:00", endTime: "18:00", isActive: true }]);
   const [universities, setUniversities] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
@@ -2560,7 +2569,16 @@ function MentorSection({
     if (section === "profile" || section === "availability") {
       void apiFetch<any>("/mentor/profile", undefined, token)
         .then((payload) => {
-          setProfile(payload.profile ?? {});
+          setProfile({
+            bio: "",
+            googleDriveFolderUrl: "",
+            headline: "",
+            meetingLink: "",
+            meetingMethod: "zoom_link",
+            timezone: "Europe/Warsaw",
+            whatsappNumber: "",
+            ...(payload.profile ?? {}),
+          });
           setUniversities(payload.universities ?? []);
           setAvailability(payload.availability?.length ? payload.availability : availability);
         })
@@ -2591,8 +2609,11 @@ function MentorSection({
         method: "PUT",
         body: JSON.stringify({
           ...profile,
+          googleDriveFolderUrl: profile.googleDriveFolderUrl || "",
           meetingMethod: profile.meetingMethod || "zoom_link",
+          meetingLink: profile.meetingMethod === "whatsapp" ? "" : (profile.meetingLink || ""),
           timezone: profile.timezone || "Europe/Warsaw",
+          whatsappNumber: profile.meetingMethod === "whatsapp" ? (profile.whatsappNumber || "") : "",
         }),
       }, token);
       setStatus("Profil mentora zapisany.");
@@ -2760,8 +2781,17 @@ function MentorSection({
                 </div>
               </div>
               <div className="field">
-                <label>Link spotkań</label>
-                <input value={profile.meetingLink ?? ""} onChange={(event) => setProfile((current: any) => ({ ...current, meetingLink: event.target.value }))} />
+                <label>{profile.meetingMethod === "whatsapp" ? "Numer WhatsApp" : "Link spotkań"}</label>
+                <input
+                  value={profile.meetingMethod === "whatsapp" ? (profile.whatsappNumber ?? "") : (profile.meetingLink ?? "")}
+                  onChange={(event) =>
+                    setProfile((current: any) => ({
+                      ...current,
+                      meetingLink: current.meetingMethod === "whatsapp" ? (current.meetingLink ?? "") : event.target.value,
+                      whatsappNumber: current.meetingMethod === "whatsapp" ? event.target.value : (current.whatsappNumber ?? ""),
+                    }))
+                  }
+                />
               </div>
               <div className="field">
                 <label>Folder Google Drive mentora</label>
