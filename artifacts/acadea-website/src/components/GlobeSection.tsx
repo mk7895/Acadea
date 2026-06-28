@@ -194,13 +194,6 @@ export function GlobeSection() {
 
   return (
     <div className="relative select-none w-full max-w-[500px] mx-auto pb-8">
-      <div
-        className="absolute left-1/2 top-[calc(100%-0.6rem)] h-10 w-[70%] -translate-x-1/2 rounded-full pointer-events-none blur-xl"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(22,101,52,0.22) 0%, rgba(22,101,52,0.12) 44%, rgba(22,101,52,0.03) 68%, rgba(22,101,52,0) 84%)",
-        }}
-      />
       <div className="absolute left-1/2 top-[calc(100%-0.15rem)] h-4 w-[38%] -translate-x-1/2 rounded-full bg-primary/15 pointer-events-none blur-md" />
       <div className="rounded-full shadow-2xl overflow-hidden">
         <svg

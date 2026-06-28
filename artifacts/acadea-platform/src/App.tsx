@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, Route, Switch, useLocation } from "wouter";
 import { apiFetch } from "@/lib/api";
 import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
+import { CookieConsentProvider } from "@/components/CookieConsent";
 
 const TOKEN_KEY = "acadea-platform-session";
 
@@ -4050,6 +4051,49 @@ function AppRouter() {
   );
 }
 
+function PlatformSeoManager() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    const robotsMeta =
+      document.querySelector('meta[name="robots"]') ??
+      (() => {
+        const meta = document.createElement("meta");
+        meta.setAttribute("name", "robots");
+        document.head.appendChild(meta);
+        return meta;
+      })();
+
+    if (location === "/") {
+      document.title = "ACADEA Platform";
+      robotsMeta.setAttribute("content", "index, follow");
+      return;
+    }
+
+    if (location === "/forgot-password") {
+      document.title = "Reset hasła | ACADEA Platform";
+      robotsMeta.setAttribute("content", "noindex, nofollow");
+      return;
+    }
+
+    if (location === "/reset-password") {
+      document.title = "Ustaw nowe hasło | ACADEA Platform";
+      robotsMeta.setAttribute("content", "noindex, nofollow");
+      return;
+    }
+
+    document.title = "ACADEA Platform";
+    robotsMeta.setAttribute("content", "noindex, nofollow");
+  }, [location]);
+
+  return null;
+}
+
 export default function App() {
-  return <AppRouter />;
+  return (
+    <CookieConsentProvider>
+      <PlatformSeoManager />
+      <AppRouter />
+    </CookieConsentProvider>
+  );
 }
