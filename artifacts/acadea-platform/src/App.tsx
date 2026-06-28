@@ -206,6 +206,47 @@ function parseGuideMeta(value: string | null | undefined) {
   }
 }
 
+function isItemGuide(guide: any) {
+  if (typeof guide?.isItemGuide === "boolean") {
+    return guide.isItemGuide;
+  }
+  const metadata = parseGuideMeta(guide?.driveFolderUrl);
+  return (metadata as any).kind === "item_guide";
+}
+
+function formatGuideScopeLabel(guide: any, allUniversityGuides: any[]) {
+  const appliesToIds = Array.isArray(guide?.itemGuideAppliesToGuideIds)
+    ? guide.itemGuideAppliesToGuideIds.map((value: any) => String(value))
+    : (() => {
+        const metadata = parseGuideMeta(guide?.driveFolderUrl);
+        return Array.isArray((metadata as any).appliesToGuideIds)
+          ? (metadata as any).appliesToGuideIds.map((value: any) => String(value))
+          : [];
+      })();
+
+  if (!appliesToIds.length) {
+    return "Brak przypisanych uczelni";
+  }
+
+  const matchedGuides = allUniversityGuides.filter((entry) => appliesToIds.includes(String(entry.id)));
+  const labels = matchedGuides.map((entry) => `${entry.country} • ${entry.universityName}`);
+  return labels.length ? labels.join(" | ") : "Brak przypisanych uczelni";
+}
+
+function countMaterialTemplateUniversityUsage(template: any, universityGuides: any[]) {
+  const validGuideMap = new Map(
+    universityGuides.map((guide) => [String(guide.id), `${guide.country}|||${guide.universityName}`]),
+  );
+  return Array.from(
+    new Set(
+      (template?.appliesToGuideIds ?? [])
+        .map((value: any) => String(value))
+        .map((value: string) => validGuideMap.get(value) ?? null)
+        .filter((value: string | null): value is string => Boolean(value)),
+    ),
+  ).length;
+}
+
 function createEmptyMaterialRow(): MaterialRowEditor {
   return {
     alternativeOptions: [],
@@ -716,6 +757,12 @@ function AdminSection({
   const [users, setUsers] = useState<any[]>([]);
   const [mentorProfiles, setMentorProfiles] = useState<any[]>([]);
   const [menteeProfiles, setMenteeProfiles] = useState<any[]>([]);
+  const [tipAccessByMentee, setTipAccessByMentee] = useState<any[]>([]);
+  const [menteeLimitDrafts, setMenteeLimitDrafts] = useState<Record<string, {
+    disabledHintGuideTemplateIds: string[];
+    maxActiveGuideCount: number;
+    maxHintGuideCount: number;
+  }>>({});
   const [mentorAssignments, setMentorAssignments] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
   const [profileFields, setProfileFields] = useState<any[]>([]);
@@ -804,22 +851,19 @@ function AdminSection({
   const menteeUsers = users.filter((user) => user.role === "mentee");
   const adminUsers = users.filter((user) => user.role === "admin");
   const materialGuideTemplates = guides.filter(
-    (guide) => guide.guideType === "admin_template" && !guide.sourceGuideId,
+    (guide) => guide.guideType === "admin_template" && !guide.sourceGuideId && !isItemGuide(guide),
   );
   const editableGuideTemplates = guides.filter(
     (guide) =>
       (guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint") &&
-      !guide.sourceGuideId,
+      !guide.sourceGuideId &&
+      !isItemGuide(guide),
   );
   const itemGuides = guides.filter(
-    (guide) => {
-      const metadata = parseGuideMeta(guide.driveFolderUrl);
-      return (
-        (guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint") &&
-        (!Array.isArray(guide.items) || guide.items.length === 0) &&
-        (metadata as any).kind === "item_guide"
-      );
-    },
+    (guide) =>
+      (guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint") &&
+      (!Array.isArray(guide.items) || guide.items.length === 0) &&
+      isItemGuide(guide),
   );
 
   function serializeGuideItemsToText(items: any[] = []) {
@@ -930,12 +974,28 @@ function AdminSection({
       menteeProfiles: any[];
       mentorAssignments: any[];
       mentorProfiles: any[];
+      tipAccessByMentee: any[];
       users: any[];
     }>("/admin/users", undefined, token);
     setUsers(payload.users);
     setMentorProfiles(payload.mentorProfiles);
     setMenteeProfiles(payload.menteeProfiles);
     setMentorAssignments(payload.mentorAssignments);
+    setTipAccessByMentee(payload.tipAccessByMentee ?? []);
+    setMenteeLimitDrafts(
+      Object.fromEntries(
+        (payload.menteeProfiles ?? []).map((profile: any) => [
+          String(profile.userId),
+          {
+            disabledHintGuideTemplateIds: Array.isArray(profile.disabledHintGuideTemplateIds)
+              ? profile.disabledHintGuideTemplateIds.map((value: any) => String(value))
+              : [],
+            maxActiveGuideCount: Number(profile.maxActiveGuideCount ?? 3),
+            maxHintGuideCount: Number(profile.maxHintGuideCount ?? 3),
+          },
+        ]),
+      ),
+    );
   }
 
   async function refreshGuides() {
@@ -1013,12 +1073,16 @@ function AdminSection({
   }
 
   function loadItemGuideIntoEditor(guide: any) {
-    const metadata = parseGuideMeta(guide.driveFolderUrl);
     setItemGuideEditorId(String(guide.id));
     setItemGuideForm({
-      appliesToGuideIds: Array.isArray((metadata as any).appliesToGuideIds)
-        ? (metadata as any).appliesToGuideIds.map((value: any) => String(value))
-        : [],
+      appliesToGuideIds: Array.isArray(guide.itemGuideAppliesToGuideIds)
+        ? guide.itemGuideAppliesToGuideIds.map((value: any) => String(value))
+        : (() => {
+            const metadata = parseGuideMeta(guide.driveFolderUrl);
+            return Array.isArray((metadata as any).appliesToGuideIds)
+              ? (metadata as any).appliesToGuideIds.map((value: any) => String(value))
+              : [];
+          })(),
       title: guide.title ?? "",
       slug: guide.slug ?? "",
       summary: guide.summary ?? "",
@@ -1336,8 +1400,32 @@ function AdminSection({
     }
   }
 
+  async function saveMenteeLimits(userId: number) {
+    const draft = menteeLimitDrafts[String(userId)];
+    if (!draft) {
+      return;
+    }
+    await runUserAction(
+      userId,
+      async () => {
+        await apiFetch(`/admin/mentees/${userId}/settings`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            disabledHintGuideTemplateIds: draft.disabledHintGuideTemplateIds
+              .map((value) => Number(value))
+              .filter((value) => Number.isFinite(value) && value > 0),
+            maxActiveGuideCount: Number(draft.maxActiveGuideCount),
+            maxHintGuideCount: Number(draft.maxHintGuideCount),
+          }),
+        }, token);
+      },
+      "Limity i dostęp do wskazówek zostały zapisane.",
+    );
+  }
+
   const mentorProfileMap = new Map(mentorProfiles.map((profile) => [profile.userId, profile]));
   const menteeProfileMap = new Map(menteeProfiles.map((profile) => [profile.userId, profile]));
+  const tipAccessMap = new Map(tipAccessByMentee.map((entry) => [entry.menteeUserId, entry]));
 
   return (
     <>
@@ -1484,6 +1572,12 @@ function AdminSection({
               {[...adminUsers, ...mentorUsers, ...menteeUsers].map((user) => {
                 const mentorProfile = mentorProfileMap.get(user.id);
                 const menteeProfile = menteeProfileMap.get(user.id);
+                const tipAccess = tipAccessMap.get(user.id);
+                const menteeLimitDraft = menteeLimitDrafts[String(user.id)] ?? {
+                  disabledHintGuideTemplateIds: [],
+                  maxActiveGuideCount: Number(menteeProfile?.maxActiveGuideCount ?? 3),
+                  maxHintGuideCount: Number(menteeProfile?.maxHintGuideCount ?? 3),
+                };
                 const mentorApproved = Boolean(mentorProfile?.adminApproved);
                 const menteeApproved = Boolean(menteeProfile?.adminApproved);
 
@@ -1502,7 +1596,97 @@ function AdminSection({
                       <p className="muted">Akceptacja mentora: <strong>{mentorApproved ? "tak" : "nie"}</strong>.</p>
                     ) : null}
                     {user.role === "mentee" ? (
-                      <p className="muted">Akceptacja mentee: <strong>{menteeApproved ? "tak" : "nie"}</strong>.</p>
+                      <>
+                        <p className="muted">Akceptacja mentee: <strong>{menteeApproved ? "tak" : "nie"}</strong>.</p>
+                        <div className="grid-2" style={{ marginTop: 12 }}>
+                          <div className="field">
+                            <label>Limit aktywnych uczelni</label>
+                            <input
+                              min={1}
+                              type="number"
+                              value={menteeLimitDraft.maxActiveGuideCount}
+                              onChange={(event) =>
+                                setMenteeLimitDrafts((current) => ({
+                                  ...current,
+                                  [String(user.id)]: {
+                                    ...menteeLimitDraft,
+                                    maxActiveGuideCount: Number(event.target.value),
+                                  },
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Limit uczelni z dostępem do wskazówek</label>
+                            <input
+                              min={0}
+                              type="number"
+                              value={menteeLimitDraft.maxHintGuideCount}
+                              onChange={(event) =>
+                                setMenteeLimitDrafts((current) => ({
+                                  ...current,
+                                  [String(user.id)]: {
+                                    ...menteeLimitDraft,
+                                    maxHintGuideCount: Number(event.target.value),
+                                  },
+                                }))
+                              }
+                            />
+                          </div>
+                        </div>
+                        <div className="stack" style={{ marginTop: 10 }}>
+                          <div className="muted small">
+                            Aktywny dostęp do wskazówek: {(tipAccess?.guides ?? []).length} / {menteeLimitDraft.maxHintGuideCount}
+                          </div>
+                          {(tipAccess?.guides ?? []).length ? (
+                            <div className="list">
+                              {(tipAccess?.guides ?? []).map((guide: any) => (
+                                <div className="list-item" key={`tip-access-${user.id}-${guide.id}`}>
+                                  <header>
+                                    <div>
+                                      <h3>{guide.universityName}</h3>
+                                      <div className="muted small">{guide.country} • {guide.universityName}</div>
+                                    </div>
+                                    <button
+                                      className="btn btn-secondary"
+                                      disabled={userActionId === user.id}
+                                      onClick={() =>
+                                        void runUserAction(
+                                          user.id,
+                                          async () => {
+                                            const nextDisabledIds = Array.from(
+                                              new Set([
+                                                ...menteeLimitDraft.disabledHintGuideTemplateIds,
+                                                String(guide.id),
+                                              ]),
+                                            );
+                                            await apiFetch(`/admin/mentees/${user.id}/settings`, {
+                                              method: "PATCH",
+                                              body: JSON.stringify({
+                                                disabledHintGuideTemplateIds: nextDisabledIds
+                                                  .map((value) => Number(value))
+                                                  .filter((value) => Number.isFinite(value) && value > 0),
+                                                maxActiveGuideCount: Number(menteeLimitDraft.maxActiveGuideCount),
+                                                maxHintGuideCount: Number(menteeLimitDraft.maxHintGuideCount),
+                                              }),
+                                            }, token);
+                                          },
+                                          "Dostęp do wskazówek został usunięty dla tej uczelni.",
+                                        )
+                                      }
+                                      type="button"
+                                    >
+                                      Usuń dostęp do wskazówek
+                                    </button>
+                                  </header>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="small muted">Ten mentee nie ma obecnie aktywnego dostępu do wskazówek żadnej uczelni.</div>
+                          )}
+                        </div>
+                      </>
                     ) : null}
                     <div className="button-row">
                       {user.role === "mentor" ? (
@@ -1524,6 +1708,16 @@ function AdminSection({
                           type="button"
                         >
                           {mentorApproved ? "Cofnij akceptację" : "Akceptuj mentora"}
+                        </button>
+                      ) : null}
+                      {user.role === "mentee" ? (
+                        <button
+                          className="btn btn-secondary"
+                          disabled={userActionId === user.id}
+                          onClick={() => void saveMenteeLimits(user.id)}
+                          type="button"
+                        >
+                          Zapisz limity i wskazówki
                         </button>
                       ) : null}
                       {user.role === "mentee" ? (
@@ -1919,7 +2113,7 @@ function AdminSection({
                   <option value="">Brak</option>
                   {itemGuides.map((guide) => (
                     <option key={guide.id} value={String(guide.id)}>
-                      {guide.universityName} • {guide.title}
+                      {guide.title} • {formatGuideScopeLabel(guide, materialGuideTemplates)}
                     </option>
                   ))}
                 </select>
@@ -1945,7 +2139,7 @@ function AdminSection({
                         />
                         <span className="selector-copy">
                           <strong>{guide.universityName}</strong>
-                          <span className="small muted" style={{ display: "block" }}>{guide.country} • {guide.title}</span>
+                          <span className="small muted" style={{ display: "block" }}>{guide.country} • {guide.universityName}</span>
                         </span>
                       </label>
                     );
@@ -1994,7 +2188,7 @@ function AdminSection({
                                   />
                                   <span className="selector-copy">
                                     <strong>{guide.universityName}</strong>
-                                    <span className="small muted" style={{ display: "block" }}>{guide.country} • {guide.title}</span>
+                                    <span className="small muted" style={{ display: "block" }}>{guide.country} • {guide.universityName}</span>
                                   </span>
                                 </label>
                               );
@@ -2078,7 +2272,7 @@ function AdminSection({
                                 <option value="">Brak</option>
                                 {itemGuides.map((guide) => (
                                   <option key={`row-guide-${guide.id}`} value={String(guide.id)}>
-                                    {guide.universityName} • {guide.title}
+                                    {guide.title} • {formatGuideScopeLabel(guide, materialGuideTemplates)}
                                   </option>
                                 ))}
                               </select>
@@ -2126,7 +2320,9 @@ function AdminSection({
                   <header>
                     <div>
                       <h3>{template.title}</h3>
-                      <div className="muted small">{materialTemplateTypeLabel(template.templateType)} • {(template.appliesToGuideIds ?? []).length} powiązań uczelni</div>
+                      <div className="muted small">
+                        {materialTemplateTypeLabel(template.templateType)} • {countMaterialTemplateUniversityUsage(template, materialGuideTemplates)} powiązań uczelni
+                      </div>
                     </div>
                     <span className="badge">{template.isActive ? "active" : "inactive"}</span>
                   </header>
@@ -2189,7 +2385,7 @@ function AdminSection({
                         />
                         <div className="selector-copy">
                           <strong>{guide.universityName}</strong>
-                          <span>{guide.country} • {guide.title}</span>
+                          <span>{guide.country} • {guide.universityName}</span>
                         </div>
                       </label>
                     );
@@ -2236,7 +2432,7 @@ function AdminSection({
                   <header>
                     <div>
                       <h3>{guide.title}</h3>
-                      <div className="muted small">{guide.country} • {guide.universityName}</div>
+                      <div className="muted small">{formatGuideScopeLabel(guide, materialGuideTemplates)}</div>
                     </div>
                     <span className="badge">{guide.status}</span>
                   </header>
@@ -2969,10 +3165,21 @@ function MenteeSection({
   const profileFields = overview?.profileFields ?? [];
   const assignedMentors = overview?.assignedMentors ?? [];
   const availableGuideTemplates = overview?.availableGuideTemplates ?? [];
+  const guideLimits = overview?.guideLimits ?? { maxActiveGuideCount: 3, maxHintGuideCount: 3 };
   const materialTemplates = overview?.materialTemplates ?? [];
   const hintGuides = overview?.hintGuides ?? [];
   const hintEligibleTemplateIds = (overview?.hintEligibleTemplateIds ?? []).map(String);
+  const tipAccessGuides = overview?.tipAccessGuides ?? [];
   const hintGuideMap = new Map((hintGuides ?? []).map((guide: any) => [String(guide.id), guide]));
+  const hintScopeGuides = [
+    ...(overview?.assignedGuideTemplates ?? []),
+    ...availableGuideTemplates,
+    ...(guides ?? []).map((guide: any) => ({
+      id: guide.sourceGuideId ?? guide.id,
+      country: guide.country,
+      universityName: guide.universityName,
+    })),
+  ].filter((guide: any, index: number, array: any[]) => array.findIndex((entry) => String(entry.id) === String(guide.id)) === index);
   const selectedMentor = assignedMentors.find(
     (mentor: any) => String(mentor.mentorId) === String(meetingForm.mentorUserId),
   );
@@ -3084,6 +3291,27 @@ function MenteeSection({
       {status ? <div className="status">{status}</div> : null}
       {section === "universities" && overview ? (
         <div className="stack">
+          <div className="dashboard-card">
+            <h2>Dostęp do wskazówek</h2>
+            <p className="muted">
+              Możesz mieć jednocześnie do <strong>{guideLimits.maxActiveGuideCount}</strong> aktywnych uczelni.
+              Wskazówki są aktywne maksymalnie dla <strong>{guideLimits.maxHintGuideCount}</strong> uczelni.
+            </p>
+            {tipAccessGuides.length ? (
+              <div className="list" style={{ marginTop: 16 }}>
+                {tipAccessGuides.map((guide: any) => (
+                  <div className="list-item" key={`tip-access-guide-${guide.id}`}>
+                    <h3>{guide.universityName}</h3>
+                    <div className="small muted">{guide.country} • {guide.universityName}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="small muted" style={{ marginTop: 12 }}>
+                Obecnie nie masz aktywnego dostępu do wskazówek żadnej uczelni.
+              </div>
+            )}
+          </div>
           <div className="dashboard-card">
             <h2>Twoje Uczelnie</h2>
             <p className="muted">Tutaj widzisz swoje aktywne uczelnie. Po kliknięciu kafla otwierasz checklistę i wymagania przypisane do tej konkretnej aplikacji.</p>
@@ -3464,7 +3692,7 @@ function MenteeSection({
               <div>
                 <div className="eyebrow">Wskazówki</div>
                 <h2 style={{ margin: "12px 0 6px", color: "#153f2c" }}>{openHintGuide.title}</h2>
-                <div className="small muted">{openHintGuide.country} • {openHintGuide.universityName}</div>
+                <div className="small muted">{formatGuideScopeLabel(openHintGuide, hintScopeGuides)}</div>
               </div>
               <button className="btn btn-secondary" onClick={() => setOpenHintGuide(null)} type="button">
                 Zamknij

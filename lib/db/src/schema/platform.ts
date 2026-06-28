@@ -139,6 +139,12 @@ export const menteeProfilesTable = pgTable(
     studentEmail: text("student_email"),
     intakeYear: integer("intake_year"),
     targetCountries: jsonb("target_countries").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    maxActiveGuideCount: integer("max_active_guide_count").notNull().default(3),
+    maxHintGuideCount: integer("max_hint_guide_count").notNull().default(3),
+    disabledHintGuideTemplateIds: jsonb("disabled_hint_guide_template_ids")
+      .$type<number[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

@@ -208,6 +208,12 @@ const approvalSchema = z.object({
   approved: z.boolean(),
 });
 
+const menteeLimitsSchema = z.object({
+  disabledHintGuideTemplateIds: z.array(z.number().int().positive()).optional(),
+  maxActiveGuideCount: z.number().int().min(1).max(20).optional(),
+  maxHintGuideCount: z.number().int().min(0).max(20).optional(),
+});
+
 const googleConnectionSchema = z.object({
   connectionType: z.enum(PLATFORM_GOOGLE_CONNECTION_TYPES),
   externalEmail: z.string().trim().email().or(z.literal("")).optional().default(""),
@@ -272,6 +278,68 @@ function normalizeSlug(value: string) {
     .trim()
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
+}
+
+function parseGuideMeta(value: string | null | undefined) {
+  if (!value || !value.startsWith("__meta:")) {
+    return {};
+  }
+  try {
+    return JSON.parse(value.slice("__meta:".length));
+  } catch {
+    return {};
+  }
+}
+
+function isItemGuideRecord(guide: { driveFolderUrl: string | null; guideType: string }) {
+  if (guide.guideType !== "admin_template" && guide.guideType !== "mentor_blueprint") {
+    return false;
+  }
+  const metadata = parseGuideMeta(guide.driveFolderUrl);
+  return (metadata as any).kind === "item_guide";
+}
+
+function getMenteeGuideLimits(profile: {
+  disabledHintGuideTemplateIds?: number[] | null;
+  maxActiveGuideCount?: number | null;
+  maxHintGuideCount?: number | null;
+} | null | undefined) {
+  return {
+    disabledHintGuideTemplateIds: Array.isArray(profile?.disabledHintGuideTemplateIds)
+      ? profile!.disabledHintGuideTemplateIds.filter((value): value is number => Number.isFinite(value))
+      : [],
+    maxActiveGuideCount: Number.isFinite(profile?.maxActiveGuideCount)
+      ? Math.max(1, Number(profile?.maxActiveGuideCount))
+      : 3,
+    maxHintGuideCount: Number.isFinite(profile?.maxHintGuideCount)
+      ? Math.max(0, Number(profile?.maxHintGuideCount))
+      : 3,
+  };
+}
+
+function getEligibleHintTemplateIdsForGuides(
+  guides: Array<{ createdAt: Date; id: number; sourceGuideId: number | null }>,
+  limits: {
+    disabledHintGuideTemplateIds: number[];
+    maxHintGuideCount: number;
+  },
+) {
+  const disabledIds = new Set(limits.disabledHintGuideTemplateIds);
+  const seen = new Set<number>();
+  const orderedTemplateIds: number[] = [];
+
+  for (const guide of guides) {
+    const sourceGuideId = guide.sourceGuideId ?? guide.id;
+    if (!Number.isFinite(sourceGuideId) || seen.has(sourceGuideId)) {
+      continue;
+    }
+    seen.add(sourceGuideId);
+    if (!disabledIds.has(sourceGuideId)) {
+      orderedTemplateIds.push(sourceGuideId);
+    }
+  }
+
+  return orderedTemplateIds.slice(0, limits.maxHintGuideCount);
 }
 
 function serializeUser(user: NonNullable<AuthenticatedRequest["platformUser"]>) {
@@ -404,12 +472,21 @@ async function shapeGuideList(
     guides.map((guide) => guide.id),
   );
 
-  return guides.map((guide) => ({
-    ...guide,
-    items: itemMap.get(guide.id) ?? [],
-    createdAt: guide.createdAt.toISOString(),
-    updatedAt: guide.updatedAt.toISOString(),
-  }));
+  return guides.map((guide) => {
+    const metadata = parseGuideMeta(guide.driveFolderUrl);
+    const appliesToGuideIds = Array.isArray((metadata as any).appliesToGuideIds)
+      ? (metadata as any).appliesToGuideIds.filter((value: unknown): value is number => typeof value === "number")
+      : [];
+
+    return {
+      ...guide,
+      isItemGuide: isItemGuideRecord(guide),
+      itemGuideAppliesToGuideIds: appliesToGuideIds,
+      items: itemMap.get(guide.id) ?? [],
+      createdAt: guide.createdAt.toISOString(),
+      updatedAt: guide.updatedAt.toISOString(),
+    };
+  });
 }
 
 async function collectGuideCascadeIds(
@@ -502,6 +579,67 @@ async function removeGuideReferencesFromMaterialTemplates(
       .update(platformMaterialTemplatesTable)
       .set({
         guideId: nextGuideId,
+        appliesToGuideIds: nextAppliesToGuideIds,
+        structure: nextStructure,
+        updatedAt: new Date(),
+      })
+      .where(eq(platformMaterialTemplatesTable.id, template.id));
+  }
+}
+
+async function sanitizeMaterialTemplateUniversityLinks(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+) {
+  const [templates, guides] = await Promise.all([
+    db.select().from(platformMaterialTemplatesTable),
+    db.select({
+      driveFolderUrl: platformGuidesTable.driveFolderUrl,
+      guideType: platformGuidesTable.guideType,
+      id: platformGuidesTable.id,
+      sourceGuideId: platformGuidesTable.sourceGuideId,
+    }).from(platformGuidesTable),
+  ]);
+
+  const validUniversityGuideIds = new Set(
+    guides
+      .filter((guide) => !guide.sourceGuideId && !isItemGuideRecord(guide))
+      .map((guide) => guide.id),
+  );
+
+  for (const template of templates) {
+    let changed = false;
+    const nextAppliesToGuideIds = (template.appliesToGuideIds ?? []).filter((guideId: number) => {
+      const keep = validUniversityGuideIds.has(guideId);
+      if (!keep) {
+        changed = true;
+      }
+      return keep;
+    });
+
+    const nextStructure = (template.structure ?? []).map((row: Record<string, unknown>) => {
+      if (!Array.isArray(row.appliesToGuideIds)) {
+        return row;
+      }
+      const filteredIds = row.appliesToGuideIds.filter(
+        (value): value is number => typeof value === "number" && validUniversityGuideIds.has(value),
+      );
+      if (filteredIds.length !== row.appliesToGuideIds.length) {
+        changed = true;
+        return {
+          ...row,
+          appliesToGuideIds: filteredIds,
+        };
+      }
+      return row;
+    });
+
+    if (!changed) {
+      continue;
+    }
+
+    await db
+      .update(platformMaterialTemplatesTable)
+      .set({
         appliesToGuideIds: nextAppliesToGuideIds,
         structure: nextStructure,
         updatedAt: new Date(),
@@ -885,9 +1023,10 @@ router.get("/platform/public/guides", async (_req, res) => {
       ),
     )
     .orderBy(asc(platformGuidesTable.country), asc(platformGuidesTable.universityName));
+  const visibleGuides = guides.filter((guide) => !isItemGuideRecord(guide));
 
   return res.json(
-    guides.map((guide) => ({
+    visibleGuides.map((guide) => ({
       id: guide.id,
       title: guide.title,
       slug: guide.slug,
@@ -987,6 +1126,7 @@ router.get(
   requirePlatformRole("admin"),
   async (_req, res) => {
     const { db } = await import("@workspace/db");
+    await sanitizeMaterialTemplateUniversityLinks(db);
     const templates = await db
       .select()
       .from(platformMaterialTemplatesTable)
@@ -1265,7 +1405,7 @@ router.get(
       .from(platformGuidesTable)
       .where(eq(platformGuidesTable.guideType, "admin_template"))
       .orderBy(asc(platformGuidesTable.country), asc(platformGuidesTable.universityName));
-    return res.json(await shapeGuideList(db, guides));
+    return res.json(await shapeGuideList(db, guides.filter((guide) => !isItemGuideRecord(guide))));
   },
 );
 
@@ -1583,6 +1723,7 @@ router.get(
       .from(menteeProfilesTable)
       .where(eq(menteeProfilesTable.userId, req.platformUser!.id))
       .limit(1);
+    const guideLimits = getMenteeGuideLimits(profile);
     const assignedMentors = await db
       .select({
         assignmentId: platformMentorAssignmentsTable.id,
@@ -1638,6 +1779,7 @@ router.get(
           )
           .orderBy(asc(platformGuidesTable.country), asc(platformGuidesTable.universityName))
       : [];
+    const visibleAdminTemplates = publishedAdminTemplates.filter((guide) => !isItemGuideRecord(guide));
     const profileFields = await db
       .select()
       .from(platformProfileFieldsTable)
@@ -1662,7 +1804,7 @@ router.get(
       uniqueGuides.map((guide) => guide.sourceGuideId ?? guide.id).filter((value): value is number => Number.isFinite(value)),
     );
     const availableGuideTemplatesRaw = [
-      ...publishedAdminTemplates,
+      ...visibleAdminTemplates,
       ...assignedGuideTemplates,
     ];
     const availableGuideTemplates = availableGuideTemplatesRaw.filter((guide, index, array) => {
@@ -1705,8 +1847,10 @@ router.get(
           )
           .orderBy(asc(platformGuidesTable.title))
       : [];
-    const hintEligibleTemplateIds = await db
+    const publishedLiveGuides = await db
       .select({
+        createdAt: platformGuidesTable.createdAt,
+        id: platformGuidesTable.id,
         sourceGuideId: platformGuidesTable.sourceGuideId,
       })
       .from(platformGuidesTable)
@@ -1717,10 +1861,21 @@ router.get(
           inArray(platformGuidesTable.guideType, ["self_service_live", "mentor_live"]),
         ),
       )
-      .orderBy(asc(platformGuidesTable.createdAt))
-      .limit(3);
+      .orderBy(asc(platformGuidesTable.createdAt));
+    const hintEligibleTemplateIds = getEligibleHintTemplateIdsForGuides(publishedLiveGuides, guideLimits);
+    const tipAccessGuides = hintEligibleTemplateIds.length
+      ? await db
+          .select()
+          .from(platformGuidesTable)
+          .where(inArray(platformGuidesTable.id, hintEligibleTemplateIds))
+          .orderBy(asc(platformGuidesTable.country), asc(platformGuidesTable.universityName))
+      : [];
 
     return res.json({
+      guideLimits: {
+        maxActiveGuideCount: guideLimits.maxActiveGuideCount,
+        maxHintGuideCount: guideLimits.maxHintGuideCount,
+      },
       profile,
       assignedMentors,
       assignedGuideAccess,
@@ -1735,9 +1890,8 @@ router.get(
       assignedGuideTemplates: await shapeGuideList(db, assignedGuideTemplates),
       availableGuideTemplates: await shapeGuideList(db, availableGuideTemplates),
       hintGuides: await shapeGuideList(db, hintGuides),
-      hintEligibleTemplateIds: hintEligibleTemplateIds
-        .map((row) => row.sourceGuideId)
-        .filter((value): value is number => Number.isFinite(value)),
+      hintEligibleTemplateIds,
+      tipAccessGuides: await shapeGuideList(db, tipAccessGuides),
       materialTemplates: visibleMaterials,
     });
   },
@@ -1915,8 +2069,11 @@ router.post(
         ),
       );
 
-    if (existingLiveGuides.length >= 3) {
-      return res.status(400).json({ error: "Na ten moment możesz mieć jednocześnie maksymalnie 3 aktywne przewodniki." });
+    const guideLimits = getMenteeGuideLimits(menteeProfile);
+    if (existingLiveGuides.length >= guideLimits.maxActiveGuideCount) {
+      return res.status(400).json({
+        error: `Na ten moment możesz mieć jednocześnie maksymalnie ${guideLimits.maxActiveGuideCount} aktywne przewodniki.`,
+      });
     }
 
     const sourceItems = await db
@@ -2040,6 +2197,7 @@ router.get(
       (guide) =>
         !guide.sourceGuideId &&
         (guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint") &&
+        !isItemGuideRecord(guide) &&
         guide.status !== "archived",
     );
 
@@ -2067,12 +2225,62 @@ router.get(
     const menteeProfiles = await db.select().from(menteeProfilesTable);
     const mentorAssignments = await db.select().from(platformMentorAssignmentsTable);
     const guideAssignments = await db.select().from(platformGuideAssignmentsTable);
+    const liveGuides = await db
+      .select({
+        country: platformGuidesTable.country,
+        createdAt: platformGuidesTable.createdAt,
+        id: platformGuidesTable.id,
+        menteeUserId: platformGuidesTable.menteeUserId,
+        sourceGuideId: platformGuidesTable.sourceGuideId,
+        title: platformGuidesTable.title,
+        universityName: platformGuidesTable.universityName,
+      })
+      .from(platformGuidesTable)
+      .where(
+        and(
+          eq(platformGuidesTable.status, "published"),
+          inArray(platformGuidesTable.guideType, ["self_service_live", "mentor_live"]),
+        ),
+      )
+      .orderBy(asc(platformGuidesTable.createdAt));
+
+    const guideById = new Map(
+      (
+        await db
+          .select({
+            country: platformGuidesTable.country,
+            id: platformGuidesTable.id,
+            title: platformGuidesTable.title,
+            universityName: platformGuidesTable.universityName,
+          })
+          .from(platformGuidesTable)
+      ).map((guide) => [guide.id, guide]),
+    );
+
+    const tipAccessByMentee = menteeProfiles.map((profile) => {
+      const limits = getMenteeGuideLimits(profile);
+      const eligibleTemplateIds = getEligibleHintTemplateIdsForGuides(
+        liveGuides.filter((guide) => guide.menteeUserId === profile.userId),
+        limits,
+      );
+      return {
+        menteeUserId: profile.userId,
+        maxActiveGuideCount: limits.maxActiveGuideCount,
+        maxHintGuideCount: limits.maxHintGuideCount,
+        disabledHintGuideTemplateIds: limits.disabledHintGuideTemplateIds,
+        guides: eligibleTemplateIds
+          .map((guideId) => guideById.get(guideId))
+          .filter((guide): guide is NonNullable<typeof guide> => Boolean(guide)),
+      };
+    });
+
     return res.json({
       users: users.map(serializeUser),
       mentorProfiles,
       menteeProfiles,
       mentorAssignments,
       guideAssignments,
+      tipAccessByMentee,
     });
   },
 );
@@ -2275,6 +2483,57 @@ router.patch(
         updatedAt: new Date(),
       })
       .where(eq(platformUsersTable.id, id));
+
+    return res.json(profile);
+  },
+);
+
+router.patch(
+  "/platform/admin/mentees/:id/settings",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = menteeLimitsSchema.safeParse(req.body);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid mentee id." : parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [existing] = await db
+      .select()
+      .from(menteeProfilesTable)
+      .where(eq(menteeProfilesTable.userId, id))
+      .limit(1);
+    const currentLimits = getMenteeGuideLimits(existing);
+    const [profile] = await db
+      .insert(menteeProfilesTable)
+      .values({
+        adminApproved: Boolean(existing?.adminApproved),
+        disabledHintGuideTemplateIds:
+          parsed.data.disabledHintGuideTemplateIds ?? currentLimits.disabledHintGuideTemplateIds,
+        maxActiveGuideCount:
+          parsed.data.maxActiveGuideCount ?? currentLimits.maxActiveGuideCount,
+        maxHintGuideCount:
+          parsed.data.maxHintGuideCount ?? currentLimits.maxHintGuideCount,
+        primaryMentorUserId: existing?.primaryMentorUserId ?? null,
+        studentEmail: existing?.studentEmail ?? null,
+        targetCountries: existing?.targetCountries ?? [],
+        intakeYear: existing?.intakeYear ?? null,
+        userId: id,
+      })
+      .onConflictDoUpdate({
+        target: menteeProfilesTable.userId,
+        set: {
+          disabledHintGuideTemplateIds:
+            parsed.data.disabledHintGuideTemplateIds ?? currentLimits.disabledHintGuideTemplateIds,
+          maxActiveGuideCount:
+            parsed.data.maxActiveGuideCount ?? currentLimits.maxActiveGuideCount,
+          maxHintGuideCount:
+            parsed.data.maxHintGuideCount ?? currentLimits.maxHintGuideCount,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
 
     return res.json(profile);
   },
