@@ -341,9 +341,16 @@ textarea {
 }
 
 .selector-copy {
+  display: grid;
+  gap: 4px;
   min-width: 0;
   flex: 1;
   word-break: break-word;
+}
+
+.selector-copy strong,
+.selector-copy span {
+  display: block;
 }
 
 .list-item header {

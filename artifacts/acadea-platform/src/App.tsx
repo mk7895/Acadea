@@ -198,6 +198,16 @@ function uniqueStrings(values: Array<string | null | undefined>) {
   return Array.from(new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean)));
 }
 
+function formatUniversityNamesPreview(values: Array<string | null | undefined>, limit = 3) {
+  const unique = uniqueStrings(values);
+  if (!unique.length) {
+    return "";
+  }
+  const visible = unique.slice(0, limit);
+  const remaining = unique.length - visible.length;
+  return remaining > 0 ? `${visible.join(" • ")} +${remaining}` : visible.join(" • ");
+}
+
 function parseGuideMeta(value: string | null | undefined) {
   if (!value || !value.startsWith("__meta:")) {
     return {};
@@ -2456,7 +2466,7 @@ function AdminSection({
                         />
                         <div className="selector-copy">
                           <strong>{guide.universityName}</strong>
-                          <span>{guide.country}</span>
+                          <span className="small muted">{guide.country}</span>
                         </div>
                       </label>
                     );
@@ -2731,8 +2741,8 @@ function MentorSection({
         apiFetch<any[]>("/mentor/guides", undefined, token).then(setGuides),
         apiFetch<any>("/mentor/material-templates", undefined, token).then((payload) => {
           setMentorMaterialTemplates(payload.templates ?? []);
-          setMentorItemGuides(payload.itemGuides ?? []);
         }),
+        apiFetch<any[]>("/mentor/item-guides", undefined, token).then(setMentorItemGuides),
       ]).catch((error) => setStatus(error.message));
     }
     if (section === "meetings") {
@@ -2915,9 +2925,12 @@ function MentorSection({
         method: "PUT",
         body: JSON.stringify({ rows: mentorMaterialRows }),
       }, token);
-      const payload = await apiFetch<any>("/mentor/material-templates", undefined, token);
-      setMentorMaterialTemplates(payload.templates ?? []);
-      setMentorItemGuides(payload.itemGuides ?? []);
+      const [templatePayload, itemGuidesPayload] = await Promise.all([
+        apiFetch<any>("/mentor/material-templates", undefined, token),
+        apiFetch<any[]>("/mentor/item-guides", undefined, token),
+      ]);
+      setMentorMaterialTemplates(templatePayload.templates ?? []);
+      setMentorItemGuides(itemGuidesPayload ?? []);
       setStatus("Twoje wiersze w kaflu materiałów zostały zapisane.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać wierszy materiałów.");
@@ -3654,7 +3667,7 @@ function MenteeSection({
                                       <div className="list-item" key={`${guide.id}-${template.id}-row-${index}`}>
                                         <h3>{row.task || "Zadanie"}</h3>
                                         {universityNames.length ? (
-                                          <div className="small muted">{universityNames.join(" • ")}</div>
+                                          <div className="small muted">{formatUniversityNamesPreview(universityNames)}</div>
                                         ) : null}
                                         {showHints && hintGuide ? (
                                           <div className="button-row" style={{ marginTop: 8 }}>
@@ -3938,7 +3951,7 @@ function MenteeSection({
                             <div className="list-item material-row material-row-item" key={`${template.id}-row-${index}`}>
                               <h3>{headline}</h3>
                               {universityNames.length ? (
-                                <div className="small muted">{universityNames.join(" • ")}</div>
+                                <div className="small muted">{formatUniversityNamesPreview(universityNames)}</div>
                               ) : null}
                               {Array.isArray(row.alternativeOptions) && row.alternativeOptions.length ? (
                                 <div className="small muted" style={{ marginTop: 8 }}>

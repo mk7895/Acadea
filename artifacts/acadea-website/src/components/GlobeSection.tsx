@@ -296,15 +296,6 @@ export function GlobeSection() {
           );
         })}
 
-        {/* Globe rim */}
-        <circle
-          cx={SIZE / 2}
-          cy={SIZE / 2}
-          r={SCALE}
-          fill="none"
-          stroke="rgba(22,101,52,0.2)"
-          strokeWidth={2}
-        />
       </svg>
 
       {/* Country hover card */}

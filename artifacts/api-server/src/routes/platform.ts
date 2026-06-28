@@ -1536,6 +1536,31 @@ router.get(
   },
 );
 
+router.get(
+  "/platform/mentor/item-guides",
+  requirePlatformAuth,
+  requirePlatformRole("mentor"),
+  async (req: AuthenticatedRequest, res) => {
+    const { db } = await import("@workspace/db");
+    const rawItemGuides = await db
+      .select()
+      .from(platformGuidesTable)
+      .where(
+        or(
+          eq(platformGuidesTable.guideType, "admin_template"),
+          and(
+            eq(platformGuidesTable.guideType, "mentor_blueprint"),
+            eq(platformGuidesTable.ownerUserId, req.platformUser!.id),
+          ),
+        ),
+      )
+      .orderBy(asc(platformGuidesTable.title), asc(platformGuidesTable.country), asc(platformGuidesTable.universityName));
+
+    const itemGuides = rawItemGuides.filter((guide) => isItemGuideRecord(guide));
+    return res.json(await shapeGuideList(db, itemGuides));
+  },
+);
+
 router.put(
   "/platform/mentor/material-templates/:id/rows",
   requirePlatformAuth,
