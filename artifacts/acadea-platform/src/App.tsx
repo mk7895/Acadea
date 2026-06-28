@@ -232,8 +232,16 @@ function formatGuideScopeLabel(guide: any, allUniversityGuides: any[]) {
   }
 
   const matchedGuides = allUniversityGuides.filter((entry) => appliesToIds.includes(String(entry.id)));
-  const labels = matchedGuides.map((entry) => `${entry.country} • ${entry.universityName}`);
-  return labels.length ? labels.join(" | ") : "Brak przypisanych uczelni";
+  if (!matchedGuides.length) {
+    return "Brak przypisanych uczelni";
+  }
+  if (matchedGuides.length === 1) {
+    return "1 uczelnia";
+  }
+  const mod10 = matchedGuides.length % 10;
+  const mod100 = matchedGuides.length % 100;
+  const noun = mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14) ? "uczelnie" : "uczelni";
+  return `${matchedGuides.length} ${noun}`;
 }
 
 function countMaterialTemplateUniversityUsage(template: any, universityGuides: any[]) {
@@ -2200,13 +2208,13 @@ function AdminSection({
                             }))
                           }
                         />
-                        <span className="selector-copy">
-                          <strong>{guide.universityName}</strong>
-                          <span className="small muted" style={{ display: "block" }}>{guide.country} • {guide.universityName}</span>
-                        </span>
-                      </label>
-                    );
-                  })}
+                                <span className="selector-copy">
+                                  <strong>{guide.universityName}</strong>
+                                  <span className="small muted" style={{ display: "block" }}>{guide.country}</span>
+                                </span>
+                              </label>
+                            );
+                          })}
                 </div>
               </div>
               <div className="field">
@@ -2251,7 +2259,7 @@ function AdminSection({
                                   />
                                   <span className="selector-copy">
                                     <strong>{guide.universityName}</strong>
-                                    <span className="small muted" style={{ display: "block" }}>{guide.country} • {guide.universityName}</span>
+                                    <span className="small muted" style={{ display: "block" }}>{guide.country}</span>
                                   </span>
                                 </label>
                               );
@@ -2448,7 +2456,7 @@ function AdminSection({
                         />
                         <div className="selector-copy">
                           <strong>{guide.universityName}</strong>
-                          <span>{guide.country} • {guide.universityName}</span>
+                          <span>{guide.country}</span>
                         </div>
                       </label>
                     );
@@ -2613,6 +2621,7 @@ function MentorSection({
   const [guides, setGuides] = useState<any[]>([]);
   const [sourceGuides, setSourceGuides] = useState<any[]>([]);
   const [mentorMaterialTemplates, setMentorMaterialTemplates] = useState<any[]>([]);
+  const [mentorItemGuides, setMentorItemGuides] = useState<any[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [status, setStatus] = useState("");
   const [editingUniversityId, setEditingUniversityId] = useState<number | null>(null);
@@ -2641,6 +2650,13 @@ function MentorSection({
     () => mentorMaterialTemplates.find((template) => String(template.id) === mentorMaterialEditorId) ?? null,
     [mentorMaterialEditorId, mentorMaterialTemplates],
   );
+  const mentorHintScopeGuides = useMemo(() => {
+    const byId = new Map<string, any>();
+    [...dedupedSourceGuides, ...guides].forEach((guide) => {
+      byId.set(String(guide.id), guide);
+    });
+    return Array.from(byId.values());
+  }, [dedupedSourceGuides, guides]);
   const mentorMaterialDisplayRows = useMemo(() => {
     if (!selectedMentorMaterialTemplate) {
       return [] as MaterialRowEditor[];
@@ -2713,7 +2729,10 @@ function MentorSection({
     if (section === "materials") {
       void Promise.all([
         apiFetch<any[]>("/mentor/guides", undefined, token).then(setGuides),
-        apiFetch<any>("/mentor/material-templates", undefined, token).then((payload) => setMentorMaterialTemplates(payload.templates ?? [])),
+        apiFetch<any>("/mentor/material-templates", undefined, token).then((payload) => {
+          setMentorMaterialTemplates(payload.templates ?? []);
+          setMentorItemGuides(payload.itemGuides ?? []);
+        }),
       ]).catch((error) => setStatus(error.message));
     }
     if (section === "meetings") {
@@ -2898,6 +2917,7 @@ function MentorSection({
       }, token);
       const payload = await apiFetch<any>("/mentor/material-templates", undefined, token);
       setMentorMaterialTemplates(payload.templates ?? []);
+      setMentorItemGuides(payload.itemGuides ?? []);
       setStatus("Twoje wiersze w kaflu materiałów zostały zapisane.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać wierszy materiałów.");
@@ -3352,9 +3372,9 @@ function MentorSection({
                             onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, guideId: event.target.value }))}
                           >
                             <option value="">Brak</option>
-                            {guides.filter((guide) => guide.guideType === "mentor_blueprint").map((guide) => (
+                            {mentorItemGuides.map((guide: any) => (
                               <option key={`mentor-item-guide-${guide.id}`} value={String(guide.id)}>
-                                {guide.universityName} • {guide.title}
+                                {guide.title} • {formatGuideScopeLabel(guide, mentorHintScopeGuides)}
                               </option>
                             ))}
                           </select>

@@ -1513,9 +1513,24 @@ router.get(
       .from(platformMaterialTemplatesTable)
       .where(eq(platformMaterialTemplatesTable.isActive, true))
       .orderBy(asc(platformMaterialTemplatesTable.templateType), asc(platformMaterialTemplatesTable.title));
+    const rawItemGuides = await db
+      .select()
+      .from(platformGuidesTable)
+      .where(
+        or(
+          and(eq(platformGuidesTable.guideType, "admin_template")),
+          and(
+            eq(platformGuidesTable.guideType, "mentor_blueprint"),
+            eq(platformGuidesTable.ownerUserId, req.platformUser!.id),
+          ),
+        ),
+      )
+      .orderBy(asc(platformGuidesTable.title));
+    const itemGuides = rawItemGuides.filter((guide) => isItemGuideRecord(guide));
 
     return res.json({
       guides: await shapeGuideList(db, mentorGuides),
+      itemGuides: await shapeGuideList(db, itemGuides),
       templates,
     });
   },
@@ -1552,6 +1567,26 @@ router.put(
         ),
       );
     const mentorGuideIds = new Set(mentorGuides.map((guide) => guide.id));
+    const rawAllowedHintGuides = await db
+      .select({
+        id: platformGuidesTable.id,
+        driveFolderUrl: platformGuidesTable.driveFolderUrl,
+      })
+      .from(platformGuidesTable)
+      .where(
+        or(
+          eq(platformGuidesTable.guideType, "admin_template"),
+          and(
+            eq(platformGuidesTable.guideType, "mentor_blueprint"),
+            eq(platformGuidesTable.ownerUserId, req.platformUser!.id),
+          ),
+        ),
+      );
+    const allowedHintGuideIds = new Set(
+      rawAllowedHintGuides
+        .filter((guide) => isItemGuideRecord({ driveFolderUrl: guide.driveFolderUrl, guideType: "admin_template" }))
+        .map((guide) => guide.id),
+    );
 
     let sanitizedRows: Array<Record<string, unknown>>;
     try {
@@ -1560,8 +1595,8 @@ router.put(
           ? row.appliesToGuideIds.map((value) => Number(value)).filter((value) => Number.isFinite(value) && mentorGuideIds.has(value))
           : [];
         const guideId = row.guideId ? Number(row.guideId) : null;
-        if (guideId && !mentorGuideIds.has(guideId)) {
-          throw new Error("Mentor może podpinać własne wskazówki tylko do własnych uczelni.");
+        if (guideId && !allowedHintGuideIds.has(guideId)) {
+          throw new Error("Mentor może podpinać tylko dostępne wskazówki elementów.");
         }
         return {
           alternativeOptions: Array.isArray(row.alternativeOptions) ? row.alternativeOptions.filter((value) => typeof value === "string") : [],
