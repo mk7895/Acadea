@@ -105,6 +105,9 @@ const mentorProfileSchema = z.object({
   meetingMethod: z.enum(PLATFORM_MEETING_METHODS),
   meetingLink: z.string().trim().optional().default(""),
   whatsappNumber: z.string().trim().optional().default(""),
+});
+
+const adminMentorDriveSchema = z.object({
   googleDriveFolderUrl: z.string().trim().optional().default(""),
 });
 
@@ -1277,6 +1280,11 @@ router.put(
     }
 
     const { db } = await import("@workspace/db");
+    const [existingProfile] = await db
+      .select()
+      .from(mentorProfilesTable)
+      .where(eq(mentorProfilesTable.userId, req.platformUser!.id))
+      .limit(1);
     const [profile] = await db
       .insert(mentorProfilesTable)
       .values({
@@ -1287,7 +1295,7 @@ router.put(
         meetingMethod: parsed.data.meetingMethod,
         meetingLink: parsed.data.meetingLink || null,
         whatsappNumber: parsed.data.whatsappNumber || null,
-        googleDriveFolderUrl: parsed.data.googleDriveFolderUrl || null,
+        googleDriveFolderUrl: existingProfile?.googleDriveFolderUrl ?? null,
       })
       .onConflictDoUpdate({
         target: mentorProfilesTable.userId,
@@ -1298,6 +1306,37 @@ router.put(
           meetingMethod: parsed.data.meetingMethod,
           meetingLink: parsed.data.meetingLink || null,
           whatsappNumber: parsed.data.whatsappNumber || null,
+          googleDriveFolderUrl: existingProfile?.googleDriveFolderUrl ?? null,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    return res.json(serializeMentorProfile(profile));
+  },
+);
+
+router.patch(
+  "/platform/admin/mentors/:id/profile",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = adminMentorDriveSchema.safeParse(req.body);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid mentor id." : parsed.error.message });
+    }
+
+    const { db } = await import("@workspace/db");
+    const [profile] = await db
+      .insert(mentorProfilesTable)
+      .values({
+        userId: id,
+        googleDriveFolderUrl: parsed.data.googleDriveFolderUrl || null,
+      })
+      .onConflictDoUpdate({
+        target: mentorProfilesTable.userId,
+        set: {
           googleDriveFolderUrl: parsed.data.googleDriveFolderUrl || null,
           updatedAt: new Date(),
         },

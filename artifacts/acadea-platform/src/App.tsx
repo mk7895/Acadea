@@ -758,6 +758,7 @@ function AdminSection({
   const [mentorProfiles, setMentorProfiles] = useState<any[]>([]);
   const [menteeProfiles, setMenteeProfiles] = useState<any[]>([]);
   const [tipAccessByMentee, setTipAccessByMentee] = useState<any[]>([]);
+  const [mentorDriveDrafts, setMentorDriveDrafts] = useState<Record<string, string>>({});
   const [menteeLimitDrafts, setMenteeLimitDrafts] = useState<Record<string, {
     disabledHintGuideTemplateIds: string[];
     maxActiveGuideCount: number;
@@ -1423,6 +1424,22 @@ function AdminSection({
     );
   }
 
+  async function saveMentorDriveFolder(userId: number) {
+    const draft = mentorDriveDrafts[String(userId)] ?? "";
+    await runUserAction(
+      userId,
+      async () => {
+        await apiFetch(`/admin/mentors/${userId}/profile`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            googleDriveFolderUrl: draft,
+          }),
+        }, token);
+      },
+      "Folder Google Drive mentora został zapisany.",
+    );
+  }
+
   const mentorProfileMap = new Map(mentorProfiles.map((profile) => [profile.userId, profile]));
   const menteeProfileMap = new Map(menteeProfiles.map((profile) => [profile.userId, profile]));
   const tipAccessMap = new Map(tipAccessByMentee.map((entry) => [entry.menteeUserId, entry]));
@@ -1573,6 +1590,7 @@ function AdminSection({
                 const mentorProfile = mentorProfileMap.get(user.id);
                 const menteeProfile = menteeProfileMap.get(user.id);
                 const tipAccess = tipAccessMap.get(user.id);
+                const mentorDriveDraft = mentorDriveDrafts[String(user.id)] ?? (mentorProfile?.googleDriveFolderUrl ?? "");
                 const menteeLimitDraft = menteeLimitDrafts[String(user.id)] ?? {
                   disabledHintGuideTemplateIds: [],
                   maxActiveGuideCount: Number(menteeProfile?.maxActiveGuideCount ?? 3),
@@ -1593,7 +1611,22 @@ function AdminSection({
                       </span>
                     </header>
                     {user.role === "mentor" ? (
-                      <p className="muted">Akceptacja mentora: <strong>{mentorApproved ? "tak" : "nie"}</strong>.</p>
+                      <>
+                        <p className="muted">Akceptacja mentora: <strong>{mentorApproved ? "tak" : "nie"}</strong>.</p>
+                        <div className="field" style={{ marginTop: 12 }}>
+                          <label>Folder Google Drive mentora</label>
+                          <input
+                            placeholder="To pole ustawia administrator"
+                            value={mentorDriveDraft}
+                            onChange={(event) =>
+                              setMentorDriveDrafts((current) => ({
+                                ...current,
+                                [String(user.id)]: event.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                      </>
                     ) : null}
                     {user.role === "mentee" ? (
                       <>
@@ -1689,6 +1722,16 @@ function AdminSection({
                       </>
                     ) : null}
                     <div className="button-row">
+                      {user.role === "mentor" ? (
+                        <button
+                          className="btn btn-secondary"
+                          disabled={userActionId === user.id}
+                          onClick={() => void saveMentorDriveFolder(user.id)}
+                          type="button"
+                        >
+                          Zapisz folder Drive
+                        </button>
+                      ) : null}
                       {user.role === "mentor" ? (
                         <button
                           className="btn btn-secondary"
@@ -2552,6 +2595,7 @@ function MentorSection({
   const [mentorMaterialTemplates, setMentorMaterialTemplates] = useState<any[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [status, setStatus] = useState("");
+  const [editingUniversityId, setEditingUniversityId] = useState<number | null>(null);
   const [universityForm, setUniversityForm] = useState({ country: "", universityName: "", programName: "", summary: "" });
   const [guideForm, setGuideForm] = useState({
     guideType: "mentor_blueprint",
@@ -2571,7 +2615,6 @@ function MentorSection({
         .then((payload) => {
           setProfile({
             bio: "",
-            googleDriveFolderUrl: "",
             headline: "",
             meetingLink: "",
             meetingMethod: "zoom_link",
@@ -2609,9 +2652,8 @@ function MentorSection({
         method: "PUT",
         body: JSON.stringify({
           ...profile,
-          googleDriveFolderUrl: profile.googleDriveFolderUrl || "",
           meetingMethod: profile.meetingMethod || "zoom_link",
-          meetingLink: profile.meetingMethod === "whatsapp" ? "" : (profile.meetingLink || ""),
+          meetingLink: profile.meetingMethod === "whatsapp" || profile.meetingMethod === "google_meet" ? "" : (profile.meetingLink || ""),
           timezone: profile.timezone || "Europe/Warsaw",
           whatsappNumber: profile.meetingMethod === "whatsapp" ? (profile.whatsappNumber || "") : "",
         }),
@@ -2639,16 +2681,52 @@ function MentorSection({
     event.preventDefault();
     setStatus("");
     try {
-      const created = await apiFetch<any>("/mentor/universities", {
-        method: "POST",
-        body: JSON.stringify(universityForm),
+      const payload = {
+        country: universityForm.country,
+        universityName: universityForm.universityName,
+        programName: universityForm.programName,
+        summary: universityForm.summary,
+      };
+      const created = await apiFetch<any>(editingUniversityId ? `/mentor/universities/${editingUniversityId}` : "/mentor/universities", {
+        method: editingUniversityId ? "PUT" : "POST",
+        body: JSON.stringify(payload),
       }, token);
-      setUniversities((current) => [...current, created]);
+      setUniversities((current) =>
+        editingUniversityId
+          ? current.map((entry) => (entry.id === editingUniversityId ? created : entry))
+          : [...current, created],
+      );
       setUniversityForm({ country: "", universityName: "", programName: "", summary: "" });
-      setStatus("Dodano uczelnię do profilu.");
+      setEditingUniversityId(null);
+      setStatus(editingUniversityId ? "Wpis uczelni został zaktualizowany." : "Dodano uczelnię do profilu.");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Nie udało się dodać uczelni.");
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać wpisu uczelni.");
     }
+  }
+
+  async function deleteUniversity(id: number) {
+    setStatus("");
+    try {
+      await apiFetch(`/mentor/universities/${id}`, { method: "DELETE" }, token);
+      setUniversities((current) => current.filter((entry) => entry.id !== id));
+      if (editingUniversityId === id) {
+        setEditingUniversityId(null);
+        setUniversityForm({ country: "", universityName: "", programName: "", summary: "" });
+      }
+      setStatus("Wpis uczelni został usunięty.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się usunąć wpisu uczelni.");
+    }
+  }
+
+  function editUniversity(university: any) {
+    setEditingUniversityId(university.id);
+    setUniversityForm({
+      country: university.country ?? "",
+      universityName: university.universityName ?? "",
+      programName: university.programName ?? "",
+      summary: university.summary ?? "",
+    });
   }
 
   async function createGuide(event: React.FormEvent) {
@@ -2782,20 +2860,20 @@ function MentorSection({
               </div>
               <div className="field">
                 <label>{profile.meetingMethod === "whatsapp" ? "Numer WhatsApp" : "Link spotkań"}</label>
-                <input
-                  value={profile.meetingMethod === "whatsapp" ? (profile.whatsappNumber ?? "") : (profile.meetingLink ?? "")}
-                  onChange={(event) =>
-                    setProfile((current: any) => ({
-                      ...current,
-                      meetingLink: current.meetingMethod === "whatsapp" ? (current.meetingLink ?? "") : event.target.value,
-                      whatsappNumber: current.meetingMethod === "whatsapp" ? event.target.value : (current.whatsappNumber ?? ""),
-                    }))
-                  }
-                />
-              </div>
-              <div className="field">
-                <label>Folder Google Drive mentora</label>
-                <input value={profile.googleDriveFolderUrl ?? ""} onChange={(event) => setProfile((current: any) => ({ ...current, googleDriveFolderUrl: event.target.value }))} />
+                {profile.meetingMethod === "google_meet" ? (
+                  <div className="small muted">Przy metodzie Auto Google Meet link będzie tworzony automatycznie po podpięciu Google OAuth.</div>
+                ) : (
+                  <input
+                    value={profile.meetingMethod === "whatsapp" ? (profile.whatsappNumber ?? "") : (profile.meetingLink ?? "")}
+                    onChange={(event) =>
+                      setProfile((current: any) => ({
+                        ...current,
+                        meetingLink: current.meetingMethod === "whatsapp" ? (current.meetingLink ?? "") : event.target.value,
+                        whatsappNumber: current.meetingMethod === "whatsapp" ? event.target.value : (current.whatsappNumber ?? ""),
+                      }))
+                    }
+                  />
+                )}
               </div>
               <button className="btn btn-primary">Zapisz profil</button>
             </form>
@@ -2819,13 +2897,42 @@ function MentorSection({
                 <label>Krótki opis</label>
                 <textarea value={universityForm.summary} onChange={(event) => setUniversityForm((current) => ({ ...current, summary: event.target.value }))} />
               </div>
-              <button className="btn btn-primary">Dodaj wpis</button>
+              <div className="button-row">
+                <button className="btn btn-primary">{editingUniversityId ? "Zapisz zmiany" : "Dodaj wpis"}</button>
+                {editingUniversityId ? (
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setEditingUniversityId(null);
+                      setUniversityForm({ country: "", universityName: "", programName: "", summary: "" });
+                    }}
+                    type="button"
+                  >
+                    Anuluj edycję
+                  </button>
+                ) : null}
+              </div>
             </form>
             <div className="list" style={{ marginTop: 18 }}>
               {universities.map((university) => (
                 <div className="list-item" key={university.id}>
-                  <h3>{university.universityName}</h3>
-                  <div className="muted small">{university.country}</div>
+                  <header>
+                    <div>
+                      <h3>{university.universityName}</h3>
+                      <div className="muted small">
+                        {university.country}
+                        {university.programName ? ` • ${university.programName}` : ""}
+                      </div>
+                    </div>
+                    <div className="button-row">
+                      <button className="btn btn-secondary" onClick={() => editUniversity(university)} type="button">
+                        Edytuj
+                      </button>
+                      <button className="btn btn-secondary" onClick={() => void deleteUniversity(university.id)} type="button">
+                        Usuń
+                      </button>
+                    </div>
+                  </header>
                   <p className="muted">{university.summary}</p>
                 </div>
               ))}
