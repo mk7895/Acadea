@@ -412,6 +412,118 @@ async function shapeGuideList(
   }));
 }
 
+async function collectGuideCascadeIds(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+  rootGuideIds: number[],
+) {
+  const seen = new Set(rootGuideIds.filter((value) => Number.isFinite(value)));
+  let frontier = [...seen];
+
+  while (frontier.length) {
+    const rows = await db
+      .select({ id: platformGuidesTable.id })
+      .from(platformGuidesTable)
+      .where(inArray(platformGuidesTable.sourceGuideId, frontier));
+
+    const nextFrontier: number[] = [];
+    for (const row of rows) {
+      if (!seen.has(row.id)) {
+        seen.add(row.id);
+        nextFrontier.push(row.id);
+      }
+    }
+    frontier = nextFrontier;
+  }
+
+  return [...seen];
+}
+
+function sanitizeMaterialTemplateStructure(
+  structure: Array<Record<string, unknown>>,
+  removedGuideIds: Set<number>,
+) {
+  let changed = false;
+  const nextStructure = structure.map((row) => {
+    const nextRow: Record<string, unknown> = { ...row };
+
+    if (Array.isArray(nextRow.appliesToGuideIds)) {
+      const filteredIds = nextRow.appliesToGuideIds.filter(
+        (value): value is number => typeof value === "number" && !removedGuideIds.has(value),
+      );
+      if (filteredIds.length !== nextRow.appliesToGuideIds.length) {
+        nextRow.appliesToGuideIds = filteredIds;
+        changed = true;
+      }
+    }
+
+    if (typeof nextRow.guideId === "number" && removedGuideIds.has(nextRow.guideId)) {
+      nextRow.guideId = null;
+      changed = true;
+    }
+
+    return nextRow;
+  });
+
+  return { changed, structure: nextStructure };
+}
+
+async function removeGuideReferencesFromMaterialTemplates(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+  removedGuideIds: number[],
+) {
+  if (!removedGuideIds.length) {
+    return;
+  }
+
+  const removedGuideIdSet = new Set(removedGuideIds);
+  const templates = await db.select().from(platformMaterialTemplatesTable);
+
+  for (const template of templates) {
+    const nextAppliesToGuideIds = (template.appliesToGuideIds ?? []).filter(
+      (guideId: number) => !removedGuideIdSet.has(guideId),
+    );
+    const { changed: structureChanged, structure: nextStructure } = sanitizeMaterialTemplateStructure(
+      (template.structure ?? []) as Array<Record<string, unknown>>,
+      removedGuideIdSet,
+    );
+    const nextGuideId =
+      template.guideId && removedGuideIdSet.has(template.guideId) ? null : template.guideId;
+
+    const changed =
+      nextGuideId !== template.guideId ||
+      nextAppliesToGuideIds.length !== (template.appliesToGuideIds ?? []).length ||
+      structureChanged;
+
+    if (!changed) {
+      continue;
+    }
+
+    await db
+      .update(platformMaterialTemplatesTable)
+      .set({
+        guideId: nextGuideId,
+        appliesToGuideIds: nextAppliesToGuideIds,
+        structure: nextStructure,
+        updatedAt: new Date(),
+      })
+      .where(eq(platformMaterialTemplatesTable.id, template.id));
+  }
+}
+
+async function hardDeleteGuidesAndReferences(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+  rootGuideIds: number[],
+) {
+  const guideIds = await collectGuideCascadeIds(db, rootGuideIds);
+  if (!guideIds.length) {
+    return [];
+  }
+
+  await removeGuideReferencesFromMaterialTemplates(db, guideIds);
+  await db.delete(platformGuidesTable).where(inArray(platformGuidesTable.id, guideIds));
+  return guideIds;
+}
+
 function meetingWindowIsValid(startsAt: Date, endsAt: Date) {
   return startsAt.getTime() + 1000 * 60 * 15 <= endsAt.getTime();
 }
@@ -1349,9 +1461,15 @@ router.delete(
       return res.status(400).json({ error: "Invalid guide id." });
     }
     const { db } = await import("@workspace/db");
-    await db
-      .delete(platformGuidesTable)
-      .where(and(eq(platformGuidesTable.id, id), eq(platformGuidesTable.ownerUserId, req.platformUser!.id)));
+    const [guide] = await db
+      .select({ id: platformGuidesTable.id })
+      .from(platformGuidesTable)
+      .where(and(eq(platformGuidesTable.id, id), eq(platformGuidesTable.ownerUserId, req.platformUser!.id)))
+      .limit(1);
+    if (!guide) {
+      return res.status(404).json({ error: "Nie znaleziono przewodnika." });
+    }
+    await hardDeleteGuidesAndReferences(db, [guide.id]);
     return res.status(204).end();
   },
 );
@@ -1573,6 +1691,7 @@ router.get(
       .where(
         and(
           eq(platformGuidesTable.menteeUserId, req.platformUser!.id),
+          eq(platformGuidesTable.status, "published"),
           inArray(platformGuidesTable.guideType, ["self_service_live", "mentor_live"]),
         ),
       )
@@ -1765,7 +1884,13 @@ router.post(
     const existingLiveGuides = await db
       .select({ id: platformGuidesTable.id })
       .from(platformGuidesTable)
-      .where(eq(platformGuidesTable.menteeUserId, req.platformUser!.id));
+      .where(
+        and(
+          eq(platformGuidesTable.menteeUserId, req.platformUser!.id),
+          eq(platformGuidesTable.status, "published"),
+          inArray(platformGuidesTable.guideType, ["self_service_live", "mentor_live"]),
+        ),
+      );
 
     if (existingLiveGuides.length >= 3) {
       return res.status(400).json({ error: "Na ten moment możesz mieć jednocześnie maksymalnie 3 aktywne przewodniki." });
@@ -1829,11 +1954,8 @@ router.patch(
     }
     const { db } = await import("@workspace/db");
     const [guide] = await db
-      .update(platformGuidesTable)
-      .set({
-        status: "archived",
-        updatedAt: new Date(),
-      })
+      .select({ id: platformGuidesTable.id })
+      .from(platformGuidesTable)
       .where(
         and(
           eq(platformGuidesTable.id, id),
@@ -1841,10 +1963,11 @@ router.patch(
           inArray(platformGuidesTable.guideType, ["self_service_live", "mentor_live"]),
         ),
       )
-      .returning();
+      .limit(1);
     if (!guide) {
       return res.status(404).json({ error: "Nie znaleziono uczelni do usunięcia." });
     }
+    await hardDeleteGuidesAndReferences(db, [guide.id]);
     return res.status(204).end();
   },
 );
@@ -1890,6 +2013,12 @@ router.get(
     const users = await db.select().from(platformUsersTable);
     const meetings = await db.select().from(platformMeetingsTable);
     const guides = await db.select().from(platformGuidesTable);
+    const guideTemplates = guides.filter(
+      (guide) =>
+        !guide.sourceGuideId &&
+        (guide.guideType === "admin_template" || guide.guideType === "mentor_blueprint") &&
+        guide.status !== "archived",
+    );
 
     return res.json({
       counts: {
@@ -1898,7 +2027,7 @@ router.get(
         mentees: users.filter((user) => user.role === "mentee").length,
         admins: users.filter((user) => user.role === "admin").length,
         meetings: meetings.length,
-        guides: guides.length,
+        guides: guideTemplates.length,
       },
     });
   },
@@ -2361,7 +2490,15 @@ router.delete(
       return res.status(400).json({ error: "Invalid guide id." });
     }
     const { db } = await import("@workspace/db");
-    await db.delete(platformGuidesTable).where(eq(platformGuidesTable.id, id));
+    const [guide] = await db
+      .select({ id: platformGuidesTable.id })
+      .from(platformGuidesTable)
+      .where(eq(platformGuidesTable.id, id))
+      .limit(1);
+    if (!guide) {
+      return res.status(404).json({ error: "Nie znaleziono przewodnika." });
+    }
+    await hardDeleteGuidesAndReferences(db, [guide.id]);
     return res.status(204).end();
   },
 );
