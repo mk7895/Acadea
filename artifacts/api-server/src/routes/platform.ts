@@ -1480,7 +1480,15 @@ router.get(
       .from(platformGuidesTable)
       .where(eq(platformGuidesTable.guideType, "admin_template"))
       .orderBy(asc(platformGuidesTable.country), asc(platformGuidesTable.universityName));
-    return res.json(await shapeGuideList(db, guides.filter((guide) => !isItemGuideRecord(guide))));
+    const shaped = await shapeGuideList(db, guides.filter((guide) => !isItemGuideRecord(guide)));
+    const deduped = new Map<string, (typeof shaped)[number]>();
+    for (const guide of shaped) {
+      const key = `${normalizeSlug(guide.country)}::${normalizeSlug(guide.universityName)}`;
+      if (!deduped.has(key)) {
+        deduped.set(key, guide);
+      }
+    }
+    return res.json(Array.from(deduped.values()));
   },
 );
 
@@ -1557,6 +1565,7 @@ router.put(
         }
         return {
           alternativeOptions: Array.isArray(row.alternativeOptions) ? row.alternativeOptions.filter((value) => typeof value === "string") : [],
+          anchorAfterKey: typeof row.anchorAfterKey === "string" ? row.anchorAfterKey : "",
           appliesToGuideIds,
           country: typeof row.country === "string" ? row.country : "",
           guideId,
@@ -1572,11 +1581,33 @@ router.put(
 
     const existingRows = Array.isArray(template.structure) ? template.structure : [];
     const preservedRows = existingRows.filter((row: any) => Number(row?.ownerUserId ?? 0) !== req.platformUser!.id);
+    const preservedKeys = preservedRows.map((_: any, index: number) => `admin:${index}`);
+    const mentorRowsByAnchor = new Map<string, Array<Record<string, unknown>>>();
+
+    for (const row of sanitizedRows) {
+      const anchorAfterKey =
+        typeof row.anchorAfterKey === "string" && preservedKeys.includes(row.anchorAfterKey)
+          ? row.anchorAfterKey
+          : "";
+      const current = mentorRowsByAnchor.get(anchorAfterKey) ?? [];
+      current.push({
+        ...row,
+        anchorAfterKey,
+      });
+      mentorRowsByAnchor.set(anchorAfterKey, current);
+    }
+
+    const mergedRows: Array<Record<string, unknown>> = [];
+    mergedRows.push(...(mentorRowsByAnchor.get("") ?? []));
+    preservedRows.forEach((row: any, index: number) => {
+      mergedRows.push(row);
+      mergedRows.push(...(mentorRowsByAnchor.get(`admin:${index}`) ?? []));
+    });
 
     const [updated] = await db
       .update(platformMaterialTemplatesTable)
       .set({
-        structure: [...preservedRows, ...sanitizedRows],
+        structure: mergedRows,
         updatedAt: new Date(),
       })
       .where(eq(platformMaterialTemplatesTable.id, id))

@@ -51,10 +51,13 @@ type LeadKind = "contact" | "mentor" | "scholarship" | "newsletter" | "booking";
 type MaterialRowEditor = {
   alternativeOptions: string[];
   appliesToGuideIds: string[];
+  anchorAfterKey?: string;
   country: string;
+  displayKey?: string;
   guideId: string;
   level: "country" | "university" | "item";
   ownerUserId?: number | null;
+  readOnly?: boolean;
   task: string;
   university: string;
 };
@@ -247,13 +250,26 @@ function countMaterialTemplateUniversityUsage(template: any, universityGuides: a
   ).length;
 }
 
+function normalizePlatformSlug(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
 function createEmptyMaterialRow(): MaterialRowEditor {
   return {
     alternativeOptions: [],
     appliesToGuideIds: [],
+    anchorAfterKey: "",
     country: "",
+    displayKey: "",
     guideId: "",
     level: "item",
+    readOnly: false,
     task: "",
     university: "",
   };
@@ -2602,12 +2618,69 @@ function MentorSection({
     status: "draft",
     sourceGuideId: "",
     title: "",
-    slug: "",
     summary: "",
     descriptionMarkdown: "",
   });
   const [mentorMaterialEditorId, setMentorMaterialEditorId] = useState<string>("");
   const [mentorMaterialRows, setMentorMaterialRows] = useState<MaterialRowEditor[]>([createEmptyMaterialRow()]);
+  const dedupedSourceGuides = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const guide of sourceGuides) {
+      const key = `${normalizePlatformSlug(guide.country ?? "")}::${normalizePlatformSlug(guide.universityName ?? "")}`;
+      if (!map.has(key)) {
+        map.set(key, guide);
+      }
+    }
+    return Array.from(map.values());
+  }, [sourceGuides]);
+  const selectedMentorMaterialTemplate = useMemo(
+    () => mentorMaterialTemplates.find((template) => String(template.id) === mentorMaterialEditorId) ?? null,
+    [mentorMaterialEditorId, mentorMaterialTemplates],
+  );
+  const mentorMaterialDisplayRows = useMemo(() => {
+    if (!selectedMentorMaterialTemplate) {
+      return [] as MaterialRowEditor[];
+    }
+
+    const templateRows = Array.isArray(selectedMentorMaterialTemplate.structure) ? selectedMentorMaterialTemplate.structure : [];
+    const adminRows = templateRows
+      .filter((row: any) => Number(row?.ownerUserId ?? 0) !== Number(session.user.id))
+      .map((row: any, index: number) => ({
+        alternativeOptions: Array.isArray(row.alternativeOptions) ? row.alternativeOptions.filter(Boolean) : [],
+        anchorAfterKey: "",
+        appliesToGuideIds: Array.isArray(row.appliesToGuideIds) ? row.appliesToGuideIds.map((id: any) => String(id)) : [],
+        country: row.country ?? "",
+        displayKey: `admin:${index}`,
+        guideId: row.guideId ? String(row.guideId) : "",
+        level: row.level === "country" || row.level === "university" || row.level === "item" ? row.level : "item",
+        ownerUserId: row.ownerUserId ?? null,
+        readOnly: true,
+        task: row.task ?? "",
+        university: row.university ?? "",
+      }));
+
+    const mentorRows = mentorMaterialRows.map((row, index) => ({
+      ...row,
+      displayKey: `mentor:${index}`,
+      ownerUserId: session.user.id,
+      readOnly: false,
+    }));
+
+    const rowsByAnchor = new Map<string, MaterialRowEditor[]>();
+    for (const row of mentorRows) {
+      const anchor = row.anchorAfterKey ?? "";
+      const current = rowsByAnchor.get(anchor) ?? [];
+      current.push(row);
+      rowsByAnchor.set(anchor, current);
+    }
+
+    const merged: MaterialRowEditor[] = [...(rowsByAnchor.get("") ?? [])];
+    for (const adminRow of adminRows) {
+      merged.push(adminRow);
+      merged.push(...(rowsByAnchor.get(adminRow.displayKey ?? "") ?? []));
+    }
+    return merged;
+  }, [mentorMaterialRows, selectedMentorMaterialTemplate, session.user.id]);
 
   useEffect(() => {
     if (section === "profile" || section === "availability") {
@@ -2731,11 +2804,12 @@ function MentorSection({
 
   async function createGuide(event: React.FormEvent) {
     event.preventDefault();
-    const sourceGuide = sourceGuides.find((guide) => String(guide.id) === guideForm.sourceGuideId);
+    const sourceGuide = dedupedSourceGuides.find((guide) => String(guide.id) === guideForm.sourceGuideId);
     if (!sourceGuide) {
       setStatus("Wybierz bazową uczelnię dla tego case'u mentora.");
       return;
     }
+    const computedSlug = normalizePlatformSlug(`${sourceGuide.slug ?? sourceGuide.universityName}-${guideForm.title}`);
 
     try {
       const created = await apiFetch<any>("/mentor/guides", {
@@ -2744,7 +2818,7 @@ function MentorSection({
           guideType: "mentor_blueprint",
           status: guideForm.status,
           title: guideForm.title,
-          slug: guideForm.slug || guideForm.title,
+          slug: computedSlug,
           country: sourceGuide.country,
           universityName: sourceGuide.universityName,
           summary: guideForm.summary,
@@ -2763,7 +2837,6 @@ function MentorSection({
         status: "draft",
         sourceGuideId: "",
         title: "",
-        slug: "",
         summary: "",
         descriptionMarkdown: "",
       });
@@ -2775,18 +2848,35 @@ function MentorSection({
 
   function loadMentorMaterialTemplate(template: any) {
     setMentorMaterialEditorId(String(template.id));
+    const templateRows = Array.isArray(template.structure) ? template.structure : [];
+    let lastAdminKey = "";
+    let adminIndex = -1;
     setMentorMaterialRows(
-      (template.structure ?? [])
-        .filter((row: any) => Number(row.ownerUserId ?? 0) === Number(session.user.id))
+      templateRows
+        .map((row: any) => {
+          const isMentorRow = Number(row.ownerUserId ?? 0) === Number(session.user.id);
+          if (!isMentorRow) {
+            adminIndex += 1;
+            lastAdminKey = `admin:${adminIndex}`;
+            return null;
+          }
+          return {
+            alternativeOptions: Array.isArray(row.alternativeOptions) ? row.alternativeOptions.filter(Boolean) : [],
+            anchorAfterKey: typeof row.anchorAfterKey === "string" ? row.anchorAfterKey : lastAdminKey,
+            appliesToGuideIds: Array.isArray(row.appliesToGuideIds) ? row.appliesToGuideIds.map((id: any) => String(id)) : [],
+            country: row.country ?? "",
+            displayKey: "",
+            guideId: row.guideId ? String(row.guideId) : "",
+            level: row.level === "country" || row.level === "university" || row.level === "item" ? row.level : "item",
+            ownerUserId: row.ownerUserId ?? session.user.id,
+            readOnly: false,
+            task: row.task ?? "",
+            university: row.university ?? "",
+          } satisfies MaterialRowEditor;
+        })
+        .filter(Boolean)
         .map((row: any) => ({
-          alternativeOptions: Array.isArray(row.alternativeOptions) ? row.alternativeOptions.filter(Boolean) : [],
-          appliesToGuideIds: Array.isArray(row.appliesToGuideIds) ? row.appliesToGuideIds.map((id: any) => String(id)) : [],
-          country: row.country ?? "",
-          guideId: row.guideId ? String(row.guideId) : "",
-          level: row.level === "country" || row.level === "university" || row.level === "item" ? row.level : "item",
-          ownerUserId: row.ownerUserId ?? session.user.id,
-          task: row.task ?? "",
-          university: row.university ?? "",
+          ...row,
         })) || [createEmptyMaterialRow()],
     );
   }
@@ -2808,6 +2898,20 @@ function MentorSection({
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać wierszy materiałów.");
     }
+  }
+
+  function addMentorRowAtAnchor(anchorAfterKey: string) {
+    setMentorMaterialRows((current) => [
+      ...current,
+      {
+        ...createEmptyMaterialRow(),
+        anchorAfterKey,
+      },
+    ]);
+  }
+
+  function updateMentorRow(index: number, updater: (row: MaterialRowEditor) => MaterialRowEditor) {
+    setMentorMaterialRows((current) => current.map((row, rowIndex) => (rowIndex === index ? updater(row) : row)));
   }
 
   return (
@@ -3031,22 +3135,19 @@ function MentorSection({
                 <label>Uczelnia bazowa</label>
                 <select value={guideForm.sourceGuideId} onChange={(event) => setGuideForm((current) => ({ ...current, sourceGuideId: event.target.value }))}>
                   <option value="">Wybierz istniejącą uczelnię</option>
-                  {sourceGuides.map((guide) => (
+                  {dedupedSourceGuides.map((guide) => (
                       <option key={guide.id} value={String(guide.id)}>
                         {guide.universityName} • {guide.country}
                       </option>
                     ))}
                 </select>
               </div>
-              <div className="grid-2">
-                <div className="field">
-                  <label>Własna nazwa case'u</label>
-                  <input value={guideForm.title} onChange={(event) => setGuideForm((current) => ({ ...current, title: event.target.value }))} />
-                </div>
-                <div className="field">
-                  <label>Slug</label>
-                  <input value={guideForm.slug} onChange={(event) => setGuideForm((current) => ({ ...current, slug: event.target.value }))} />
-                </div>
+              <div className="field">
+                <label>Własna nazwa case'u</label>
+                <input value={guideForm.title} onChange={(event) => setGuideForm((current) => ({ ...current, title: event.target.value }))} />
+              </div>
+              <div className="small muted">
+                Slug utworzy się automatycznie na podstawie wybranej uczelni i nazwy case&apos;u.
               </div>
               <div className="field">
                 <label>Krótki opis</label>
@@ -3108,17 +3209,26 @@ function MentorSection({
             </div>
           </div>
           <div className="dashboard-card">
-            <h2>Twoje wiersze w wybranym kaflu</h2>
+            <h2>Układ wybranego kafla</h2>
             {!mentorMaterialEditorId ? (
               <div className="status">Wybierz najpierw kafel materiałów z lewej strony.</div>
             ) : (
               <div className="stack">
-                {mentorMaterialRows.map((row, index) => (
-                  <div className="list-item" key={`mentor-row-${index}`}>
+                {mentorMaterialDisplayRows.map((row, displayIndex) => {
+                  const mentorIndex = row.readOnly ? -1 : mentorMaterialRows.findIndex((entry) => entry.displayKey === row.displayKey);
+                  return (
+                  <div className="list-item" key={row.displayKey || `mentor-row-${displayIndex}`}>
                     <header>
-                      <h3>Wiersz {index + 1}</h3>
+                      <div>
+                        <h3>{row.readOnly ? `Wiersz admina ${displayIndex + 1}` : `Twój wiersz ${mentorIndex + 1}`}</h3>
+                        <div className="muted small">{row.readOnly ? "Ten wiersz pochodzi z głównego kafla i jest tylko do podglądu." : "Możesz edytować tylko własne wiersze."}</div>
+                      </div>
                       <div className="button-row">
-                        <button className="btn btn-secondary" onClick={() => setMentorMaterialRows((current) => current.filter((_, rowIndex) => rowIndex !== index) || [createEmptyMaterialRow()])} type="button">Usuń</button>
+                        <button className="btn btn-secondary" onClick={() => addMentorRowAtAnchor(row.anchorAfterKey ?? "")} type="button">Dodaj przed</button>
+                        <button className="btn btn-secondary" onClick={() => addMentorRowAtAnchor(row.displayKey ?? "")} type="button">Dodaj pod</button>
+                        {!row.readOnly ? (
+                          <button className="btn btn-secondary" onClick={() => setMentorMaterialRows((current) => current.filter((_, rowIndex) => rowIndex !== mentorIndex) || [createEmptyMaterialRow()])} type="button">Usuń</button>
+                        ) : null}
                       </div>
                     </header>
                     <div className="field">
@@ -3127,23 +3237,19 @@ function MentorSection({
                         {guides.filter((guide) => guide.guideType === "mentor_blueprint").map((guide) => {
                           const checked = row.appliesToGuideIds.includes(String(guide.id));
                           return (
-                            <label className="list-item" key={`mentor-row-guide-${index}-${guide.id}`} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <label className="list-item" key={`mentor-row-guide-${displayIndex}-${guide.id}`} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                               <input
+                                disabled={row.readOnly}
                                 checked={checked}
                                 type="checkbox"
                                 onChange={() =>
-                                  setMentorMaterialRows((current) =>
-                                    current.map((entry, rowIndex) =>
-                                      rowIndex === index
-                                        ? {
+                                  updateMentorRow(mentorIndex, (entry) =>
+                                        ({
                                             ...entry,
                                             appliesToGuideIds: checked
                                               ? entry.appliesToGuideIds.filter((id) => id !== String(guide.id))
                                               : [...entry.appliesToGuideIds, String(guide.id)],
-                                          }
-                                        : entry,
-                                    ),
-                                  )
+                                          }))
                                 }
                               />
                               <span>{guide.universityName} • {guide.title}</span>
@@ -3155,11 +3261,10 @@ function MentorSection({
                     <div className="field">
                       <label>Poziom</label>
                       <select
+                        disabled={row.readOnly}
                         value={row.level}
                         onChange={(event) =>
-                          setMentorMaterialRows((current) =>
-                            current.map((entry, rowIndex) => rowIndex === index ? { ...entry, level: event.target.value as MaterialRowEditor["level"] } : entry),
-                          )
+                          updateMentorRow(mentorIndex, (entry) => ({ ...entry, level: event.target.value as MaterialRowEditor["level"] }))
                         }
                       >
                         <option value="country">Kraj</option>
@@ -3170,24 +3275,18 @@ function MentorSection({
                     <div className="field">
                       <label>Kraj</label>
                       <input
+                        disabled={row.readOnly}
                         value={row.country}
-                        onChange={(event) =>
-                          setMentorMaterialRows((current) =>
-                            current.map((entry, rowIndex) => rowIndex === index ? { ...entry, country: event.target.value } : entry),
-                          )
-                        }
+                        onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, country: event.target.value }))}
                       />
                     </div>
                     {row.level !== "country" ? (
                       <div className="field">
                         <label>Uczelnia</label>
                         <input
+                          disabled={row.readOnly}
                           value={row.university}
-                          onChange={(event) =>
-                            setMentorMaterialRows((current) =>
-                              current.map((entry, rowIndex) => rowIndex === index ? { ...entry, university: event.target.value } : entry),
-                            )
-                          }
+                          onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, university: event.target.value }))}
                         />
                       </div>
                     ) : null}
@@ -3196,23 +3295,17 @@ function MentorSection({
                         <div className="field">
                           <label>Nazwa elementu / zadania</label>
                           <input
+                            disabled={row.readOnly}
                             value={row.task}
-                            onChange={(event) =>
-                              setMentorMaterialRows((current) =>
-                                current.map((entry, rowIndex) => rowIndex === index ? { ...entry, task: event.target.value } : entry),
-                              )
-                            }
+                            onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, task: event.target.value }))}
                           />
                         </div>
                         <div className="field">
                           <label>Link do wskazówek</label>
                           <select
+                            disabled={row.readOnly}
                             value={row.guideId}
-                            onChange={(event) =>
-                              setMentorMaterialRows((current) =>
-                                current.map((entry, rowIndex) => rowIndex === index ? { ...entry, guideId: event.target.value } : entry),
-                              )
-                            }
+                            onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, guideId: event.target.value }))}
                           >
                             <option value="">Brak</option>
                             {guides.filter((guide) => guide.guideType === "mentor_blueprint").map((guide) => (
@@ -3225,24 +3318,24 @@ function MentorSection({
                         <div className="field">
                           <label>Alternatywne sposoby wykonania, po jednej opcji w linii</label>
                           <textarea
+                            disabled={row.readOnly}
                             value={row.alternativeOptions.join("\n")}
                             onChange={(event) =>
-                              setMentorMaterialRows((current) =>
-                                current.map((entry, rowIndex) =>
-                                  rowIndex === index
-                                    ? { ...entry, alternativeOptions: event.target.value.split("\n").map((line) => line.trim()).filter(Boolean) }
-                                    : entry,
-                                ),
-                              )
+                              updateMentorRow(mentorIndex, (entry) => ({
+                                ...entry,
+                                alternativeOptions: event.target.value.split("\n").map((line) => line.trim()).filter(Boolean),
+                              }))
                             }
                           />
                         </div>
                       </>
                     ) : null}
                   </div>
-                ))}
+                  );
+                })}
                 <div className="button-row">
-                  <button className="btn btn-secondary" onClick={() => setMentorMaterialRows((current) => [...current, createEmptyMaterialRow()])} type="button">Dodaj wiersz</button>
+                  <button className="btn btn-secondary" onClick={() => addMentorRowAtAnchor("")} type="button">Dodaj wiersz na górze</button>
+                  <button className="btn btn-secondary" onClick={() => addMentorRowAtAnchor(mentorMaterialDisplayRows.filter((row) => row.readOnly).slice(-1)[0]?.displayKey ?? "")} type="button">Dodaj wiersz na końcu</button>
                   <button className="btn btn-primary" onClick={() => void saveMentorMaterialRows()} type="button">Zapisz wiersze</button>
                 </div>
               </div>
