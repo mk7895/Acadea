@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Check, Search, PenTool, Send, Home as HomeIcon, BookOpen } from "lucide-react";
+import { ArrowRight, Check, Search, PenTool, Send, Home as HomeIcon, BookOpen, MessageCircle } from "lucide-react";
 import { Link } from "wouter";
 
 const steps = [
@@ -41,15 +41,15 @@ const steps = [
   },
   {
     id: "oczekiwanie",
-    icon: HomeIcon,
+    icon: MessageCircle,
     title: "6. W oczekiwaniu na odpowiedzi i interviews",
-    desc: "Pozostajemy w kontkacie po wysłaniu aplikacji, pomagając w kontakcie z uczelnią, przygotowaniu się do rozmów wstępnych (interviews) oraz dodając otuchy w oczekiwaniu na wyniki.",
+    desc: "Pozostajemy w kontakcie po wysłaniu aplikacji, pomagając w komunikacji z uczelnią, przygotowaniu się do rozmów wstępnych (interviews) oraz dodając otuchy w oczekiwaniu na wyniki.",
     color: "bg-rose-100 text-rose-600"
   },
   {
     id: "po-przyjeciu",
     icon: HomeIcon,
-    title: "6. Po przyjęciu",
+    title: "7. Po przyjęciu",
     desc: "Otrzymujesz oferty! Pomagamy podjąć ostateczną decyzję oraz dopełnić formalności. Wspieramy w uporządkowaniu organizacji wyjazdu, wyborze ubezpieczenia, procesie ubiegania się o wizę, zaaplikowaniu o miejsce w akademiku, czy nawet wyborze operatora w nowym kraju.",
     color: "bg-rose-100 text-rose-600"
   }

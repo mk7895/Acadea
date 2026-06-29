@@ -9,8 +9,8 @@ const serviceLinks = [
   { label: "Egzaminy i Certyfikaty", href: "/jak-to-dziala#egzaminy-i-certyfikaty" },
   { label: "Przygotowanie Dokumentów", href: "/jak-to-dziala#przygotowanie-dokumentow" },
   { label: "Eseje, CV i Listy Motywacyjne", href: "/jak-to-dziala#eseje-cv-i-listy-motywacyjne" },
-  { label: "Aplikacja i Stypendia", href: "/jak-to-dziala#eseje-i-personal-statement" },
-  { label: "Przygotowanie do Rozmów Wstępnych", href: "/jak-to-dziala#aplikacja-i-formalnosci" },
+  { label: "Aplikacja i Stypendia", href: "/jak-to-dziala#aplikacja-i-stypendia" },
+  { label: "Przygotowanie do Rozmów Wstępnych", href: "/jak-to-dziala#oczekiwanie" },
   { label: "Formalności po Przyjęciu i Zakwaterowanie", href: "/jak-to-dziala#po-przyjeciu" },
 ];
 
