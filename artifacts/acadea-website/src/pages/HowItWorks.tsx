@@ -43,7 +43,7 @@ const steps = [
     id: "po-przyjeciu",
     icon: HomeIcon,
     title: "6. Po przyjęciu",
-    desc: "Otrzymujesz oferty! Pomagamy podjąć ostateczną decyzję. Wspieramy w procesie aplikacji o wizę studencką, rezerwacji akademika oraz zakładaniu konta bankowego.",
+    desc: "Otrzymujesz oferty! Pomagamy podjąć ostateczną decyzję. Wspieramy w uporządkowaniu kolejnych kroków po przyjęciu, informacji uczelni dotyczących wyjazdu, zakwaterowania oraz organizacji startu na miejscu.",
     color: "bg-rose-100 text-rose-600"
   }
 ];

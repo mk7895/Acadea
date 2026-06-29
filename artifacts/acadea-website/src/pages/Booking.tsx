@@ -76,7 +76,7 @@ const TOPICS = [
   "Program Stypendialny ACADEA",
   "Przygotowanie dokumentów",
   "Esej motywacyjny",
-  "Wiza i zakwaterowanie",
+  "Formalności po przyjęciu i zakwaterowanie",
   "Inne",
 ];
 

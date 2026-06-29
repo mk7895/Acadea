@@ -9,8 +9,8 @@ const serviceLinks = [
   { label: "Egzaminy i Certyfikaty", href: "/jak-to-dziala#egzaminy-i-certyfikaty" },
   { label: "Przygotowanie Dokumentów", href: "/jak-to-dziala#przygotowanie-dokumentow" },
   { label: "Eseje i Motywacje", href: "/jak-to-dziala#eseje-i-personal-statement" },
-  { label: "Tłumaczenia i Legalizacja", href: "/jak-to-dziala#aplikacja-i-formalnosci" },
-  { label: "Wizy i Zakwaterowanie", href: "/jak-to-dziala#po-przyjeciu" },
+  { label: "Tłumaczenia i Formalności Dokumentowe", href: "/jak-to-dziala#aplikacja-i-formalnosci" },
+  { label: "Formalności po Przyjęciu i Zakwaterowanie", href: "/jak-to-dziala#po-przyjeciu" },
 ];
 
 export function Footer() {

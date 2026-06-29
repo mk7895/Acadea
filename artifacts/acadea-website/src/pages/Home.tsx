@@ -42,13 +42,13 @@ const services = [
     icon: <Users size={22} className="text-primary" />,
   },
   {
-    title: "Tłumaczenia i legalizacja",
-    desc: "Prowadzimy za rękę przez wszystkie formalności, żebyś Ty mógł skupić się na nauce.",
+    title: "Tłumaczenia i formalności dokumentowe",
+    desc: "Pomagamy uporządkować tłumaczenia, dokumenty i kolejne kroki formalne, żeby cały proces był bardziej przejrzysty.",
     icon: <Globe size={22} className="text-primary" />,
   },
   {
-    title: "Wizy i zakwaterowanie",
-    desc: "Nie znikamy po przyjęciu — pomagamy z wizami, zakwaterowaniem i ułatwiamy kontakt z uczelnią.",
+    title: "Formalności po przyjęciu i zakwaterowanie",
+    desc: "Nie znikamy po przyjęciu — pomagamy odnaleźć się w kolejnych krokach po otrzymaniu oferty, organizacji zakwaterowania i kontakcie z uczelnią.",
     icon: <MapPin size={22} className="text-primary" />,
   },
 ];
