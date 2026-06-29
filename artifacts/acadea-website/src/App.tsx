@@ -20,6 +20,7 @@ import Booking from "@/pages/Booking";
 import MentorForm from "@/pages/MentorForm";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import Regulamin from "@/pages/Regulamin";
+import PlatformTerms from "@/pages/PlatformTerms";
 import ArticlePage from "@/pages/ArticlePage";
 import AdminArticles from "@/pages/AdminArticles";
 import { CookieConsentProvider } from "@/components/CookieConsent";
@@ -93,6 +94,7 @@ function Router() {
         <Route path="/mentoruj" component={MentorForm} />
         <Route path="/polityka-prywatnosci" component={PrivacyPolicy} />
         <Route path="/regulamin" component={Regulamin} />
+        <Route path="/regulamin-platformy" component={PlatformTerms} />
         <Route path="/panel" component={AdminArticles} />
         <Route component={NotFound} />
       </Switch>

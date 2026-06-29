@@ -51,7 +51,7 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const raw = getCookie(PLATFORM_COOKIE_CONSENT_COOKIE_NAME);
+    const raw = getCookie(PLATFORM_COOKIE_CONSENT_COOKIE_NAME) ?? getCookie("acadea_cookie_consent_v1");
     if (!raw) {
       setLoaded(true);
       return;
@@ -127,8 +127,9 @@ function CookieConsentBanner() {
           <p className="eyebrow cookie-eyebrow">Ustawienia cookies</p>
           <h2>Szanujemy Twoją prywatność</h2>
           <p>
-            `app.acadea.org` używa niezbędnych cookies do działania logowania, bezpieczeństwa i ochrony formularzy.
-            Opcjonalne cookies analityczne i marketingowe uruchamiamy dopiero po Twojej zgodzie.
+            Używamy plików cookies niezbędnych do działania serwisu oraz, za Twoją zgodą,
+            plików cookies analitycznych i marketingowych. Więcej informacji znajdziesz
+            w polityce prywatności.
           </p>
         </div>
         <div className="cookie-banner-actions">

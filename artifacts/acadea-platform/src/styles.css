@@ -110,6 +110,30 @@ textarea {
   resize: vertical;
 }
 
+.checkbox-card {
+  align-items: flex-start;
+  background: #f7fbf8;
+  border: 1px solid #d8e2da;
+  border-radius: 18px;
+  color: #305444;
+  cursor: pointer;
+  display: flex;
+  font-size: 13px;
+  gap: 10px;
+  line-height: 1.45;
+  padding: 13px 15px;
+}
+
+.checkbox-card input {
+  margin-top: 2px;
+}
+
+.checkbox-card a {
+  color: #14532d;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
 .button-row {
   display: flex;
   flex-wrap: wrap;

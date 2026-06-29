@@ -154,6 +154,7 @@ export function Footer() {
           <div className="flex items-center gap-6">
             <Link href="/polityka-prywatnosci" className="hover:text-white transition-colors">Polityka Prywatności</Link>
             <Link href="/regulamin" className="hover:text-white transition-colors">Regulamin</Link>
+            <Link href="/regulamin-platformy" className="hover:text-white transition-colors">Regulamin Platformy</Link>
             <button onClick={openPreferences} className="hover:text-white transition-colors">
               Ustawienia cookies
             </button>

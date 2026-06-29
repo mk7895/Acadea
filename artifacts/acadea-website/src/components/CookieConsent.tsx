@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   COOKIE_CONSENT_COOKIE_NAME,
+  getCookie,
   TIMEZONE_COOKIE_NAME,
   deleteCookie,
-  getCookie,
   setLongLivedCookie,
 } from "@/lib/cookies";
 
@@ -56,7 +56,7 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const raw = getCookie(COOKIE_CONSENT_COOKIE_NAME);
+    const raw = getCookie(COOKIE_CONSENT_COOKIE_NAME) ?? getCookie("acadea_platform_cookie_consent_v1");
     if (!raw) {
       setLoaded(true);
       return;
@@ -145,8 +145,9 @@ function CookieConsentBanner() {
             </p>
             <h2 className="text-2xl font-bold text-primary mb-2">Szanujemy Twoją prywatność</h2>
             <p className="text-sm text-gray-600 leading-relaxed">
-              Używamy niezbędnych cookies do działania strony oraz opcjonalnych cookies preferencji,
-              analitycznych i marketingowych. Więcej informacji znajdziesz w polityce prywatności.
+              Używamy plików cookies niezbędnych do działania serwisu oraz, za Twoją zgodą,
+              plików cookies preferencji, analitycznych i marketingowych. Więcej informacji znajdziesz
+              w polityce prywatności.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">

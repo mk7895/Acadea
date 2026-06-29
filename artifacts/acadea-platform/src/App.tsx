@@ -3,6 +3,7 @@ import { Link, Route, Switch, useLocation } from "wouter";
 import { apiFetch } from "@/lib/api";
 import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
 import { CookieConsentProvider } from "@/components/CookieConsent";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 
 const TOKEN_KEY = "acadea-platform-session";
 
@@ -426,6 +427,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
   const [status, setStatus] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [acceptedPlatformTerms, setAcceptedPlatformTerms] = useState(false);
 
   useEffect(() => {
     apiFetch<BootstrapStatus>("/bootstrap/status")
@@ -481,6 +483,11 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
 
   async function handleSignup(event: React.FormEvent) {
     event.preventDefault();
+    if (!acceptedPlatformTerms) {
+      setStatus("Aby założyć konto, zaakceptuj Regulamin Platformy ACADEA.");
+      return;
+    }
+
     setSubmitting(true);
     setStatus("");
     try {
@@ -491,6 +498,7 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
           email,
           password,
           turnstileToken,
+          acceptedPlatformTerms,
         }),
       });
       onLogin(payload.token);
@@ -561,6 +569,22 @@ function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
           <label>Hasło</label>
           <input value={password} type="password" onChange={(event) => setPassword(event.target.value)} />
         </div>
+        {!isBootstrap && mode === "signup" ? (
+          <label className="checkbox-card">
+            <input
+              checked={acceptedPlatformTerms}
+              onChange={(event) => setAcceptedPlatformTerms(event.target.checked)}
+              type="checkbox"
+            />
+            <span>
+              Akceptuję{" "}
+              <a href="https://acadea.org/regulamin-platformy" rel="noreferrer" target="_blank">
+                Regulamin Platformy ACADEA
+              </a>{" "}
+              i potwierdzam, że zapoznałem/am się z polityką prywatności.
+            </span>
+          </label>
+        ) : null}
         {!isBootstrap && (
           <TurnstileWidget onTokenChange={setTurnstileToken} resetKey={resetKey} />
         )}
@@ -4092,6 +4116,7 @@ function PlatformSeoManager() {
 export default function App() {
   return (
     <CookieConsentProvider>
+      <GoogleAnalytics />
       <PlatformSeoManager />
       <AppRouter />
     </CookieConsentProvider>

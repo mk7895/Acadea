@@ -51,6 +51,7 @@ import { sendPlatformPasswordResetEmail } from "../lib/mailer";
 import { getPlatformStorageSummary } from "../lib/platform/storage";
 
 const router = Router();
+const PLATFORM_TERMS_VERSION = "2026-06-29";
 
 const loginSchema = z.object({
   email: z.string().trim().email(),
@@ -68,6 +69,9 @@ const menteeSignupSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(8),
   turnstileToken: z.string().optional(),
+  acceptedPlatformTerms: z.boolean().refine((value) => value, {
+    message: "Akceptacja Regulaminu Platformy jest wymagana.",
+  }),
 });
 
 const resetPasswordSchema = z.object({
@@ -841,6 +845,7 @@ router.post("/platform/auth/signup-mentee", async (req, res) => {
       email: parsed.data.email.toLowerCase(),
       passwordHash: hash,
       passwordSalt: salt,
+      notes: `Regulamin Platformy zaakceptowany przy rejestracji: ${new Date().toISOString()} (wersja ${PLATFORM_TERMS_VERSION}).`,
     })
     .returning();
 
