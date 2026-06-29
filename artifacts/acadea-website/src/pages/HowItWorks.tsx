@@ -5,45 +5,52 @@ import { Link } from "wouter";
 
 const steps = [
   {
-    id: "profilowanie-i-wybor-uczelni",
+    id: "wybor-uczelni",
     icon: Search,
-    title: "1. Profilowanie i wybór uczelni",
-    desc: "Zaczynamy od dogłębnego poznania Twoich pasji, mocnych stron i oczekiwań. Analizujemy wyniki w nauce i budżet. Wspólnie tworzymy listę optymalnych uniwersytetów (Reach, Match, Safety).",
+    title: "1. Doradztwo w wyborze krajów, uczelni i kierunków",
+    desc: "Zaczynamy od dogłębnego poznania Twoich pasji, mocnych stron i oczekiwań. Analizujemy wyniki w nauce i budżet. Wspólnie tworzymy spersonalizowaną i optymalną listę uniwersytetów oraz harmonogram aplikacji.",
     color: "bg-blue-100 text-blue-600"
   },
   {
     id: "egzaminy-i-certyfikaty",
     icon: BookOpen,
-    title: "2. Przygotowanie do egzaminów",
-    desc: "Pomagamy w przygotowaniu do egzaminów wymaganych przez uczelnie — IELTS, TOEFL, egzaminów Cambridge, SAT oraz egzaminów maturalnych. Ćwiczymy w zaplanowanym tempie, aby osiągnąć wymagane wyniki z wyprzedzeniem.",
+    title: "2. Przygotowanie do Egzaminów i Certyfikatów Językowych",
+    desc: "Pomagamy w przygotowaniu do egzaminów wymaganych przez uczelnie — IELTS, TOEFL, egzaminów Cambridge, SAT, GRE, GMAT oraz egzaminów maturalnych, w tym matury międzynarodowej IB. Ćwiczymy w zaplanowanym tempie, aby osiągnąć wymagane wyniki z wyprzedzeniem.",
     color: "bg-teal-100 text-teal-600"
   },
   {
     id: "przygotowanie-dokumentow",
     icon: PenTool,
-    title: "3. Kompletowanie dokumentów",
-    desc: "Pomagamy w zebraniu niezbędnych dokumentów: transkryptów ocen, referencji. Pracujemy nad Twoim CV (Extracurriculars) tak, aby pokazać Cię z jak najlepszej strony.",
+    title: "3. Przygotowanie Dokumentów",
+    desc: "Pomagamy w skompletowaniu niezbędnych dokumentów: transkryptów ocen, referencji/listów rekomendacyjnych, certyfikatów. Pracujemy nad Twoim CV (wybór aktywności dodatkowych i konkursów) tak, aby pokazać Cię z jak najlepszej strony. Służymy radą i pomocą również nauczycielom i innym osobom, które piszą dla Ciebie listy rekomendacyjne.",
     color: "bg-emerald-100 text-emerald-600"
   },
   {
-    id: "eseje-i-personal-statement",
+    id: "eseje-cv-i-listy-motywacyjne",
     icon: Check,
-    title: "4. Eseje i Personal Statement",
-    desc: "To najważniejszy element aplikacji. Przechodzimy przez burzę mózgów, tworzymy konspekty i przeprowadzamy wielokrotną korektę esejów, aż będą perfekcyjne. Twoja unikalna historia musi błyszczeć.",
+    title: "4. Eseje, CV i Listy Motywacyjne",
+    desc: "To jeden z najważniejszych elementów aplikacji. Dokładnie analizujemy każdy zadany temat, w zależności od Twoich preferencji przechodzimy przez burzę mózgów i stworzenie planów esejów. Następnie edytujemy teksty, aż będą perfekcyjne.",
     color: "bg-purple-100 text-purple-600"
   },
   {
-    id: "aplikacja-i-formalnosci",
+    id: "aplikacja-i-stypendia",
     icon: Send,
-    title: "5. Aplikacja i Formalności",
-    desc: "Wspólnie wypełniamy portale aplikacyjne (UCAS, Common App itp.). Dbamy o wszystkie terminy (deadlines), opłaty aplikacyjne oraz ewentualne wnioski o stypendia.",
+    title: "5. Aplikacja i Stypendia",
+    desc: "Wspólnie wypełniamy portale i wnioski aplikacyjne (UCAS, Common App i inne). Dbamy o wszystkie terminy (deadlines), opłaty aplikacyjne oraz ewentualne wnioski o stypendia.",
     color: "bg-orange-100 text-orange-600"
+  },
+  {
+    id: "oczekiwanie",
+    icon: HomeIcon,
+    title: "6. W oczekiwaniu na odpowiedzi i interviews",
+    desc: "Pozostajemy w kontkacie po wysłaniu aplikacji, pomagając w kontakcie z uczelnią, przygotowaniu się do rozmów wstępnych (interviews) oraz dodając otuchy w oczekiwaniu na wyniki.",
+    color: "bg-rose-100 text-rose-600"
   },
   {
     id: "po-przyjeciu",
     icon: HomeIcon,
     title: "6. Po przyjęciu",
-    desc: "Otrzymujesz oferty! Pomagamy podjąć ostateczną decyzję. Wspieramy w uporządkowaniu kolejnych kroków po przyjęciu, informacji uczelni dotyczących wyjazdu, zakwaterowania oraz organizacji startu na miejscu.",
+    desc: "Otrzymujesz oferty! Pomagamy podjąć ostateczną decyzję oraz dopełnić formalności. Wspieramy w uporządkowaniu organizacji wyjazdu, wyborze ubezpieczenia, procesie ubiegania się o wizę, zaaplikowaniu o miejsce w akademiku, czy nawet wyborze operatora w nowym kraju.",
     color: "bg-rose-100 text-rose-600"
   }
 ];
