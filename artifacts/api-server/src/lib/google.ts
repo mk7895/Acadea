@@ -37,16 +37,16 @@ function readStaticConfig() {
     runtimeConfig.googleRefreshToken ?? process.env.GOOGLE_REFRESH_TOKEN;
   const googleGmailClientId =
     runtimeConfig.googleGmailClientId ??
-    process.env.GOOGLE_GMAIL_CLIENT_ID ??
-    googleClientId;
+    googleClientId ??
+    process.env.GOOGLE_GMAIL_CLIENT_ID;
   const googleGmailClientSecret =
     runtimeConfig.googleGmailClientSecret ??
-    process.env.GOOGLE_GMAIL_CLIENT_SECRET ??
-    googleClientSecret;
+    googleClientSecret ??
+    process.env.GOOGLE_GMAIL_CLIENT_SECRET;
   const googleGmailRefreshToken =
     runtimeConfig.googleGmailRefreshToken ??
-    process.env.GOOGLE_GMAIL_REFRESH_TOKEN ??
-    googleRefreshToken;
+    googleRefreshToken ??
+    process.env.GOOGLE_GMAIL_REFRESH_TOKEN;
 
   return {
     googleClientId,
