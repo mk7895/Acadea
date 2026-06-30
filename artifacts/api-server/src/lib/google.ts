@@ -26,9 +26,13 @@ let databaseTokenCache: GoogleTokenRecord | null | undefined;
 
 function readStaticConfig() {
   const googleClientId =
-    runtimeConfig.googleClientId ?? process.env.GOOGLE_CLIENT_ID;
+    runtimeConfig.googleClientId ??
+    process.env.GOOGLE_OAUTH_CLIENT_ID ??
+    process.env.GOOGLE_CLIENT_ID;
   const googleClientSecret =
-    runtimeConfig.googleClientSecret ?? process.env.GOOGLE_CLIENT_SECRET;
+    runtimeConfig.googleClientSecret ??
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET ??
+    process.env.GOOGLE_CLIENT_SECRET;
   const googleRefreshToken =
     runtimeConfig.googleRefreshToken ?? process.env.GOOGLE_REFRESH_TOKEN;
   const googleGmailClientId =
@@ -110,12 +114,23 @@ function getTokenErrorMessage(
   return data.error_description ?? data.error ?? fallback;
 }
 
+export function getGoogleWorkspacePrimaryEmail() {
+  return process.env.GOOGLE_WORKSPACE_PRIMARY_EMAIL?.trim() || null;
+}
+
 export function getGoogleCalendarId() {
-  return process.env.GOOGLE_CALENDAR_ID ?? "primary";
+  return (
+    process.env.GOOGLE_CALENDAR_ID?.trim() ||
+    getGoogleWorkspacePrimaryEmail() ||
+    "primary"
+  );
 }
 
 export function getGoogleGmailSendAs() {
-  return process.env.GOOGLE_GMAIL_SEND_AS;
+  return (
+    process.env.GOOGLE_GMAIL_SEND_AS?.trim() ||
+    getGoogleWorkspacePrimaryEmail()
+  );
 }
 
 export function getGoogleOAuthClientCredentials() {

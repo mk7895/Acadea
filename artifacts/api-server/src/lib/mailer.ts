@@ -3,6 +3,7 @@ import {
   getGoogleAccountEmail,
   getGoogleGmailAccessToken,
   getGoogleGmailSendAs,
+  getGoogleWorkspacePrimaryEmail,
   hasGoogleGmailCredentials,
 } from "./google";
 
@@ -179,7 +180,7 @@ async function sendGmailMessage({
   if (!res.ok) {
     const body = await res.text();
     throw new Error(
-      `Gmail send failed with status ${res.status}: ${body.slice(0, 300)}. Check whether GOOGLE_GMAIL_REFRESH_TOKEN includes gmail.send scope and matches GOOGLE_GMAIL_CLIENT_ID/GOOGLE_GMAIL_CLIENT_SECRET.`,
+      `Gmail send failed with status ${res.status}: ${body.slice(0, 300)}. Check whether the stored Google refresh token includes gmail.send scope and matches the configured OAuth client credentials.`,
     );
   }
 
@@ -195,8 +196,15 @@ export async function sendBookingEmails(input: {
   topic: string;
   zoomLink: string;
 }) {
-  const senderEmail = getGoogleGmailSendAs() ?? (await getGoogleAccountEmail());
-  const notifyEmail = process.env.CONTACT_NOTIFY_EMAIL ?? senderEmail ?? null;
+  const senderEmail =
+    getGoogleGmailSendAs() ??
+    getGoogleWorkspacePrimaryEmail() ??
+    (await getGoogleAccountEmail());
+  const notifyEmail =
+    process.env.CONTACT_NOTIFY_EMAIL ??
+    getGoogleWorkspacePrimaryEmail() ??
+    senderEmail ??
+    null;
 
   if (!notifyEmail || !senderEmail || !(await hasGoogleGmailCredentials())) {
     logger.warn(
@@ -310,8 +318,15 @@ export async function sendContactEmails(input: {
   phone?: string | null;
   type: string;
 }) {
-  const senderEmail = getGoogleGmailSendAs() ?? (await getGoogleAccountEmail());
-  const notifyEmail = process.env.CONTACT_NOTIFY_EMAIL ?? senderEmail ?? null;
+  const senderEmail =
+    getGoogleGmailSendAs() ??
+    getGoogleWorkspacePrimaryEmail() ??
+    (await getGoogleAccountEmail());
+  const notifyEmail =
+    process.env.CONTACT_NOTIFY_EMAIL ??
+    getGoogleWorkspacePrimaryEmail() ??
+    senderEmail ??
+    null;
   const normalizedGreeting =
     input.type === "newsletter" ? "Cześć," : `Cześć ${input.name},`;
 
@@ -471,7 +486,10 @@ export async function sendPlatformPasswordResetEmail(input: {
   fullName: string;
   resetUrl: string;
 }) {
-  const senderEmail = getGoogleGmailSendAs() ?? (await getGoogleAccountEmail());
+  const senderEmail =
+    getGoogleGmailSendAs() ??
+    getGoogleWorkspacePrimaryEmail() ??
+    (await getGoogleAccountEmail());
 
   if (!senderEmail || !(await hasGoogleGmailCredentials())) {
     logger.warn("Unable to send platform password reset email because Gmail credentials are incomplete");
