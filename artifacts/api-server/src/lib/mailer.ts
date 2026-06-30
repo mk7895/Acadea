@@ -187,6 +187,29 @@ async function sendGmailMessage({
   return true;
 }
 
+async function resolveOrganizationMailbox() {
+  const workspacePrimaryEmail = getGoogleWorkspacePrimaryEmail();
+  const connectedGoogleAccountEmail = await getGoogleAccountEmail();
+  const legacySendAsEmail = getGoogleGmailSendAs();
+
+  const senderEmail =
+    workspacePrimaryEmail ??
+    connectedGoogleAccountEmail ??
+    legacySendAsEmail ??
+    null;
+
+  const notifyEmail =
+    workspacePrimaryEmail ??
+    connectedGoogleAccountEmail ??
+    process.env.CONTACT_NOTIFY_EMAIL ??
+    senderEmail;
+
+  return {
+    senderEmail,
+    notifyEmail,
+  };
+}
+
 export async function sendBookingEmails(input: {
   email: string;
   end: string;
@@ -196,15 +219,7 @@ export async function sendBookingEmails(input: {
   topic: string;
   zoomLink: string;
 }) {
-  const senderEmail =
-    getGoogleGmailSendAs() ??
-    getGoogleWorkspacePrimaryEmail() ??
-    (await getGoogleAccountEmail());
-  const notifyEmail =
-    process.env.CONTACT_NOTIFY_EMAIL ??
-    getGoogleWorkspacePrimaryEmail() ??
-    senderEmail ??
-    null;
+  const { senderEmail, notifyEmail } = await resolveOrganizationMailbox();
 
   if (!notifyEmail || !senderEmail || !(await hasGoogleGmailCredentials())) {
     logger.warn(
@@ -318,15 +333,7 @@ export async function sendContactEmails(input: {
   phone?: string | null;
   type: string;
 }) {
-  const senderEmail =
-    getGoogleGmailSendAs() ??
-    getGoogleWorkspacePrimaryEmail() ??
-    (await getGoogleAccountEmail());
-  const notifyEmail =
-    process.env.CONTACT_NOTIFY_EMAIL ??
-    getGoogleWorkspacePrimaryEmail() ??
-    senderEmail ??
-    null;
+  const { senderEmail, notifyEmail } = await resolveOrganizationMailbox();
   const normalizedGreeting =
     input.type === "newsletter" ? "Cześć," : `Cześć ${input.name},`;
 
@@ -486,10 +493,7 @@ export async function sendPlatformPasswordResetEmail(input: {
   fullName: string;
   resetUrl: string;
 }) {
-  const senderEmail =
-    getGoogleGmailSendAs() ??
-    getGoogleWorkspacePrimaryEmail() ??
-    (await getGoogleAccountEmail());
+  const { senderEmail } = await resolveOrganizationMailbox();
 
   if (!senderEmail || !(await hasGoogleGmailCredentials())) {
     logger.warn("Unable to send platform password reset email because Gmail credentials are incomplete");
