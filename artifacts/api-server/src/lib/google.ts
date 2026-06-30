@@ -297,6 +297,22 @@ export async function getGoogleAccountEmailForAccessToken(accessToken: string) {
     : null;
 }
 
+export async function getGooglePrimaryCalendarIdForAccessToken(
+  accessToken: string,
+) {
+  const res = await googleApiRequestWithAccessToken(
+    accessToken,
+    "/calendar/v3/calendars/primary",
+  );
+
+  if (!res.ok) {
+    return null;
+  }
+
+  const data = (await res.json()) as { id?: string };
+  return typeof data.id === "string" && data.id.trim() ? data.id.trim() : null;
+}
+
 export async function getGoogleAccountEmail() {
   if (googleAccountEmailCache !== undefined) {
     return googleAccountEmailCache;

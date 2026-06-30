@@ -54,8 +54,8 @@ import {
 } from "../lib/mailer";
 import {
   getGoogleAccessTokenForRefreshToken,
-  getGoogleAccountEmailForAccessToken,
   getGoogleOAuthClientCredentials,
+  getGooglePrimaryCalendarIdForAccessToken,
   googleApiRequestWithAccessToken,
 } from "../lib/google";
 import { getPlatformStorageSummary } from "../lib/platform/storage";
@@ -951,7 +951,9 @@ async function getMentorCalendarConnection(
 }
 
 async function getMentorCalendarAccessToken(
+  db: any,
   connection: MentorGoogleConnectionRecord | null,
+  mentorUserId?: number,
 ) {
   const metadata = getPlatformGoogleConnectionMetadata(connection?.metadata);
   if (!connection || connection.status !== "connected" || !metadata.refreshToken) {
@@ -964,7 +966,45 @@ async function getMentorCalendarAccessToken(
   const externalEmail =
     connection.externalEmail ||
     metadata.externalEmail ||
-    (await getGoogleAccountEmailForAccessToken(accessToken));
+    (await getGooglePrimaryCalendarIdForAccessToken(accessToken));
+
+  if (
+    externalEmail &&
+    mentorUserId &&
+    (connection.externalEmail !== externalEmail ||
+      metadata.externalEmail !== externalEmail)
+  ) {
+    await db
+      .update(platformGoogleConnectionsTable)
+      .set({
+        externalEmail,
+        metadata: {
+          ...metadata,
+          externalEmail,
+        },
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(platformGoogleConnectionsTable.userId, mentorUserId),
+          eq(platformGoogleConnectionsTable.connectionType, "calendar"),
+        ),
+      );
+
+    await db
+      .insert(mentorProfilesTable)
+      .values({
+        userId: mentorUserId,
+        googleCalendarEmail: externalEmail,
+      })
+      .onConflictDoUpdate({
+        target: mentorProfilesTable.userId,
+        set: {
+          googleCalendarEmail: externalEmail,
+          updatedAt: new Date(),
+        },
+      });
+  }
 
   return {
     accessToken,
@@ -2178,7 +2218,11 @@ router.patch(
           db,
           req.platformUser!.id,
         );
-        const mentorGoogle = await getMentorCalendarAccessToken(connection);
+        const mentorGoogle = await getMentorCalendarAccessToken(
+          db,
+          connection,
+          meeting.mentorUserId,
+        );
         if (mentorGoogle?.externalEmail) {
           await cancelMentorCalendarEvent({
             accessToken: mentorGoogle.accessToken,
@@ -2620,7 +2664,11 @@ router.get(
     }
 
     const connection = await getMentorCalendarConnection(db, mentorUserId);
-    const mentorGoogle = await getMentorCalendarAccessToken(connection);
+    const mentorGoogle = await getMentorCalendarAccessToken(
+      db,
+      connection,
+      mentorUserId,
+    );
 
     if (!mentorGoogle?.externalEmail) {
       return res.json({
@@ -2744,7 +2792,11 @@ router.post(
       db,
       parsed.data.mentorUserId,
     );
-    const mentorGoogle = await getMentorCalendarAccessToken(connection);
+    const mentorGoogle = await getMentorCalendarAccessToken(
+      db,
+      connection,
+      parsed.data.mentorUserId,
+    );
 
     if (!mentorGoogle?.externalEmail) {
       return res.status(400).json({
@@ -3144,7 +3196,11 @@ router.patch(
           db,
           existingMeeting.mentorUserId,
         );
-        const mentorGoogle = await getMentorCalendarAccessToken(connection);
+        const mentorGoogle = await getMentorCalendarAccessToken(
+          db,
+          connection,
+          meeting.mentorUserId,
+        );
         if (mentorGoogle?.externalEmail) {
           await cancelMentorCalendarEvent({
             accessToken: mentorGoogle.accessToken,

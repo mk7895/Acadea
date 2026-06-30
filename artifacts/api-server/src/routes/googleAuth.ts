@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { mentorProfilesTable, platformGoogleConnectionsTable } from "@workspace/db/schema";
 import { logger } from "../lib/logger";
 import {
-  getGoogleAccountEmailForAccessToken,
+  getGooglePrimaryCalendarIdForAccessToken,
   getGoogleOAuthClientCredentials,
   updateStoredGoogleTokens,
 } from "../lib/google";
@@ -162,7 +162,8 @@ router.get("/google/auth/callback", async (req, res) => {
       }
 
       const externalEmail =
-        (await getGoogleAccountEmailForAccessToken(tokenData.access_token)) ?? "";
+        (await getGooglePrimaryCalendarIdForAccessToken(tokenData.access_token)) ??
+        "";
 
       const [existingConnection] = await db
         .select()

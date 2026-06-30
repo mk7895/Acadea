@@ -3640,6 +3640,7 @@ function MenteeSection({
   const [overview, setOverview] = useState<any>(null);
   const [mentors, setMentors] = useState<any[]>([]);
   const [mentorSlots, setMentorSlots] = useState<Array<{ end: string; start: string }>>([]);
+  const [mentorSlotsConnectionReady, setMentorSlotsConnectionReady] = useState(true);
   const [mentorSlotsLoading, setMentorSlotsLoading] = useState(false);
   const [mentorSlotsTimezone, setMentorSlotsTimezone] = useState("Europe/Warsaw");
   const [publicGuides, setPublicGuides] = useState<any[]>([]);
@@ -3734,6 +3735,7 @@ function MenteeSection({
     );
     if (!mentor?.googleCalendarConnected) {
       setMentorSlots([]);
+      setMentorSlotsConnectionReady(false);
       setMentorSlotsTimezone(mentor?.timezone || "Europe/Warsaw");
       return;
     }
@@ -3746,6 +3748,7 @@ function MenteeSection({
     }>(`/mentee/mentor-slots?mentorUserId=${encodeURIComponent(meetingForm.mentorUserId)}`, undefined, token)
       .then((payload) => {
         setMentorSlots(payload.slots ?? []);
+        setMentorSlotsConnectionReady(payload.connectionReady !== false);
         setMentorSlotsTimezone(payload.timezone || mentor.timezone || "Europe/Warsaw");
       })
       .catch((error) => setStatus(error.message))
@@ -4074,6 +4077,10 @@ function MenteeSection({
                   </div>
                   {mentorSlotsLoading ? (
                     <div className="status">Ładujemy dostępne sloty mentora…</div>
+                  ) : !mentorSlotsConnectionReady ? (
+                    <div className="status">
+                      Mentor połączył konto Google, ale platforma nie odczytała jeszcze jego głównego kalendarza. Odśwież stronę za chwilę lub poproś mentora o ponowne połączenie, jeśli problem nie zniknie.
+                    </div>
                   ) : mentorSlotGroups.length ? (
                     <div className="list">
                       {mentorSlotGroups.map((group) => (
