@@ -114,6 +114,45 @@ function getTokenErrorMessage(
   return data.error_description ?? data.error ?? fallback;
 }
 
+async function refreshGoogleAccessToken(input: {
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+  fallbackErrorMessage: string;
+}) {
+  const body = new URLSearchParams({
+    client_id: input.clientId,
+    client_secret: input.clientSecret,
+    refresh_token: input.refreshToken,
+    grant_type: "refresh_token",
+  });
+
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body.toString(),
+  });
+
+  const data = (await res.json()) as {
+    access_token?: string;
+    error?: string;
+    error_description?: string;
+  };
+
+  if (!res.ok || !data.access_token) {
+    throw new Error(
+      getTokenErrorMessage(
+        data,
+        `${input.fallbackErrorMessage} with status ${res.status}`,
+      ),
+    );
+  }
+
+  return data.access_token;
+}
+
 export function getGoogleWorkspacePrimaryEmail() {
   return process.env.GOOGLE_WORKSPACE_PRIMARY_EMAIL?.trim() || null;
 }
@@ -173,37 +212,12 @@ export async function getGoogleAccessToken() {
     throw new Error("Google OAuth credentials are incomplete");
   }
 
-  const body = new URLSearchParams({
-    client_id: googleClientId,
-    client_secret: googleClientSecret,
-    refresh_token: googleRefreshToken,
-    grant_type: "refresh_token",
+  return refreshGoogleAccessToken({
+    clientId: googleClientId,
+    clientSecret: googleClientSecret,
+    refreshToken: googleRefreshToken,
+    fallbackErrorMessage: "OAuth token refresh failed",
   });
-
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: body.toString(),
-  });
-
-  const data = (await res.json()) as {
-    access_token?: string;
-    error?: string;
-    error_description?: string;
-  };
-
-  if (!res.ok || !data.access_token) {
-    throw new Error(
-      getTokenErrorMessage(
-        data,
-        `OAuth token refresh failed with status ${res.status}`,
-      ),
-    );
-  }
-
-  return data.access_token;
 }
 
 export async function getGoogleGmailAccessToken() {
@@ -221,37 +235,22 @@ export async function getGoogleGmailAccessToken() {
     throw new Error("Google Gmail OAuth credentials are incomplete");
   }
 
-  const body = new URLSearchParams({
-    client_id: googleGmailClientId,
-    client_secret: googleGmailClientSecret,
-    refresh_token: googleGmailRefreshToken,
-    grant_type: "refresh_token",
+  return refreshGoogleAccessToken({
+    clientId: googleGmailClientId,
+    clientSecret: googleGmailClientSecret,
+    refreshToken: googleGmailRefreshToken,
+    fallbackErrorMessage: "Gmail OAuth token refresh failed",
   });
+}
 
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: body.toString(),
+export async function getGoogleAccessTokenForRefreshToken(refreshToken: string) {
+  const { clientId, clientSecret } = getGoogleOAuthClientCredentials();
+  return refreshGoogleAccessToken({
+    clientId,
+    clientSecret,
+    refreshToken,
+    fallbackErrorMessage: "OAuth token refresh failed",
   });
-
-  const data = (await res.json()) as {
-    access_token?: string;
-    error?: string;
-    error_description?: string;
-  };
-
-  if (!res.ok || !data.access_token) {
-    throw new Error(
-      getTokenErrorMessage(
-        data,
-        `Gmail OAuth token refresh failed with status ${res.status}`,
-      ),
-    );
-  }
-
-  return data.access_token;
 }
 
 export async function googleApiRequest(
@@ -269,6 +268,33 @@ export async function googleApiRequest(
       ...(init?.headers ?? {}),
     },
   });
+}
+
+export async function googleApiRequestWithAccessToken(
+  accessToken: string,
+  pathName: string,
+  init?: RequestInit,
+  baseUrl = "https://www.googleapis.com",
+) {
+  return fetch(`${baseUrl}${pathName}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...(init?.body ? { "Content-Type": "application/json" } : {}),
+      ...(init?.headers ?? {}),
+    },
+  });
+}
+
+export async function getGoogleAccountEmailForAccessToken(accessToken: string) {
+  const res = await googleApiRequestWithAccessToken(
+    accessToken,
+    "/oauth2/v2/userinfo",
+  );
+  const data = (await res.json()) as { email?: string };
+  return typeof data.email === "string" && data.email.includes("@")
+    ? data.email
+    : null;
 }
 
 export async function getGoogleAccountEmail() {

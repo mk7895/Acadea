@@ -47,8 +47,24 @@ import {
 } from "../lib/platform/auth";
 import { verifyTurnstileToken } from "../lib/turnstile";
 import { hashPassword, verifyPassword } from "../lib/adminAuth";
-import { sendPlatformPasswordResetEmail } from "../lib/mailer";
+import { logger } from "../lib/logger";
+import {
+  sendGmailMessageWithAccessToken,
+  sendPlatformPasswordResetEmail,
+} from "../lib/mailer";
+import {
+  getGoogleAccessTokenForRefreshToken,
+  getGoogleAccountEmailForAccessToken,
+  getGoogleOAuthClientCredentials,
+  googleApiRequestWithAccessToken,
+} from "../lib/google";
 import { getPlatformStorageSummary } from "../lib/platform/storage";
+import {
+  buildMentorMeetingUrl,
+  createPlatformGoogleOAuthState,
+  getPlatformGoogleConnectionMetadata,
+  PLATFORM_MENTOR_GOOGLE_SCOPES,
+} from "../lib/platform/google";
 
 const router = Router();
 const PLATFORM_TERMS_VERSION = "2026-06-29";
@@ -709,8 +725,279 @@ function meetingWindowIsValid(startsAt: Date, endsAt: Date) {
   return startsAt.getTime() + 1000 * 60 * 15 <= endsAt.getTime();
 }
 
-function meetingOutside24Hours(startsAt: Date) {
-  return startsAt.getTime() - Date.now() >= 1000 * 60 * 60 * 24;
+const MENTOR_MEETING_DURATION_MINUTES = 30;
+const MENTOR_BOOKING_LOOKAHEAD_DAYS = 21;
+const MENTOR_SLOT_LIMIT = 120;
+
+type BusyWindow = {
+  start: string;
+  end: string;
+};
+
+type MentorGoogleConnectionRecord = {
+  externalEmail: string | null;
+  metadata: Record<string, unknown>;
+  scopes: string[];
+  status: string;
+};
+
+function parseClockValue(value: string) {
+  const match = /^(\d{2}):(\d{2})$/.exec(value);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    hour: Number(match[1]),
+    minute: Number(match[2]),
+  };
+}
+
+function getZonedDateParts(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  const parts = Object.fromEntries(
+    formatter
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  ) as Record<string, string>;
+
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    hour: Number(parts.hour),
+    minute: Number(parts.minute),
+    second: Number(parts.second),
+  };
+}
+
+function zonedDateTimeToUtc(input: {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second?: number;
+  timeZone: string;
+}) {
+  const second = input.second ?? 0;
+  let utcMs = Date.UTC(
+    input.year,
+    input.month - 1,
+    input.day,
+    input.hour,
+    input.minute,
+    second,
+  );
+
+  for (let index = 0; index < 4; index += 1) {
+    const actual = getZonedDateParts(new Date(utcMs), input.timeZone);
+    const desiredAsUtc = Date.UTC(
+      input.year,
+      input.month - 1,
+      input.day,
+      input.hour,
+      input.minute,
+      second,
+    );
+    const actualAsUtc = Date.UTC(
+      actual.year,
+      actual.month - 1,
+      actual.day,
+      actual.hour,
+      actual.minute,
+      actual.second,
+    );
+    const diff = desiredAsUtc - actualAsUtc;
+    if (diff === 0) {
+      break;
+    }
+    utcMs += diff;
+  }
+
+  return new Date(utcMs);
+}
+
+function buildMentorSlotsFromRules(input: {
+  availabilityRules: Array<{
+    endTime: string;
+    isActive: boolean;
+    startTime: string;
+    weekday: number;
+  }>;
+  busy: BusyWindow[];
+  now?: Date;
+  timeZone: string;
+}) {
+  const now = input.now ?? new Date();
+  const busy = input.busy.map((entry) => ({
+    start: new Date(entry.start),
+    end: new Date(entry.end),
+  }));
+  const currentLocal = getZonedDateParts(now, input.timeZone);
+  const localStartDate = new Date(
+    Date.UTC(currentLocal.year, currentLocal.month - 1, currentLocal.day),
+  );
+  const slots: Array<{ end: string; label: string; start: string }> = [];
+
+  for (
+    let dayOffset = 0;
+    dayOffset < MENTOR_BOOKING_LOOKAHEAD_DAYS && slots.length < MENTOR_SLOT_LIMIT;
+    dayOffset += 1
+  ) {
+    const localDate = new Date(localStartDate.getTime() + dayOffset * 24 * 60 * 60 * 1000);
+    const year = localDate.getUTCFullYear();
+    const month = localDate.getUTCMonth() + 1;
+    const day = localDate.getUTCDate();
+    const weekday = localDate.getUTCDay();
+
+    const matchingRules = input.availabilityRules.filter(
+      (rule) => rule.isActive && rule.weekday === weekday,
+    );
+
+    for (const rule of matchingRules) {
+      const startClock = parseClockValue(rule.startTime);
+      const endClock = parseClockValue(rule.endTime);
+      if (!startClock || !endClock) {
+        continue;
+      }
+
+      let cursorMinutes = startClock.hour * 60 + startClock.minute;
+      const endMinutes = endClock.hour * 60 + endClock.minute;
+
+      while (
+        cursorMinutes + MENTOR_MEETING_DURATION_MINUTES <= endMinutes &&
+        slots.length < MENTOR_SLOT_LIMIT
+      ) {
+        const start = zonedDateTimeToUtc({
+          year,
+          month,
+          day,
+          hour: Math.floor(cursorMinutes / 60),
+          minute: cursorMinutes % 60,
+          timeZone: input.timeZone,
+        });
+        const end = new Date(
+          start.getTime() + MENTOR_MEETING_DURATION_MINUTES * 60 * 1000,
+        );
+
+        if (!meetingOutside24Hours(start, now)) {
+          cursorMinutes += MENTOR_MEETING_DURATION_MINUTES;
+          continue;
+        }
+
+        const overlaps = busy.some(
+          (entry) => start < entry.end && end > entry.start,
+        );
+        if (!overlaps) {
+          slots.push({
+            start: start.toISOString(),
+            end: end.toISOString(),
+            label: start.toLocaleTimeString("pl-PL", {
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone: input.timeZone,
+            }),
+          });
+        }
+
+        cursorMinutes += MENTOR_MEETING_DURATION_MINUTES;
+      }
+    }
+  }
+
+  return slots.sort((left, right) => left.start.localeCompare(right.start));
+}
+
+function meetingOutside24Hours(
+  startsAt: Date,
+  now = new Date(),
+) {
+  return startsAt.getTime() - now.getTime() >= 1000 * 60 * 60 * 24;
+}
+
+async function getMentorCalendarConnection(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+  mentorUserId: number,
+) {
+  const [connection] = await db
+    .select({
+      externalEmail: platformGoogleConnectionsTable.externalEmail,
+      metadata: platformGoogleConnectionsTable.metadata,
+      scopes: platformGoogleConnectionsTable.scopes,
+      status: platformGoogleConnectionsTable.status,
+    })
+    .from(platformGoogleConnectionsTable)
+    .where(
+      and(
+        eq(platformGoogleConnectionsTable.userId, mentorUserId),
+        eq(platformGoogleConnectionsTable.connectionType, "calendar"),
+      ),
+    )
+    .limit(1);
+
+  return (connection ?? null) as MentorGoogleConnectionRecord | null;
+}
+
+async function getMentorCalendarAccessToken(
+  connection: MentorGoogleConnectionRecord | null,
+) {
+  const metadata = getPlatformGoogleConnectionMetadata(connection?.metadata);
+  if (!connection || connection.status !== "connected" || !metadata.refreshToken) {
+    return null;
+  }
+
+  const accessToken = await getGoogleAccessTokenForRefreshToken(
+    metadata.refreshToken,
+  );
+  const externalEmail =
+    connection.externalEmail ||
+    metadata.externalEmail ||
+    (await getGoogleAccountEmailForAccessToken(accessToken));
+
+  return {
+    accessToken,
+    externalEmail,
+    refreshToken: metadata.refreshToken,
+    scopes: connection.scopes ?? [],
+  };
+}
+
+async function cancelMentorCalendarEvent(input: {
+  accessToken: string;
+  calendarId: string;
+  eventId: string;
+}) {
+  const response = await googleApiRequestWithAccessToken(
+    input.accessToken,
+    `/calendar/v3/calendars/${encodeURIComponent(
+      input.calendarId,
+    )}/events/${encodeURIComponent(input.eventId)}?sendUpdates=all`,
+    {
+      method: "DELETE",
+    },
+  );
+
+  if (!response.ok && response.status !== 404) {
+    const body = await response.text();
+    throw new Error(
+      `Failed to cancel mentor calendar event with status ${response.status}: ${body.slice(
+        0,
+        300,
+      )}`,
+    );
+  }
 }
 
 router.get("/platform/bootstrap/status", async (_req, res) => {
@@ -1016,6 +1303,21 @@ router.get("/platform/public/mentors", async (_req, res) => {
     .orderBy(asc(platformUsersTable.fullName));
 
   const mentorIds = rows.map((row) => row.userId);
+  const connections = mentorIds.length
+    ? await db
+        .select({
+          externalEmail: platformGoogleConnectionsTable.externalEmail,
+          status: platformGoogleConnectionsTable.status,
+          userId: platformGoogleConnectionsTable.userId,
+        })
+        .from(platformGoogleConnectionsTable)
+        .where(
+          and(
+            inArray(platformGoogleConnectionsTable.userId, mentorIds),
+            eq(platformGoogleConnectionsTable.connectionType, "calendar"),
+          ),
+        )
+    : [];
   const universities = mentorIds.length
     ? await db
         .select()
@@ -1025,6 +1327,9 @@ router.get("/platform/public/mentors", async (_req, res) => {
     : [];
 
   const grouped = new Map<number, typeof universities>();
+  const connectionMap = new Map(
+    connections.map((connection) => [connection.userId, connection]),
+  );
   for (const university of universities) {
     const current = grouped.get(university.mentorUserId) ?? [];
     current.push(university);
@@ -1040,6 +1345,10 @@ router.get("/platform/public/mentors", async (_req, res) => {
       bio: row.adminApproved ? row.bio : row.bio.slice(0, 240),
       timezone: row.timezone,
       meetingMethod: row.meetingMethod,
+      googleCalendarConnected:
+        connectionMap.get(row.userId)?.status === "connected",
+      googleCalendarEmail:
+        connectionMap.get(row.userId)?.externalEmail ?? null,
       approved: row.adminApproved,
       universities: (grouped.get(row.userId) ?? []).map((university) => ({
         id: university.id,
@@ -1269,8 +1578,22 @@ router.get(
       .from(mentorAvailabilityRulesTable)
       .where(eq(mentorAvailabilityRulesTable.mentorUserId, req.platformUser!.id))
       .orderBy(asc(mentorAvailabilityRulesTable.weekday), asc(mentorAvailabilityRulesTable.startTime));
+    const googleConnections = await db
+      .select()
+      .from(platformGoogleConnectionsTable)
+      .where(eq(platformGoogleConnectionsTable.userId, req.platformUser!.id))
+      .orderBy(asc(platformGoogleConnectionsTable.connectionType));
 
-    return res.json({ profile: serializeMentorProfile(profile), universities, availability });
+    return res.json({
+      profile: serializeMentorProfile(profile),
+      universities,
+      availability,
+      googleConnections: googleConnections.map((connection) => ({
+        ...connection,
+        createdAt: connection.createdAt.toISOString(),
+        updatedAt: connection.updatedAt.toISOString(),
+      })),
+    });
   },
 );
 
@@ -1819,6 +2142,21 @@ router.patch(
       return res.status(422).json({ error: parsed.success ? "Invalid meeting id." : parsed.error.message });
     }
     const { db } = await import("@workspace/db");
+    const [existingMeeting] = await db
+      .select()
+      .from(platformMeetingsTable)
+      .where(
+        and(
+          eq(platformMeetingsTable.id, id),
+          eq(platformMeetingsTable.mentorUserId, req.platformUser!.id),
+        ),
+      )
+      .limit(1);
+
+    if (!existingMeeting) {
+      return res.status(404).json({ error: "Nie znaleziono spotkania." });
+    }
+
     const [meeting] = await db
       .update(platformMeetingsTable)
       .set({
@@ -1831,8 +2169,26 @@ router.patch(
       .where(and(eq(platformMeetingsTable.id, id), eq(platformMeetingsTable.mentorUserId, req.platformUser!.id)))
       .returning();
 
-    if (!meeting) {
-      return res.status(404).json({ error: "Nie znaleziono spotkania." });
+    if (
+      meeting?.status === "cancelled" &&
+      existingMeeting.externalCalendarEventId
+    ) {
+      try {
+        const connection = await getMentorCalendarConnection(
+          db,
+          req.platformUser!.id,
+        );
+        const mentorGoogle = await getMentorCalendarAccessToken(connection);
+        if (mentorGoogle?.externalEmail) {
+          await cancelMentorCalendarEvent({
+            accessToken: mentorGoogle.accessToken,
+            calendarId: mentorGoogle.externalEmail,
+            eventId: existingMeeting.externalCalendarEventId,
+          });
+        }
+      } catch (err) {
+        logger.warn({ err, meetingId: id }, "mentor calendar cancellation sync failed");
+      }
     }
 
     return res.json({
@@ -1883,6 +2239,87 @@ router.put(
   },
 );
 
+router.post(
+  "/platform/mentor/google-connections/:type/start",
+  requirePlatformAuth,
+  requirePlatformRole("mentor"),
+  async (req: AuthenticatedRequest, res) => {
+    const connectionType =
+      req.params.type === "calendar" || req.params.type === "drive"
+        ? req.params.type
+        : null;
+    if (!connectionType) {
+      return res.status(400).json({ error: "Nieobsługiwany typ połączenia Google." });
+    }
+
+    const { clientId } = getGoogleOAuthClientCredentials();
+    const redirectUri =
+      process.env.GOOGLE_OAUTH_REDIRECT_URI?.trim() ||
+      `${getRequestOrigin(req)}/api/google/auth/callback`;
+    const state = createPlatformGoogleOAuthState({
+      connectionType,
+      userId: req.platformUser!.id,
+    });
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      access_type: "offline",
+      prompt: "consent",
+      include_granted_scopes: "true",
+      scope: PLATFORM_MENTOR_GOOGLE_SCOPES.join(" "),
+      state,
+    });
+
+    return res.json({
+      authUrl: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`,
+    });
+  },
+);
+
+router.delete(
+  "/platform/mentor/google-connections/:type",
+  requirePlatformAuth,
+  requirePlatformRole("mentor"),
+  async (req: AuthenticatedRequest, res) => {
+    const connectionType =
+      req.params.type === "calendar" || req.params.type === "drive"
+        ? req.params.type
+        : null;
+    if (!connectionType) {
+      return res.status(400).json({ error: "Nieobsługiwany typ połączenia Google." });
+    }
+
+    const { db } = await import("@workspace/db");
+    await db
+      .delete(platformGoogleConnectionsTable)
+      .where(
+        and(
+          eq(platformGoogleConnectionsTable.userId, req.platformUser!.id),
+          eq(platformGoogleConnectionsTable.connectionType, connectionType),
+        ),
+      );
+
+    if (connectionType === "calendar") {
+      await db
+        .insert(mentorProfilesTable)
+        .values({
+          userId: req.platformUser!.id,
+          googleCalendarEmail: null,
+        })
+        .onConflictDoUpdate({
+          target: mentorProfilesTable.userId,
+          set: {
+            googleCalendarEmail: null,
+            updatedAt: new Date(),
+          },
+        });
+    }
+
+    return res.status(204).end();
+  },
+);
+
 router.get(
   "/platform/mentee/overview",
   requirePlatformAuth,
@@ -1901,11 +2338,36 @@ router.get(
         mentorId: platformUsersTable.id,
         fullName: platformUsersTable.fullName,
         email: platformUsersTable.email,
+        timezone: mentorProfilesTable.timezone,
+        meetingMethod: mentorProfilesTable.meetingMethod,
+        meetingLink: mentorProfilesTable.meetingLink,
+        whatsappNumber: mentorProfilesTable.whatsappNumber,
       })
       .from(platformMentorAssignmentsTable)
       .innerJoin(platformUsersTable, eq(platformUsersTable.id, platformMentorAssignmentsTable.mentorUserId))
+      .leftJoin(mentorProfilesTable, eq(mentorProfilesTable.userId, platformUsersTable.id))
       .where(eq(platformMentorAssignmentsTable.menteeUserId, req.platformUser!.id))
       .orderBy(asc(platformUsersTable.fullName));
+    const assignedMentorIds = assignedMentors.map((mentor) => mentor.mentorId);
+    const mentorConnections = assignedMentorIds.length
+      ? await db
+          .select({
+            connectionType: platformGoogleConnectionsTable.connectionType,
+            externalEmail: platformGoogleConnectionsTable.externalEmail,
+            status: platformGoogleConnectionsTable.status,
+            userId: platformGoogleConnectionsTable.userId,
+          })
+          .from(platformGoogleConnectionsTable)
+          .where(
+            and(
+              inArray(platformGoogleConnectionsTable.userId, assignedMentorIds),
+              eq(platformGoogleConnectionsTable.connectionType, "calendar"),
+            ),
+          )
+      : [];
+    const mentorConnectionMap = new Map(
+      mentorConnections.map((connection) => [connection.userId, connection]),
+    );
     const meetings = await db
       .select()
       .from(platformMeetingsTable)
@@ -2048,7 +2510,13 @@ router.get(
         maxHintGuideCount: guideLimits.maxHintGuideCount,
       },
       profile,
-      assignedMentors,
+      assignedMentors: assignedMentors.map((mentor) => ({
+        ...mentor,
+        googleCalendarConnected:
+          mentorConnectionMap.get(mentor.mentorId)?.status === "connected",
+        googleCalendarEmail:
+          mentorConnectionMap.get(mentor.mentorId)?.externalEmail ?? null,
+      })),
       assignedGuideAccess,
       profileFields,
       profileResponses,
@@ -2095,6 +2563,117 @@ router.put(
         });
     }
     return res.status(204).end();
+  },
+);
+
+router.get(
+  "/platform/mentee/mentor-slots",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const mentorUserId = Number(req.query.mentorUserId);
+    if (!Number.isFinite(mentorUserId)) {
+      return res.status(400).json({ error: "Invalid mentor user id." });
+    }
+
+    const { db } = await import("@workspace/db");
+    const [assignment] = await db
+      .select({ id: platformMentorAssignmentsTable.id })
+      .from(platformMentorAssignmentsTable)
+      .where(
+        and(
+          eq(platformMentorAssignmentsTable.menteeUserId, req.platformUser!.id),
+          eq(platformMentorAssignmentsTable.mentorUserId, mentorUserId),
+        ),
+      )
+      .limit(1);
+
+    if (!assignment) {
+      return res.status(403).json({ error: "Nie masz dostępu do spotkań z tym mentorem." });
+    }
+
+    const [mentorProfile] = await db
+      .select()
+      .from(mentorProfilesTable)
+      .where(eq(mentorProfilesTable.userId, mentorUserId))
+      .limit(1);
+
+    if (!mentorProfile?.adminApproved) {
+      return res.status(400).json({ error: "Wybrany mentor nie jest jeszcze aktywny." });
+    }
+
+    const availabilityRules = await db
+      .select()
+      .from(mentorAvailabilityRulesTable)
+      .where(eq(mentorAvailabilityRulesTable.mentorUserId, mentorUserId))
+      .orderBy(
+        asc(mentorAvailabilityRulesTable.weekday),
+        asc(mentorAvailabilityRulesTable.startTime),
+      );
+
+    if (!availabilityRules.length) {
+      return res.json({
+        connectionReady: false,
+        slots: [],
+        timezone: mentorProfile.timezone,
+      });
+    }
+
+    const connection = await getMentorCalendarConnection(db, mentorUserId);
+    const mentorGoogle = await getMentorCalendarAccessToken(connection);
+
+    if (!mentorGoogle?.externalEmail) {
+      return res.json({
+        connectionReady: false,
+        slots: [],
+        timezone: mentorProfile.timezone,
+      });
+    }
+
+    const now = new Date();
+    const to = new Date(
+      now.getTime() + MENTOR_BOOKING_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000,
+    );
+    const busyResponse = await googleApiRequestWithAccessToken(
+      mentorGoogle.accessToken,
+      "/calendar/v3/freeBusy",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          timeMin: now.toISOString(),
+          timeMax: to.toISOString(),
+          timeZone: mentorProfile.timezone,
+          items: [{ id: mentorGoogle.externalEmail }],
+        }),
+      },
+    );
+
+    const busyPayload = (await busyResponse.json()) as {
+      calendars?: Record<string, { busy: BusyWindow[] }>;
+      error?: { message?: string };
+    };
+
+    if (!busyResponse.ok) {
+      return res.status(502).json({
+        error:
+          busyPayload.error?.message ||
+          "Nie udało się pobrać kalendarza mentora.",
+      });
+    }
+
+    const busy = busyPayload.calendars?.[mentorGoogle.externalEmail]?.busy ?? [];
+    const slots = buildMentorSlotsFromRules({
+      availabilityRules,
+      busy,
+      now,
+      timeZone: mentorProfile.timezone,
+    });
+
+    return res.json({
+      connectionReady: true,
+      slots,
+      timezone: mentorProfile.timezone,
+    });
   },
 );
 
@@ -2153,6 +2732,155 @@ router.post(
       return res.status(403).json({ error: "Nie masz jeszcze dostępu do spotkań z tym mentorem." });
     }
 
+    const availabilityRules = await db
+      .select()
+      .from(mentorAvailabilityRulesTable)
+      .where(eq(mentorAvailabilityRulesTable.mentorUserId, parsed.data.mentorUserId))
+      .orderBy(
+        asc(mentorAvailabilityRulesTable.weekday),
+        asc(mentorAvailabilityRulesTable.startTime),
+      );
+    const connection = await getMentorCalendarConnection(
+      db,
+      parsed.data.mentorUserId,
+    );
+    const mentorGoogle = await getMentorCalendarAccessToken(connection);
+
+    if (!mentorGoogle?.externalEmail) {
+      return res.status(400).json({
+        error:
+          "Wybrany mentor nie ma jeszcze podłączonego Google Calendar.",
+      });
+    }
+
+    const now = new Date();
+    const to = new Date(
+      now.getTime() + MENTOR_BOOKING_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000,
+    );
+    const busyResponse = await googleApiRequestWithAccessToken(
+      mentorGoogle.accessToken,
+      "/calendar/v3/freeBusy",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          timeMin: now.toISOString(),
+          timeMax: to.toISOString(),
+          timeZone: mentorProfile.timezone,
+          items: [{ id: mentorGoogle.externalEmail }],
+        }),
+      },
+    );
+    const busyPayload = (await busyResponse.json()) as {
+      calendars?: Record<string, { busy: BusyWindow[] }>;
+      error?: { message?: string };
+    };
+
+    if (!busyResponse.ok) {
+      return res.status(502).json({
+        error:
+          busyPayload.error?.message ||
+          "Nie udało się sprawdzić dostępności mentora.",
+      });
+    }
+
+    const availableSlots = buildMentorSlotsFromRules({
+      availabilityRules,
+      busy: busyPayload.calendars?.[mentorGoogle.externalEmail]?.busy ?? [],
+      now,
+      timeZone: mentorProfile.timezone,
+    });
+    const requestedSlot = availableSlots.find(
+      (slot) =>
+        slot.start === startsAt.toISOString() &&
+        slot.end === endsAt.toISOString(),
+    );
+
+    if (!requestedSlot) {
+      return res.status(409).json({
+        error:
+          "Ten termin nie jest już dostępny. Odśwież listę slotów i wybierz inny.",
+      });
+    }
+
+    const eventPayload: Record<string, unknown> = {
+      summary: `Konsultacja ACADEA — ${req.platformUser!.fullName}`,
+      description: [
+        parsed.data.description?.trim() || null,
+        `Mentee: ${req.platformUser!.fullName}`,
+        `Email mentee: ${req.platformUser!.email}`,
+        "",
+        "Spotkanie umówione przez ACADEA Platform.",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      start: { dateTime: startsAt.toISOString(), timeZone: mentorProfile.timezone },
+      end: { dateTime: endsAt.toISOString(), timeZone: mentorProfile.timezone },
+      attendees: [
+        { email: req.platformUser!.email, displayName: req.platformUser!.fullName },
+      ],
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: "email", minutes: 60 },
+          { method: "popup", minutes: 15 },
+        ],
+      },
+    };
+
+    if (mentorProfile.meetingMethod === "google_meet") {
+      eventPayload.conferenceData = {
+        createRequest: {
+          conferenceSolutionKey: { type: "hangoutsMeet" },
+          requestId: `acadea-${req.platformUser!.id}-${Date.now()}`,
+        },
+      };
+    }
+
+    const eventResponse = await googleApiRequestWithAccessToken(
+      mentorGoogle.accessToken,
+      `/calendar/v3/calendars/${encodeURIComponent(
+        mentorGoogle.externalEmail,
+      )}/events?sendUpdates=all${
+        mentorProfile.meetingMethod === "google_meet"
+          ? "&conferenceDataVersion=1"
+          : ""
+      }`,
+      {
+        method: "POST",
+        body: JSON.stringify(eventPayload),
+      },
+    );
+    const eventData = (await eventResponse.json()) as {
+      error?: { message?: string };
+      hangoutLink?: string;
+      htmlLink?: string;
+      id?: string;
+      conferenceData?: {
+        entryPoints?: Array<{ entryPointType?: string; uri?: string }>;
+      };
+    };
+
+    if (!eventResponse.ok || !eventData.id) {
+      return res.status(502).json({
+        error:
+          eventData.error?.message ||
+          "Nie udało się utworzyć wydarzenia w kalendarzu mentora.",
+      });
+    }
+
+    const generatedMeetUrl =
+      eventData.hangoutLink ||
+      eventData.conferenceData?.entryPoints?.find(
+        (entry) => entry.entryPointType === "video",
+      )?.uri ||
+      null;
+    const resolvedMeetingUrl = buildMentorMeetingUrl({
+      generatedGoogleMeetUrl: generatedMeetUrl,
+      meetingLink: mentorProfile.meetingLink,
+      meetingMethod: mentorProfile.meetingMethod,
+      whatsappNumber: mentorProfile.whatsappNumber,
+    });
+
     const [meeting] = await db
       .insert(platformMeetingsTable)
       .values({
@@ -2162,11 +2890,62 @@ router.post(
         description: parsed.data.description,
         startsAt,
         endsAt,
-        timezone: parsed.data.timezone,
-        method: parsed.data.method,
-        meetingUrl: parsed.data.meetingUrl || null,
+        timezone: mentorProfile.timezone,
+        method: mentorProfile.meetingMethod,
+        meetingUrl: resolvedMeetingUrl,
+        externalCalendarEventId: eventData.id,
       })
       .returning();
+
+    if (
+      mentorGoogle.scopes.includes("https://www.googleapis.com/auth/gmail.send")
+    ) {
+      const startLabel = startsAt.toLocaleString("pl-PL", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: mentorProfile.timezone,
+      });
+      const endLabel = endsAt.toLocaleTimeString("pl-PL", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: mentorProfile.timezone,
+      });
+      const mentorName =
+        mentorGoogle.externalEmail || "Twój mentor ACADEA";
+
+      try {
+        await sendGmailMessageWithAccessToken({
+          accessToken: mentorGoogle.accessToken,
+          from: mentorGoogle.externalEmail,
+          to: {
+            email: req.platformUser!.email,
+            name: req.platformUser!.fullName,
+          },
+          subject: `ACADEA: potwierdzenie spotkania z mentorem`,
+          text: [
+            `Cześć ${req.platformUser!.fullName},`,
+            "",
+            "Twoje spotkanie mentoringowe zostało potwierdzone.",
+            `Termin: ${startLabel} - ${endLabel}`,
+            resolvedMeetingUrl ? `Link / metoda spotkania: ${resolvedMeetingUrl}` : null,
+            "",
+            `Prowadzący mentor: ${mentorName}`,
+            "Szczegóły znajdziesz też w zaproszeniu kalendarzowym.",
+            "",
+            "Pozdrawiamy,",
+            "ACADEA",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          replyTo: mentorGoogle.externalEmail,
+        });
+      } catch (err) {
+        // Keep booking successful even if the custom email fails.
+      }
+    }
 
     return res.status(201).json({
       ...meeting,
@@ -2333,6 +3112,19 @@ router.patch(
       return res.status(400).json({ error: "Invalid meeting id." });
     }
     const { db } = await import("@workspace/db");
+    const [existingMeeting] = await db
+      .select()
+      .from(platformMeetingsTable)
+      .where(
+        and(
+          eq(platformMeetingsTable.id, id),
+          eq(platformMeetingsTable.menteeUserId, req.platformUser!.id),
+        ),
+      )
+      .limit(1);
+    if (!existingMeeting) {
+      return res.status(404).json({ error: "Nie znaleziono spotkania." });
+    }
     const [meeting] = await db
       .update(platformMeetingsTable)
       .set({
@@ -2342,9 +3134,29 @@ router.patch(
       })
       .where(and(eq(platformMeetingsTable.id, id), eq(platformMeetingsTable.menteeUserId, req.platformUser!.id)))
       .returning();
-    if (!meeting) {
-      return res.status(404).json({ error: "Nie znaleziono spotkania." });
+
+    if (
+      meeting?.status === "cancelled" &&
+      existingMeeting.externalCalendarEventId
+    ) {
+      try {
+        const connection = await getMentorCalendarConnection(
+          db,
+          existingMeeting.mentorUserId,
+        );
+        const mentorGoogle = await getMentorCalendarAccessToken(connection);
+        if (mentorGoogle?.externalEmail) {
+          await cancelMentorCalendarEvent({
+            accessToken: mentorGoogle.accessToken,
+            calendarId: mentorGoogle.externalEmail,
+            eventId: existingMeeting.externalCalendarEventId,
+          });
+        }
+      } catch (err) {
+        logger.warn({ err, meetingId: id }, "mentee calendar cancellation sync failed");
+      }
     }
+
     return res.json({
       ...meeting,
       startsAt: meeting.startsAt.toISOString(),

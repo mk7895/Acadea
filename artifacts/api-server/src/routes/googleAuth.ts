@@ -1,10 +1,17 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { Router, type IRouter } from "express";
+import { and, eq } from "drizzle-orm";
+import { mentorProfilesTable, platformGoogleConnectionsTable } from "@workspace/db/schema";
 import { logger } from "../lib/logger";
 import {
+  getGoogleAccountEmailForAccessToken,
   getGoogleOAuthClientCredentials,
   updateStoredGoogleTokens,
 } from "../lib/google";
+import {
+  getPlatformGoogleConnectionMetadata,
+  parsePlatformGoogleOAuthState,
+} from "../lib/platform/google";
 
 const router: IRouter = Router();
 
@@ -106,6 +113,148 @@ router.get("/google/auth/callback", async (req, res) => {
     return res
       .status(400)
       .send(`Google OAuth returned an error: ${oauthError}`);
+  }
+
+  const platformState = parsePlatformGoogleOAuthState(state);
+
+  if (platformState) {
+    if (!code) {
+      return res.status(400).send("Missing authorization code.");
+    }
+
+    try {
+      const { db } = await import("@workspace/db");
+      const { clientId, clientSecret } = getGoogleOAuthClientCredentials();
+      const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: getRedirectUri(req),
+          grant_type: "authorization_code",
+        }).toString(),
+      });
+
+      const tokenData = (await tokenRes.json()) as {
+        error?: string;
+        error_description?: string;
+        refresh_token?: string;
+        access_token?: string;
+        scope?: string;
+      };
+
+      if (!tokenRes.ok || !tokenData.access_token) {
+        throw new Error(
+          tokenData.error_description ??
+            tokenData.error ??
+            `OAuth code exchange failed with status ${tokenRes.status}`,
+        );
+      }
+
+      if (!tokenData.refresh_token) {
+        throw new Error(
+          "Google did not return a refresh token. Re-run consent with prompt=consent or revoke the previous grant first.",
+        );
+      }
+
+      const externalEmail =
+        (await getGoogleAccountEmailForAccessToken(tokenData.access_token)) ?? "";
+
+      const [existingConnection] = await db
+        .select()
+        .from(platformGoogleConnectionsTable)
+        .where(
+          and(
+            eq(platformGoogleConnectionsTable.userId, platformState.userId),
+            eq(
+              platformGoogleConnectionsTable.connectionType,
+              platformState.connectionType,
+            ),
+          ),
+        )
+        .limit(1);
+
+      const currentRow = existingConnection ?? null;
+      const currentMetadata = getPlatformGoogleConnectionMetadata(
+        currentRow?.metadata,
+      );
+
+      await db
+        .insert(platformGoogleConnectionsTable)
+        .values({
+          userId: platformState.userId,
+          connectionType: platformState.connectionType,
+          status: "connected",
+          externalEmail: externalEmail || null,
+          scopes: tokenData.scope?.split(/\s+/).filter(Boolean) ?? [],
+          metadata: {
+            ...currentMetadata,
+            connectedAt: new Date().toISOString(),
+            externalEmail: externalEmail || undefined,
+            refreshToken: tokenData.refresh_token,
+          },
+        })
+        .onConflictDoUpdate({
+          target: [
+            platformGoogleConnectionsTable.userId,
+            platformGoogleConnectionsTable.connectionType,
+          ] as never,
+          set: {
+            status: "connected",
+            externalEmail: externalEmail || null,
+            scopes: tokenData.scope?.split(/\s+/).filter(Boolean) ?? [],
+            metadata: {
+              ...currentMetadata,
+              connectedAt: new Date().toISOString(),
+              externalEmail: externalEmail || undefined,
+              refreshToken: tokenData.refresh_token,
+            },
+            updatedAt: new Date(),
+          },
+        });
+
+      if (platformState.connectionType === "calendar") {
+        await db
+          .insert(mentorProfilesTable)
+          .values({
+            userId: platformState.userId,
+            googleCalendarEmail: externalEmail || null,
+          })
+          .onConflictDoUpdate({
+            target: mentorProfilesTable.userId,
+            set: {
+              googleCalendarEmail: externalEmail || null,
+              updatedAt: new Date(),
+            },
+          });
+      }
+
+      logger.info(
+        {
+          connectionType: platformState.connectionType,
+          externalEmail,
+          scopes: tokenData.scope,
+          userId: platformState.userId,
+        },
+        "Platform mentor Google OAuth connection updated",
+      );
+
+      const platformAppUrl =
+        process.env.PLATFORM_APP_URL?.trim().replace(/\/$/, "") ??
+        `${req.protocol}://${req.get("host")}`;
+      return res.redirect(
+        `${platformAppUrl}/?googleConnection=${encodeURIComponent(
+          platformState.connectionType,
+        )}-connected`,
+      );
+    } catch (err) {
+      logger.error({ err }, "platform google oauth callback failed");
+      return res.status(500).send("Platform Google OAuth callback failed.");
+    }
   }
 
   if (!state || !pendingStates.has(state)) {

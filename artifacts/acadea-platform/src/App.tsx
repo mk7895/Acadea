@@ -210,6 +210,65 @@ function formatUniversityNamesPreview(values: Array<string | null | undefined>, 
   return remaining > 0 ? `${visible.join(" • ")} +${remaining}` : visible.join(" • ");
 }
 
+function formatSlotDayLabel(value: string, timezone: string) {
+  return new Date(value).toLocaleDateString("pl-PL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: timezone,
+  });
+}
+
+function formatSlotDayKey(value: string, timezone: string) {
+  return new Date(value).toLocaleDateString("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: timezone,
+  });
+}
+
+function formatSlotTimeLabel(value: string, timezone: string) {
+  return new Date(value).toLocaleTimeString("pl-PL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: timezone,
+  });
+}
+
+function buildPlatformSlotGroups(
+  slots: Array<{ end: string; start: string }>,
+  timezone: string,
+) {
+  const groups = new Map<
+    string,
+    {
+      dateKey: string;
+      dayLabel: string;
+      slots: Array<{ end: string; label: string; start: string }>;
+    }
+  >();
+
+  for (const slot of slots) {
+    const dateKey = formatSlotDayKey(slot.start, timezone);
+    const current =
+      groups.get(dateKey) ??
+      {
+        dateKey,
+        dayLabel: formatSlotDayLabel(slot.start, timezone),
+        slots: [],
+      };
+    current.slots.push({
+      start: slot.start,
+      end: slot.end,
+      label: formatSlotTimeLabel(slot.start, timezone),
+    });
+    groups.set(dateKey, current);
+  }
+
+  return Array.from(groups.values());
+}
+
 function parseGuideMeta(value: string | null | undefined) {
   if (!value || !value.startsWith("__meta:")) {
     return {};
@@ -2641,6 +2700,9 @@ function MentorSection({
   session: SessionPayload;
   token: string;
 }) {
+  const [googleConnections, setGoogleConnections] = useState<any[]>(
+    session.googleConnections ?? [],
+  );
   const [profile, setProfile] = useState<any>({
     bio: "",
     googleDriveFolderUrl: "",
@@ -2737,23 +2799,31 @@ function MentorSection({
     return merged;
   }, [mentorMaterialRows, selectedMentorMaterialTemplate, session.user.id]);
 
+  async function loadMentorProfileContext() {
+    const payload = await apiFetch<any>("/mentor/profile", undefined, token);
+    setProfile({
+      bio: "",
+      headline: "",
+      meetingLink: "",
+      meetingMethod: "zoom_link",
+      timezone: "Europe/Warsaw",
+      whatsappNumber: "",
+      ...(payload.profile ?? {}),
+    });
+    setUniversities(payload.universities ?? []);
+    setAvailability((current) =>
+      payload.availability?.length ? payload.availability : current,
+    );
+    setGoogleConnections(payload.googleConnections ?? []);
+  }
+
+  const calendarConnection = googleConnections.find(
+    (connection) => connection.connectionType === "calendar",
+  );
+
   useEffect(() => {
     if (section === "profile" || section === "availability") {
-      void apiFetch<any>("/mentor/profile", undefined, token)
-        .then((payload) => {
-          setProfile({
-            bio: "",
-            headline: "",
-            meetingLink: "",
-            meetingMethod: "zoom_link",
-            timezone: "Europe/Warsaw",
-            whatsappNumber: "",
-            ...(payload.profile ?? {}),
-          });
-          setUniversities(payload.universities ?? []);
-          setAvailability(payload.availability?.length ? payload.availability : availability);
-        })
-        .catch((error) => setStatus(error.message));
+      void loadMentorProfileContext().catch((error) => setStatus(error.message));
     }
     if (section === "guides") {
       void Promise.all([
@@ -2773,6 +2843,19 @@ function MentorSection({
     if (section === "meetings") {
       void apiFetch<any[]>("/mentor/meetings", undefined, token).then(setMeetings).catch((error) => setStatus(error.message));
     }
+  }, [section, token]);
+
+  useEffect(() => {
+    if (section !== "profile" && section !== "availability") {
+      return undefined;
+    }
+
+    const handleFocus = () => {
+      void loadMentorProfileContext().catch((error) => setStatus(error.message));
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, [section, token]);
 
   async function saveProfile(event: React.FormEvent) {
@@ -2805,6 +2888,44 @@ function MentorSection({
       setStatus("Dostępność została zapisana.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać dostępności.");
+    }
+  }
+
+  async function connectGoogleCalendar() {
+    setStatus("");
+    try {
+      const payload = await apiFetch<{ authUrl: string }>(
+        "/mentor/google-connections/calendar/start",
+        {
+          method: "POST",
+        },
+        token,
+      );
+      window.open(payload.authUrl, "_blank", "noopener,noreferrer");
+      setStatus(
+        "Otworzyliśmy Google OAuth w nowej karcie. Po zakończeniu wróć tutaj, a panel odświeży status połączenia.",
+      );
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "Nie udało się rozpocząć łączenia Google Calendar.",
+      );
+    }
+  }
+
+  async function disconnectGoogleCalendar() {
+    setStatus("");
+    try {
+      await apiFetch("/mentor/google-connections/calendar", { method: "DELETE" }, token);
+      await loadMentorProfileContext();
+      setStatus("Połączenie Google Calendar zostało odłączone.");
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "Nie udało się odłączyć Google Calendar.",
+      );
     }
   }
 
@@ -3148,6 +3269,38 @@ function MentorSection({
           <p className="muted">
             Te reguły są już zapisane osobno w bazie. Po podpięciu prawdziwego Google Calendar backend będzie na nich opierał sprawdzanie wolnych slotów.
           </p>
+          <div className="status" style={{ marginTop: 16 }}>
+            Google Calendar:{" "}
+            <strong>
+              {calendarConnection?.status === "connected"
+                ? `połączony${
+                    calendarConnection.externalEmail
+                      ? ` (${calendarConnection.externalEmail})`
+                      : ""
+                  }`
+                : "niepołączony"}
+            </strong>
+            . Przy połączeniu mentee będą mogli rezerwować realne sloty z Twojego kalendarza, a potwierdzenia polecą z Twojego Gmaila.
+          </div>
+          <div className="button-row" style={{ marginTop: 14, marginBottom: 10 }}>
+            {calendarConnection?.status === "connected" ? (
+              <button
+                className="btn btn-secondary"
+                onClick={() => void disconnectGoogleCalendar()}
+                type="button"
+              >
+                Odłącz Google Calendar
+              </button>
+            ) : (
+              <button
+                className="btn btn-primary"
+                onClick={() => void connectGoogleCalendar()}
+                type="button"
+              >
+                Połącz Google Calendar
+              </button>
+            )}
+          </div>
           <div className="list" style={{ marginTop: 18 }}>
             {availability.map((rule, index) => (
               <div className="grid-2" key={index}>
@@ -3460,6 +3613,14 @@ function MentorSection({
                   <span className="badge">{meeting.status}</span>
                 </header>
                 <p className="muted">{meeting.description}</p>
+                {meeting.meetingUrl ? (
+                  <div className="small muted" style={{ marginTop: 8 }}>
+                    Link / metoda:{" "}
+                    <a href={meeting.meetingUrl} target="_blank" rel="noreferrer">
+                      {meeting.meetingUrl}
+                    </a>
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>
@@ -3478,6 +3639,9 @@ function MenteeSection({
 }) {
   const [overview, setOverview] = useState<any>(null);
   const [mentors, setMentors] = useState<any[]>([]);
+  const [mentorSlots, setMentorSlots] = useState<Array<{ end: string; start: string }>>([]);
+  const [mentorSlotsLoading, setMentorSlotsLoading] = useState(false);
+  const [mentorSlotsTimezone, setMentorSlotsTimezone] = useState("Europe/Warsaw");
   const [publicGuides, setPublicGuides] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
   const [openHintGuide, setOpenHintGuide] = useState<any | null>(null);
@@ -3515,6 +3679,12 @@ function MenteeSection({
   const selectedMentor = assignedMentors.find(
     (mentor: any) => String(mentor.mentorId) === String(meetingForm.mentorUserId),
   );
+  const viewerTimezone =
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Warsaw";
+  const mentorSlotGroups = useMemo(
+    () => buildPlatformSlotGroups(mentorSlots, viewerTimezone),
+    [mentorSlots, viewerTimezone],
+  );
   const derivedMaterialTemplates = buildDerivedMaterialTemplates(guides ?? [], materialTemplates ?? []);
   const visibleMaterialTemplates = [
     ...(materialTemplates ?? []),
@@ -3534,7 +3704,7 @@ function MenteeSection({
     ]),
   );
   useEffect(() => {
-    if (section === "universities" || section === "materials" || section === "profile" || section === "meetings") {
+    if (section === "universities" || section === "materials" || section === "profile" || section === "meetings" || section === "mentors") {
       void apiFetch<any>("/mentee/overview", undefined, token).then((payload) => {
         setOverview(payload);
         setGuides(payload.guides ?? []);
@@ -3554,6 +3724,34 @@ function MenteeSection({
     }
   }, [section, token]);
 
+  useEffect(() => {
+    if (section !== "mentors" || !meetingForm.mentorUserId) {
+      return;
+    }
+
+    const mentor = assignedMentors.find(
+      (entry: any) => String(entry.mentorId) === String(meetingForm.mentorUserId),
+    );
+    if (!mentor?.googleCalendarConnected) {
+      setMentorSlots([]);
+      setMentorSlotsTimezone(mentor?.timezone || "Europe/Warsaw");
+      return;
+    }
+
+    setMentorSlotsLoading(true);
+    void apiFetch<{
+      connectionReady: boolean;
+      slots: Array<{ end: string; start: string }>;
+      timezone: string;
+    }>(`/mentee/mentor-slots?mentorUserId=${encodeURIComponent(meetingForm.mentorUserId)}`, undefined, token)
+      .then((payload) => {
+        setMentorSlots(payload.slots ?? []);
+        setMentorSlotsTimezone(payload.timezone || mentor.timezone || "Europe/Warsaw");
+      })
+      .catch((error) => setStatus(error.message))
+      .finally(() => setMentorSlotsLoading(false));
+  }, [assignedMentors, meetingForm.mentorUserId, section, token]);
+
   async function requestMeeting(event: React.FormEvent) {
     event.preventDefault();
     setStatus("");
@@ -3567,7 +3765,15 @@ function MenteeSection({
           endsAt: new Date(meetingForm.endsAt).toISOString(),
         }),
       }, token);
-      setStatus("Prośba o spotkanie została zapisana.");
+      const payload = await apiFetch<any>("/mentee/overview", undefined, token);
+      setOverview(payload);
+      setStatus("Spotkanie zostało zarezerwowane.");
+      setMeetingForm((current) => ({
+        ...current,
+        description: "",
+        endsAt: "",
+        startsAt: "",
+      }));
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać spotkania.");
     }
@@ -3797,6 +4003,11 @@ function MenteeSection({
                     <span className="badge">{mentor.approved ? "approved" : "preview"}</span>
                   </header>
                   <p className="muted">{mentor.bio}</p>
+                  <div className="small muted" style={{ marginTop: 8 }}>
+                    {mentor.googleCalendarConnected
+                      ? `Google Calendar podłączony${mentor.googleCalendarEmail ? ` • ${mentor.googleCalendarEmail}` : ""}`
+                      : "Google Calendar jeszcze niepodłączony"}
+                  </div>
                   {assignedMentors.some((assignedMentor: any) => assignedMentor.mentorId === mentor.id) ? (
                     <div className="button-row">
                       <button
@@ -3804,7 +4015,10 @@ function MenteeSection({
                         onClick={() =>
                           setMeetingForm((current) => ({
                             ...current,
+                            meetingUrl: mentor.meetingLink ?? "",
+                            method: mentor.meetingMethod ?? "zoom_link",
                             mentorUserId: String(mentor.id),
+                            timezone: mentor.timezone || "Europe/Warsaw",
                           }))
                         }
                         type="button"
@@ -3824,7 +4038,18 @@ function MenteeSection({
                 <label>Przydzielony mentor</label>
                 <select
                   value={meetingForm.mentorUserId}
-                  onChange={(event) => setMeetingForm((current) => ({ ...current, mentorUserId: event.target.value }))}
+                  onChange={(event) => {
+                    const mentor = assignedMentors.find(
+                      (entry: any) => String(entry.mentorId) === event.target.value,
+                    );
+                    setMeetingForm((current) => ({
+                      ...current,
+                      meetingUrl: mentor?.meetingLink ?? "",
+                      method: mentor?.meetingMethod ?? "zoom_link",
+                      mentorUserId: event.target.value,
+                      timezone: mentor?.timezone || "Europe/Warsaw",
+                    }));
+                  }}
                 >
                   <option value="">Wybierz mentora</option>
                   {assignedMentors.map((mentor: any) => (
@@ -3836,24 +4061,73 @@ function MenteeSection({
               </div>
               {selectedMentor ? (
                 <div className="status">
-                  Wybrany mentor: <strong>{selectedMentor.fullName}</strong>. Na tym etapie zapisujesz prośbę o spotkanie.
+                  Wybrany mentor: <strong>{selectedMentor.fullName}</strong>.
+                  {selectedMentor.googleCalendarConnected
+                    ? " Poniżej widzisz jego realne wolne sloty z Google Calendar."
+                    : " Ten mentor nie podłączył jeszcze Google Calendar, więc poniżej zostaje ręczna prośba o spotkanie."}
                 </div>
               ) : null}
-              <div className="grid-2">
-                <div className="field">
-                  <label>Start</label>
-                  <input type="datetime-local" value={meetingForm.startsAt} onChange={(event) => setMeetingForm((current) => ({ ...current, startsAt: event.target.value }))} />
+              {selectedMentor?.googleCalendarConnected ? (
+                <div className="stack">
+                  <div className="small muted">
+                    Sloty pokazane w Twojej strefie czasowej: <strong>{viewerTimezone}</strong>. Kalendarz mentora działa w strefie: <strong>{mentorSlotsTimezone}</strong>.
+                  </div>
+                  {mentorSlotsLoading ? (
+                    <div className="status">Ładujemy dostępne sloty mentora…</div>
+                  ) : mentorSlotGroups.length ? (
+                    <div className="list">
+                      {mentorSlotGroups.map((group) => (
+                        <div className="list-item" key={group.dateKey}>
+                          <h3 style={{ marginBottom: 10 }}>{group.dayLabel}</h3>
+                          <div className="button-row">
+                            {group.slots.map((slot) => {
+                              const isSelected =
+                                meetingForm.startsAt === slot.start &&
+                                meetingForm.endsAt === slot.end;
+                              return (
+                                <button
+                                  className={isSelected ? "btn btn-primary" : "btn btn-secondary"}
+                                  key={slot.start}
+                                  onClick={() =>
+                                    setMeetingForm((current) => ({
+                                      ...current,
+                                      endsAt: slot.end,
+                                      startsAt: slot.start,
+                                    }))
+                                  }
+                                  type="button"
+                                >
+                                  {slot.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="status">Na najbliższe tygodnie nie ma jeszcze wolnych slotów tego mentora.</div>
+                  )}
                 </div>
-                <div className="field">
-                  <label>Koniec</label>
-                  <input type="datetime-local" value={meetingForm.endsAt} onChange={(event) => setMeetingForm((current) => ({ ...current, endsAt: event.target.value }))} />
+              ) : (
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Start</label>
+                    <input type="datetime-local" value={meetingForm.startsAt} onChange={(event) => setMeetingForm((current) => ({ ...current, startsAt: event.target.value }))} />
+                  </div>
+                  <div className="field">
+                    <label>Koniec</label>
+                    <input type="datetime-local" value={meetingForm.endsAt} onChange={(event) => setMeetingForm((current) => ({ ...current, endsAt: event.target.value }))} />
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="field">
                 <label>Opis spotkania</label>
                 <textarea value={meetingForm.description} onChange={(event) => setMeetingForm((current) => ({ ...current, description: event.target.value }))} />
               </div>
-              <button className="btn btn-primary">Zapisz prośbę o spotkanie</button>
+              <button className="btn btn-primary" disabled={!meetingForm.mentorUserId || !meetingForm.startsAt || !meetingForm.endsAt}>
+                {selectedMentor?.googleCalendarConnected ? "Zarezerwuj spotkanie" : "Zapisz prośbę o spotkanie"}
+              </button>
             </form>
           </div>
         </div>
@@ -3872,6 +4146,14 @@ function MenteeSection({
                   <span className="badge">{meeting.status}</span>
                 </header>
                 <p className="muted">{meeting.description}</p>
+                {meeting.meetingUrl ? (
+                  <div className="small muted" style={{ marginTop: 8 }}>
+                    Link / metoda:{" "}
+                    <a href={meeting.meetingUrl} target="_blank" rel="noreferrer">
+                      {meeting.meetingUrl}
+                    </a>
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>

@@ -128,6 +128,35 @@ async function sendGmailMessage({
     return false;
   }
 
+  const accessToken = await getGoogleGmailAccessToken();
+  return sendGmailMessageWithAccessToken({
+    accessToken,
+    from,
+    to,
+    subject,
+    text,
+    html,
+    replyTo,
+  });
+}
+
+export async function sendGmailMessageWithAccessToken({
+  accessToken,
+  from,
+  to,
+  subject,
+  text,
+  html,
+  replyTo,
+}: {
+  accessToken: string;
+  from: string;
+  to: MailRecipient;
+  subject: string;
+  text: string;
+  html?: string;
+  replyTo?: string;
+}) {
   const lines = html
     ? (() => {
         const boundary = `acadea_${Date.now()}_${Math.random().toString(16).slice(2)}`;
@@ -167,7 +196,6 @@ async function sendGmailMessage({
       ];
 
   const raw = toBase64Url(lines.join("\r\n"));
-  const accessToken = await getGoogleGmailAccessToken();
   const res = await fetch("https://www.googleapis.com/gmail/v1/users/me/messages/send", {
     method: "POST",
     headers: {
