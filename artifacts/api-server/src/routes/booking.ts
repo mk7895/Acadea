@@ -16,6 +16,7 @@ const TZ = "Europe/Warsaw";
 const ZOOM_LINK = "https://nyu.zoom.us/j/5717075193";
 const SLOT_DURATION_MS = 20 * 60 * 1000;
 const BOOKING_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
+const BOOKING_WINDOW_DAYS = 90;
 
 type BookingSlot = { start: string; end: string; label: string };
 type BusyWindow = { start: string; end: string };
@@ -29,23 +30,50 @@ type GoogleEventResponse = {
 };
 
 function buildLocalSlots() {
-  return buildSlotsFromBusy([]);
+  return buildSlotsFromBusy({ busy: [] });
 }
 
 function isOutsideLeadWindow(start: Date, now = new Date()) {
   return start.getTime() - now.getTime() >= BOOKING_LEAD_TIME_MS;
 }
 
-function buildSlotsFromBusy(busy: BusyWindow[]) {
+function parseMonthKey(value: string | undefined) {
+  if (!value || !/^\d{4}-\d{2}$/.test(value)) {
+    return null;
+  }
+
+  const [yearRaw, monthRaw] = value.split("-");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    return null;
+  }
+
+  return { year, month };
+}
+
+function buildSlotsFromBusy(input: {
+  busy: BusyWindow[];
+  month?: { month: number; year: number } | null;
+}) {
   const now = new Date();
-  const to = new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000);
+  const bookingWindowEnd = new Date(now.getTime() + BOOKING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const busy = input.busy;
   const slots: BookingSlot[] = [];
-  const cursor = new Date(now);
+  const cursor = input.month
+    ? new Date(Date.UTC(input.month.year, input.month.month - 1, 1, 0, 0, 0, 0))
+    : new Date(now);
 
-  cursor.setMinutes(0, 0, 0);
-  cursor.setHours(cursor.getHours() + 1);
+  if (!input.month) {
+    cursor.setMinutes(0, 0, 0);
+    cursor.setHours(cursor.getHours() + 1);
+  }
 
-  while (cursor < to && slots.length < 80) {
+  const rangeEnd = input.month
+    ? new Date(Date.UTC(input.month.year, input.month.month, 1, 0, 0, 0, 0))
+    : bookingWindowEnd;
+
+  while (cursor < rangeEnd && cursor < bookingWindowEnd && slots.length < 300) {
     const dow = cursor.getDay();
     if (dow !== 0 && dow !== 6) {
       const hour = cursor.getHours();
@@ -59,7 +87,7 @@ function buildSlotsFromBusy(busy: BusyWindow[]) {
           return cursor < new Date(end) && slotEnd > new Date(start);
         });
         if (overlaps) {
-          cursor.setHours(cursor.getHours() + 1);
+          cursor.setMinutes(cursor.getMinutes() + 30);
           continue;
         }
         const label = cursor.toLocaleTimeString("pl-PL", {
@@ -75,7 +103,7 @@ function buildSlotsFromBusy(busy: BusyWindow[]) {
       }
     }
 
-    cursor.setHours(cursor.getHours() + 1);
+    cursor.setMinutes(cursor.getMinutes() + 30);
   }
 
   return slots;
@@ -84,17 +112,28 @@ function buildSlotsFromBusy(busy: BusyWindow[]) {
 // ─── GET /api/booking/slots ──────────────────────────────────────────────────
 // Returns available 1-hour slots for the next 14 weekdays (9:00–17:00 Warsaw)
 router.get("/slots", async (req, res) => {
+  const requestedMonth = parseMonthKey(
+    typeof req.query.month === "string" ? req.query.month : undefined,
+  );
+  if (req.query.month !== undefined && !requestedMonth) {
+    return res.status(400).json({ error: "Nieprawidłowy miesiąc." });
+  }
+
   if (!(await hasGoogleOAuthCredentials())) {
     logger.warn(
       "Calendar connector credentials unavailable; serving local development booking slots",
     );
-    return res.json({ slots: buildLocalSlots(), mode: "local" });
+    return res.json({
+      slots: buildSlotsFromBusy({ busy: [], month: requestedMonth }),
+      mode: "local",
+      timezone: TZ,
+    });
   }
 
   try {
     const calendarId = getGoogleCalendarId();
     const now = new Date();
-    const to = new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000); // 3 weeks out
+    const to = new Date(now.getTime() + BOOKING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
     const fbRes = await googleApiRequest("/calendar/v3/freeBusy", {
       method: "POST",
@@ -115,8 +154,8 @@ router.get("/slots", async (req, res) => {
       calendars?: Record<string, { busy: { start: string; end: string }[] }>;
     };
     const busy = fbData.calendars?.[calendarId]?.busy ?? [];
-    const slots = buildSlotsFromBusy(busy);
-    return res.json({ slots });
+    const slots = buildSlotsFromBusy({ busy, month: requestedMonth });
+    return res.json({ slots, timezone: TZ });
   } catch (err) {
     logger.error({ err }, "booking/slots error");
     return res

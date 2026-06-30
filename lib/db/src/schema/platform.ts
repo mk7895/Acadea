@@ -114,6 +114,22 @@ export const mentorProfilesTable = pgTable(
     meetingMethod: text("meeting_method").notNull().default("zoom_link"),
     meetingLink: text("meeting_link"),
     whatsappNumber: text("whatsapp_number"),
+    bookingWindowDays: integer("booking_window_days").notNull().default(30),
+    minimumNoticeHours: integer("minimum_notice_hours").notNull().default(24),
+    availabilityOverrides: jsonb("availability_overrides")
+      .$type<
+        Array<{
+          date: string;
+          isBlocked?: boolean;
+          ranges?: Array<{
+            startTime: string;
+            endTime: string;
+            isActive?: boolean;
+          }>;
+        }>
+      >()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     googleCalendarEmail: text("google_calendar_email"),
     googleDriveFolderUrl: text("google_drive_folder_url"),
     adminApproved: boolean("admin_approved").notNull().default(false),

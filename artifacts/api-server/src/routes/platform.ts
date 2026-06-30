@@ -125,6 +125,8 @@ const mentorProfileSchema = z.object({
   meetingMethod: z.enum(PLATFORM_MEETING_METHODS),
   meetingLink: z.string().trim().optional().default(""),
   whatsappNumber: z.string().trim().optional().default(""),
+  bookingWindowDays: z.number().int().min(1).max(180).optional().default(30),
+  minimumNoticeHours: z.number().int().min(0).max(24 * 7).optional().default(24),
 });
 
 const adminMentorDriveSchema = z.object({
@@ -136,6 +138,25 @@ const availabilityRuleSchema = z.object({
   startTime: z.string().regex(/^\d{2}:\d{2}$/),
   endTime: z.string().regex(/^\d{2}:\d{2}$/),
   isActive: z.boolean().default(true),
+});
+
+const availabilityOverrideRangeSchema = z.object({
+  startTime: z.string().regex(/^\d{2}:\d{2}$/),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/),
+  isActive: z.boolean().default(true),
+});
+
+const availabilityOverrideSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  isBlocked: z.boolean().default(false),
+  ranges: z.array(availabilityOverrideRangeSchema).default([]),
+});
+
+const mentorAvailabilityPayloadSchema = z.object({
+  rules: z.array(availabilityRuleSchema).default([]),
+  overrides: z.array(availabilityOverrideSchema).default([]),
+  bookingWindowDays: z.number().int().min(1).max(180).default(30),
+  minimumNoticeHours: z.number().int().min(0).max(24 * 7).default(24),
 });
 
 const mentorUniversitySchema = z.object({
@@ -253,6 +274,7 @@ const meetingCreateSchema = z.object({
   timezone: z.string().trim().min(1),
   method: z.enum(PLATFORM_MEETING_METHODS).default("zoom_link"),
   meetingUrl: z.string().trim().optional().default(""),
+  turnstileToken: z.string().optional(),
 });
 
 const meetingUpdateSchema = z.object({
@@ -369,13 +391,24 @@ function serializeMentorProfile(
   profile:
     | {
         adminApproved?: boolean | null;
+        availabilityOverrides?: Array<{
+          date: string;
+          isBlocked?: boolean;
+          ranges?: Array<{
+            endTime: string;
+            isActive?: boolean;
+            startTime: string;
+          }>;
+        }> | null;
         bio?: string | null;
+        bookingWindowDays?: number | null;
         googleCalendarEmail?: string | null;
         googleDriveFolderUrl?: string | null;
         headline?: string | null;
         id?: number;
         meetingLink?: string | null;
         meetingMethod?: string | null;
+        minimumNoticeHours?: number | null;
         timezone?: string | null;
         updatedAt?: Date | null;
         userId?: number;
@@ -390,12 +423,27 @@ function serializeMentorProfile(
 
   return {
     ...profile,
+    availabilityOverrides: Array.isArray(profile.availabilityOverrides)
+      ? profile.availabilityOverrides.map((entry) => ({
+          date: entry.date,
+          isBlocked: Boolean(entry.isBlocked),
+          ranges: Array.isArray(entry.ranges)
+            ? entry.ranges.map((range) => ({
+                startTime: range.startTime,
+                endTime: range.endTime,
+                isActive: range.isActive !== false,
+              }))
+            : [],
+        }))
+      : [],
     bio: profile.bio ?? "",
+    bookingWindowDays: profile.bookingWindowDays ?? 30,
     googleCalendarEmail: profile.googleCalendarEmail ?? "",
     googleDriveFolderUrl: profile.googleDriveFolderUrl ?? "",
     headline: profile.headline ?? "",
     meetingLink: profile.meetingLink ?? "",
     meetingMethod: profile.meetingMethod ?? "zoom_link",
+    minimumNoticeHours: profile.minimumNoticeHours ?? 24,
     timezone: profile.timezone ?? "Europe/Warsaw",
     whatsappNumber: profile.whatsappNumber ?? "",
   };
@@ -726,12 +774,30 @@ function meetingWindowIsValid(startsAt: Date, endsAt: Date) {
 }
 
 const MENTOR_MEETING_DURATION_MINUTES = 30;
-const MENTOR_BOOKING_LOOKAHEAD_DAYS = 21;
-const MENTOR_SLOT_LIMIT = 120;
+const DEFAULT_MENTOR_BOOKING_WINDOW_DAYS = 30;
+const DEFAULT_MENTOR_MINIMUM_NOTICE_HOURS = 24;
+const MENTOR_SLOT_LIMIT = 400;
 
 type BusyWindow = {
   start: string;
   end: string;
+};
+
+type AvailabilityRule = {
+  endTime: string;
+  isActive: boolean;
+  startTime: string;
+  weekday: number;
+};
+
+type AvailabilityOverride = {
+  date: string;
+  isBlocked?: boolean;
+  ranges?: Array<{
+    endTime: string;
+    isActive?: boolean;
+    startTime: string;
+  }>;
 };
 
 type MentorGoogleConnectionRecord = {
@@ -829,14 +895,67 @@ function zonedDateTimeToUtc(input: {
   return new Date(utcMs);
 }
 
+function toLocalDateKey(
+  input: { year: number; month: number; day: number } | Date,
+  timeZone?: string,
+) {
+  if (input instanceof Date) {
+    const parts = getZonedDateParts(input, timeZone ?? "UTC");
+    return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+  }
+
+  return `${String(input.year).padStart(4, "0")}-${String(input.month).padStart(2, "0")}-${String(input.day).padStart(2, "0")}`;
+}
+
+function parseMonthKey(value: string | undefined) {
+  if (!value || !/^\d{4}-\d{2}$/.test(value)) {
+    return null;
+  }
+
+  const [yearRaw, monthRaw] = value.split("-");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    return null;
+  }
+
+  return { year, month };
+}
+
+function normalizeAvailabilityOverrides(
+  overrides: unknown,
+): AvailabilityOverride[] {
+  const parsed = z.array(availabilityOverrideSchema).safeParse(overrides);
+  if (!parsed.success) {
+    return [];
+  }
+
+  return parsed.data
+    .map((entry) => ({
+      date: entry.date,
+      isBlocked: Boolean(entry.isBlocked),
+      ranges: (entry.ranges ?? []).filter((range) => {
+        const startClock = parseClockValue(range.startTime);
+        const endClock = parseClockValue(range.endTime);
+        if (!startClock || !endClock) {
+          return false;
+        }
+        return (
+          startClock.hour * 60 + startClock.minute <
+          endClock.hour * 60 + endClock.minute
+        );
+      }),
+    }))
+    .sort((left, right) => left.date.localeCompare(right.date));
+}
+
 function buildMentorSlotsFromRules(input: {
-  availabilityRules: Array<{
-    endTime: string;
-    isActive: boolean;
-    startTime: string;
-    weekday: number;
-  }>;
+  availabilityOverrides?: AvailabilityOverride[];
+  availabilityRules: AvailabilityRule[];
   busy: BusyWindow[];
+  bookingWindowDays?: number;
+  minimumNoticeHours?: number;
+  month?: { month: number; year: number } | null;
   now?: Date;
   timeZone: string;
 }) {
@@ -845,26 +964,70 @@ function buildMentorSlotsFromRules(input: {
     start: new Date(entry.start),
     end: new Date(entry.end),
   }));
+  const minimumNoticeHours = input.minimumNoticeHours ?? DEFAULT_MENTOR_MINIMUM_NOTICE_HOURS;
+  const bookingWindowDays = input.bookingWindowDays ?? DEFAULT_MENTOR_BOOKING_WINDOW_DAYS;
   const currentLocal = getZonedDateParts(now, input.timeZone);
   const localStartDate = new Date(
     Date.UTC(currentLocal.year, currentLocal.month - 1, currentLocal.day),
   );
+  const bookingWindowEnd = new Date(
+    localStartDate.getTime() + bookingWindowDays * 24 * 60 * 60 * 1000,
+  );
+  const overrideMap = new Map(
+    normalizeAvailabilityOverrides(input.availabilityOverrides).map((entry) => [
+      entry.date,
+      entry,
+    ]),
+  );
   const slots: Array<{ end: string; label: string; start: string }> = [];
 
+  let rangeStart = localStartDate;
+  let rangeEnd = bookingWindowEnd;
+  if (input.month) {
+    rangeStart = new Date(Date.UTC(input.month.year, input.month.month - 1, 1));
+    rangeEnd = new Date(Date.UTC(input.month.year, input.month.month, 1));
+  }
+
+  const startMs = Math.max(rangeStart.getTime(), localStartDate.getTime());
+  const endMs = Math.min(rangeEnd.getTime(), bookingWindowEnd.getTime());
+  if (endMs <= startMs) {
+    return [];
+  }
+
   for (
-    let dayOffset = 0;
-    dayOffset < MENTOR_BOOKING_LOOKAHEAD_DAYS && slots.length < MENTOR_SLOT_LIMIT;
-    dayOffset += 1
+    let currentMs = startMs;
+    currentMs < endMs && slots.length < MENTOR_SLOT_LIMIT;
+    currentMs += 24 * 60 * 60 * 1000
   ) {
-    const localDate = new Date(localStartDate.getTime() + dayOffset * 24 * 60 * 60 * 1000);
+    const localDate = new Date(currentMs);
     const year = localDate.getUTCFullYear();
     const month = localDate.getUTCMonth() + 1;
     const day = localDate.getUTCDate();
     const weekday = localDate.getUTCDay();
+    const dateKey = toLocalDateKey({ year, month, day });
+    const override = overrideMap.get(dateKey);
 
-    const matchingRules = input.availabilityRules.filter(
-      (rule) => rule.isActive && rule.weekday === weekday,
-    );
+    let matchingRules: Array<{
+      endTime: string;
+      isActive: boolean;
+      startTime: string;
+    }> = [];
+
+    if (override) {
+      if (override.isBlocked) {
+        continue;
+      }
+      matchingRules = (override.ranges ?? [])
+        .filter((range) => range.isActive !== false)
+        .map((range) => ({
+          ...range,
+          isActive: true,
+        }));
+    } else {
+      matchingRules = input.availabilityRules.filter(
+        (rule) => rule.isActive && rule.weekday === weekday,
+      );
+    }
 
     for (const rule of matchingRules) {
       const startClock = parseClockValue(rule.startTime);
@@ -892,7 +1055,7 @@ function buildMentorSlotsFromRules(input: {
           start.getTime() + MENTOR_MEETING_DURATION_MINUTES * 60 * 1000,
         );
 
-        if (!meetingOutside24Hours(start, now)) {
+        if (!meetingOutsideLeadWindow(start, minimumNoticeHours, now)) {
           cursorMinutes += MENTOR_MEETING_DURATION_MINUTES;
           continue;
         }
@@ -920,11 +1083,12 @@ function buildMentorSlotsFromRules(input: {
   return slots.sort((left, right) => left.start.localeCompare(right.start));
 }
 
-function meetingOutside24Hours(
+function meetingOutsideLeadWindow(
   startsAt: Date,
+  minimumNoticeHours: number,
   now = new Date(),
 ) {
-  return startsAt.getTime() - now.getTime() >= 1000 * 60 * 60 * 24;
+  return startsAt.getTime() - now.getTime() >= 1000 * 60 * 60 * minimumNoticeHours;
 }
 
 async function getMentorCalendarConnection(
@@ -1720,7 +1884,7 @@ router.put(
   requirePlatformAuth,
   requirePlatformRole("mentor"),
   async (req: AuthenticatedRequest, res) => {
-    const parsed = z.array(availabilityRuleSchema).safeParse(req.body?.rules);
+    const parsed = mentorAvailabilityPayloadSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(422).json({ error: parsed.error.message });
     }
@@ -1730,9 +1894,9 @@ router.put(
       .delete(mentorAvailabilityRulesTable)
       .where(eq(mentorAvailabilityRulesTable.mentorUserId, req.platformUser!.id));
 
-    if (parsed.data.length) {
+    if (parsed.data.rules.length) {
       await db.insert(mentorAvailabilityRulesTable).values(
-        parsed.data.map((rule) => ({
+        parsed.data.rules.map((rule) => ({
           mentorUserId: req.platformUser!.id,
           weekday: rule.weekday,
           startTime: rule.startTime,
@@ -1741,6 +1905,24 @@ router.put(
         })),
       );
     }
+
+    await db
+      .insert(mentorProfilesTable)
+      .values({
+        userId: req.platformUser!.id,
+        bookingWindowDays: parsed.data.bookingWindowDays,
+        minimumNoticeHours: parsed.data.minimumNoticeHours,
+        availabilityOverrides: normalizeAvailabilityOverrides(parsed.data.overrides),
+      })
+      .onConflictDoUpdate({
+        target: mentorProfilesTable.userId,
+        set: {
+          bookingWindowDays: parsed.data.bookingWindowDays,
+          minimumNoticeHours: parsed.data.minimumNoticeHours,
+          availabilityOverrides: normalizeAvailabilityOverrides(parsed.data.overrides),
+          updatedAt: new Date(),
+        },
+      });
 
     return res.status(204).end();
   },
@@ -2382,9 +2564,11 @@ router.get(
         mentorId: platformUsersTable.id,
         fullName: platformUsersTable.fullName,
         email: platformUsersTable.email,
+        bookingWindowDays: mentorProfilesTable.bookingWindowDays,
         timezone: mentorProfilesTable.timezone,
         meetingMethod: mentorProfilesTable.meetingMethod,
         meetingLink: mentorProfilesTable.meetingLink,
+        minimumNoticeHours: mentorProfilesTable.minimumNoticeHours,
         whatsappNumber: mentorProfilesTable.whatsappNumber,
       })
       .from(platformMentorAssignmentsTable)
@@ -2616,8 +2800,14 @@ router.get(
   requirePlatformRole("mentee"),
   async (req: AuthenticatedRequest, res) => {
     const mentorUserId = Number(req.query.mentorUserId);
+    const requestedMonth = parseMonthKey(
+      typeof req.query.month === "string" ? req.query.month : undefined,
+    );
     if (!Number.isFinite(mentorUserId)) {
       return res.status(400).json({ error: "Invalid mentor user id." });
+    }
+    if (req.query.month !== undefined && !requestedMonth) {
+      return res.status(400).json({ error: "Invalid month." });
     }
 
     const { db } = await import("@workspace/db");
@@ -2655,7 +2845,11 @@ router.get(
         asc(mentorAvailabilityRulesTable.startTime),
       );
 
-    if (!availabilityRules.length) {
+    const availabilityOverrides = normalizeAvailabilityOverrides(
+      mentorProfile.availabilityOverrides,
+    );
+
+    if (!availabilityRules.length && !availabilityOverrides.length) {
       return res.json({
         connectionReady: false,
         slots: [],
@@ -2680,7 +2874,12 @@ router.get(
 
     const now = new Date();
     const to = new Date(
-      now.getTime() + MENTOR_BOOKING_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000,
+      now.getTime() +
+        (mentorProfile.bookingWindowDays ?? DEFAULT_MENTOR_BOOKING_WINDOW_DAYS) *
+          24 *
+          60 *
+          60 *
+          1000,
     );
     const busyResponse = await googleApiRequestWithAccessToken(
       mentorGoogle.accessToken,
@@ -2711,8 +2910,14 @@ router.get(
 
     const busy = busyPayload.calendars?.[mentorGoogle.externalEmail]?.busy ?? [];
     const slots = buildMentorSlotsFromRules({
+      availabilityOverrides,
       availabilityRules,
       busy,
+      bookingWindowDays:
+        mentorProfile.bookingWindowDays ?? DEFAULT_MENTOR_BOOKING_WINDOW_DAYS,
+      minimumNoticeHours:
+        mentorProfile.minimumNoticeHours ?? DEFAULT_MENTOR_MINIMUM_NOTICE_HOURS,
+      month: requestedMonth,
       now,
       timeZone: mentorProfile.timezone,
     });
@@ -2735,13 +2940,15 @@ router.post(
       return res.status(422).json({ error: parsed.error.message });
     }
 
+    const turnstile = await verifyTurnstileToken(req, parsed.data.turnstileToken);
+    if (!turnstile.ok) {
+      return res.status(400).json({ error: turnstile.message });
+    }
+
     const startsAt = new Date(parsed.data.startsAt);
     const endsAt = new Date(parsed.data.endsAt);
     if (!meetingWindowIsValid(startsAt, endsAt)) {
       return res.status(400).json({ error: "Spotkanie musi trwać przynajmniej 15 minut." });
-    }
-    if (!meetingOutside24Hours(startsAt)) {
-      return res.status(400).json({ error: "Spotkania można umawiać najwcześniej za 24 godziny." });
     }
 
     const { db } = await import("@workspace/db");
@@ -2763,6 +2970,13 @@ router.post(
 
     if (!mentorProfile?.adminApproved) {
       return res.status(400).json({ error: "Wybrany mentor nie jest jeszcze aktywny." });
+    }
+    const minimumNoticeHours =
+      mentorProfile.minimumNoticeHours ?? DEFAULT_MENTOR_MINIMUM_NOTICE_HOURS;
+    if (!meetingOutsideLeadWindow(startsAt, minimumNoticeHours)) {
+      return res.status(400).json({
+        error: `Spotkania można umawiać najwcześniej za ${minimumNoticeHours} godzin.`,
+      });
     }
 
     const [assignment] = await db
@@ -2788,6 +3002,9 @@ router.post(
         asc(mentorAvailabilityRulesTable.weekday),
         asc(mentorAvailabilityRulesTable.startTime),
       );
+    const availabilityOverrides = normalizeAvailabilityOverrides(
+      mentorProfile.availabilityOverrides,
+    );
     const connection = await getMentorCalendarConnection(
       db,
       parsed.data.mentorUserId,
@@ -2807,7 +3024,12 @@ router.post(
 
     const now = new Date();
     const to = new Date(
-      now.getTime() + MENTOR_BOOKING_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000,
+      now.getTime() +
+        (mentorProfile.bookingWindowDays ?? DEFAULT_MENTOR_BOOKING_WINDOW_DAYS) *
+          24 *
+          60 *
+          60 *
+          1000,
     );
     const busyResponse = await googleApiRequestWithAccessToken(
       mentorGoogle.accessToken,
@@ -2836,8 +3058,12 @@ router.post(
     }
 
     const availableSlots = buildMentorSlotsFromRules({
+      availabilityOverrides,
       availabilityRules,
       busy: busyPayload.calendars?.[mentorGoogle.externalEmail]?.busy ?? [],
+      bookingWindowDays:
+        mentorProfile.bookingWindowDays ?? DEFAULT_MENTOR_BOOKING_WINDOW_DAYS,
+      minimumNoticeHours,
       now,
       timeZone: mentorProfile.timezone,
     });

@@ -236,6 +236,76 @@ function formatSlotTimeLabel(value: string, timezone: string) {
   });
 }
 
+function formatMonthKey(value: Date, timezone: string) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      timeZone: timezone,
+    })
+      .formatToParts(value)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  ) as Record<string, string>;
+  return `${parts.year}-${parts.month}`;
+}
+
+function shiftMonthKey(monthKey: string, offset: number) {
+  const [yearRaw, monthRaw] = monthKey.split("-");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const base = new Date(Date.UTC(year, month - 1 + offset, 1));
+  return `${base.getUTCFullYear()}-${String(base.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function formatMonthHeading(monthKey: string, timezone: string) {
+  const [yearRaw, monthRaw] = monthKey.split("-");
+  return new Date(Date.UTC(Number(yearRaw), Number(monthRaw) - 1, 1)).toLocaleDateString(
+    "pl-PL",
+    {
+      month: "long",
+      year: "numeric",
+      timeZone: timezone,
+    },
+  );
+}
+
+function buildMonthCalendar(monthKey: string, timezone: string, availableCounts: Record<string, number>) {
+  const [yearRaw, monthRaw] = monthKey.split("-");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const firstDay = new Date(Date.UTC(year, month - 1, 1));
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const leadingEmptyDays = firstDay.getUTCDay();
+  const cells: Array<
+    | { kind: "empty"; key: string }
+    | {
+        kind: "day";
+        key: string;
+        dateKey: string;
+        dayNumber: number;
+        availableCount: number;
+      }
+  > = [];
+
+  for (let index = 0; index < leadingEmptyDays; index += 1) {
+    cells.push({ kind: "empty", key: `empty-${monthKey}-${index}` });
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    cells.push({
+      kind: "day",
+      key: dateKey,
+      dateKey,
+      dayNumber: day,
+      availableCount: availableCounts[dateKey] ?? 0,
+    });
+  }
+
+  return cells;
+}
+
 function buildPlatformSlotGroups(
   slots: Array<{ end: string; start: string }>,
   timezone: string,
@@ -268,6 +338,32 @@ function buildPlatformSlotGroups(
 
   return Array.from(groups.values());
 }
+
+function buildSlotDayIndex(
+  slots: Array<{ end: string; start: string }>,
+  timezone: string,
+) {
+  return buildPlatformSlotGroups(slots, timezone).reduce<
+    Record<string, { dateKey: string; dayLabel: string; slots: Array<{ end: string; label: string; start: string }> }>
+  >((accumulator, entry) => {
+    accumulator[entry.dateKey] = entry;
+    return accumulator;
+  }, {});
+}
+
+const MINIMUM_NOTICE_HOUR_OPTIONS = [
+  0, 3, 6, 9, 12, 15, 18, 21, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168,
+];
+
+const WEEKDAY_LABELS = [
+  "Niedziela",
+  "Poniedziałek",
+  "Wtorek",
+  "Środa",
+  "Czwartek",
+  "Piątek",
+  "Sobota",
+];
 
 function parseGuideMeta(value: string | null | undefined) {
   if (!value || !value.startsWith("__meta:")) {
@@ -2704,16 +2800,38 @@ function MentorSection({
     session.googleConnections ?? [],
   );
   const [profile, setProfile] = useState<any>({
+    availabilityOverrides: [],
     bio: "",
+    bookingWindowDays: 30,
     googleDriveFolderUrl: "",
     headline: "",
     meetingLink: "",
     meetingMethod: "zoom_link",
+    minimumNoticeHours: 24,
     timezone: "Europe/Warsaw",
     whatsappNumber: "",
     ...(session.mentorProfile ?? {}),
   });
-  const [availability, setAvailability] = useState([{ weekday: 1, startTime: "16:00", endTime: "18:00", isActive: true }]);
+  const [availability, setAvailability] = useState([
+    { weekday: 0, startTime: "09:00", endTime: "18:00", isActive: true },
+    { weekday: 1, startTime: "09:00", endTime: "18:00", isActive: true },
+    { weekday: 2, startTime: "09:00", endTime: "18:00", isActive: true },
+    { weekday: 3, startTime: "09:00", endTime: "18:00", isActive: true },
+    { weekday: 4, startTime: "09:00", endTime: "18:00", isActive: true },
+    { weekday: 5, startTime: "09:00", endTime: "18:00", isActive: true },
+    { weekday: 6, startTime: "09:00", endTime: "18:00", isActive: true },
+  ]);
+  const [availabilityOverrides, setAvailabilityOverrides] = useState<
+    Array<{
+      date: string;
+      isBlocked?: boolean;
+      ranges?: Array<{ startTime: string; endTime: string; isActive?: boolean }>;
+    }>
+  >([]);
+  const [availabilityMonth, setAvailabilityMonth] = useState(() =>
+    formatMonthKey(new Date(), "Europe/Warsaw"),
+  );
+  const [selectedOverrideDate, setSelectedOverrideDate] = useState<string | null>(null);
   const [universities, setUniversities] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
   const [sourceGuides, setSourceGuides] = useState<any[]>([]);
@@ -2802,14 +2920,18 @@ function MentorSection({
   async function loadMentorProfileContext() {
     const payload = await apiFetch<any>("/mentor/profile", undefined, token);
     setProfile({
+      availabilityOverrides: [],
       bio: "",
+      bookingWindowDays: 30,
       headline: "",
       meetingLink: "",
       meetingMethod: "zoom_link",
+      minimumNoticeHours: 24,
       timezone: "Europe/Warsaw",
       whatsappNumber: "",
       ...(payload.profile ?? {}),
     });
+    setAvailabilityOverrides(payload.profile?.availabilityOverrides ?? []);
     setUniversities(payload.universities ?? []);
     setAvailability((current) =>
       payload.availability?.length ? payload.availability : current,
@@ -2819,6 +2941,31 @@ function MentorSection({
 
   const calendarConnection = googleConnections.find(
     (connection) => connection.connectionType === "calendar",
+  );
+  const mentorTimezone = profile.timezone || "Europe/Warsaw";
+  const overrideCountByDate = useMemo(
+    () =>
+      availabilityOverrides.reduce<Record<string, number>>((accumulator, entry) => {
+        accumulator[entry.date] =
+          entry.isBlocked
+            ? 1
+            : (entry.ranges ?? []).filter((range) => range.isActive !== false).length;
+        return accumulator;
+      }, {}),
+    [availabilityOverrides],
+  );
+  const availabilityMonthCells = useMemo(
+    () => buildMonthCalendar(availabilityMonth, mentorTimezone, overrideCountByDate),
+    [availabilityMonth, mentorTimezone, overrideCountByDate],
+  );
+  const selectedOverride = useMemo(
+    () =>
+      availabilityOverrides.find((entry) => entry.date === selectedOverrideDate) ?? {
+        date: selectedOverrideDate ?? "",
+        isBlocked: false,
+        ranges: [{ startTime: "09:00", endTime: "18:00", isActive: true }],
+      },
+    [availabilityOverrides, selectedOverrideDate],
   );
 
   useEffect(() => {
@@ -2844,6 +2991,22 @@ function MentorSection({
       void apiFetch<any[]>("/mentor/meetings", undefined, token).then(setMeetings).catch((error) => setStatus(error.message));
     }
   }, [section, token]);
+
+  useEffect(() => {
+    setAvailabilityMonth(formatMonthKey(new Date(), mentorTimezone));
+  }, [mentorTimezone]);
+
+  useEffect(() => {
+    const monthDayKeys = availabilityMonthCells
+      .filter((entry): entry is Extract<(typeof availabilityMonthCells)[number], { kind: "day" }> => entry.kind === "day")
+      .map((entry) => entry.dateKey);
+    if (!monthDayKeys.length) {
+      return;
+    }
+    if (!selectedOverrideDate || !monthDayKeys.includes(selectedOverrideDate)) {
+      setSelectedOverrideDate(monthDayKeys[0]);
+    }
+  }, [availabilityMonthCells, selectedOverrideDate]);
 
   useEffect(() => {
     if (section !== "profile" && section !== "availability") {
@@ -2883,12 +3046,66 @@ function MentorSection({
     try {
       await apiFetch("/mentor/availability", {
         method: "PUT",
-        body: JSON.stringify({ rules: availability }),
+        body: JSON.stringify({
+          rules: availability,
+          overrides: availabilityOverrides,
+          bookingWindowDays: Number(profile.bookingWindowDays ?? 30),
+          minimumNoticeHours: Number(profile.minimumNoticeHours ?? 24),
+        }),
       }, token);
       setStatus("Dostępność została zapisana.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać dostępności.");
     }
+  }
+
+  function updateDayRules(
+    weekday: number,
+    updater: (rules: Array<{ weekday: number; startTime: string; endTime: string; isActive: boolean }>) => Array<{
+      weekday: number;
+      startTime: string;
+      endTime: string;
+      isActive: boolean;
+    }>,
+  ) {
+    setAvailability((current) => {
+      const dayRules = current.filter((entry) => entry.weekday === weekday);
+      const otherRules = current.filter((entry) => entry.weekday !== weekday);
+      return [...otherRules, ...updater(dayRules)].sort((left, right) =>
+        left.weekday === right.weekday
+          ? left.startTime.localeCompare(right.startTime)
+          : left.weekday - right.weekday,
+      );
+    });
+  }
+
+  function updateOverride(
+    date: string,
+    updater: (entry: {
+      date: string;
+      isBlocked?: boolean;
+      ranges?: Array<{ startTime: string; endTime: string; isActive?: boolean }>;
+    }) => {
+      date: string;
+      isBlocked?: boolean;
+      ranges?: Array<{ startTime: string; endTime: string; isActive?: boolean }>;
+    },
+  ) {
+    setAvailabilityOverrides((current) => {
+      const existing =
+        current.find((entry) => entry.date === date) ?? {
+          date,
+          isBlocked: false,
+          ranges: [{ startTime: "09:00", endTime: "18:00", isActive: true }],
+        };
+      const updated = updater(existing);
+      const rest = current.filter((entry) => entry.date !== date);
+      const hasActiveRanges = (updated.ranges ?? []).some((range) => range.isActive !== false);
+      if (!updated.isBlocked && !hasActiveRanges) {
+        return rest.sort((left, right) => left.date.localeCompare(right.date));
+      }
+      return [...rest, updated].sort((left, right) => left.date.localeCompare(right.date));
+    });
   }
 
   async function connectGoogleCalendar() {
@@ -3267,7 +3484,7 @@ function MentorSection({
         <div className="dashboard-card">
           <h2>Dostępność mentora</h2>
           <p className="muted">
-            Te reguły są już zapisane osobno w bazie. Po podpięciu prawdziwego Google Calendar backend będzie na nich opierał sprawdzanie wolnych slotów.
+            Ustaw tygodniowe reguły jak w Calendly, a potem nanoś wyjątki dla konkretnych dni w kalendarzu miesiąca. Backend połączy te reguły z Twoim prawdziwym Google Calendar.
           </p>
           <div className="status" style={{ marginTop: 16 }}>
             Google Calendar:{" "}
@@ -3301,76 +3518,372 @@ function MentorSection({
               </button>
             )}
           </div>
+          <div className="grid-2" style={{ marginTop: 18 }}>
+            <div className="field">
+              <label>Jak daleko w przyszłość można rezerwować</label>
+              <select
+                value={String(profile.bookingWindowDays ?? 30)}
+                onChange={(event) =>
+                  setProfile((current: any) => ({
+                    ...current,
+                    bookingWindowDays: Number(event.target.value),
+                  }))
+                }
+              >
+                {[7, 14, 21, 30, 45, 60, 90, 120, 180].map((value) => (
+                  <option key={value} value={value}>
+                    {value} dni
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label>Minimalny czas przed spotkaniem</label>
+              <select
+                value={String(profile.minimumNoticeHours ?? 24)}
+                onChange={(event) =>
+                  setProfile((current: any) => ({
+                    ...current,
+                    minimumNoticeHours: Number(event.target.value),
+                  }))
+                }
+              >
+                {MINIMUM_NOTICE_HOUR_OPTIONS.map((value) => (
+                  <option key={value} value={value}>
+                    {value < 24 ? `${value} h` : value % 24 === 0 ? `${value / 24} dni` : `${value} h`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div className="list" style={{ marginTop: 18 }}>
-            {availability.map((rule, index) => (
-              <div className="grid-2" key={index}>
-                <div className="field">
-                  <label>Dzień tygodnia (0-6)</label>
-                  <input
-                    type="number"
-                    value={rule.weekday}
-                    onChange={(event) =>
-                      setAvailability((current) =>
-                        current.map((entry, entryIndex) =>
-                          entryIndex === index ? { ...entry, weekday: Number(event.target.value) } : entry,
-                        ),
-                      )
-                    }
-                  />
+            {WEEKDAY_LABELS.map((label, weekday) => {
+              const dayRules = availability
+                .filter((entry) => entry.weekday === weekday)
+                .sort((left, right) => left.startTime.localeCompare(right.startTime));
+              const hasActiveRule = dayRules.some((entry) => entry.isActive);
+
+              return (
+                <div className="list-item" key={weekday}>
+                  <header>
+                    <div>
+                      <h3>{label}</h3>
+                      <div className="muted small">
+                        {hasActiveRule ? "Dostępny" : "Niedostępny"}
+                      </div>
+                    </div>
+                    <div className="button-row">
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() =>
+                          updateDayRules(weekday, (rules) =>
+                            (rules.length ? rules : [{ weekday, startTime: "09:00", endTime: "18:00", isActive: false }]).map((rule) => ({
+                              ...rule,
+                              isActive: !hasActiveRule,
+                            })),
+                          )
+                        }
+                        type="button"
+                      >
+                        {hasActiveRule ? "Wyłącz dzień" : "Włącz dzień"}
+                      </button>
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() =>
+                          updateDayRules(weekday, (rules) => [
+                            ...rules,
+                            { weekday, startTime: "09:00", endTime: "18:00", isActive: true },
+                          ])
+                        }
+                        type="button"
+                      >
+                        Dodaj przedział
+                      </button>
+                    </div>
+                  </header>
+
+                  <div className="stack" style={{ marginTop: 14 }}>
+                    {dayRules.length ? dayRules.map((rule, index) => (
+                      <div className="grid-2" key={`${weekday}-${index}`}>
+                        <div className="field">
+                          <label>Od</label>
+                          <input
+                            type="time"
+                            value={rule.startTime}
+                            onChange={(event) =>
+                              updateDayRules(weekday, (rules) =>
+                                rules.map((entry, entryIndex) =>
+                                  entryIndex === index ? { ...entry, startTime: event.target.value } : entry,
+                                ),
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="field">
+                          <label>Do</label>
+                          <input
+                            type="time"
+                            value={rule.endTime}
+                            onChange={(event) =>
+                              updateDayRules(weekday, (rules) =>
+                                rules.map((entry, entryIndex) =>
+                                  entryIndex === index ? { ...entry, endTime: event.target.value } : entry,
+                                ),
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="field">
+                          <label>Aktywne</label>
+                          <select
+                            value={String(rule.isActive)}
+                            onChange={(event) =>
+                              updateDayRules(weekday, (rules) =>
+                                rules.map((entry, entryIndex) =>
+                                  entryIndex === index ? { ...entry, isActive: event.target.value === "true" } : entry,
+                                ),
+                              )
+                            }
+                          >
+                            <option value="true">tak</option>
+                            <option value="false">nie</option>
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label>Usuń</label>
+                          <button
+                            className="btn btn-secondary"
+                            onClick={() =>
+                              updateDayRules(weekday, (rules) =>
+                                rules.filter((_, entryIndex) => entryIndex !== index),
+                              )
+                            }
+                            type="button"
+                          >
+                            Usuń przedział
+                          </button>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="small muted">Brak przedziałów dla tego dnia.</div>
+                    )}
+                  </div>
                 </div>
-                <div className="field">
-                  <label>Aktywne</label>
-                  <select
-                    value={String(rule.isActive)}
-                    onChange={(event) =>
-                      setAvailability((current) =>
-                        current.map((entry, entryIndex) =>
-                          entryIndex === index ? { ...entry, isActive: event.target.value === "true" } : entry,
-                        ),
-                      )
-                    }
-                  >
-                    <option value="true">tak</option>
-                    <option value="false">nie</option>
-                  </select>
-                </div>
-                <div className="field">
-                  <label>Od</label>
-                  <input
-                    value={rule.startTime}
-                    onChange={(event) =>
-                      setAvailability((current) =>
-                        current.map((entry, entryIndex) =>
-                          entryIndex === index ? { ...entry, startTime: event.target.value } : entry,
-                        ),
-                      )
-                    }
-                  />
-                </div>
-                <div className="field">
-                  <label>Do</label>
-                  <input
-                    value={rule.endTime}
-                    onChange={(event) =>
-                      setAvailability((current) =>
-                        current.map((entry, entryIndex) =>
-                          entryIndex === index ? { ...entry, endTime: event.target.value } : entry,
-                        ),
-                      )
-                    }
-                  />
-                </div>
+              );
+            })}
+          </div>
+
+          <div className="split" style={{ marginTop: 22 }}>
+            <div className="dashboard-card">
+              <h3>Override’y dla konkretnych dni</h3>
+              <div className="button-row" style={{ marginTop: 10, marginBottom: 12 }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setAvailabilityMonth((current) => shiftMonthKey(current, -1))}
+                  type="button"
+                >
+                  Poprzedni miesiąc
+                </button>
+                <strong style={{ textTransform: "capitalize" }}>{formatMonthHeading(availabilityMonth, mentorTimezone)}</strong>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setAvailabilityMonth((current) => shiftMonthKey(current, 1))}
+                  type="button"
+                >
+                  Następny miesiąc
+                </button>
               </div>
-            ))}
+              <div className="small muted" style={{ marginBottom: 12 }}>
+                Kliknij dzień, aby ustawić wyjątek od tygodniowych reguł.
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+                  gap: 8,
+                }}
+              >
+                {["nd", "pn", "wt", "śr", "czw", "pt", "sob"].map((label) => (
+                  <div className="small muted" key={label} style={{ textAlign: "center" }}>
+                    {label}
+                  </div>
+                ))}
+                {availabilityMonthCells.map((cell) =>
+                  cell.kind === "empty" ? (
+                    <div key={cell.key} />
+                  ) : (
+                    <button
+                      className={selectedOverrideDate === cell.dateKey ? "btn btn-primary" : "btn btn-secondary"}
+                      key={cell.key}
+                      onClick={() => setSelectedOverrideDate(cell.dateKey)}
+                      style={{
+                        minHeight: 72,
+                        padding: "10px 8px",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                      }}
+                      type="button"
+                    >
+                      <strong>{cell.dayNumber}</strong>
+                      <span className="small">
+                        {cell.availableCount > 0 ? `${cell.availableCount} override` : "bazowo"}
+                      </span>
+                    </button>
+                  ),
+                )}
+              </div>
+            </div>
+
+            <div className="dashboard-card">
+              <h3>Wybrany dzień</h3>
+              {selectedOverrideDate ? (
+                <div className="stack" style={{ marginTop: 10 }}>
+                  <div className="small muted">{selectedOverrideDate}</div>
+                  <div className="field">
+                    <label>Tryb dnia</label>
+                    <select
+                      value={selectedOverride.isBlocked ? "blocked" : "custom"}
+                      onChange={(event) =>
+                        updateOverride(selectedOverrideDate, (entry) => ({
+                          ...entry,
+                          isBlocked: event.target.value === "blocked",
+                          ranges:
+                            event.target.value === "blocked"
+                              ? []
+                              : entry.ranges?.length
+                                ? entry.ranges
+                                : [{ startTime: "09:00", endTime: "18:00", isActive: true }],
+                        }))
+                      }
+                    >
+                      <option value="custom">Własne godziny</option>
+                      <option value="blocked">Niedostępny cały dzień</option>
+                    </select>
+                  </div>
+
+                  {!selectedOverride.isBlocked ? (
+                    <>
+                      {(selectedOverride.ranges ?? []).map((range, index) => (
+                        <div className="grid-2" key={`${selectedOverrideDate}-${index}`}>
+                          <div className="field">
+                            <label>Od</label>
+                            <input
+                              type="time"
+                              value={range.startTime}
+                              onChange={(event) =>
+                                updateOverride(selectedOverrideDate, (entry) => ({
+                                  ...entry,
+                                  isBlocked: false,
+                                  ranges: (entry.ranges ?? []).map((currentRange, currentIndex) =>
+                                    currentIndex === index
+                                      ? { ...currentRange, startTime: event.target.value }
+                                      : currentRange,
+                                  ),
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Do</label>
+                            <input
+                              type="time"
+                              value={range.endTime}
+                              onChange={(event) =>
+                                updateOverride(selectedOverrideDate, (entry) => ({
+                                  ...entry,
+                                  isBlocked: false,
+                                  ranges: (entry.ranges ?? []).map((currentRange, currentIndex) =>
+                                    currentIndex === index
+                                      ? { ...currentRange, endTime: event.target.value }
+                                      : currentRange,
+                                  ),
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Aktywne</label>
+                            <select
+                              value={String(range.isActive !== false)}
+                              onChange={(event) =>
+                                updateOverride(selectedOverrideDate, (entry) => ({
+                                  ...entry,
+                                  isBlocked: false,
+                                  ranges: (entry.ranges ?? []).map((currentRange, currentIndex) =>
+                                    currentIndex === index
+                                      ? { ...currentRange, isActive: event.target.value === "true" }
+                                      : currentRange,
+                                  ),
+                                }))
+                              }
+                            >
+                              <option value="true">tak</option>
+                              <option value="false">nie</option>
+                            </select>
+                          </div>
+                          <div className="field">
+                            <label>Usuń</label>
+                            <button
+                              className="btn btn-secondary"
+                              onClick={() =>
+                                updateOverride(selectedOverrideDate, (entry) => ({
+                                  ...entry,
+                                  isBlocked: false,
+                                  ranges: (entry.ranges ?? []).filter((_, currentIndex) => currentIndex !== index),
+                                }))
+                              }
+                              type="button"
+                            >
+                              Usuń przedział
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="button-row">
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() =>
+                            updateOverride(selectedOverrideDate, (entry) => ({
+                              ...entry,
+                              isBlocked: false,
+                              ranges: [
+                                ...(entry.ranges ?? []),
+                                { startTime: "09:00", endTime: "18:00", isActive: true },
+                              ],
+                            }))
+                          }
+                          type="button"
+                        >
+                          Dodaj przedział
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="status">Ten dzień będzie całkowicie niedostępny niezależnie od reguł tygodniowych.</div>
+                  )}
+
+                  <div className="button-row">
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() =>
+                        setAvailabilityOverrides((current) =>
+                          current.filter((entry) => entry.date !== selectedOverrideDate),
+                        )
+                      }
+                      type="button"
+                    >
+                      Usuń override
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="small muted">Wybierz dzień w kalendarzu.</div>
+              )}
+            </div>
           </div>
           <div className="button-row" style={{ marginTop: 18 }}>
-            <button
-              className="btn btn-secondary"
-              onClick={() => setAvailability((current) => [...current, { weekday: 1, startTime: "16:00", endTime: "18:00", isActive: true }])}
-              type="button"
-            >
-              Dodaj regułę
-            </button>
             <button className="btn btn-primary" onClick={() => void saveAvailability()} type="button">
               Zapisz dostępność
             </button>
@@ -3643,11 +4156,17 @@ function MenteeSection({
   const [mentorSlotsConnectionReady, setMentorSlotsConnectionReady] = useState(true);
   const [mentorSlotsLoading, setMentorSlotsLoading] = useState(false);
   const [mentorSlotsTimezone, setMentorSlotsTimezone] = useState("Europe/Warsaw");
+  const [mentorSlotsMonth, setMentorSlotsMonth] = useState(
+    formatMonthKey(new Date(), Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Warsaw"),
+  );
+  const [selectedMentorDayKey, setSelectedMentorDayKey] = useState<string | null>(null);
   const [publicGuides, setPublicGuides] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
   const [openHintGuide, setOpenHintGuide] = useState<any | null>(null);
   const [profileValues, setProfileValues] = useState<Record<string, string>>({});
   const [status, setStatus] = useState("");
+  const [meetingTurnstileToken, setMeetingTurnstileToken] = useState("");
+  const [meetingTurnstileResetKey, setMeetingTurnstileResetKey] = useState(0);
   const [meetingForm, setMeetingForm] = useState({
     mentorUserId: "",
     title: "Spotkanie mentoringowe",
@@ -3682,10 +4201,33 @@ function MenteeSection({
   );
   const viewerTimezone =
     Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Warsaw";
-  const mentorSlotGroups = useMemo(
-    () => buildPlatformSlotGroups(mentorSlots, viewerTimezone),
+  const selectedMentorMaxMonth = selectedMentor
+    ? formatMonthKey(
+        new Date(
+          Date.now() +
+            Number(selectedMentor.bookingWindowDays ?? 30) * 24 * 60 * 60 * 1000,
+        ),
+        viewerTimezone,
+      )
+    : null;
+  const mentorSlotDayIndex = useMemo(
+    () => buildSlotDayIndex(mentorSlots, viewerTimezone),
     [mentorSlots, viewerTimezone],
   );
+  const mentorSlotCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.values(mentorSlotDayIndex).map((entry) => [entry.dateKey, entry.slots.length]),
+      ),
+    [mentorSlotDayIndex],
+  );
+  const mentorMonthCells = useMemo(
+    () => buildMonthCalendar(mentorSlotsMonth, viewerTimezone, mentorSlotCounts),
+    [mentorSlotCounts, mentorSlotsMonth, viewerTimezone],
+  );
+  const selectedMentorDay = selectedMentorDayKey
+    ? mentorSlotDayIndex[selectedMentorDayKey] ?? null
+    : null;
   const derivedMaterialTemplates = buildDerivedMaterialTemplates(guides ?? [], materialTemplates ?? []);
   const visibleMaterialTemplates = [
     ...(materialTemplates ?? []),
@@ -3736,6 +4278,7 @@ function MenteeSection({
     if (!mentor?.googleCalendarConnected) {
       setMentorSlots([]);
       setMentorSlotsConnectionReady(false);
+      setSelectedMentorDayKey(null);
       setMentorSlotsTimezone(mentor?.timezone || "Europe/Warsaw");
       return;
     }
@@ -3745,7 +4288,11 @@ function MenteeSection({
       connectionReady: boolean;
       slots: Array<{ end: string; start: string }>;
       timezone: string;
-    }>(`/mentee/mentor-slots?mentorUserId=${encodeURIComponent(meetingForm.mentorUserId)}`, undefined, token)
+    }>(
+      `/mentee/mentor-slots?mentorUserId=${encodeURIComponent(meetingForm.mentorUserId)}&month=${encodeURIComponent(mentorSlotsMonth)}`,
+      undefined,
+      token,
+    )
       .then((payload) => {
         setMentorSlots(payload.slots ?? []);
         setMentorSlotsConnectionReady(payload.connectionReady !== false);
@@ -3753,11 +4300,24 @@ function MenteeSection({
       })
       .catch((error) => setStatus(error.message))
       .finally(() => setMentorSlotsLoading(false));
-  }, [assignedMentors, meetingForm.mentorUserId, section, token]);
+  }, [assignedMentors, meetingForm.mentorUserId, mentorSlotsMonth, section, token]);
+
+  useEffect(() => {
+    setSelectedMentorDayKey(null);
+    setMeetingForm((current) => ({
+      ...current,
+      startsAt: "",
+      endsAt: "",
+    }));
+  }, [meetingForm.mentorUserId, mentorSlotsMonth]);
 
   async function requestMeeting(event: React.FormEvent) {
     event.preventDefault();
     setStatus("");
+    if (isTurnstileEnabled() && !meetingTurnstileToken) {
+      setStatus("Potwierdź zabezpieczenie formularza przed rezerwacją spotkania.");
+      return;
+    }
     try {
       await apiFetch("/mentee/meetings", {
         method: "POST",
@@ -3766,11 +4326,14 @@ function MenteeSection({
           mentorUserId: Number(meetingForm.mentorUserId),
           startsAt: new Date(meetingForm.startsAt).toISOString(),
           endsAt: new Date(meetingForm.endsAt).toISOString(),
+          turnstileToken: meetingTurnstileToken,
         }),
       }, token);
       const payload = await apiFetch<any>("/mentee/overview", undefined, token);
       setOverview(payload);
       setStatus("Spotkanie zostało zarezerwowane.");
+      setMeetingTurnstileToken("");
+      setMeetingTurnstileResetKey((current) => current + 1);
       setMeetingForm((current) => ({
         ...current,
         description: "",
@@ -3778,6 +4341,8 @@ function MenteeSection({
         startsAt: "",
       }));
     } catch (error) {
+      setMeetingTurnstileToken("");
+      setMeetingTurnstileResetKey((current) => current + 1);
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać spotkania.");
     }
   }
@@ -4066,7 +4631,7 @@ function MenteeSection({
                 <div className="status">
                   Wybrany mentor: <strong>{selectedMentor.fullName}</strong>.
                   {selectedMentor.googleCalendarConnected
-                    ? " Poniżej widzisz jego realne wolne sloty z Google Calendar."
+                    ? " Najpierw wybierz dzień w kalendarzu miesiąca, a potem godzinę z realnych slotów Google Calendar."
                     : " Ten mentor nie podłączył jeszcze Google Calendar, więc poniżej zostaje ręczna prośba o spotkanie."}
                 </div>
               ) : null}
@@ -4081,13 +4646,75 @@ function MenteeSection({
                     <div className="status">
                       Mentor połączył konto Google, ale platforma nie odczytała jeszcze jego głównego kalendarza. Odśwież stronę za chwilę lub poproś mentora o ponowne połączenie, jeśli problem nie zniknie.
                     </div>
-                  ) : mentorSlotGroups.length ? (
-                    <div className="list">
-                      {mentorSlotGroups.map((group) => (
-                        <div className="list-item" key={group.dateKey}>
-                          <h3 style={{ marginBottom: 10 }}>{group.dayLabel}</h3>
+                  ) : (
+                    <div className="stack">
+                      <div className="button-row" style={{ justifyContent: "space-between" }}>
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => setMentorSlotsMonth((current) => shiftMonthKey(current, -1))}
+                          disabled={mentorSlotsMonth <= formatMonthKey(new Date(), viewerTimezone)}
+                          type="button"
+                        >
+                          Poprzedni miesiąc
+                        </button>
+                        <strong style={{ textTransform: "capitalize" }}>
+                          {formatMonthHeading(mentorSlotsMonth, viewerTimezone)}
+                        </strong>
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => setMentorSlotsMonth((current) => shiftMonthKey(current, 1))}
+                          disabled={Boolean(selectedMentorMaxMonth && mentorSlotsMonth >= selectedMentorMaxMonth)}
+                          type="button"
+                        >
+                          Następny miesiąc
+                        </button>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {["nd", "pn", "wt", "śr", "czw", "pt", "sob"].map((label) => (
+                          <div className="small muted" key={label} style={{ textAlign: "center" }}>
+                            {label}
+                          </div>
+                        ))}
+                        {mentorMonthCells.map((cell) =>
+                          cell.kind === "empty" ? (
+                            <div key={cell.key} />
+                          ) : (
+                            <button
+                              className={selectedMentorDayKey === cell.dateKey ? "btn btn-primary" : "btn btn-secondary"}
+                              disabled={cell.availableCount === 0}
+                              key={cell.key}
+                              onClick={() => setSelectedMentorDayKey(cell.dateKey)}
+                              style={{
+                                minHeight: 76,
+                                padding: "10px 8px",
+                                display: "flex",
+                                flexDirection: "column",
+                                justifyContent: "space-between",
+                                opacity: cell.availableCount === 0 ? 0.5 : 1,
+                              }}
+                              type="button"
+                            >
+                              <strong>{cell.dayNumber}</strong>
+                              <span className="small">
+                                {cell.availableCount > 0 ? `${cell.availableCount} slotów` : "Brak"}
+                              </span>
+                            </button>
+                          ),
+                        )}
+                      </div>
+
+                      {selectedMentorDay ? (
+                        <div className="list-item">
+                          <h3 style={{ marginBottom: 10 }}>{selectedMentorDay.dayLabel}</h3>
                           <div className="button-row">
-                            {group.slots.map((slot) => {
+                            {selectedMentorDay.slots.map((slot) => {
                               const isSelected =
                                 meetingForm.startsAt === slot.start &&
                                 meetingForm.endsAt === slot.end;
@@ -4110,10 +4737,16 @@ function MenteeSection({
                             })}
                           </div>
                         </div>
-                      ))}
+                      ) : (
+                        <div className="status">
+                          Wybierz najpierw konkretny dzień w kalendarzu, aby zobaczyć godziny.
+                        </div>
+                      )}
+
+                      {!Object.keys(mentorSlotDayIndex).length ? (
+                        <div className="status">W tym miesiącu nie ma jeszcze wolnych slotów tego mentora.</div>
+                      ) : null}
                     </div>
-                  ) : (
-                    <div className="status">Na najbliższe tygodnie nie ma jeszcze wolnych slotów tego mentora.</div>
                   )}
                 </div>
               ) : (
@@ -4131,6 +4764,14 @@ function MenteeSection({
               <div className="field">
                 <label>Opis spotkania</label>
                 <textarea value={meetingForm.description} onChange={(event) => setMeetingForm((current) => ({ ...current, description: event.target.value }))} />
+              </div>
+              <div className="stack" style={{ gap: 8 }}>
+                <TurnstileWidget onTokenChange={setMeetingTurnstileToken} resetKey={meetingTurnstileResetKey} />
+                {isTurnstileEnabled() ? (
+                  <div className="small muted">
+                    Krótkie potwierdzenie antybotowe przed wysłaniem rezerwacji.
+                  </div>
+                ) : null}
               </div>
               <button className="btn btn-primary" disabled={!meetingForm.mentorUserId || !meetingForm.startsAt || !meetingForm.endsAt}>
                 {selectedMentor?.googleCalendarConnected ? "Zarezerwuj spotkanie" : "Zapisz prośbę o spotkanie"}
