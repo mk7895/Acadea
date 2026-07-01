@@ -20,6 +20,7 @@ export default function ArticlePage() {
   const [article, setArticle] = useState<ArticleDetail | null | undefined>(undefined);
   const [readingProgress, setReadingProgress] = useState(0);
   const [navbarHeight, setNavbarHeight] = useState(96);
+  const [tocTop, setTocTop] = useState(120);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +76,34 @@ export default function ArticlePage() {
       window.removeEventListener("resize", updateNavbarHeight);
     };
   }, []);
+
+  useEffect(() => {
+    function updateTocPosition() {
+      const baseTop = navbarHeight + 24;
+      const tocBox = document.getElementById("article-toc-box");
+      const ctaBox = document.getElementById("article-cta-box");
+
+      if (!(tocBox instanceof HTMLElement) || !(ctaBox instanceof HTMLElement)) {
+        setTocTop(baseTop);
+        return;
+      }
+
+      const ctaRect = ctaBox.getBoundingClientRect();
+      const tocHeight = tocBox.getBoundingClientRect().height;
+      const maxTop = ctaRect.top - tocHeight - 24;
+
+      setTocTop(Math.min(baseTop, maxTop));
+    }
+
+    updateTocPosition();
+    window.addEventListener("scroll", updateTocPosition, { passive: true });
+    window.addEventListener("resize", updateTocPosition);
+
+    return () => {
+      window.removeEventListener("scroll", updateTocPosition);
+      window.removeEventListener("resize", updateTocPosition);
+    };
+  }, [article, navbarHeight]);
 
   const articleBody = useMemo(() => {
     if (!article) {
@@ -248,7 +277,7 @@ export default function ArticlePage() {
 
             {related.length > 0 && (
               <section className="mt-12 border-t border-gray-100 pt-10 md:mt-16">
-                <h3 className="mb-6 text-xl font-bold text-primary">czytaj również</h3>
+                <h3 className="mb-6 text-xl font-bold text-primary">Czytaj również</h3>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   {related.map((r) => (
                     <Link
@@ -281,7 +310,7 @@ export default function ArticlePage() {
               </section>
             )}
 
-            <div className="mt-12 rounded-3xl bg-gradient-to-br from-primary to-primary/85 p-8 text-center text-white md:mt-16 md:p-10">
+            <div id="article-cta-box" className="mt-12 rounded-3xl bg-gradient-to-br from-primary to-primary/85 p-8 text-center text-white md:mt-16 md:p-10">
               <h3 className="mb-3 text-2xl font-bold">Chcesz porozmawiać o swojej aplikacji?</h3>
               <p className="mx-auto mb-8 max-w-md text-base text-white/75">
                 Bezpłatna konsultacja z doradcą ACADEA. Odpowiemy na Twoje pytania i pomożemy zaplanować kolejne kroki.
@@ -305,9 +334,10 @@ export default function ArticlePage() {
 
           <aside className="hidden xl:block xl:w-[300px] xl:shrink-0">
             <div
+              id="article-toc-box"
               className="xl:fixed xl:w-[300px] rounded-[28px] border border-[#ece4d7] bg-white p-6 shadow-sm"
               style={{
-                top: `${navbarHeight + 24}px`,
+                top: `${tocTop}px`,
                 right: "max(1rem, calc((100vw - 80rem) / 2 + 1.5rem))",
                 maxHeight: `calc(100vh - ${navbarHeight + 40}px)`,
               }}
