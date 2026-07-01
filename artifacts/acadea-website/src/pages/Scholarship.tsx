@@ -8,7 +8,6 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getApiBase } from "@/lib/api-base";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -19,8 +18,6 @@ const itemVariants: Variants = {
   hidden: { opacity: 0, y: 24 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
-
-const API_BASE = getApiBase();
 
 const criteria = [
   {
@@ -109,7 +106,7 @@ export default function Scholarship() {
               <div className="w-full max-w-[340px] rounded-[32px] border border-primary/10 bg-gradient-to-br from-primary/[0.04] via-white to-accent/10 p-4 md:p-5 shadow-[0_22px_60px_rgba(22,101,52,0.08)]">
                 <div className="overflow-hidden rounded-3xl border border-primary/10 aspect-[9/16] bg-black">
                   <video
-                    src={`${API_BASE}/media/r2?key=${encodeURIComponent("acadeaVideoR2HD.mp4")}`}
+                    src="https://media.acadea.org/acadeaVideoR2HD.mp4"
                     className="h-full w-full object-cover"
                     controls
                     playsInline
