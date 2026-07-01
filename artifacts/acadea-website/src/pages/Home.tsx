@@ -62,27 +62,6 @@ const itemVariants: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
-const mentors = [
-  {
-    name: "Marlena Sołtysińska",
-    initials: "MS",
-    lines: [
-      "Education and Technology · University College London (UCL) · Wielka Brytania",
-      "Business and Finance · New York University (NYU) · USA, Chiny, ZEA, Włochy",
-    ],
-    quote: "Mentoruję w ACADEA, bo sama przeszłam przez ten proces i wiem, ile może zmienić jedna dobra rozmowa z kimś, kto już tam był.",
-  },
-  {
-    name: "Mateusz Klepacki",
-    initials: "MK",
-    lines: [
-      "Econometrics and Mathematical Economics · London School of Economics and Political Science (LSE) · Wielka Brytania",
-      "Ekonomia, Biznes i Finanse · New York University (NYU) · USA, Chiny, ZEA, Włochy",
-    ],
-    quote: "Najbardziej cenię chwilę, gdy kandydat dostaje list przyjęcia. Wiem wtedy, że nasza praca naprawdę coś zmieniła.",
-  },
-];
-
 export default function Home() {
   return (
     <div className="w-full">
@@ -164,7 +143,7 @@ export default function Home() {
       <section className="py-12 md:py-16 bg-gray-50">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-3xl mx-auto text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold text-primary mb-6">W czym Ci pomożemy?</h2>
+            <h2 className="text-3xl md:text-5xl font-bold text-primary mb-6">W czym pomożemy Tobie lub Twojemu Dziecku?</h2>
             <p className="text-lg text-gray-500">
               Aplikacja na studia to proces, który wymaga strategii. Przeprowadzimy Cię przez niego krok po kroku.
             </p>
@@ -231,19 +210,23 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.7, delay: 0.1 }}
-              className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary/5 to-accent/10 border border-primary/10 min-h-[360px] flex flex-col justify-end p-10"
+              className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary/5 to-accent/10 border border-primary/10 min-h-[360px] p-8 md:p-10"
             >
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent/10 blur-[80px]" />
                 <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-primary/8 blur-[60px]" />
               </div>
-              <div className="relative z-10 overflow-hidden rounded-[28px] border border-primary/10 bg-white/70 aspect-[5/3] shadow-[0_18px_40px_rgba(22,101,52,0.08)]">
+              <div className="relative z-10 overflow-hidden rounded-[28px] aspect-[5/3] shadow-[0_18px_40px_rgba(22,101,52,0.08)]">
                 <img
                   src={scholarshipHomePhoto}
                   alt="Program Stypendialny ACADEA"
                   className="h-full w-full object-cover"
                   loading="lazy"
                 />
+              </div>
+              <div className="relative z-10 mt-4 flex items-center gap-2 text-sm text-primary/80">
+                <MapPin size={16} className="shrink-0 text-accent" />
+                <span>wewnątrz Bodleian Library, University of Oxford</span>
               </div>
             </motion.div>
           </div>
@@ -261,13 +244,13 @@ export default function Home() {
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/8 border border-primary/15 text-primary text-sm font-semibold mb-6">
                 <Heart size={16} />
-                <span>Dla rodziców</span>
+                <span>Dla Rodziców</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-5">
                 Rodzicu, jesteśmy tu również dla Ciebie
               </h2>
               <p className="text-lg text-gray-500 leading-relaxed">
-                Decyzja o studiach za granicą to ważny krok dla całej rodziny. Dbamy o to, żeby był przejrzysty, bezpieczny i dobrze zaplanowany — także z perspektywy rodzica.
+                Decyzja o studiach za granicą to ważny krok dla całej rodziny. Dbamy o to, żeby był przejrzysty, bezpieczny i dobrze zaplanowany — także z perspektywy Rodzica.
               </p>
             </motion.div>
           </div>
@@ -301,7 +284,7 @@ export default function Home() {
                 data-testid="button-parents-cta"
                 className="h-14 px-8 rounded-full bg-primary text-white hover:bg-primary/90 font-bold"
               >
-                Umów rozmowę — również jako rodzic <ArrowRight className="ml-2 h-5 w-5" />
+                Umów rozmowę — również jako Rodzic <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
           </div>
@@ -375,86 +358,6 @@ export default function Home() {
               </p>
             </div>
           </motion.div>
-        </div>
-      </section>
-
-      {/* ── BECOME A MENTOR ──────────────────────────────────────────── */}
-      <section className="py-12 md:py-16 bg-white">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-12 lg:gap-16 items-center">
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/8 border border-primary/15 text-primary text-sm font-semibold mb-8">
-                <Users size={16} />
-                <span>Dołącz do zespołu</span>
-              </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-6">
-                Mentoruj z ACADEA
-              </h2>
-              <p className="text-lg text-gray-500 leading-relaxed mb-5">
-                Studiujesz za granicą lub masz to już za sobą? Wiesz, jak wygląda aplikacja od środka? Pomóż kolejnym rocznikom polskich uczniów przejść tę drogę pewniej.
-              </p>
-              <p className="text-lg text-gray-500 leading-relaxed mb-10">
-                Mentorzy ACADEA doradzają uczniom, recenzują eseje i dzielą się swoim doświadczeniem — w elastycznym modelu, dopasowanym do Twojego harmonogramu.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-                {[
-                  { title: "Elastyczny czas", desc: "Mentorujesz tyle, ile chcesz — bez minimalnych zobowiązań" },
-                  { title: "Sieć absolwentów", desc: "Dołącz do społeczności mentorów z najlepszych uczelni świata" },
-                  { title: "Realny wpływ", desc: "Twoje doświadczenie zmienia czyjąś ścieżkę edukacyjną" },
-                ].map((b, i) => (
-                  <div key={i} className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                    <h4 className="font-bold text-primary text-sm mb-1">{b.title}</h4>
-                    <p className="text-gray-400 text-sm leading-relaxed">{b.desc}</p>
-                  </div>
-                ))}
-              </div>
-              <Link href="/mentoruj">
-                <Button
-                  size="lg"
-                  data-testid="button-become-mentor"
-                  className="h-14 px-8 rounded-full bg-primary text-white hover:bg-primary/90 font-bold text-base"
-                >
-                  Aplikuj jako mentor(ka) <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.97 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="space-y-4"
-            >
-              {mentors.map((m, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.15 * i }}
-                  data-testid={`mentor-card-${i}`}
-                  className="bg-gray-50 rounded-2xl p-6 border border-gray-100 flex gap-5"
-                >
-                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-bold text-base shrink-0">
-                    {m.initials}
-                  </div>
-                  <div>
-                    <p className="text-gray-600 text-sm leading-relaxed italic mb-3">"{m.quote}"</p>
-                    <p className="text-primary font-semibold text-sm">{m.name}</p>
-                    {m.lines.map((line, j) => (
-                      <p key={j} className="text-gray-400 text-xs leading-snug">{line}</p>
-                    ))}
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
         </div>
       </section>
 

@@ -291,11 +291,6 @@ export default function Contact() {
                       onTokenChange={setTurnstileToken}
                       resetKey={turnstileResetKey}
                     />
-                    {isTurnstileEnabled() ? (
-                      <p className="text-xs text-gray-400">
-                        To zabezpieczenie pomaga nam ograniczać spam w formularzach.
-                      </p>
-                    ) : null}
                   </div>
 
                   <Button

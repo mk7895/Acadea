@@ -1,7 +1,7 @@
 import type { MouseEvent } from "react";
 import { Link } from "wouter";
 import logo from "@/assets/logo-white.png";
-import { Facebook, Instagram, Linkedin, Mail, Phone, Heart } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Mail, Phone, Heart, MessageCircle } from "lucide-react";
 import { useCookieConsent } from "@/components/CookieConsent";
 
 const serviceLinks = [
@@ -144,6 +144,28 @@ export function Footer() {
                 <Phone size={20} className="text-accent shrink-0 mt-0.5" />
                 <a href="tel:+48728492936" className="hover:text-white transition-colors">
                   +48 728 492 936
+                </a>
+              </li>
+              <li className="flex items-start gap-3 text-gray-300">
+                <MessageCircle size={20} className="text-accent shrink-0 mt-0.5" />
+                <a
+                  href="https://wa.me/48799831204"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  WhatsApp: +48 799 831 204
+                </a>
+              </li>
+              <li className="flex items-start gap-3 text-gray-300">
+                <MessageCircle size={20} className="text-accent shrink-0 mt-0.5" />
+                <a
+                  href="https://chat.whatsapp.com/Cg8sKNNvAFIKBfDjBLqWKl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  Grupa na WhatsApp
                 </a>
               </li>
             </ul>

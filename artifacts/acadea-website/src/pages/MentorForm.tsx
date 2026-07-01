@@ -322,11 +322,6 @@ export default function MentorForm() {
                   onTokenChange={setTurnstileToken}
                   resetKey={turnstileResetKey}
                 />
-                {isTurnstileEnabled() ? (
-                  <p className="text-xs text-gray-400">
-                    To krótkie sprawdzenie chroni formularz przed automatycznymi zgłoszeniami.
-                  </p>
-                ) : null}
               </div>
 
               <Button

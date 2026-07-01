@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   ArrowRight,
   Loader2,
-  Star,
   GraduationCap,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -18,16 +17,41 @@ import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidge
 const API_BASE = getApiBase();
 
 const MENTORS = [
-  "Nikodem Ciomcia",
-  "Krzysiek Sosnowski",
-  "Gosia Słowikowska",
-  "Mikołaj Błaszczyk",
-  "Marlena Sołtysińska",
-  "Mateusz Klepacki",
-  "Amelia Kudasik",
-  "Oskar Krawczyk",
-  "Nie mam preferencji",
-];
+  {
+    name: "Nikodem Ciomcia",
+    desc: "Wspiera kandydatów, którzy chcą połączyć ambitne cele z dobrze ułożoną strategią aplikacyjną.",
+  },
+  {
+    name: "Krzysztof Sosnowski",
+    desc: "Pomaga uporządkować proces aplikacyjny i przełożyć zainteresowania na mocny, spójny profil kandydata.",
+  },
+  {
+    name: "Małgorzata Słowikowska",
+    desc: "Wnosi dużo uważności na historię ucznia, motywację i to, jak dobrze pokazać własny potencjał.",
+  },
+  {
+    name: "Mikołaj Błaszczyk",
+    desc: "Pomaga kandydatom budować pewność w decyzjach dotyczących kierunku, uczelni i dalszych kroków.",
+  },
+  {
+    name: "Marlena Sołtysińska",
+    desc: "Absolwentka UCL i NYU. Od lat wspiera uczniów w planowaniu ścieżki i świadomym wyborze kolejnych etapów.",
+  },
+  {
+    name: "Mateusz Klepacki",
+    desc: "Absolwent LSE i NYU. Pomaga kandydatom przełożyć ambicję i osiągnięcia na konkretną strategię aplikacyjną.",
+  },
+  {
+    name: "Amelia Kudasik",
+    desc: "Wspiera osoby, które chcą rozwijać swój profil w sposób uporządkowany i autentyczny.",
+  },
+  {
+    name: "Oskar Krawczyk",
+    desc: "Pomaga kandydatom uchwycić najmocniejsze strony ich historii i dobrze je pokazać w aplikacji.",
+  },
+] as const;
+
+const MENTOR_NAMES = MENTORS.map((mentor) => mentor.name);
 
 export default function ScholarshipForm() {
   const [form, setForm] = useState({
@@ -38,7 +62,10 @@ export default function ScholarshipForm() {
     gradeYear: "",
     targetCountry: "",
     field: "",
-    mentor: "",
+    firstMentor: "",
+    secondMentor: "",
+    thirdMentor: "",
+    noMentorPreference: false,
     achievements: "",
     projects: "",
     motivation: "",
@@ -59,7 +86,15 @@ export default function ScholarshipForm() {
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Podaj poprawny e-mail.";
     if (!form.school.trim()) e.school = "Podaj nazwę szkoły lub liceum.";
     if (!form.field.trim()) e.field = "Napisz, co chcesz studiować.";
-    if (!form.mentor) e.mentor = "Wybierz mentora (lub „Nie mam preferencji”).";
+    if (!form.noMentorPreference) {
+      if (!form.firstMentor) e.firstMentor = "Wybierz mentora pierwszego wyboru.";
+      if (!form.secondMentor) e.secondMentor = "Wybierz mentora drugiego wyboru.";
+      if (!form.thirdMentor) e.thirdMentor = "Wybierz mentora trzeciego wyboru.";
+      const picks = [form.firstMentor, form.secondMentor, form.thirdMentor].filter(Boolean);
+      if (new Set(picks).size !== picks.length) {
+        e.firstMentor = "Każdy mentor w rankingu powinien być inny.";
+      }
+    }
     if (!form.achievements.trim() || form.achievements.trim().length < 10) e.achievements = "Opisz swoje osiągnięcia (min. 10 znaków).";
     if (!form.motivation.trim() || form.motivation.trim().length < 20) e.motivation = "Napisz kilka zdań o sobie (min. 20 znaków).";
     if (!consent) e.consent = "Zgoda na politykę prywatności jest wymagana.";
@@ -90,7 +125,13 @@ export default function ScholarshipForm() {
             form.gradeYear ? `Klasa / rok ukończenia: ${form.gradeYear}` : null,
             form.targetCountry ? `Docelowy kraj studiów: ${form.targetCountry}` : null,
             `Kierunek / dziedzina: ${form.field}`,
-            `Preferowany mentor: ${form.mentor}`,
+            form.noMentorPreference
+              ? "Ranking mentorów: brak preferencji"
+              : [
+                  `Mentor 1. wyboru: ${form.firstMentor}`,
+                  `Mentor 2. wyboru: ${form.secondMentor}`,
+                  `Mentor 3. wyboru: ${form.thirdMentor}`,
+                ].join("\n"),
             `Osiągnięcia (konkursy, nagrody, olimpiady, publikacje): ${form.achievements}`,
             form.projects ? `Projekty stworzone w wolnym czasie: ${form.projects}` : null,
             `Motywacja: ${form.motivation}`,
@@ -151,7 +192,7 @@ export default function ScholarshipForm() {
               </div>
               <h2 className="text-2xl font-bold text-primary mb-2">Zgłoszenie wysłane!</h2>
               <p className="text-gray-500 mb-8">
-                Dziękujemy, <strong>{form.name.split(" ")[0]}</strong>! Każde zgłoszenie rozpatrujemy indywidualnie i odezwiemy się do Ciebie po zakończeniu naboru.
+                Dziękujemy, <strong>{form.name.split(" ")[0]}</strong>! Zgłoszenie otrzymaliśmy i odezwiemy się do Ciebie po jego przejrzeniu.
               </p>
               <Link href="/">
                 <Button className="rounded-full bg-primary text-white hover:bg-primary/90 font-semibold px-8">
@@ -222,28 +263,68 @@ export default function ScholarshipForm() {
               <div>
                 <h2 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">3</span>
-                  Z którym mentorem chcesz pracować? *
+                  Uszereguj 3 mentorów w kolejności preferencji
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {MENTORS.map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => set("mentor", m)}
-                      className={`text-left p-3.5 rounded-xl border-2 transition-all flex items-center gap-2.5 ${
-                        form.mentor === m
-                          ? "border-primary bg-primary/6"
-                          : "border-gray-100 hover:border-primary/30"
-                      }`}
-                    >
-                      <span className={`shrink-0 ${form.mentor === m ? "text-primary" : "text-gray-300"}`}>
-                        {m === "Nie mam preferencji" ? <Star size={16} /> : <GraduationCap size={16} />}
-                      </span>
-                      <span className={`font-semibold text-sm ${form.mentor === m ? "text-primary" : "text-gray-700"}`}>{m}</span>
-                    </button>
+                <p className="text-sm text-gray-500 mb-4">
+                  Dzięki temu łatwiej dopasujemy Ci osobę, która najlepiej odpowiada Twoim planom i stylowi pracy.
+                </p>
+
+                <div className="space-y-4">
+                  {[
+                    { key: "firstMentor", label: "1. wybór *" },
+                    { key: "secondMentor", label: "2. wybór *" },
+                    { key: "thirdMentor", label: "3. wybór *" },
+                  ].map((field) => (
+                    <div key={field.key}>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">{field.label}</label>
+                      <select
+                        value={form[field.key as keyof typeof form] as string}
+                        onChange={(e) => set(field.key, e.target.value)}
+                        disabled={form.noMentorPreference}
+                        className={`flex h-12 w-full rounded-xl border bg-white px-4 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${errors[field.key] ? "border-red-400" : "border-gray-200"} ${form.noMentorPreference ? "opacity-60" : ""}`}
+                      >
+                        <option value="">Wybierz mentora</option>
+                        {MENTOR_NAMES.map((mentorName) => (
+                          <option key={mentorName} value={mentorName}>
+                            {mentorName}
+                          </option>
+                        ))}
+                      </select>
+                      {errors[field.key] && <p className="text-red-500 text-xs mt-1">{errors[field.key]}</p>}
+                    </div>
+                  ))}
+
+                  <label className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 leading-relaxed">
+                    <input
+                      type="checkbox"
+                      checked={form.noMentorPreference}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setForm((current) => ({
+                          ...current,
+                          noMentorPreference: checked,
+                          firstMentor: checked ? "" : current.firstMentor,
+                          secondMentor: checked ? "" : current.secondMentor,
+                          thirdMentor: checked ? "" : current.thirdMentor,
+                        }));
+                      }}
+                      className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <span>Nie mam preferencji co do mentora lub mentorki.</span>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">
+                  {MENTORS.map((mentor) => (
+                    <div key={mentor.name} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                      <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-2">
+                        <GraduationCap size={16} />
+                        <span>{mentor.name}</span>
+                      </div>
+                      <p className="text-sm text-gray-500 leading-relaxed">{mentor.desc}</p>
+                    </div>
                   ))}
                 </div>
-                {errors.mentor && <p className="text-red-500 text-xs mt-2">{errors.mentor}</p>}
               </div>
 
               <div className="border-t border-gray-100" />
@@ -332,11 +413,6 @@ export default function ScholarshipForm() {
                   onTokenChange={setTurnstileToken}
                   resetKey={turnstileResetKey}
                 />
-                {isTurnstileEnabled() ? (
-                  <p className="text-xs text-gray-400">
-                    Weryfikacja antybotowa pomaga nam utrzymać uczciwy nabór.
-                  </p>
-                ) : null}
               </div>
 
               <Button
@@ -351,7 +427,7 @@ export default function ScholarshipForm() {
                 )}
               </Button>
               <p className="text-center text-xs text-gray-400">
-                Każde zgłoszenie rozpatrujemy indywidualnie, z pełnym szacunkiem dla Twojej historii.
+                Wypełnij formularz. Zgłoszenia rozpatrujemy z indywidualną uwagą dla każdej historii.
               </p>
             </motion.form>
           )}

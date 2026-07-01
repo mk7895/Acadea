@@ -92,7 +92,18 @@ function formatDayLabel(value: string, timezone: string) {
 }
 
 function formatDayKey(value: string, timezone: string) {
-  return new Date(value).toLocaleDateString("pl-PL", { timeZone: timezone });
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      timeZone: timezone,
+    })
+      .formatToParts(new Date(value))
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  ) as Record<string, string>;
+  return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
 function formatTimeLabel(value: string, timezone: string) {
@@ -637,11 +648,6 @@ export default function Booking() {
                       onTokenChange={setTurnstileToken}
                       resetKey={turnstileResetKey}
                     />
-                    {isTurnstileEnabled() ? (
-                      <p className="text-xs text-gray-400">
-                        Szybkie potwierdzenie antybotowe przed wysłaniem rezerwacji.
-                      </p>
-                    ) : null}
                   </div>
 
                   <Button

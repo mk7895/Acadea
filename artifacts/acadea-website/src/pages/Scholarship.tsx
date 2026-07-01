@@ -6,6 +6,7 @@ import {
   PlayCircle,
   Clock,
   Calendar,
+  GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -27,6 +28,24 @@ const criteria = [
   {
     title: "Wielkie marzenia i plany na przyszłość",
     desc: "Chcesz studiować za granicą, latać samolotami, tańczyć albo rozwijać zupełnie inną dziedzinę? Pomożemy Ci zaplanować własną ścieżkę.",
+  },
+];
+
+const scholarshipMentors = [
+  {
+    name: "Marlena Sołtysińska",
+    role: "Mentorka aplikacyjna",
+    desc: "Absolwentka UCL (Education and Technology) i NYU. Od lat wspiera uczniów w planowaniu ścieżki, strategii aplikacyjnej i budowaniu pewności w procesie.",
+  },
+  {
+    name: "Mateusz Klepacki",
+    role: "Mentor akademicki",
+    desc: "Absolwent LSE i NYU. Pomaga kandydatom przekładać ambicję na konkretny plan działania i mocny profil aplikacyjny.",
+  },
+  {
+    name: "Weronika Klepacka",
+    role: "Tutorka językowa",
+    desc: "Przygotowuje do IELTS, TOEFL i egzaminów Cambridge. Wspiera tam, gdzie aplikacja wymaga sprawnego i pewnego języka.",
   },
 ];
 
@@ -107,11 +126,11 @@ export default function Scholarship() {
           >
             <div className="flex items-center gap-2 font-bold text-lg">
               <Calendar size={22} className="shrink-0" />
-              <span>Nabór do I edycji Konkursu Stypendialnego ACADEA</span>
+              <span>Zgłoszenia</span>
             </div>
             <div className="flex items-center gap-2 bg-primary/10 rounded-full px-5 py-2 font-bold text-base">
               <Clock size={18} className="shrink-0" />
-              <span>Zgłoszenia do: 10 lipca 2026</span>
+              <span>Rozpatrywane na bieżąco</span>
             </div>
           </motion.div>
         </div>
@@ -207,6 +226,32 @@ export default function Scholarship() {
                   <p className="text-gray-600 text-sm leading-relaxed">{c.desc}</p>
                 </motion.div>
               ))}
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="mt-12"
+            >
+              <div className="text-center mb-8">
+                <h3 className="text-2xl md:text-3xl font-bold text-primary mb-3">Mentorzy programu</h3>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                  Stypendium to nie tylko wsparcie finansowe, ale też ludzie, którzy pomagają przekuć potencjał w konkretny plan.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {scholarshipMentors.map((mentor) => (
+                  <div key={mentor.name} className="rounded-2xl border border-primary/10 bg-white/85 p-6 shadow-sm">
+                    <div className="w-11 h-11 rounded-full bg-primary/8 text-primary flex items-center justify-center mb-4">
+                      <GraduationCap size={20} />
+                    </div>
+                    <h4 className="text-lg font-bold text-primary">{mentor.name}</h4>
+                    <p className="text-accent font-semibold text-sm mt-1 mb-3">{mentor.role}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">{mentor.desc}</p>
+                  </div>
+                ))}
+              </div>
             </motion.div>
           </div>
         </div>

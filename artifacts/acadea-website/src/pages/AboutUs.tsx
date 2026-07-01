@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { ArrowRight, Users } from "lucide-react";
 
 export default function AboutUs() {
   return (
@@ -158,13 +159,31 @@ export default function AboutUs() {
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="text-center">
-          <Link href="/kontakt">
-            <Button size="lg" className="rounded-full px-10 h-14 text-lg">
-              Poznajmy się
-            </Button>
-          </Link>
+        <div className="border-t border-gray-200 pt-14 mt-6">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/8 border border-primary/15 text-primary text-sm font-semibold mb-6">
+              <Users size={16} />
+              <span>Dołącz do zespołu</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">
+              Chcesz wspierać uczniów razem z ACADEA?
+            </h2>
+            <p className="text-lg text-gray-500 leading-relaxed max-w-2xl mx-auto mb-8">
+              Jeśli studiujesz za granicą albo masz już ten etap za sobą i chcesz pomagać kolejnym osobom przejść przez aplikację spokojniej i mądrzej, chętnie Cię poznamy.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/mentoruj">
+                <Button size="lg" className="rounded-full px-8 h-14 text-base bg-primary text-white hover:bg-primary/90 font-bold">
+                  Aplikuj jako mentor(ka) <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/kontakt">
+                <Button size="lg" variant="outline" className="rounded-full px-8 h-14 text-base">
+                  Poznajmy się
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
 
       </div>
