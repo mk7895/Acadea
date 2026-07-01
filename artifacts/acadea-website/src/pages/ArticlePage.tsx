@@ -19,6 +19,7 @@ export default function ArticlePage() {
   const slug = `/${params.slug}`;
   const [article, setArticle] = useState<ArticleDetail | null | undefined>(undefined);
   const [readingProgress, setReadingProgress] = useState(0);
+  const [navbarHeight, setNavbarHeight] = useState(96);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +55,24 @@ export default function ArticlePage() {
     return () => {
       window.removeEventListener("scroll", updateProgress);
       window.removeEventListener("resize", updateProgress);
+    };
+  }, []);
+
+  useEffect(() => {
+    function updateNavbarHeight() {
+      const header = document.querySelector("header");
+      if (header instanceof HTMLElement) {
+        setNavbarHeight(Math.ceil(header.getBoundingClientRect().height));
+      }
+    }
+
+    updateNavbarHeight();
+    window.addEventListener("scroll", updateNavbarHeight, { passive: true });
+    window.addEventListener("resize", updateNavbarHeight);
+
+    return () => {
+      window.removeEventListener("scroll", updateNavbarHeight);
+      window.removeEventListener("resize", updateNavbarHeight);
     };
   }, []);
 
@@ -148,7 +167,10 @@ export default function ArticlePage() {
 
   return (
     <div className="min-h-screen bg-[#fffdfa] pt-28 md:pt-32 pb-16 md:pb-20">
-      <div className="pointer-events-none fixed left-0 right-0 top-[88px] z-[40] h-[4px] md:top-[108px]">
+      <div
+        className="pointer-events-none fixed left-0 right-0 z-[45] h-[4px]"
+        style={{ top: `${navbarHeight}px` }}
+      >
         <div
           className="h-[4px] bg-primary transition-[width] duration-150"
           style={{ width: `${readingProgress}%` }}
@@ -281,8 +303,15 @@ export default function ArticlePage() {
             </div>
           </article>
 
-          <aside className="hidden xl:block xl:self-start">
-            <div className="sticky top-28 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-[28px] border border-[#ece4d7] bg-white p-6 shadow-sm">
+          <aside className="hidden xl:block xl:w-[300px] xl:shrink-0">
+            <div
+              className="xl:fixed xl:w-[300px] rounded-[28px] border border-[#ece4d7] bg-white p-6 shadow-sm"
+              style={{
+                top: `${navbarHeight + 24}px`,
+                right: "max(1rem, calc((100vw - 80rem) / 2 + 1.5rem))",
+                maxHeight: `calc(100vh - ${navbarHeight + 40}px)`,
+              }}
+            >
               <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#f5f1e8] px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[#8d7b5c]">
                 <List size={12} />
                 Spis treści
