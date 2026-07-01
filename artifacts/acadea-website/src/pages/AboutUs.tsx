@@ -122,8 +122,8 @@ export default function AboutUs() {
                 transition={{ delay: idx * 0.1 }}
                 className="grid grid-cols-1 items-start gap-8 md:grid-cols-2 md:gap-14"
               >
-                <div className={`${member.imageOrder} flex w-full justify-center md:justify-start`}>
-                  <div className="relative aspect-square w-full max-w-[320px] overflow-hidden rounded-full border border-primary/10 bg-[#f8f4ec] shadow-[0_20px_60px_rgba(22,101,52,0.08)]">
+                <div className={`${member.imageOrder} flex w-full justify-center`}>
+                  <div className="relative aspect-square w-full max-w-[300px] md:max-w-[340px] lg:max-w-[360px] overflow-hidden rounded-full border border-primary/10 bg-[#f8f4ec] shadow-[0_20px_60px_rgba(22,101,52,0.08)]">
                     <img
                       src={member.imageSrc}
                       alt={member.name}
