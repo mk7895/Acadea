@@ -189,26 +189,6 @@ export default function Scholarship() {
               </p>
             </motion.div>
 
-            {/* Deadline card */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.97 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              className="bg-accent rounded-3xl p-8 md:p-12 text-primary text-center mb-12"
-            >
-              <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12">
-                <div>
-                  <div className="text-sm font-semibold uppercase tracking-widest mb-2 text-primary/70">Zgłoszenia</div>
-                  <div className="text-3xl md:text-4xl font-bold">Rozpatrywane na bieżąco</div>
-                </div>
-                <div className="hidden md:block w-px h-16 bg-primary/20" />
-                <div>
-                  <div className="text-sm font-semibold uppercase tracking-widest mb-2 text-primary/70">Forma</div>
-                  <div className="text-2xl md:text-3xl font-bold">Online</div>
-                </div>
-              </div>
-            </motion.div>
-
             {/* Criteria */}
             <motion.div
               variants={containerVariants}
