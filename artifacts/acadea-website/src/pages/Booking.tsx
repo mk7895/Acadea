@@ -114,38 +114,6 @@ function formatTimeLabel(value: string, timezone: string) {
   });
 }
 
-function formatMonthKey(value: Date, timezone: string) {
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat("en-CA", {
-      year: "numeric",
-      month: "2-digit",
-      timeZone: timezone,
-    })
-      .formatToParts(value)
-      .filter((part) => part.type !== "literal")
-      .map((part) => [part.type, part.value]),
-  ) as Record<string, string>;
-  return `${parts.year}-${parts.month}`;
-}
-
-function shiftMonthKey(monthKey: string, offset: number) {
-  const [yearRaw, monthRaw] = monthKey.split("-");
-  const base = new Date(Date.UTC(Number(yearRaw), Number(monthRaw) - 1 + offset, 1));
-  return `${base.getUTCFullYear()}-${String(base.getUTCMonth() + 1).padStart(2, "0")}`;
-}
-
-function formatMonthHeading(monthKey: string, timezone: string) {
-  const [yearRaw, monthRaw] = monthKey.split("-");
-  return new Date(Date.UTC(Number(yearRaw), Number(monthRaw) - 1, 1)).toLocaleDateString(
-    "pl-PL",
-    {
-      month: "long",
-      year: "numeric",
-      timeZone: timezone,
-    },
-  );
-}
-
 function buildDayGroups(slots: Slot[], timezone: string) {
   const grouped = new Map<string, DayGroup>();
 
@@ -169,36 +137,6 @@ function buildDayGroups(slots: Slot[], timezone: string) {
   return Array.from(grouped.values());
 }
 
-function buildMonthCalendar(monthKey: string, availableCounts: Record<string, number>) {
-  const [yearRaw, monthRaw] = monthKey.split("-");
-  const year = Number(yearRaw);
-  const month = Number(monthRaw);
-  const firstDay = new Date(Date.UTC(year, month - 1, 1));
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const leadingEmptyDays = firstDay.getUTCDay();
-  const cells: Array<
-    | { kind: "empty"; key: string }
-    | { kind: "day"; key: string; dateKey: string; dayNumber: number; availableCount: number }
-  > = [];
-
-  for (let index = 0; index < leadingEmptyDays; index += 1) {
-    cells.push({ kind: "empty", key: `empty-${monthKey}-${index}` });
-  }
-
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    cells.push({
-      kind: "day",
-      key: dateKey,
-      dateKey,
-      dayNumber: day,
-      availableCount: availableCounts[dateKey] ?? 0,
-    });
-  }
-
-  return cells;
-}
-
 function findTimezoneOption(value: string) {
   return TIMEZONE_OPTIONS.find((option) => option.value === value);
 }
@@ -209,9 +147,6 @@ export default function Booking() {
   const [rawSlots, setRawSlots] = useState<Slot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(true);
   const [slotsError, setSlotsError] = useState("");
-  const [slotsMonth, setSlotsMonth] = useState(() =>
-    formatMonthKey(new Date(), DEFAULT_TIMEZONE),
-  );
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
   const [selectedSlotStart, setSelectedSlotStart] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "", topic: TOPICS[0], otherDetail: "" });
@@ -230,7 +165,7 @@ export default function Booking() {
   useEffect(() => {
     setLoadingSlots(true);
     setSlotsError("");
-    fetch(`${API_BASE}/booking/slots?month=${encodeURIComponent(slotsMonth)}`)
+    fetch(`${API_BASE}/booking/slots`)
       .then((r) => r.json())
       .then((data: { slots?: Slot[]; error?: string }) => {
         if (data.error) {
@@ -242,7 +177,7 @@ export default function Booking() {
       })
       .catch(() => setSlotsError("Nie udało się pobrać terminów. Spróbuj ponownie."))
       .finally(() => setLoadingSlots(false));
-  }, [slotsMonth]);
+  }, []);
 
   useEffect(() => {
     if (canUsePreferencesCookies) {
@@ -258,23 +193,7 @@ export default function Booking() {
     }
   }, [timezone]);
 
-  useEffect(() => {
-    setSelectedDayKey(null);
-    setSelectedSlotStart(null);
-    if (step > 0 && step < 3) {
-      setStep(0);
-    }
-  }, [slotsMonth]);
-
   const days = useMemo(() => buildDayGroups(rawSlots, timezone), [rawSlots, timezone]);
-  const dayCounts = useMemo(
-    () => Object.fromEntries(days.map((day) => [day.dateKey, day.slots.length])),
-    [days],
-  );
-  const monthCells = useMemo(
-    () => buildMonthCalendar(slotsMonth, dayCounts),
-    [dayCounts, slotsMonth],
-  );
   const selectedDay = useMemo(
     () => days.find((day) => day.dateKey === selectedDayKey) ?? null,
     [days, selectedDayKey],
@@ -283,7 +202,6 @@ export default function Booking() {
     () => selectedDay?.slots.find((slot) => slot.start === selectedSlotStart) ?? null,
     [selectedDay, selectedSlotStart],
   );
-  const currentMonthKey = formatMonthKey(new Date(), timezone);
   const validateForm = () => {
     const err: Record<string, string> = {};
     if (!form.name.trim() || form.name.trim().length < 2) err.name = "Wpisz imię i nazwisko.";
@@ -436,61 +354,35 @@ export default function Booking() {
                 {slotsError && <div className="text-red-500 text-center py-8">{slotsError}</div>}
                 {!loadingSlots && !slotsError && (
                   <div className="space-y-5">
-                    <div className="flex items-center justify-between gap-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="rounded-full"
-                        disabled={slotsMonth <= currentMonthKey}
-                        onClick={() => setSlotsMonth((current) => shiftMonthKey(current, -1))}
-                      >
-                        <ArrowLeft size={16} className="mr-2" /> Poprzedni
-                      </Button>
-                      <div className="font-semibold text-primary capitalize">{formatMonthHeading(slotsMonth, timezone)}</div>
-                      <Button type="button" variant="outline" className="rounded-full" onClick={() => setSlotsMonth((current) => shiftMonthKey(current, 1))}>
-                        Następny <ArrowRight size={16} className="ml-2" />
-                      </Button>
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-2 text-center text-xs uppercase tracking-wide text-gray-400">
-                      {["nd", "pn", "wt", "śr", "czw", "pt", "sob"].map((label) => (
-                        <div key={label}>{label}</div>
-                      ))}
-                      {monthCells.map((cell) =>
-                        cell.kind === "empty" ? (
-                          <div key={cell.key} />
-                        ) : (
+                    {!days.length ? (
+                      <div className="text-gray-400 text-center py-6">
+                        Na najbliższe dni nie ma już wolnych terminów.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {days.map((day) => (
                           <button
-                            key={cell.key}
+                            key={day.dateKey}
                             onClick={() => {
-                              if (cell.availableCount === 0) {
-                                return;
-                              }
-                              setSelectedDayKey(cell.dateKey);
+                              setSelectedDayKey(day.dateKey);
                               setSelectedSlotStart(null);
                               setStep(1);
                             }}
-                            className={`min-h-[84px] rounded-2xl border-2 px-2 py-3 text-left transition-all ${
-                              cell.availableCount > 0
-                                ? "border-gray-100 hover:border-primary hover:bg-primary/4"
-                                : "border-gray-100 bg-gray-50 text-gray-300"
-                            }`}
-                            disabled={cell.availableCount === 0}
+                            className="w-full rounded-2xl border-2 border-gray-100 px-5 py-4 text-left transition-all hover:border-primary hover:bg-primary/4"
                           >
-                            <div className="font-semibold text-sm">{cell.dayNumber}</div>
-                            <div className="mt-2 text-[11px] text-gray-400">
-                              {cell.availableCount > 0 ? `${cell.availableCount} terminów` : "Brak"}
+                            <div className="flex items-center justify-between gap-4">
+                              <div>
+                                <div className="font-semibold text-primary capitalize">{day.label}</div>
+                                <div className="mt-1 text-sm text-gray-400">
+                                  {day.slots.length} {day.slots.length === 1 ? "termin" : day.slots.length < 5 ? "terminy" : "terminów"}
+                                </div>
+                              </div>
+                              <ArrowRight size={18} className="shrink-0 text-primary" />
                             </div>
                           </button>
-                        ),
-                      )}
-                    </div>
-
-                    {!days.length ? (
-                      <div className="text-gray-400 text-center py-6">
-                        W tym miesiącu nie ma już wolnych terminów.
+                        ))}
                       </div>
-                    ) : null}
+                    )}
                   </div>
                 )}
               </div>

@@ -17,6 +17,7 @@ const ZOOM_LINK = "https://nyu.zoom.us/j/5717075193";
 const SLOT_DURATION_MS = 20 * 60 * 1000;
 const BOOKING_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
 const BOOKING_WINDOW_DAYS = 90;
+const PUBLIC_BOOKING_WEEKDAYS = 14;
 
 type BookingSlot = { start: string; end: string; label: string };
 type BusyWindow = { start: string; end: string };
@@ -52,6 +53,21 @@ function parseMonthKey(value: string | undefined) {
   return { year, month };
 }
 
+function addWeekdays(start: Date, weekdays: number) {
+  const date = new Date(start);
+  let counted = 0;
+
+  while (counted < weekdays) {
+    date.setDate(date.getDate() + 1);
+    const day = date.getDay();
+    if (day !== 0 && day !== 6) {
+      counted += 1;
+    }
+  }
+
+  return date;
+}
+
 function buildSlotsFromBusy(input: {
   busy: BusyWindow[];
   month?: { month: number; year: number } | null;
@@ -71,7 +87,7 @@ function buildSlotsFromBusy(input: {
 
   const rangeEnd = input.month
     ? new Date(Date.UTC(input.month.year, input.month.month, 1, 0, 0, 0, 0))
-    : bookingWindowEnd;
+    : addWeekdays(now, PUBLIC_BOOKING_WEEKDAYS);
 
   while (cursor < rangeEnd && cursor < bookingWindowEnd && slots.length < 300) {
     const dow = cursor.getDay();
