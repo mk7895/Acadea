@@ -16,7 +16,8 @@ const featuredFounders = [
   {
     name: "Mateusz Klepacki",
     imageSrc: "/images/about-klepacki.jpg",
-    imagePosition: "object-[50%_22%]",
+    imagePosition: "object-[50%_14%]",
+    imageScale: "scale-[1.08]",
     imageOrder: "md:order-2",
     textOrder: "md:order-1",
     description:
@@ -127,7 +128,7 @@ export default function AboutUs() {
                     <img
                       src={member.imageSrc}
                       alt={member.name}
-                      className={`h-full w-full object-cover ${member.imagePosition}`}
+                      className={`h-full w-full object-cover ${member.imagePosition} ${"imageScale" in member ? member.imageScale : ""}`}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-primary/12 via-transparent to-transparent" />
                   </div>
