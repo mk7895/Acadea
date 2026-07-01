@@ -1,12 +1,18 @@
 import { getApiBase } from "@/lib/api-base";
-import { articles as staticArticles, findArticle as findStaticArticle, type Article as StaticArticle } from "@/data/articles";
+import {
+  articles as staticArticles,
+  findArticle as findStaticArticle,
+  type Article as StaticArticle,
+} from "@/data/articles";
+import type { ArticleCategoryGroup, ArticleTocItem } from "@/lib/article-content";
 
 const API_BASE = getApiBase();
 
 export interface ArticleSummary {
   id?: number;
   order: number;
-  category: StaticArticle["category"];
+  category: string;
+  categorySlugs: string[];
   title: string;
   slug: string;
   excerpt: string;
@@ -20,12 +26,14 @@ export interface ArticleDetail extends ArticleSummary {
   markdown: string;
   relatedSlugs: string[];
   relatedArticles: ArticleSummary[];
+  tocItems: ArticleTocItem[];
 }
 
 export type ArticleEditorRecord = {
   id: number;
   sortOrder: number;
-  category: StaticArticle["category"];
+  category: string;
+  categorySlugs: string[];
   title: string;
   slug: string;
   excerpt: string;
@@ -33,14 +41,20 @@ export type ArticleEditorRecord = {
   markdown: string;
   relatedSlugs: string[];
   readMin: number;
+  tocItems: ArticleTocItem[];
   isPublished: boolean;
   updatedAt: string;
+};
+
+export type ArticleTaxonomyResponse = {
+  groups: ArticleCategoryGroup[];
 };
 
 function toSummary(article: StaticArticle): ArticleSummary {
   return {
     order: article.order,
     category: article.category,
+    categorySlugs: article.categorySlugs ?? [],
     title: article.title,
     slug: article.slug,
     excerpt: article.excerpt,
@@ -88,7 +102,21 @@ export async function fetchArticleDetail(slug: string) {
       markdown: article.markdown,
       relatedSlugs: relatedArticles.map((candidate) => candidate.slug),
       relatedArticles,
+      tocItems: article.tocItems ?? [],
     } satisfies ArticleDetail;
+  }
+}
+
+export async function fetchArticleTaxonomy() {
+  try {
+    const response = await fetch(`${API_BASE}/article-taxonomy`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch article taxonomy");
+    }
+
+    return (await response.json()) as ArticleTaxonomyResponse;
+  } catch {
+    return { groups: [] } satisfies ArticleTaxonomyResponse;
   }
 }
 
@@ -106,3 +134,82 @@ export async function fetchAdminArticles(token: string) {
   return (await response.json()) as ArticleEditorRecord[];
 }
 
+export async function fetchAdminArticleTaxonomy(token: string) {
+  const response = await fetch(`${API_BASE}/admin/article-taxonomy`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch admin taxonomy");
+  }
+
+  return (await response.json()) as ArticleTaxonomyResponse;
+}
+
+export async function createArticleCategoryGroup(
+  token: string,
+  payload: { name: string; slug?: string; sortOrder?: number },
+) {
+  const response = await fetch(`${API_BASE}/admin/article-category-groups`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to create category group");
+  }
+
+  return await response.json();
+}
+
+export async function deleteArticleCategoryGroup(token: string, id: number) {
+  const response = await fetch(`${API_BASE}/admin/article-category-groups/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to delete category group");
+  }
+}
+
+export async function createArticleCategory(
+  token: string,
+  payload: { groupId: number; name: string; slug?: string; sortOrder?: number },
+) {
+  const response = await fetch(`${API_BASE}/admin/article-categories`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to create category");
+  }
+
+  return await response.json();
+}
+
+export async function deleteArticleCategory(token: string, id: number) {
+  const response = await fetch(`${API_BASE}/admin/article-categories/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to delete category");
+  }
+}

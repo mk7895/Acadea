@@ -1,6 +1,4 @@
-export const ARTICLE_CATEGORIES = ["Poradniki", "Kraje", "Stypendia"] as const;
-
-export type ArticleCategory = (typeof ARTICLE_CATEGORIES)[number];
+export const ARTICLE_CONTACT_FORM_MARKER = "***CONTACT FORM BLOCK***";
 
 export function normalizeArticleSlug(input: string) {
   const trimmed = input.trim();
@@ -26,6 +24,46 @@ export function estimateReadMinutes(markdown: string) {
   return Math.max(3, Math.ceil(words / 180));
 }
 
+export function normalizeCategorySlug(input: string) {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .trim();
+}
+
+export function normalizeContactFormMarkers(markdown: string) {
+  return markdown.replace(
+    /\*\*\*\s*CONTACT FORM BLOCK\s*\*\*\*/gi,
+    ARTICLE_CONTACT_FORM_MARKER,
+  );
+}
+
+export function stripLeadingTitleHeading(markdown: string) {
+  return markdown.replace(/^# .+\n+/, "").trim();
+}
+
+export function extractMarkdownHeadings(markdown: string) {
+  const body = stripLeadingTitleHeading(normalizeContactFormMarkers(markdown));
+  const matches = Array.from(body.matchAll(/^(#{2,4})\s+(.+)$/gm));
+
+  return matches.map((match, index) => ({
+    sourceIndex: index,
+    sourceText: String(match[2] ?? "").trim(),
+    anchorId:
+      normalizeCategorySlug(
+        String(match[2] ?? "")
+          .replace(/\[[^\]]+\]\([^)]+\)/g, "$1")
+          .replace(/[*_`~]/g, ""),
+      ) || `sekcja-${index + 1}`,
+    label: String(match[2] ?? "").trim(),
+    include: true,
+    level: String(match[1] ?? "##").length,
+  }));
+}
+
 export function splitRelatedSection(markdown: string) {
   const marker = /\n## Czytaj też\s*\n/i;
   const match = marker.exec(markdown);
@@ -48,4 +86,3 @@ export function splitRelatedSection(markdown: string) {
     relatedSlugs: Array.from(new Set(relatedSlugs)),
   };
 }
-

@@ -3,14 +3,24 @@ import ReactMarkdown from "react-markdown";
 import { getApiBase } from "@/lib/api-base";
 import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
 import {
+  createArticleCategory,
+  createArticleCategoryGroup,
+  deleteArticleCategory,
+  deleteArticleCategoryGroup,
   fetchAdminArticles,
+  fetchAdminArticleTaxonomy,
   type ArticleEditorRecord,
 } from "@/lib/article-api";
 import {
-  ARTICLE_CATEGORIES,
+  ARTICLE_CONTACT_FORM_MARKER,
   estimateReadMinutes,
+  extractMarkdownHeadings,
   normalizeArticleSlug,
-  type ArticleCategory,
+  normalizeCategorySlug,
+  normalizeContactFormMarkers,
+  normalizeTocItems,
+  type ArticleCategoryGroup,
+  type ArticleTocItem,
 } from "@/lib/article-content";
 
 const API_BASE = getApiBase();
@@ -19,26 +29,30 @@ const ADMIN_TOKEN_KEY = "acadea-admin-session";
 type EditorState = {
   id?: number;
   sortOrder: number;
-  category: ArticleCategory;
+  category: string;
+  categorySlugs: string[];
   title: string;
   slug: string;
   excerpt: string;
   coverImage: string;
   markdown: string;
   readMin: number;
+  tocItems: ArticleTocItem[];
   relatedSlugs: string[];
   isPublished: boolean;
 };
 
 const emptyEditor: EditorState = {
   sortOrder: 0,
-  category: "Poradniki",
+  category: "Artykuł",
+  categorySlugs: [],
   title: "",
   slug: "",
   excerpt: "",
   coverImage: "",
   markdown: "",
   readMin: 3,
+  tocItems: [],
   relatedSlugs: [],
   isPublished: true,
 };
@@ -48,12 +62,14 @@ function toEditorState(article: ArticleEditorRecord): EditorState {
     id: article.id,
     sortOrder: article.sortOrder,
     category: article.category,
+    categorySlugs: article.categorySlugs,
     title: article.title,
     slug: article.slug,
     excerpt: article.excerpt,
     coverImage: article.coverImage,
     markdown: article.markdown,
     readMin: article.readMin,
+    tocItems: normalizeTocItems(article.markdown, article.tocItems),
     relatedSlugs: article.relatedSlugs,
     isPublished: article.isPublished,
   };
@@ -74,17 +90,33 @@ export default function AdminArticles() {
   const [entryGranted, setEntryGranted] = useState(false);
   const [entryCheckComplete, setEntryCheckComplete] = useState(false);
   const [accessError, setAccessError] = useState("");
-  const [isCheckingSecret, setIsCheckingSecret] = useState(false);
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginTurnstileToken, setLoginTurnstileToken] = useState("");
   const [loginTurnstileResetKey, setLoginTurnstileResetKey] = useState(0);
   const [articles, setArticles] = useState<ArticleEditorRecord[]>([]);
+  const [taxonomyGroups, setTaxonomyGroups] = useState<ArticleCategoryGroup[]>([]);
   const [selectedId, setSelectedId] = useState<number | "new">("new");
   const [editor, setEditor] = useState<EditorState>(emptyEditor);
   const [status, setStatus] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupSlug, setNewGroupSlug] = useState("");
+  const [newCategoryGroupId, setNewCategoryGroupId] = useState<number | "">("");
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategorySlug, setNewCategorySlug] = useState("");
   const markdownRef = useRef<HTMLTextAreaElement | null>(null);
+
+  async function loadAdminData(currentToken: string) {
+    const [rows, taxonomy] = await Promise.all([
+      fetchAdminArticles(currentToken),
+      fetchAdminArticleTaxonomy(currentToken),
+    ]);
+
+    setArticles(rows);
+    setTaxonomyGroups(taxonomy.groups);
+    return rows;
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -98,23 +130,30 @@ export default function AdminArticles() {
         return;
       }
 
-      const secretOk = await verifySecret(querySecret);
-      if (!secretOk) {
+      const response = await fetch(`${API_BASE}/admin/auth/entry`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entrySecret: querySecret }),
+      });
+
+      if (!response.ok) {
         if (!cancelled) {
+          setAccessError("Nieprawidłowy kod dostępu. Za 5 sekund nastąpi przekierowanie.");
           setEntryCheckComplete(true);
         }
         return;
       }
 
+      if (!cancelled) {
+        setEntryGranted(true);
+      }
+
       if (token) {
         try {
-          const response = await fetch(`${API_BASE}/admin/auth/status`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+          const statusResponse = await fetch(`${API_BASE}/admin/auth/status`, {
+            headers: { Authorization: `Bearer ${token}` },
           });
-          const data = (await response.json()) as { authenticated?: boolean };
-
+          const data = (await statusResponse.json()) as { authenticated?: boolean };
           if (!data.authenticated) {
             localStorage.removeItem(ADMIN_TOKEN_KEY);
             if (!cancelled) {
@@ -142,14 +181,8 @@ export default function AdminArticles() {
   }, [querySecret, token]);
 
   useEffect(() => {
-    if (!accessError) {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      window.location.replace("/");
-    }, 5000);
-
+    if (!accessError) return;
+    const timeout = window.setTimeout(() => window.location.replace("/"), 5000);
     return () => window.clearTimeout(timeout);
   }, [accessError]);
 
@@ -157,17 +190,14 @@ export default function AdminArticles() {
     if (!token) return;
 
     let cancelled = false;
-    void fetchAdminArticles(token)
+
+    void loadAdminData(token)
       .then((rows) => {
-        if (!cancelled) {
-          setArticles(rows);
-          if (selectedId === "new") {
-            return;
-          }
-          const current = rows.find((row) => row.id === selectedId);
-          if (current) {
-            setEditor(toEditorState(current));
-          }
+        if (cancelled) return;
+        if (selectedId === "new") return;
+        const current = rows.find((row) => row.id === selectedId);
+        if (current) {
+          setEditor(toEditorState(current));
         }
       })
       .catch(() => {
@@ -189,98 +219,7 @@ export default function AdminArticles() {
       ),
     [articles],
   );
-
-  async function verifySecret(secretValue: string) {
-    setAccessError("");
-    setIsCheckingSecret(true);
-
-    try {
-      const response = await fetch(`${API_BASE}/admin/auth/entry`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          entrySecret: secretValue,
-        }),
-      });
-
-      if (!response.ok) {
-        setAccessError("Nieprawidłowy kod dostępu. Za 5 sekund nastąpi przekierowanie.");
-        setIsCheckingSecret(false);
-        return false;
-      }
-
-      setEntryGranted(true);
-      setIsCheckingSecret(false);
-      return true;
-    } catch {
-      setAccessError("Nie udało się potwierdzić dostępu.");
-      setIsCheckingSecret(false);
-      return false;
-    }
-  }
-
-  if (!entryCheckComplete) {
-    return (
-      <div className="min-h-screen bg-[#f4f1ea] pt-28 pb-16 px-4">
-        <div className="max-w-md mx-auto bg-white rounded-[28px] shadow-sm border border-[#e7e1d6] p-8 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78] mb-3">
-            Panel redakcyjny
-          </p>
-          <h1 className="text-3xl font-bold text-primary mb-3">Sprawdzanie dostępu</h1>
-          <p className="text-sm text-gray-500">Chwila…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (accessError && !entryGranted) {
-    return (
-      <div className="min-h-screen bg-[#f4f1ea] pt-28 pb-16 px-4">
-        <div className="max-w-md mx-auto bg-white rounded-[28px] shadow-sm border border-[#e7e1d6] p-8 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78] mb-3">
-            Panel redakcyjny
-          </p>
-          <h1 className="text-3xl font-bold text-primary mb-3">Brak dostępu</h1>
-          <p className="text-sm text-gray-500">{accessError}</p>
-        </div>
-      </div>
-    );
-  }
-
-  async function handleLogin() {
-    setLoginError("");
-    if (isTurnstileEnabled() && !loginTurnstileToken) {
-      setLoginError("Potwierdź zabezpieczenie formularza logowania.");
-      return;
-    }
-    const response = await fetch(`${API_BASE}/admin/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        entrySecret: querySecret,
-        password,
-        turnstileToken: loginTurnstileToken,
-      }),
-    });
-
-    const data = (await response.json().catch(() => ({}))) as { token?: string; error?: string };
-    if (!response.ok || !data.token) {
-      setLoginError(data.error ?? "Logowanie nie powiodło się.");
-      setLoginTurnstileToken("");
-      setLoginTurnstileResetKey((value) => value + 1);
-      return;
-    }
-
-    localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
-    setToken(data.token);
-    setPassword("");
-    setLoginTurnstileToken("");
-    setLoginTurnstileResetKey((value) => value + 1);
-  }
+  const markdownHeadings = useMemo(() => extractMarkdownHeadings(editor.markdown), [editor.markdown]);
 
   function logout() {
     localStorage.removeItem(ADMIN_TOKEN_KEY);
@@ -303,6 +242,46 @@ export default function AdminArticles() {
     setStatus("");
   }
 
+  function updateMarkdown(markdown: string) {
+    setEditor((current) => ({
+      ...current,
+      markdown,
+      tocItems: normalizeTocItems(markdown, current.tocItems),
+    }));
+  }
+
+  async function handleLogin() {
+    setLoginError("");
+    if (isTurnstileEnabled() && !loginTurnstileToken) {
+      setLoginError("Potwierdź zabezpieczenie formularza logowania.");
+      return;
+    }
+
+    const response = await fetch(`${API_BASE}/admin/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        entrySecret: querySecret,
+        password,
+        turnstileToken: loginTurnstileToken,
+      }),
+    });
+
+    const data = (await response.json().catch(() => ({}))) as { token?: string; error?: string };
+    if (!response.ok || !data.token) {
+      setLoginError(data.error ?? "Logowanie nie powiodło się.");
+      setLoginTurnstileToken("");
+      setLoginTurnstileResetKey((value) => value + 1);
+      return;
+    }
+
+    localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
+    setToken(data.token);
+    setPassword("");
+    setLoginTurnstileToken("");
+    setLoginTurnstileResetKey((value) => value + 1);
+  }
+
   async function saveArticle() {
     setIsSaving(true);
     setStatus("");
@@ -310,6 +289,8 @@ export default function AdminArticles() {
     const payload = {
       ...editor,
       slug: normalizeArticleSlug(editor.slug),
+      markdown: normalizeContactFormMarkers(editor.markdown),
+      tocItems: normalizeTocItems(editor.markdown, editor.tocItems),
     };
 
     const response = await fetch(
@@ -332,9 +313,8 @@ export default function AdminArticles() {
       return;
     }
 
+    const rows = await loadAdminData(token);
     setStatus("Artykuł zapisany.");
-    const rows = await fetchAdminArticles(token);
-    setArticles(rows);
     const saved = rows.find((row) => row.id === data.id);
     if (saved) {
       setSelectedId(saved.id);
@@ -342,7 +322,7 @@ export default function AdminArticles() {
     }
   }
 
-  async function deleteArticle() {
+  async function deleteArticleRecord() {
     if (!editor.id) {
       startNewArticle();
       return;
@@ -354,9 +334,7 @@ export default function AdminArticles() {
 
     const response = await fetch(`${API_BASE}/admin/articles/${editor.id}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!response.ok) {
@@ -364,13 +342,12 @@ export default function AdminArticles() {
       return;
     }
 
+    await loadAdminData(token);
     setStatus("Artykuł usunięty.");
-    const rows = await fetchAdminArticles(token);
-    setArticles(rows);
     startNewArticle();
   }
 
-  async function uploadCoverImage(file: File) {
+  async function uploadAsset(file: File) {
     const dataUrl = await fileToDataUrl(file);
     const response = await fetch(`${API_BASE}/admin/assets`, {
       method: "POST",
@@ -390,49 +367,120 @@ export default function AdminArticles() {
       throw new Error(data.error ?? "Upload nie powiódł się.");
     }
 
-    setEditor((current) => ({
-      ...current,
-      coverImage: data.url!,
-    }));
+    return data.url;
   }
 
-  async function uploadBodyImage(file: File) {
-    const dataUrl = await fileToDataUrl(file);
-    const response = await fetch(`${API_BASE}/admin/assets`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        filename: file.name,
-        mimeType: file.type,
-        dataUrl,
-      }),
-    });
-
-    const data = (await response.json()) as { url?: string; error?: string };
-    if (!response.ok || !data.url) {
-      throw new Error(data.error ?? "Upload nie powiódł się.");
+  async function createGroup() {
+    if (!newGroupName.trim()) {
+      setStatus("Podaj nazwę grupy kategorii.");
+      return;
     }
 
-    const snippet = `\n\n![${file.name}](${data.url})\n`;
+    await createArticleCategoryGroup(token, {
+      name: newGroupName.trim(),
+      slug: newGroupSlug.trim() || normalizeCategorySlug(newGroupName),
+      sortOrder: taxonomyGroups.length,
+    });
+    const taxonomy = await fetchAdminArticleTaxonomy(token);
+    setTaxonomyGroups(taxonomy.groups);
+    setNewGroupName("");
+    setNewGroupSlug("");
+    setStatus("Dodano grupę kategorii.");
+  }
+
+  async function removeGroup(groupId: number) {
+    if (!window.confirm("Usunąć tę grupę kategorii wraz z kategoriami w środku?")) {
+      return;
+    }
+
+    await deleteArticleCategoryGroup(token, groupId);
+    const taxonomy = await fetchAdminArticleTaxonomy(token);
+    setTaxonomyGroups(taxonomy.groups);
     setEditor((current) => ({
       ...current,
-      markdown: `${current.markdown}${snippet}`,
+      categorySlugs: current.categorySlugs.filter((slug) =>
+        taxonomy.groups.some((group) => group.categories.some((category) => category.slug === slug)),
+      ),
     }));
-    markdownRef.current?.focus();
+    setStatus("Usunięto grupę kategorii.");
+  }
+
+  async function createCategoryItem() {
+    if (!newCategoryGroupId || !newCategoryName.trim()) {
+      setStatus("Wybierz grupę i podaj nazwę kategorii.");
+      return;
+    }
+
+    const group = taxonomyGroups.find((item) => item.id === newCategoryGroupId);
+    if (!group) {
+      setStatus("Nie znaleziono wybranej grupy kategorii.");
+      return;
+    }
+
+    await createArticleCategory(token, {
+      groupId: group.id,
+      name: newCategoryName.trim(),
+      slug: newCategorySlug.trim() || normalizeCategorySlug(newCategoryName),
+      sortOrder: group.categories.length,
+    });
+
+    const taxonomy = await fetchAdminArticleTaxonomy(token);
+    setTaxonomyGroups(taxonomy.groups);
+    setNewCategoryGroupId("");
+    setNewCategoryName("");
+    setNewCategorySlug("");
+    setStatus("Dodano kategorię.");
+  }
+
+  async function removeCategoryItem(categoryId: number) {
+    if (!window.confirm("Usunąć tę kategorię?")) {
+      return;
+    }
+
+    await deleteArticleCategory(token, categoryId);
+    const taxonomy = await fetchAdminArticleTaxonomy(token);
+    setTaxonomyGroups(taxonomy.groups);
+    const remainingSlugs = new Set(
+      taxonomy.groups.flatMap((group) => group.categories.map((category) => category.slug)),
+    );
+    setEditor((current) => ({
+      ...current,
+      categorySlugs: current.categorySlugs.filter((slug) => remainingSlugs.has(slug)),
+    }));
+    setStatus("Usunięto kategorię.");
+  }
+
+  if (!entryCheckComplete) {
+    return (
+      <div className="min-h-screen bg-[#f4f1ea] px-4 pb-16 pt-28">
+        <div className="mx-auto max-w-md rounded-[28px] border border-[#e7e1d6] bg-white p-8 text-center shadow-sm">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78]">Panel redakcyjny</p>
+          <h1 className="mb-3 text-3xl font-bold text-primary">Sprawdzanie dostępu</h1>
+          <p className="text-sm text-gray-500">Chwila…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (accessError && !entryGranted) {
+    return (
+      <div className="min-h-screen bg-[#f4f1ea] px-4 pb-16 pt-28">
+        <div className="mx-auto max-w-md rounded-[28px] border border-[#e7e1d6] bg-white p-8 text-center shadow-sm">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78]">Panel redakcyjny</p>
+          <h1 className="mb-3 text-3xl font-bold text-primary">Brak dostępu</h1>
+          <p className="text-sm text-gray-500">{accessError}</p>
+        </div>
+      </div>
+    );
   }
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-[#f4f1ea] pt-28 pb-16 px-4">
-        <div className="max-w-md mx-auto bg-white rounded-[28px] shadow-sm border border-[#e7e1d6] p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78] mb-3">
-            Panel redakcyjny
-          </p>
-          <h1 className="text-3xl font-bold text-primary mb-3">Zaloguj się</h1>
-          <p className="text-sm text-gray-500 mb-6">
+      <div className="min-h-screen bg-[#f4f1ea] px-4 pb-16 pt-28">
+        <div className="mx-auto max-w-md rounded-[28px] border border-[#e7e1d6] bg-white p-8 shadow-sm">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78]">Panel redakcyjny</p>
+          <h1 className="mb-3 text-3xl font-bold text-primary">Zaloguj się</h1>
+          <p className="mb-6 text-sm text-gray-500">
             To wejście działa tylko pod ukrytym adresem i dodatkowo wymaga hasła administratora.
           </p>
           <input
@@ -441,18 +489,15 @@ export default function AdminArticles() {
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleLogin()}
             placeholder="Hasło administratora"
-            className="w-full h-12 px-4 rounded-2xl border border-[#ded7c9] focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="h-12 w-full rounded-2xl border border-[#ded7c9] px-4 focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <div className="mt-5">
-            <TurnstileWidget
-              onTokenChange={setLoginTurnstileToken}
-              resetKey={loginTurnstileResetKey}
-            />
+            <TurnstileWidget onTokenChange={setLoginTurnstileToken} resetKey={loginTurnstileResetKey} />
           </div>
           {loginError ? <p className="mt-3 text-sm text-red-600">{loginError}</p> : null}
           <button
             onClick={handleLogin}
-            className="mt-5 w-full h-12 rounded-2xl bg-primary text-white font-semibold hover:bg-primary/90 transition-colors"
+            className="mt-5 h-12 w-full rounded-2xl bg-primary font-semibold text-white transition-colors hover:bg-primary/90"
           >
             Wejdź do panelu
           </button>
@@ -462,77 +507,63 @@ export default function AdminArticles() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f3ec] pt-24 pb-12">
-      <div className="max-w-7xl mx-auto px-4 md:px-6">
-        <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-6">
-          <aside className="bg-white rounded-[28px] border border-[#e8e0d4] p-5 h-fit xl:sticky xl:top-28">
-            <div className="flex items-center justify-between gap-3 mb-4">
+    <div className="min-h-screen bg-[#f6f3ec] pb-12 pt-24">
+      <div className="mx-auto max-w-7xl px-4 md:px-6">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[320px_1fr]">
+          <aside className="h-fit rounded-[28px] border border-[#e8e0d4] bg-white p-5 xl:sticky xl:top-28">
+            <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[#9b8e78] font-semibold">
-                  Artykuły
-                </p>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78]">Artykuły</p>
                 <h2 className="text-2xl font-bold text-primary">Baza wiedzy</h2>
               </div>
               <button
                 onClick={startNewArticle}
-                className="shrink-0 px-4 py-2 rounded-full bg-accent text-primary font-semibold"
+                className="shrink-0 rounded-full bg-accent px-4 py-2 font-semibold text-primary"
               >
                 Nowy
               </button>
             </div>
 
-            <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+            <div className="max-h-[70vh] space-y-3 overflow-y-auto pr-1">
               {sortedArticles.map((article) => (
                 <button
                   key={article.id}
                   onClick={() => selectArticle(article)}
-                  className={`w-full text-left rounded-2xl border px-4 py-3 transition-colors ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
                     selectedId === article.id
                       ? "border-primary bg-primary/5"
-                      : "border-[#eee6d8] hover:border-primary/40 bg-[#fcfbf8]"
+                      : "border-[#eee6d8] bg-[#fcfbf8] hover:border-primary/40"
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-3 mb-1">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-[#998b73]">
-                      {article.category}
-                    </span>
+                  <div className="mb-1 flex items-center justify-between gap-3">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-[#998b73]">{article.category}</span>
                     <span className={`text-[11px] font-semibold ${article.isPublished ? "text-green-700" : "text-amber-700"}`}>
                       {article.isPublished ? "Opublikowany" : "Szkic"}
                     </span>
                   </div>
-                  <p className="text-sm font-semibold text-primary leading-snug">{article.title}</p>
+                  <p className="text-sm font-semibold leading-snug text-primary">{article.title}</p>
                 </button>
               ))}
             </div>
           </aside>
 
-          <main className="bg-white rounded-[32px] border border-[#e8e0d4] p-6 md:p-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+          <main className="rounded-[32px] border border-[#e8e0d4] bg-white p-6 md:p-8">
+            <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[#9b8e78] font-semibold mb-2">
-                  Edytor
-                </p>
-                <h1 className="text-3xl font-bold text-primary">
-                  {editor.id ? "Edytuj artykuł" : "Nowy artykuł"}
-                </h1>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78]">Edytor</p>
+                <h1 className="text-3xl font-bold text-primary">{editor.id ? "Edytuj artykuł" : "Nowy artykuł"}</h1>
               </div>
               <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={logout}
-                  className="px-5 py-3 rounded-full border border-[#d8cfbf] text-primary font-semibold"
-                >
+                <button onClick={logout} className="rounded-full border border-[#d8cfbf] px-5 py-3 font-semibold text-primary">
                   Wyloguj
                 </button>
-                <button
-                  onClick={deleteArticle}
-                  className="px-5 py-3 rounded-full border border-red-200 text-red-700 font-semibold"
-                >
+                <button onClick={deleteArticleRecord} className="rounded-full border border-red-200 px-5 py-3 font-semibold text-red-700">
                   Usuń
                 </button>
                 <button
                   onClick={saveArticle}
                   disabled={isSaving}
-                  className="px-6 py-3 rounded-full bg-primary text-white font-semibold disabled:opacity-60"
+                  className="rounded-full bg-primary px-6 py-3 font-semibold text-white disabled:opacity-60"
                 >
                   {isSaving ? "Zapisywanie…" : "Zapisz artykuł"}
                 </button>
@@ -541,13 +572,94 @@ export default function AdminArticles() {
 
             {status ? <p className="mb-5 text-sm text-primary">{status}</p> : null}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <section className="mb-6 rounded-[24px] border border-[#ece3d6] bg-[#fcfbf8] p-5">
+              <h2 className="mb-4 text-lg font-bold text-primary">Grupy kategorii i kategorie</h2>
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-primary">Nowa grupa kategorii</p>
+                  <input
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    placeholder="Np. Kraj"
+                    className="h-11 w-full rounded-2xl border border-[#ded7c9] px-4"
+                  />
+                  <input
+                    value={newGroupSlug}
+                    onChange={(e) => setNewGroupSlug(e.target.value)}
+                    placeholder="Opcjonalny slug, np. kraj"
+                    className="h-11 w-full rounded-2xl border border-[#ded7c9] px-4"
+                  />
+                  <button onClick={createGroup} className="rounded-full border border-[#d8cfbf] px-4 py-2 text-sm font-semibold text-primary">
+                    Dodaj grupę
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-primary">Nowa kategoria</p>
+                  <select
+                    value={newCategoryGroupId}
+                    onChange={(e) => setNewCategoryGroupId(e.target.value ? Number(e.target.value) : "")}
+                    className="h-11 w-full rounded-2xl border border-[#ded7c9] bg-white px-4"
+                  >
+                    <option value="">Wybierz grupę</option>
+                    {taxonomyGroups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Np. Szwecja"
+                    className="h-11 w-full rounded-2xl border border-[#ded7c9] px-4"
+                  />
+                  <input
+                    value={newCategorySlug}
+                    onChange={(e) => setNewCategorySlug(e.target.value)}
+                    placeholder="Opcjonalny slug, np. szwecja"
+                    className="h-11 w-full rounded-2xl border border-[#ded7c9] px-4"
+                  />
+                  <button onClick={createCategoryItem} className="rounded-full border border-[#d8cfbf] px-4 py-2 text-sm font-semibold text-primary">
+                    Dodaj kategorię
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                {taxonomyGroups.map((group) => (
+                  <div key={group.id} className="rounded-2xl border border-[#ebe3d8] bg-white p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-primary">{group.name}</p>
+                        <p className="text-xs text-gray-500">{group.slug}</p>
+                      </div>
+                      <button onClick={() => removeGroup(group.id)} className="text-sm font-semibold text-red-700">
+                        Usuń grupę
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {group.categories.map((category) => (
+                        <span key={category.id} className="inline-flex items-center gap-2 rounded-full border border-[#e5ddcf] bg-[#faf7f1] px-3 py-1.5 text-sm text-primary">
+                          {category.name}
+                          <button onClick={() => removeCategoryItem(category.id)} className="text-red-700">
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <label className="block">
                 <span className="text-sm font-semibold text-primary">Tytuł</span>
                 <input
                   value={editor.title}
                   onChange={(e) => setEditor((current) => ({ ...current, title: e.target.value }))}
-                  className="mt-2 w-full h-12 px-4 rounded-2xl border border-[#ded7c9]"
+                  className="mt-2 h-12 w-full rounded-2xl border border-[#ded7c9] px-4"
                 />
               </label>
               <label className="block">
@@ -555,28 +667,18 @@ export default function AdminArticles() {
                 <input
                   value={editor.slug}
                   onChange={(e) => setEditor((current) => ({ ...current, slug: e.target.value }))}
-                  className="mt-2 w-full h-12 px-4 rounded-2xl border border-[#ded7c9]"
+                  className="mt-2 h-12 w-full rounded-2xl border border-[#ded7c9] px-4"
                   placeholder="/nowy-artykul"
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-semibold text-primary">Kategoria</span>
-                <select
+                <span className="text-sm font-semibold text-primary">Główna etykieta kategorii</span>
+                <input
                   value={editor.category}
-                  onChange={(e) =>
-                    setEditor((current) => ({
-                      ...current,
-                      category: e.target.value as ArticleCategory,
-                    }))
-                  }
-                  className="mt-2 w-full h-12 px-4 rounded-2xl border border-[#ded7c9] bg-white"
-                >
-                  {ARTICLE_CATEGORIES.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(e) => setEditor((current) => ({ ...current, category: e.target.value }))}
+                  className="mt-2 h-12 w-full rounded-2xl border border-[#ded7c9] px-4"
+                  placeholder="Np. Poradniki"
+                />
               </label>
               <label className="block">
                 <span className="text-sm font-semibold text-primary">Kolejność</span>
@@ -584,37 +686,69 @@ export default function AdminArticles() {
                   type="number"
                   min={0}
                   value={editor.sortOrder}
-                  onChange={(e) =>
-                    setEditor((current) => ({
-                      ...current,
-                      sortOrder: Number(e.target.value || 0),
-                    }))
-                  }
-                  className="mt-2 w-full h-12 px-4 rounded-2xl border border-[#ded7c9]"
+                  onChange={(e) => setEditor((current) => ({ ...current, sortOrder: Number(e.target.value || 0) }))}
+                  className="mt-2 h-12 w-full rounded-2xl border border-[#ded7c9] px-4"
                 />
               </label>
             </div>
 
-            <label className="block mt-4">
+            <section className="mt-5 rounded-[24px] border border-[#ece3d6] bg-[#fcfbf8] p-5">
+              <h2 className="mb-4 text-lg font-bold text-primary">Kategorie artykułu</h2>
+              <div className="space-y-4">
+                {taxonomyGroups.map((group) => (
+                  <div key={group.id}>
+                    <p className="mb-2 text-sm font-semibold text-primary">{group.name}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {group.categories.map((category) => {
+                        const checked = editor.categorySlugs.includes(category.slug);
+                        return (
+                          <button
+                            key={category.id}
+                            type="button"
+                            onClick={() =>
+                              setEditor((current) => ({
+                                ...current,
+                                categorySlugs: checked
+                                  ? current.categorySlugs.filter((slug) => slug !== category.slug)
+                                  : [...current.categorySlugs, category.slug],
+                              }))
+                            }
+                            className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${
+                              checked
+                                ? "border-primary bg-primary text-white"
+                                : "border-[#ddd4c5] bg-white text-gray-600 hover:border-primary hover:text-primary"
+                            }`}
+                          >
+                            {category.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <label className="mt-4 block">
               <span className="text-sm font-semibold text-primary">Lead / zajawka</span>
               <textarea
                 value={editor.excerpt}
                 onChange={(e) => setEditor((current) => ({ ...current, excerpt: e.target.value }))}
-                className="mt-2 w-full min-h-28 px-4 py-3 rounded-2xl border border-[#ded7c9]"
+                className="mt-2 min-h-28 w-full rounded-2xl border border-[#ded7c9] px-4 py-3"
               />
             </label>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 mt-4 items-end">
+            <div className="mt-4 grid grid-cols-1 items-end gap-4 lg:grid-cols-[1fr_auto]">
               <label className="block">
                 <span className="text-sm font-semibold text-primary">Zdjęcie główne</span>
                 <input
                   value={editor.coverImage}
                   onChange={(e) => setEditor((current) => ({ ...current, coverImage: e.target.value }))}
-                  className="mt-2 w-full h-12 px-4 rounded-2xl border border-[#ded7c9]"
+                  className="mt-2 h-12 w-full rounded-2xl border border-[#ded7c9] px-4"
                   placeholder="https://... lub upload poniżej"
                 />
               </label>
-              <label className="inline-flex items-center justify-center h-12 px-5 rounded-2xl bg-[#f1ece2] text-primary font-semibold cursor-pointer">
+              <label className="inline-flex h-12 cursor-pointer items-center justify-center rounded-2xl bg-[#f1ece2] px-5 font-semibold text-primary">
                 Wgraj okładkę
                 <input
                   type="file"
@@ -624,7 +758,8 @@ export default function AdminArticles() {
                     const file = e.target.files?.[0];
                     if (!file) return;
                     try {
-                      await uploadCoverImage(file);
+                      const url = await uploadAsset(file);
+                      setEditor((current) => ({ ...current, coverImage: url }));
                       setStatus("Zdjęcie główne wgrane.");
                     } catch (error) {
                       setStatus(error instanceof Error ? error.message : "Upload nie powiódł się.");
@@ -651,68 +786,135 @@ export default function AdminArticles() {
                   type="number"
                   min={1}
                   value={editor.readMin}
-                  onChange={(e) =>
-                    setEditor((current) => ({
-                      ...current,
-                      readMin: Math.max(1, Number(e.target.value || 1)),
-                    }))
-                  }
-                  className="h-10 w-24 px-3 rounded-xl border border-[#ded7c9] text-primary font-medium"
+                  onChange={(e) => setEditor((current) => ({ ...current, readMin: Math.max(1, Number(e.target.value || 1)) }))}
+                  className="h-10 w-24 rounded-xl border border-[#ded7c9] px-3 font-medium text-primary"
                 />
-                <span className="text-gray-500 font-normal">min</span>
+                <span className="font-normal text-gray-500">min</span>
               </label>
               <button
                 type="button"
-                onClick={() =>
-                  setEditor((current) => ({
-                    ...current,
-                    readMin: estimatedReadMin,
-                  }))
-                }
-                className="px-4 py-2 rounded-full border border-[#d8cfbf] text-primary text-sm font-semibold"
+                onClick={() => setEditor((current) => ({ ...current, readMin: estimatedReadMin }))}
+                className="rounded-full border border-[#d8cfbf] px-4 py-2 text-sm font-semibold text-primary"
               >
                 Użyj estymacji ({estimatedReadMin} min)
               </button>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-6">
+            <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_0.85fr]">
               <div>
-                <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
                   <span className="text-sm font-semibold text-primary">Treść artykułu (Markdown)</span>
-                  <label className="inline-flex items-center justify-center h-10 px-4 rounded-full bg-[#f1ece2] text-primary text-sm font-semibold cursor-pointer">
-                    Wgraj obraz do treści
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          await uploadBodyImage(file);
-                          setStatus("Obraz dodany do treści.");
-                        } catch (error) {
-                          setStatus(error instanceof Error ? error.message : "Upload nie powiódł się.");
-                        } finally {
-                          e.target.value = "";
-                        }
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const snippet = `\n\n${ARTICLE_CONTACT_FORM_MARKER}\n\n`;
+                        updateMarkdown(`${editor.markdown}${snippet}`);
+                        markdownRef.current?.focus();
                       }}
-                    />
-                  </label>
+                      className="rounded-full border border-[#d8cfbf] px-4 py-2 text-sm font-semibold text-primary"
+                    >
+                      Wstaw blok formularza
+                    </button>
+                    <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-full bg-[#f1ece2] px-4 text-sm font-semibold text-primary">
+                      Wgraj obraz do treści
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const url = await uploadAsset(file);
+                            updateMarkdown(`${editor.markdown}\n\n![${file.name}](${url})\n`);
+                            setStatus("Obraz dodany do treści.");
+                          } catch (error) {
+                            setStatus(error instanceof Error ? error.message : "Upload nie powiódł się.");
+                          } finally {
+                            e.target.value = "";
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
                 <textarea
                   ref={markdownRef}
                   value={editor.markdown}
-                  onChange={(e) => setEditor((current) => ({ ...current, markdown: e.target.value }))}
-                  className="w-full min-h-[540px] px-4 py-4 rounded-[24px] border border-[#ded7c9] font-mono text-sm"
+                  onChange={(e) => updateMarkdown(e.target.value)}
+                  className="min-h-[540px] w-full rounded-[24px] border border-[#ded7c9] px-4 py-4 font-mono text-sm"
                   placeholder="# Tytuł artykułu"
                 />
               </div>
 
               <div className="space-y-6">
                 <section className="rounded-[24px] border border-[#ece3d6] bg-[#fcfbf8] p-5">
-                  <h2 className="text-lg font-bold text-primary mb-4">Czytaj też</h2>
-                  <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                  <h2 className="mb-4 text-lg font-bold text-primary">Spis treści i anchors</h2>
+                  {markdownHeadings.length === 0 ? (
+                    <p className="text-sm text-gray-500">Dodaj nagłówki `##`, `###` lub `####`, aby skonfigurować spis treści.</p>
+                  ) : (
+                    <div className="max-h-96 space-y-4 overflow-y-auto pr-1">
+                      {editor.tocItems.map((item, index) => (
+                        <div key={`${item.sourceIndex}-${item.anchorId}`} className="rounded-2xl border border-[#ebe3d8] bg-white p-4">
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <p className="text-sm font-semibold text-primary">{item.sourceText}</p>
+                            <span className="text-xs text-gray-500">H{item.level}</span>
+                          </div>
+                          <label className="mb-3 inline-flex items-center gap-3 text-sm text-primary">
+                            <input
+                              type="checkbox"
+                              checked={item.include}
+                              onChange={(e) =>
+                                setEditor((current) => ({
+                                  ...current,
+                                  tocItems: current.tocItems.map((entry, entryIndex) =>
+                                    entryIndex === index ? { ...entry, include: e.target.checked } : entry,
+                                  ),
+                                }))
+                              }
+                            />
+                            Pokaż w spisie treści
+                          </label>
+                          <div className="grid gap-3">
+                            <input
+                              value={item.label}
+                              onChange={(e) =>
+                                setEditor((current) => ({
+                                  ...current,
+                                  tocItems: current.tocItems.map((entry, entryIndex) =>
+                                    entryIndex === index ? { ...entry, label: e.target.value } : entry,
+                                  ),
+                                }))
+                              }
+                              className="h-10 rounded-xl border border-[#ded7c9] px-3"
+                              placeholder="Tytuł w spisie treści"
+                            />
+                            <input
+                              value={item.anchorId}
+                              onChange={(e) =>
+                                setEditor((current) => ({
+                                  ...current,
+                                  tocItems: current.tocItems.map((entry, entryIndex) =>
+                                    entryIndex === index
+                                      ? { ...entry, anchorId: normalizeCategorySlug(e.target.value) || entry.anchorId }
+                                      : entry,
+                                  ),
+                                }))
+                              }
+                              className="h-10 rounded-xl border border-[#ded7c9] px-3"
+                              placeholder="anchor-id"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                <section className="rounded-[24px] border border-[#ece3d6] bg-[#fcfbf8] p-5">
+                  <h2 className="mb-4 text-lg font-bold text-primary">czytaj również</h2>
+                  <div className="max-h-72 space-y-3 overflow-y-auto pr-1">
                     {sortedArticles
                       .filter((article) => article.slug !== normalizeArticleSlug(editor.slug || "/"))
                       .map((article) => {
@@ -742,18 +944,16 @@ export default function AdminArticles() {
                 </section>
 
                 <section className="rounded-[24px] border border-[#ece3d6] bg-white p-5">
-                  <h2 className="text-lg font-bold text-primary mb-4">Podgląd</h2>
+                  <h2 className="mb-4 text-lg font-bold text-primary">Podgląd</h2>
                   {editor.coverImage ? (
-                    <div className="rounded-2xl overflow-hidden aspect-[16/8] bg-gray-100 mb-4">
-                      <img src={editor.coverImage} alt={editor.title || "Okładka"} className="w-full h-full object-cover" />
+                    <div className="mb-4 aspect-[16/8] overflow-hidden rounded-2xl bg-gray-100">
+                      <img src={editor.coverImage} alt={editor.title || "Okładka"} className="h-full w-full object-cover" />
                     </div>
                   ) : null}
-                  <h3 className="text-2xl font-bold text-primary mb-3">{editor.title || "Nowy artykuł"}</h3>
-                  <p className="text-sm text-gray-500 mb-4">{editor.excerpt}</p>
-                  <div
-                    className="prose prose-sm max-w-none prose-headings:text-primary prose-a:text-primary"
-                  >
-                    <ReactMarkdown>{editor.markdown || "Podgląd pojawi się tutaj."}</ReactMarkdown>
+                  <h3 className="mb-3 text-2xl font-bold text-primary">{editor.title || "Nowy artykuł"}</h3>
+                  <p className="mb-4 text-sm text-gray-500">{editor.excerpt}</p>
+                  <div className="prose prose-sm max-w-none prose-headings:text-primary prose-a:text-primary">
+                    <ReactMarkdown>{normalizeContactFormMarkers(editor.markdown) || "Podgląd pojawi się tutaj."}</ReactMarkdown>
                   </div>
                 </section>
               </div>

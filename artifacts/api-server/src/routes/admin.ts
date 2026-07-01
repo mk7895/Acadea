@@ -1,10 +1,12 @@
 import { Router, type NextFunction, type Request, type Response } from "express";
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
-  ARTICLE_CATEGORIES,
   estimateReadMinutes,
+  extractMarkdownHeadings,
   normalizeArticleSlug,
+  normalizeCategorySlug,
+  normalizeContactFormMarkers,
 } from "../lib/articleContent";
 import {
   createAdminSessionToken,
@@ -27,15 +29,26 @@ const adminEntrySchema = z.object({
   entrySecret: z.string().min(1),
 });
 
+const adminTocItemSchema = z.object({
+  sourceIndex: z.number().int().min(0),
+  sourceText: z.string().trim().min(1),
+  anchorId: z.string().trim().min(1),
+  label: z.string().trim().min(1),
+  include: z.boolean().default(true),
+  level: z.number().int().min(1).max(6),
+});
+
 const adminArticleSchema = z.object({
   sortOrder: z.number().int().min(0).default(0),
-  category: z.enum(ARTICLE_CATEGORIES),
+  category: z.string().trim().default(""),
+  categorySlugs: z.array(z.string().trim().min(1)).default([]),
   title: z.string().trim().min(1),
   slug: z.string().trim().min(1),
   excerpt: z.string().trim().min(1),
   coverImage: z.string().trim().min(1),
   markdown: z.string().trim().min(1),
   readMin: z.number().int().min(1).max(120).optional(),
+  tocItems: z.array(adminTocItemSchema).default([]),
   relatedSlugs: z.array(z.string().trim().min(1)).default([]),
   isPublished: z.boolean().default(true),
 });
@@ -46,6 +59,19 @@ const adminImageSchema = z.object({
   dataUrl: z
     .string()
     .regex(/^data:[^;]+;base64,[A-Za-z0-9+/=]+$/, "Invalid image payload."),
+});
+
+const categoryGroupSchema = z.object({
+  sortOrder: z.number().int().min(0).default(0),
+  name: z.string().trim().min(1),
+  slug: z.string().trim().optional(),
+});
+
+const categorySchema = z.object({
+  groupId: z.number().int().positive(),
+  sortOrder: z.number().int().min(0).default(0),
+  name: z.string().trim().min(1),
+  slug: z.string().trim().optional(),
 });
 
 function getRequestOrigin(req: Request) {
@@ -73,18 +99,30 @@ function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   next();
 }
 
-function shapeAdminSummary(req: Request, row: {
-  id: number;
-  sortOrder: number;
-  category: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  coverImage: string;
-  readMin: number;
-  isPublished: boolean;
-  updatedAt: Date;
-}) {
+function shapeAdminSummary(
+  req: Request,
+  row: {
+    id: number;
+    sortOrder: number;
+    category: string;
+    categorySlugs: string[];
+    title: string;
+    slug: string;
+    excerpt: string;
+    coverImage: string;
+    readMin: number;
+    tocItems: Array<{
+      sourceIndex: number;
+      sourceText: string;
+      anchorId: string;
+      label: string;
+      include: boolean;
+      level: number;
+    }>;
+    isPublished: boolean;
+    updatedAt: Date;
+  },
+) {
   const image =
     /^https?:\/\//i.test(row.coverImage) || row.coverImage.startsWith("data:")
       ? row.coverImage
@@ -94,14 +132,55 @@ function shapeAdminSummary(req: Request, row: {
     id: row.id,
     sortOrder: row.sortOrder,
     category: row.category,
+    categorySlugs: row.categorySlugs,
     title: row.title,
     slug: row.slug,
     excerpt: row.excerpt,
     coverImage: image,
     readMin: row.readMin,
+    tocItems: row.tocItems,
     isPublished: row.isPublished,
     updatedAt: row.updatedAt.toISOString(),
   };
+}
+
+function normalizeTocItems(markdown: string, tocItems: z.infer<typeof adminTocItemSchema>[]) {
+  const extractedHeadings = extractMarkdownHeadings(markdown);
+  const tocByIndex = new Map(tocItems.map((item) => [item.sourceIndex, item]));
+
+  return extractedHeadings.map((heading) => {
+    const existing = tocByIndex.get(heading.sourceIndex);
+    return {
+      ...heading,
+      anchorId: normalizeCategorySlug(existing?.anchorId || heading.anchorId) || heading.anchorId,
+      label: existing?.label?.trim() || heading.label,
+      include: existing?.include ?? true,
+    };
+  });
+}
+
+async function loadArticleTaxonomy() {
+  const { db, articleCategoriesTable, articleCategoryGroupsTable } = await import("@workspace/db");
+  const [groups, categories] = await Promise.all([
+    db.select().from(articleCategoryGroupsTable).orderBy(asc(articleCategoryGroupsTable.sortOrder), asc(articleCategoryGroupsTable.name)),
+    db.select().from(articleCategoriesTable).orderBy(asc(articleCategoriesTable.sortOrder), asc(articleCategoriesTable.name)),
+  ]);
+
+  return groups.map((group) => ({
+    id: group.id,
+    name: group.name,
+    slug: group.slug,
+    sortOrder: group.sortOrder,
+    categories: categories
+      .filter((category) => category.groupId === group.id)
+      .map((category) => ({
+        id: category.id,
+        groupId: category.groupId,
+        name: category.name,
+        slug: category.slug,
+        sortOrder: category.sortOrder,
+      })),
+  }));
 }
 
 router.post("/admin/auth/login", async (req, res) => {
@@ -161,6 +240,181 @@ router.get("/admin/auth/status", (req, res) => {
   return res.json({ authenticated: verifyAdminSessionToken(getBearerToken(req)) });
 });
 
+router.get("/admin/article-taxonomy", requireAdmin, async (_req, res) => {
+  if (!process.env.DATABASE_URL) {
+    return res.status(503).json({ error: "Database not configured." });
+  }
+
+  return res.json({ groups: await loadArticleTaxonomy() });
+});
+
+router.post("/admin/article-category-groups", requireAdmin, async (req, res) => {
+  if (!process.env.DATABASE_URL) {
+    return res.status(503).json({ error: "Database not configured." });
+  }
+
+  const parsed = categoryGroupSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(422).json({ error: parsed.error.message });
+  }
+
+  const { db, articleCategoryGroupsTable } = await import("@workspace/db");
+  const slug = normalizeCategorySlug(parsed.data.slug || parsed.data.name);
+  const [group] = await db
+    .insert(articleCategoryGroupsTable)
+    .values({
+      name: parsed.data.name,
+      slug,
+      sortOrder: parsed.data.sortOrder,
+    })
+    .returning();
+
+  return res.status(201).json(group);
+});
+
+router.put("/admin/article-category-groups/:id", requireAdmin, async (req, res) => {
+  if (!process.env.DATABASE_URL) {
+    return res.status(503).json({ error: "Database not configured." });
+  }
+
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ error: "Invalid group id." });
+  }
+
+  const parsed = categoryGroupSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(422).json({ error: parsed.error.message });
+  }
+
+  const { db, articleCategoryGroupsTable } = await import("@workspace/db");
+  const slug = normalizeCategorySlug(parsed.data.slug || parsed.data.name);
+  const [group] = await db
+    .update(articleCategoryGroupsTable)
+    .set({
+      name: parsed.data.name,
+      slug,
+      sortOrder: parsed.data.sortOrder,
+      updatedAt: new Date(),
+    })
+    .where(eq(articleCategoryGroupsTable.id, id))
+    .returning();
+
+  if (!group) {
+    return res.status(404).json({ error: "Category group not found." });
+  }
+
+  return res.json(group);
+});
+
+router.delete("/admin/article-category-groups/:id", requireAdmin, async (req, res) => {
+  if (!process.env.DATABASE_URL) {
+    return res.status(503).json({ error: "Database not configured." });
+  }
+
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ error: "Invalid group id." });
+  }
+
+  const { db, articleCategoriesTable, articleCategoryGroupsTable } = await import("@workspace/db");
+  await db.delete(articleCategoriesTable).where(eq(articleCategoriesTable.groupId, id));
+  const [group] = await db
+    .delete(articleCategoryGroupsTable)
+    .where(eq(articleCategoryGroupsTable.id, id))
+    .returning();
+
+  if (!group) {
+    return res.status(404).json({ error: "Category group not found." });
+  }
+
+  return res.json({ success: true });
+});
+
+router.post("/admin/article-categories", requireAdmin, async (req, res) => {
+  if (!process.env.DATABASE_URL) {
+    return res.status(503).json({ error: "Database not configured." });
+  }
+
+  const parsed = categorySchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(422).json({ error: parsed.error.message });
+  }
+
+  const { db, articleCategoriesTable } = await import("@workspace/db");
+  const slug = normalizeCategorySlug(parsed.data.slug || parsed.data.name);
+  const [category] = await db
+    .insert(articleCategoriesTable)
+    .values({
+      groupId: parsed.data.groupId,
+      name: parsed.data.name,
+      slug,
+      sortOrder: parsed.data.sortOrder,
+    })
+    .returning();
+
+  return res.status(201).json(category);
+});
+
+router.put("/admin/article-categories/:id", requireAdmin, async (req, res) => {
+  if (!process.env.DATABASE_URL) {
+    return res.status(503).json({ error: "Database not configured." });
+  }
+
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ error: "Invalid category id." });
+  }
+
+  const parsed = categorySchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(422).json({ error: parsed.error.message });
+  }
+
+  const { db, articleCategoriesTable } = await import("@workspace/db");
+  const slug = normalizeCategorySlug(parsed.data.slug || parsed.data.name);
+  const [category] = await db
+    .update(articleCategoriesTable)
+    .set({
+      groupId: parsed.data.groupId,
+      name: parsed.data.name,
+      slug,
+      sortOrder: parsed.data.sortOrder,
+      updatedAt: new Date(),
+    })
+    .where(eq(articleCategoriesTable.id, id))
+    .returning();
+
+  if (!category) {
+    return res.status(404).json({ error: "Category not found." });
+  }
+
+  return res.json(category);
+});
+
+router.delete("/admin/article-categories/:id", requireAdmin, async (req, res) => {
+  if (!process.env.DATABASE_URL) {
+    return res.status(503).json({ error: "Database not configured." });
+  }
+
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ error: "Invalid category id." });
+  }
+
+  const { db, articleCategoriesTable } = await import("@workspace/db");
+  const [category] = await db
+    .delete(articleCategoriesTable)
+    .where(eq(articleCategoriesTable.id, id))
+    .returning();
+
+  if (!category) {
+    return res.status(404).json({ error: "Category not found." });
+  }
+
+  return res.json({ success: true });
+});
+
 router.get("/admin/articles", requireAdmin, async (req, res) => {
   if (!process.env.DATABASE_URL) {
     return res.status(503).json({ error: "Database not configured." });
@@ -192,24 +446,36 @@ router.post("/admin/articles", requireAdmin, async (req, res) => {
   }
 
   const slug = normalizeArticleSlug(parsed.data.slug);
+  const markdown = normalizeContactFormMarkers(parsed.data.markdown);
   const relatedSlugs = Array.from(
     new Set(parsed.data.relatedSlugs.map((value) => normalizeArticleSlug(value)).filter((value) => value !== slug)),
   );
-  const readMin = parsed.data.readMin ?? estimateReadMinutes(parsed.data.markdown);
-  const { db, articlesTable } = await import("@workspace/db");
+  const categorySlugs = Array.from(
+    new Set(parsed.data.categorySlugs.map((value) => normalizeCategorySlug(value)).filter(Boolean)),
+  );
+  const readMin = parsed.data.readMin ?? estimateReadMinutes(markdown);
+  const tocItems = normalizeTocItems(markdown, parsed.data.tocItems);
+  const { db, articleCategoriesTable, articlesTable } = await import("@workspace/db");
+
+  const selectedCategories = categorySlugs.length
+    ? await db.select().from(articleCategoriesTable).where(inArray(articleCategoriesTable.slug, categorySlugs))
+    : [];
+  const primaryCategory = parsed.data.category || selectedCategories[0]?.name || "Artykuł";
 
   const [row] = await db
     .insert(articlesTable)
     .values({
       sortOrder: parsed.data.sortOrder,
-      category: parsed.data.category,
+      category: primaryCategory,
+      categorySlugs,
       title: parsed.data.title,
       slug,
       excerpt: parsed.data.excerpt,
       coverImage: parsed.data.coverImage,
-      markdown: parsed.data.markdown,
-      relatedSlugs,
+      markdown,
       readMin,
+      tocItems,
+      relatedSlugs,
       isPublished: parsed.data.isPublished,
     })
     .returning();
@@ -237,24 +503,36 @@ router.put("/admin/articles/:id", requireAdmin, async (req, res) => {
   }
 
   const slug = normalizeArticleSlug(parsed.data.slug);
+  const markdown = normalizeContactFormMarkers(parsed.data.markdown);
   const relatedSlugs = Array.from(
     new Set(parsed.data.relatedSlugs.map((value) => normalizeArticleSlug(value)).filter((value) => value !== slug)),
   );
-  const readMin = parsed.data.readMin ?? estimateReadMinutes(parsed.data.markdown);
-  const { db, articlesTable } = await import("@workspace/db");
+  const categorySlugs = Array.from(
+    new Set(parsed.data.categorySlugs.map((value) => normalizeCategorySlug(value)).filter(Boolean)),
+  );
+  const readMin = parsed.data.readMin ?? estimateReadMinutes(markdown);
+  const tocItems = normalizeTocItems(markdown, parsed.data.tocItems);
+  const { db, articleCategoriesTable, articlesTable } = await import("@workspace/db");
+
+  const selectedCategories = categorySlugs.length
+    ? await db.select().from(articleCategoriesTable).where(inArray(articleCategoriesTable.slug, categorySlugs))
+    : [];
+  const primaryCategory = parsed.data.category || selectedCategories[0]?.name || "Artykuł";
 
   const [row] = await db
     .update(articlesTable)
     .set({
       sortOrder: parsed.data.sortOrder,
-      category: parsed.data.category,
+      category: primaryCategory,
+      categorySlugs,
       title: parsed.data.title,
       slug,
       excerpt: parsed.data.excerpt,
       coverImage: parsed.data.coverImage,
-      markdown: parsed.data.markdown,
-      relatedSlugs,
+      markdown,
       readMin,
+      tocItems,
+      relatedSlugs,
       isPublished: parsed.data.isPublished,
       updatedAt: new Date(),
     })

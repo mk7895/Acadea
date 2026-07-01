@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { Router, type IRouter, type Request, type Response } from "express";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -41,6 +41,7 @@ function shapeSummary(
     id: number;
     sortOrder: number;
     category: string;
+    categorySlugs: string[];
     title: string;
     slug: string;
     excerpt: string;
@@ -54,6 +55,7 @@ function shapeSummary(
     id: row.id,
     order: row.sortOrder,
     category: row.category,
+    categorySlugs: row.categorySlugs,
     title: row.title,
     slug: row.slug,
     excerpt: row.excerpt,
@@ -62,6 +64,30 @@ function shapeSummary(
     updatedAt: row.updatedAt.toISOString().slice(0, 10),
     isPublished: row.isPublished,
   };
+}
+
+async function loadPublicArticleTaxonomy() {
+  const { db, articleCategoriesTable, articleCategoryGroupsTable } = await import("@workspace/db");
+  const [groups, categories] = await Promise.all([
+    db.select().from(articleCategoryGroupsTable).orderBy(asc(articleCategoryGroupsTable.sortOrder), asc(articleCategoryGroupsTable.name)),
+    db.select().from(articleCategoriesTable).orderBy(asc(articleCategoriesTable.sortOrder), asc(articleCategoriesTable.name)),
+  ]);
+
+  return groups.map((group) => ({
+    id: group.id,
+    name: group.name,
+    slug: group.slug,
+    sortOrder: group.sortOrder,
+    categories: categories
+      .filter((category) => category.groupId === group.id)
+      .map((category) => ({
+        id: category.id,
+        groupId: category.groupId,
+        name: category.name,
+        slug: category.slug,
+        sortOrder: category.sortOrder,
+      })),
+  }));
 }
 
 async function loadStaticRoutesForSitemap() {
@@ -104,6 +130,14 @@ router.get("/articles", async (req, res) => {
   return res.json(rows.map((row) => shapeSummary(req, row)));
 });
 
+router.get("/article-taxonomy", async (_req, res) => {
+  if (!process.env.DATABASE_URL) {
+    return res.status(503).json({ error: "Database not configured." });
+  }
+
+  return res.json({ groups: await loadPublicArticleTaxonomy() });
+});
+
 router.get("/articles/:slug", async (req, res) => {
   if (!process.env.DATABASE_URL) {
     return res.status(503).json({ error: "Database not configured." });
@@ -121,13 +155,26 @@ router.get("/articles/:slug", async (req, res) => {
     return res.status(404).json({ error: "Article not found." });
   }
 
-  const related =
-    article.relatedSlugs.length > 0
-      ? await db
-          .select()
-          .from(articlesTable)
-          .where(eq(articlesTable.isPublished, true))
-      : [];
+  const related = article.relatedSlugs.length
+    ? await db
+        .select()
+        .from(articlesTable)
+        .where(eq(articlesTable.isPublished, true))
+    : [];
+
+  const referencedCategorySlugs = Array.from(
+    new Set([
+      ...article.categorySlugs,
+      ...related.flatMap((row) => row.categorySlugs),
+    ]),
+  );
+  const { articleCategoriesTable } = await import("@workspace/db");
+  const referencedCategories = referencedCategorySlugs.length
+    ? await db
+        .select()
+        .from(articleCategoriesTable)
+        .where(inArray(articleCategoriesTable.slug, referencedCategorySlugs))
+    : [];
 
   const relatedBySlug = new Map(related.map((row) => [row.slug, row]));
   const relatedArticles = article.relatedSlugs
@@ -138,8 +185,10 @@ router.get("/articles/:slug", async (req, res) => {
   return res.json({
     ...shapeSummary(req, article),
     markdown: article.markdown,
+    tocItems: article.tocItems,
     relatedSlugs: article.relatedSlugs,
     relatedArticles,
+    categories: referencedCategories,
   });
 });
 

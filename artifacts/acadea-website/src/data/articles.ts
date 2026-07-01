@@ -1,6 +1,9 @@
+import type { ArticleTocItem } from "@/lib/article-content";
+
 export interface Article {
   order: number;
-  category: "Poradniki" | "Kraje" | "Stypendia";
+  category: string;
+  categorySlugs?: string[];
   readMin: number;
   title: string;
   slug: string;
@@ -8,6 +11,7 @@ export interface Article {
   excerpt: string;
   image: string;
   markdown: string;
+  tocItems?: ArticleTocItem[];
 }
 
 function estimateReadMinutes(markdown: string) {
