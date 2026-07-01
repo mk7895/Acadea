@@ -148,7 +148,7 @@ export default function ArticlePage() {
 
   return (
     <div className="min-h-screen bg-[#fffdfa] pt-28 md:pt-32 pb-16 md:pb-20">
-      <div className="fixed left-0 right-0 top-[88px] z-[60] h-[4px] bg-[#e8e0d4]/90 md:top-[112px]">
+      <div className="pointer-events-none fixed left-0 right-0 top-[88px] z-[60] h-[4px] md:top-[112px]">
         <div
           className="h-[4px] bg-primary transition-[width] duration-150"
           style={{ width: `${readingProgress}%` }}
@@ -281,7 +281,7 @@ export default function ArticlePage() {
             </div>
           </article>
 
-          <aside className="xl:sticky xl:top-32 xl:self-start">
+          <aside className="xl:sticky xl:top-28 xl:self-start xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
             <div className="rounded-[28px] border border-[#ece4d7] bg-white p-6 shadow-sm">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#f5f1e8] px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[#8d7b5c]">
                 <List size={12} />

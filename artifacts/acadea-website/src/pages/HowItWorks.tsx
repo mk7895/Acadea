@@ -44,7 +44,7 @@ const steps = [
     icon: MessageCircle,
     title: "6. W oczekiwaniu na odpowiedzi i interviews",
     desc: "Pozostajemy w kontakcie po wysłaniu aplikacji, pomagając w komunikacji z uczelnią, przygotowaniu się do rozmów wstępnych (interviews) oraz dodając otuchy w oczekiwaniu na wyniki.",
-    color: "bg-rose-100 text-rose-600"
+    color: "bg-yellow-100 text-yellow-600"
   },
   {
     id: "po-przyjeciu",

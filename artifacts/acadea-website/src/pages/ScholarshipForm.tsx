@@ -59,6 +59,7 @@ export default function ScholarshipForm() {
     email: "",
     phone: "",
     school: "",
+    averageGrade: "",
     gradeYear: "",
     targetCountry: "",
     field: "",
@@ -122,6 +123,7 @@ export default function ScholarshipForm() {
           message: [
             "Zgłoszenie do Konkursu Stypendialnego ACADEA 2026",
             `Szkoła: ${form.school}`,
+            form.averageGrade ? `Średnia ocen za ostatni rok szkolny: ${form.averageGrade}` : null,
             form.gradeYear ? `Klasa / rok ukończenia: ${form.gradeYear}` : null,
             form.targetCountry ? `Docelowy kraj studiów: ${form.targetCountry}` : null,
             `Kierunek / dziedzina: ${form.field}`,
@@ -245,6 +247,8 @@ export default function ScholarshipForm() {
                       placeholder="Szkoła / liceum *" className={`rounded-xl ${errors.school ? "border-red-400" : ""}`} />
                     {errors.school && <p className="text-red-500 text-xs mt-1">{errors.school}</p>}
                   </div>
+                  <Input value={form.averageGrade} onChange={(e) => set("averageGrade", e.target.value)}
+                    placeholder="Średnia ocen za ostatni rok szkolny, np. 5.17" className="rounded-xl" />
                   <Input value={form.gradeYear} onChange={(e) => set("gradeYear", e.target.value)}
                     placeholder="Klasa lub planowany rok matury (opcjonalnie)" className="rounded-xl" />
                   <Input value={form.targetCountry} onChange={(e) => set("targetCountry", e.target.value)}

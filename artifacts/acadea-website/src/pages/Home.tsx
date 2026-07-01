@@ -210,7 +210,7 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.7, delay: 0.1 }}
-              className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary/5 to-accent/10 border border-primary/10 min-h-[360px] p-8 md:p-10"
+              className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary/5 to-accent/10 border border-primary/10 min-h-[360px] p-2 md:p-2.5"
             >
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent/10 blur-[80px]" />
@@ -220,11 +220,11 @@ export default function Home() {
                 <img
                   src={scholarshipHomePhoto}
                   alt="Program Stypendialny ACADEA"
-                  className="h-full w-full object-cover"
+                  className="h-full w-full scale-[1.04] object-cover"
                   loading="lazy"
                 />
               </div>
-              <div className="relative z-10 mt-4 flex items-center gap-2 text-sm text-primary/80">
+              <div className="relative z-10 mt-6 flex items-center gap-2 px-2 text-sm text-primary/80">
                 <MapPin size={16} className="shrink-0 text-accent" />
                 <span>wewnątrz Bodleian Library, University of Oxford</span>
               </div>
@@ -258,7 +258,7 @@ export default function Home() {
             {[
               { icon: ShieldCheck, title: "Pełna przejrzystość", desc: "Jasne zasady współpracy i stały wgląd w postępy — wiecie, za co płacicie i na jakim etapie jest aplikacja." },
               { icon: Wallet, title: "Świadome decyzje finansowe", desc: "Realnie pokazujemy koszty studiów, stypendia i opcje finansowania — bez ukrytych obietnic." },
-              { icon: Compass, title: "Szczere doradztwo", desc: "Doradzamy najlepsze, a nie najdroższe rozwiązania. Mówimy wprost, jakie są realne szanse Waszego dziecka." },
+              { icon: Compass, title: "Szczere doradztwo", desc: "Doradzamy najlepsze, a nie najdroższe rozwiązania. Mówimy wprost, jakie są realne szanse Twojego dziecka." },
               { icon: PhoneCall, title: "Kontakt na każdym etapie", desc: "Jesteśmy dostępni dla rodziców i odpowiadamy na pytania przez całą drogę — od pierwszej rozmowy po wyjazd." },
             ].map((c, i) => (
               <motion.div
@@ -306,7 +306,9 @@ export default function Home() {
                 <MessageCircle size={30} className="text-primary" />
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight mb-5">
-                Darmowa społeczność WhatsApp — aktualności o studiach za granicą
+                Darmowa społeczność WhatsApp — aktualności
+                <br className="hidden md:block" />
+                <span className="whitespace-nowrap"> o studiach za granicą</span>
               </h2>
               <p className="text-gray-800/70 text-lg leading-relaxed mb-8">
                 Dołącz i otrzymuj bezpłatne porady, terminy aplikacji i aktualności — prosto na telefon.

@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useParams, useLocation } from "wouter";
-import { ArrowLeft, ArrowRight, GraduationCap } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { countryBySlug, countryLocative, uniDomain } from "@/data/countries";
+import { fetchPublishedArticles, type ArticleSummary } from "@/lib/article-api";
 import NotFound from "@/pages/not-found";
 
 const SKIP_CLEARBIT = new Set([
@@ -63,6 +64,7 @@ export default function CountryDetail() {
   const [location] = useLocation();
   const slug = params.slug ?? "";
   const country = countryBySlug[slug];
+  const [articleItems, setArticleItems] = useState<ArticleSummary[]>([]);
 
   useEffect(() => {
     if (!country) return;
@@ -78,6 +80,30 @@ export default function CountryDetail() {
       window.scrollTo({ top: 0 });
     }
   }, [country, slug, location]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void fetchPublishedArticles().then((rows) => {
+      if (!cancelled) {
+        setArticleItems(rows);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const relatedCountryArticles = useMemo(() => {
+    if (!country) {
+      return [];
+    }
+
+    return articleItems
+      .filter((article) => article.categorySlugs.includes(country.slug))
+      .slice(0, 3);
+  }, [articleItems, country]);
 
   if (!country) return <NotFound />;
 
@@ -140,6 +166,40 @@ export default function CountryDetail() {
             </motion.div>
           ))}
         </div>
+
+        {relatedCountryArticles.length > 0 ? (
+          <section className="mb-20">
+            <h2 className="text-2xl md:text-3xl font-bold text-primary mb-8">
+              Dowiedz się więcej
+            </h2>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {relatedCountryArticles.map((article) => (
+                <Link
+                  key={article.slug}
+                  href={`/baza-wiedzy${article.slug}`}
+                  className="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all hover:shadow-md"
+                >
+                  <div className="h-48 overflow-hidden bg-gray-100">
+                    <img
+                      src={article.image}
+                      alt={article.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <div className="mb-3 flex items-center gap-2 text-xs text-gray-400">
+                      <Clock size={12} />
+                      <span>{article.readMin} min czytania</span>
+                    </div>
+                    <h3 className="text-lg font-bold text-primary mb-3">{article.title}</h3>
+                    <p className="text-sm leading-relaxed text-gray-500">{article.excerpt}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         {/* CTA */}
         <div className="rounded-3xl bg-primary text-white p-10 md:p-14 text-center relative overflow-hidden">

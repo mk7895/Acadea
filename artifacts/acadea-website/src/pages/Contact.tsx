@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Phone, Loader2 } from "lucide-react";
+import { Mail, Phone, Loader2, MessageCircle } from "lucide-react";
 import { Link } from "wouter";
 import { getApiBase } from "@/lib/api-base";
 import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
@@ -16,6 +16,8 @@ import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidge
 const CONTACT_EMAIL = "kontakt@acadea.org";
 const CONTACT_PHONE = "+48 728 492 936";
 const CONTACT_PHONE_HREF = "+48728492936";
+const CONTACT_WHATSAPP = "+48 799 831 204";
+const CONTACT_WHATSAPP_HREF = "+48799831204";
 const API_BASE = getApiBase();
 
 const contactSchema = z.object({
@@ -131,7 +133,7 @@ export default function Contact() {
               <div>
                 <h3 className="text-2xl font-bold mb-6">Dane kontaktowe</h3>
                 <p className="text-gray-300 mb-10 leading-relaxed">
-                  Odpowiadamy zazwyczaj w ciągu 24 godzin roboczych.
+                  Odpowiadamy zazwyczaj w ciągu kilku godzin.
                 </p>
 
                 <div className="space-y-8">
@@ -157,6 +159,21 @@ export default function Contact() {
                         className="text-gray-300 hover:text-white transition-colors"
                       >
                         {CONTACT_PHONE}
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <MessageCircle className="text-accent shrink-0 mt-1" />
+                    <div>
+                      <p className="font-semibold mb-1">WhatsApp</p>
+                      <a
+                        href={`https://wa.me/${CONTACT_WHATSAPP_HREF.replace("+", "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-300 hover:text-white transition-colors"
+                      >
+                        {CONTACT_WHATSAPP}
                       </a>
                     </div>
                   </div>

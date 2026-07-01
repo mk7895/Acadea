@@ -32,6 +32,7 @@ export default function Blog() {
   const [articleItems, setArticleItems] = useState<ArticleSummary[]>([]);
   const [taxonomyGroups, setTaxonomyGroups] = useState<ArticleCategoryGroup[]>([]);
   const [selectedFilters, setSelectedFilters] = useState<SelectedFilters>({});
+  const [activeGroupSlug, setActiveGroupSlug] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
@@ -42,6 +43,7 @@ export default function Blog() {
       if (!cancelled) {
         setArticleItems(rows);
         setTaxonomyGroups(taxonomy.groups);
+        setActiveGroupSlug((current) => current || taxonomy.groups[0]?.slug || "");
       }
     });
 
@@ -66,6 +68,11 @@ export default function Blog() {
   const hasActiveFilters = useMemo(
     () => Object.values(selectedFilters).some((slugs) => slugs.length > 0),
     [selectedFilters],
+  );
+
+  const activeGroup = useMemo(
+    () => taxonomyGroups.find((group) => group.slug === activeGroupSlug) ?? taxonomyGroups[0] ?? null,
+    [activeGroupSlug, taxonomyGroups],
   );
 
   function toggleFilter(groupSlug: string, categorySlug: string) {
@@ -130,7 +137,7 @@ export default function Blog() {
               <br className="hidden md:block" /> o <span className="text-primary">studiach za granicą</span>
             </h1>
             <p className="max-w-2xl text-lg leading-relaxed text-gray-500">
-              Przewodniki, poradniki i artykuły przygotowane przez ekspertów ACADEA, żeby decyzje o studiach za granicą podejmować ze świadomością, a nie ze strachem.
+              Stworzyliśmy miejsce, którego sami kiedyś szukaliśmy — konkretne, spokojne i oparte na doświadczeniu ludzi, którzy tę drogę naprawdę przeszli.
             </p>
           </motion.div>
         </div>
@@ -143,6 +150,26 @@ export default function Blog() {
               <span className="text-xs font-semibold uppercase tracking-[0.22em] text-[#9f8f74]">
                 Filtry
               </span>
+              {taxonomyGroups.map((group) => {
+                const hasSelectedInGroup = (selectedFilters[group.slug] ?? []).length > 0;
+                const isActive = activeGroup?.slug === group.slug;
+
+                return (
+                  <button
+                    key={group.id}
+                    onClick={() => setActiveGroupSlug(group.slug)}
+                    className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${
+                      isActive
+                        ? "border-primary bg-primary text-white"
+                        : hasSelectedInGroup
+                          ? "border-accent/40 bg-accent/12 text-primary"
+                          : "border-gray-200 text-gray-600 hover:border-primary hover:text-primary"
+                    }`}
+                  >
+                    {group.name}
+                  </button>
+                );
+              })}
               <button
                 onClick={() => setSelectedFilters({})}
                 className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${
@@ -151,37 +178,30 @@ export default function Blog() {
                     : "border-gray-200 text-gray-600 hover:border-primary hover:text-primary"
                 }`}
               >
-                Wszystkie
+                Resetuj filtry
               </button>
             </div>
 
-            {taxonomyGroups.length > 0 ? (
-              <div className="grid gap-3 lg:grid-cols-2">
-                {taxonomyGroups.map((group) => (
-                  <div key={group.id} className="rounded-2xl border border-gray-100 bg-[#faf8f2] p-3">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#9f8f74]">
-                      {group.name}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {group.categories.map((category) => {
-                        const selected = (selectedFilters[group.slug] ?? []).includes(category.slug);
-                        return (
-                          <button
-                            key={category.id}
-                            onClick={() => toggleFilter(group.slug, category.slug)}
-                            className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${
-                              selected
-                                ? "border-primary bg-primary text-white"
-                                : "border-gray-200 bg-white text-gray-600 hover:border-primary hover:text-primary"
-                            }`}
-                          >
-                            {category.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+            {activeGroup ? (
+              <div className="rounded-2xl border border-gray-100 bg-[#faf8f2] p-3">
+                <div className="flex flex-wrap gap-2">
+                  {activeGroup.categories.map((category) => {
+                    const selected = (selectedFilters[activeGroup.slug] ?? []).includes(category.slug);
+                    return (
+                      <button
+                        key={category.id}
+                        onClick={() => toggleFilter(activeGroup.slug, category.slug)}
+                        className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${
+                          selected
+                            ? "border-primary bg-primary text-white"
+                            : "border-gray-200 bg-white text-gray-600 hover:border-primary hover:text-primary"
+                        }`}
+                      >
+                        {category.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             ) : null}
           </div>
