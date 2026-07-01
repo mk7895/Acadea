@@ -90,7 +90,7 @@ export default function ArticlePage() {
 
       const ctaRect = ctaBox.getBoundingClientRect();
       const tocHeight = tocBox.getBoundingClientRect().height;
-      const maxTop = ctaRect.top - tocHeight - 24;
+      const maxTop = ctaRect.bottom - tocHeight;
 
       setTocTop(Math.min(baseTop, maxTop));
     }
