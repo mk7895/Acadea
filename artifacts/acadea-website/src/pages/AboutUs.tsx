@@ -120,10 +120,10 @@ export default function AboutUs() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
-                className="grid grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,320px)_minmax(0,1fr)] md:gap-12"
+                className="grid grid-cols-1 items-start gap-8 md:grid-cols-2 md:gap-14"
               >
-                <div className={member.imageOrder}>
-                  <div className="relative mx-auto aspect-square w-full max-w-[320px] overflow-hidden rounded-full border border-primary/10 bg-[#f8f4ec] shadow-[0_20px_60px_rgba(22,101,52,0.08)]">
+                <div className={`${member.imageOrder} flex w-full justify-center md:justify-start`}>
+                  <div className="relative aspect-square w-full max-w-[320px] overflow-hidden rounded-full border border-primary/10 bg-[#f8f4ec] shadow-[0_20px_60px_rgba(22,101,52,0.08)]">
                     <img
                       src={member.imageSrc}
                       alt={member.name}
@@ -132,7 +132,7 @@ export default function AboutUs() {
                     <div className="absolute inset-0 bg-gradient-to-t from-primary/12 via-transparent to-transparent" />
                   </div>
                 </div>
-                <div className={`${member.textOrder} max-w-3xl`}>
+                <div className={`${member.textOrder} w-full`}>
                   <h3 className="mb-5 text-3xl font-bold text-primary md:text-4xl">{member.name}</h3>
                   <p className="text-base leading-8 text-gray-600 md:text-lg">{member.description}</p>
                 </div>
