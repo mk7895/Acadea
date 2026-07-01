@@ -4,7 +4,6 @@ import {
   ArrowRight,
   Heart,
   PlayCircle,
-  Star,
   Clock,
   Calendar,
 } from "lucide-react";
@@ -23,19 +22,11 @@ const itemVariants: Variants = {
 const criteria = [
   {
     title: "Wybitne wyniki i osiągnięcia",
-    desc: "Szukamy osób z pasją — oceny są ważne, ale jeszcze ważniejsza jest motywacja, determinacja i to, co robisz poza szkołą.",
+    desc: "Szukamy osób z pasją — oceny są istotne, ale równie ważne są Twoja motywacja, determinacja i to, co robisz poza szkołą.",
   },
   {
-    title: "Wielkie marzenia i jasna pasja",
+    title: "Wielkie marzenia i plany na przyszłość",
     desc: "Chcesz studiować za granicą, latać samolotami, tańczyć albo rozwijać zupełnie inną dziedzinę? Pomożemy Ci zaplanować własną ścieżkę.",
-  },
-  {
-    title: "Gotowość do rozwoju",
-    desc: "Wiesz, w czym chcesz się rozwijać — albo jesteś gotowy odkryć to razem z nami i swoim mentorem.",
-  },
-  {
-    title: "Obywatelstwo lub rezydencja polska",
-    desc: "Konkurs skierowany jest do polskich uczniów i młodych osób, niezależnie od ich sytuacji finansowej.",
   },
 ];
 
@@ -60,7 +51,7 @@ export default function Scholarship() {
                 <span className="text-primary">Nasze wsparcie.</span>
               </h1>
               <p className="text-xl text-gray-500 leading-relaxed max-w-2xl mb-8 md:mb-10">
-                Program Stypendialny ACADEA to mentoring i wsparcie dla ambitnych, zmotywowanych osób — niezależnie od tego, czy marzą o studiach za granicą, czy chcą rozwijać inną pasję, jak lotnictwo czy taniec. Pomagamy wybrać i przejść własną ścieżkę.
+                Program Stypendialny ACADEA to mentoring i wsparcie dla ambitnych, zmotywowanych osób — niezależnie od tego, czy marzą o studiach za granicą, czy chcą rozwijać inną pasję, jak lotnictwo czy taniec. Pomagamy świadomie wybrać i podążać własną ścieżką.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <a href="#konkurs">
@@ -155,9 +146,14 @@ export default function Scholarship() {
       </section>
 
       {/* Competition section */}
-      <section className="py-12 md:py-16 bg-primary relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-accent blur-[120px]" />
+      <section
+        className="py-12 md:py-16 relative overflow-hidden"
+        style={{ backgroundColor: "rgb(28, 61, 47)" }}
+      >
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-24 -right-10 h-72 w-72 rounded-full bg-[#fcbc1e]/18 blur-[8px]" />
+          <div className="absolute bottom-10 left-[8%] h-56 w-56 rounded-full bg-[#fcbc1e]/12 blur-[6px]" />
+          <div className="absolute top-[34%] right-[18%] h-40 w-40 rounded-full bg-[#fcbc1e]/10 blur-[4px]" />
         </div>
         <div className="container mx-auto px-4 md:px-6 relative z-10">
           <div className="max-w-4xl mx-auto">
@@ -167,15 +163,11 @@ export default function Scholarship() {
               viewport={{ once: true }}
               className="text-center mb-14"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 border border-accent/30 text-accent text-sm font-semibold mb-8">
-                <Star size={16} className="fill-accent" />
-                <span>I Edycja</span>
-              </div>
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
                 Konkurs Stypendialny ACADEA
               </h2>
               <p className="text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto">
-                Ogłaszamy pierwszą edycję naszego programu stypendialnego. Szukamy ambitnych, zmotywowanych osób z pasją — niezależnie od tego, czy marzą o studiach za granicą, czy chcą rozwijać swoje zainteresowania, takie jak lotnictwo, taniec czy nauka. To program mentoringowy, w którym pomagamy wybrać i przejść własną ścieżkę.
+                Szukamy ambitnych, zmotywowanych osób z pasją — niezależnie od tego, czy marzą o studiach za granicą, czy chcą rozwijać swoje zainteresowania, takie jak lotnictwo, taniec czy nauka. To program mentoringowy, w którym pomagamy świadomie wybrać i podążać własną ścieżką.
               </p>
             </motion.div>
 
@@ -188,13 +180,8 @@ export default function Scholarship() {
             >
               <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12">
                 <div>
-                  <div className="text-sm font-semibold uppercase tracking-widest mb-2 text-primary/70">Termin zgłoszeń</div>
-                  <div className="text-4xl md:text-5xl font-bold">10 lipca 2026</div>
-                </div>
-                <div className="hidden md:block w-px h-16 bg-primary/20" />
-                <div>
-                  <div className="text-sm font-semibold uppercase tracking-widest mb-2 text-primary/70">Edycja</div>
-                  <div className="text-4xl md:text-5xl font-bold">I</div>
+                  <div className="text-sm font-semibold uppercase tracking-widest mb-2 text-primary/70">Zgłoszenia</div>
+                  <div className="text-3xl md:text-4xl font-bold">Rozpatrywane na bieżąco</div>
                 </div>
                 <div className="hidden md:block w-px h-16 bg-primary/20" />
                 <div>
@@ -242,7 +229,7 @@ export default function Scholarship() {
               Jeśli masz wybitne wyniki, pasję i wielkie marzenia, ten konkurs jest dla Ciebie.
             </p>
             <p className="text-base text-gray-500 mb-10">
-              Nabór trwa do <strong className="text-primary">10 lipca 2026</strong>. Wypełnij formularz — rozpatrujemy zgłoszenia indywidualnie, z pełnym szacunkiem dla każdej historii.
+              Wypełnij formularz. Zgłoszenia rozpatrujemy z indywidualną uwagą dla każdej historii.
             </p>
             <Link href="/stypendium/aplikacja">
               <Button

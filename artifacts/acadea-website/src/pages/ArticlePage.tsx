@@ -147,7 +147,7 @@ export default function ArticlePage() {
   const remainderMarkdown = showInlineForm ? articleSections.remainder : "";
 
   return (
-    <div className="min-h-screen bg-[#fffdfa] pt-36 md:pt-44 pb-16 md:pb-20">
+    <div className="min-h-screen bg-[#fffdfa] pt-28 md:pt-32 pb-16 md:pb-20">
       <div className="fixed left-0 right-0 top-[88px] z-[60] h-[4px] bg-[#e8e0d4]/90 md:top-[112px]">
         <div
           className="h-[4px] bg-primary transition-[width] duration-150"

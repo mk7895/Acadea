@@ -86,7 +86,10 @@ export default function AboutUs() {
         <div className="mb-20">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-primary mb-3">Nasz zespół</h2>
-            <p className="text-gray-500 max-w-xl mx-auto">Eksperci, którzy sami przeszli przez proces aplikacji za granicą i teraz pomagają innym.</p>
+            <div className="max-w-3xl mx-auto space-y-2 text-gray-500">
+              <p>Eksperci, którzy sami przeszli przez proces aplikacji na studia za granicą i teraz pomagają innym.</p>
+              <p>Doświadczeni tutorzy, którzy od lat pomagają uczniom rozwijać płynność, poprawność oraz pewność w komunikacji.</p>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
@@ -101,7 +104,7 @@ export default function AboutUs() {
               {
                 name: "Mateusz Klepacki",
                 role: "Mentor",
-                desc: "Absolwent LSE (Econometrics and Mathematical Economics) i NYU.",
+                desc: "Absolwent LSE (Econometrics and Mathematical Economics) i NYU. Ma za sobą 100+ udanych współprac.",
                 initials: "MK",
                 linkedin: "https://www.linkedin.com/in/mateusz-klepacki/",
                 color: "#14532d",
@@ -117,7 +120,7 @@ export default function AboutUs() {
               {
                 name: "Bartosz Kuźma",
                 role: "Tutor",
-                desc: "Nauczyciel języka angielskiego z certyfikatem TEFL, absolwent prawa. Pomaga osiągnąć wymagane wyniki w egzaminach językowych.",
+                desc: "Nauczyciel języka angielskiego z certyfikatem TEFL, absolwent prawa.",
                 initials: "BK",
                 linkedin: "https://www.linkedin.com/in/bartosz-ku%C5%BAma-243945259/",
                 color: "#14532d",

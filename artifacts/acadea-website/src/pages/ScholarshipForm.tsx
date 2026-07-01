@@ -134,7 +134,7 @@ export default function ScholarshipForm() {
             Aplikuj o stypendium
           </h1>
           <p className="text-gray-500 text-lg max-w-lg mx-auto">
-            Wypełnij formularz, a my zapoznamy się z Twoją historią. Nabór trwa do <strong className="text-primary">10 lipca 2026</strong>.
+            Wypełnij formularz. Zgłoszenia rozpatrujemy z indywidualną uwagą dla każdej historii.
           </p>
         </motion.div>
 
