@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { ArrowRight, X } from "lucide-react";
 
 const PROMPT_DELAY_MS = 150_000;
 const PROMPT_SESSION_KEY = "acadea_consultation_prompt_seen_v1";
+const ACTIVE_TIME_KEY = "acadea_consultation_active_time_ms_v1";
+const EXIT_INTENT_MIN_ACTIVE_MS = 30_000;
 
 const excludedPathPrefixes = [
   "/kontakt",
@@ -33,13 +35,37 @@ function rememberPromptSeen() {
   }
 }
 
+function getAccumulatedActiveTime() {
+  try {
+    return Number(window.sessionStorage.getItem(ACTIVE_TIME_KEY) ?? "0");
+  } catch {
+    return 0;
+  }
+}
+
+function storeAccumulatedActiveTime(value: number) {
+  try {
+    window.sessionStorage.setItem(ACTIVE_TIME_KEY, String(value));
+  } catch {
+    // Session storage can be blocked; the popup still works without persistence.
+  }
+}
+
 export function ConsultationPrompt() {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const pageEnteredAtRef = useRef<number>(Date.now());
   const shouldShowOnPath = useMemo(
     () => !excludedPathPrefixes.some((prefix) => location.startsWith(prefix)),
     [location],
   );
+
+  useEffect(() => {
+    pageEnteredAtRef.current = Date.now();
+    return () => {
+      storeAccumulatedActiveTime(getAccumulatedActiveTime() + (Date.now() - pageEnteredAtRef.current));
+    };
+  }, [location]);
 
   useEffect(() => {
     setIsOpen(false);
@@ -59,7 +85,12 @@ export function ConsultationPrompt() {
     const timer = window.setTimeout(showPrompt, PROMPT_DELAY_MS);
 
     const handleExitIntent = (event: MouseEvent) => {
-      if (event.clientY <= 0 && !event.relatedTarget) {
+      if (event.relatedTarget) {
+        return;
+      }
+
+      const totalActiveTime = getAccumulatedActiveTime() + (Date.now() - pageEnteredAtRef.current);
+      if (totalActiveTime >= EXIT_INTENT_MIN_ACTIVE_MS) {
         showPrompt();
       }
     };
@@ -120,7 +151,7 @@ export function ConsultationPrompt() {
 
         <div className="mt-7 flex flex-col gap-3 sm:flex-row">
           <Link
-            href="/kontakt"
+            href="/umow-spotkanie"
             onClick={closePrompt}
             className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-bold text-white transition-colors hover:bg-primary/90"
           >

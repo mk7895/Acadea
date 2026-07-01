@@ -62,10 +62,16 @@ export default function ScholarshipTerms() {
                   </Link>.
                 </li>
                 <li>
-                  Zgłoszenia są rozpatrywane na bieżąco. Organizator może dzielić napływające aplikacje na partie zgłoszeń, zwane dalej batchami, i oceniać je w ramach danego batcha.
+                  Zgłoszenia są rozpatrywane na bieżąco. Organizator może dzielić napływające aplikacje na tury zgłoszeń i oceniać je w ramach danej tury.
                 </li>
                 <li>
                   Kandydat odpowiada za prawdziwość, kompletność i aktualność danych podanych w formularzu.
+                </li>
+                <li>
+                  Jedna osoba może wysłać maksymalnie jedno zgłoszenie w okresie 6 miesięcy.
+                </li>
+                <li>
+                  Wysyłanie wielu zgłoszeń w krótkim czasie, obchodzenie ograniczenia albo składanie aplikacji pod różnymi danymi może skutkować nieuwzględnieniem wszystkich takich zgłoszeń, wykluczeniem z bieżącej rekrutacji, a w powtarzających się przypadkach także trwałą blokadą udziału w kolejnych edycjach programu.
                 </li>
                 <li>
                   Organizator może pozostawić bez rozpoznania zgłoszenie niekompletne, oczywiście nierzetelne albo naruszające zasady konkursu.
@@ -80,7 +86,7 @@ export default function ScholarshipTerms() {
                   Zgłoszenia ocenia komisja konkursowa. W skład komisji wchodzą mentorzy ACADEA oraz członkowie zarządu Fundacji Acadea.
                 </li>
                 <li>
-                  Komisja może oceniać zgłoszenia wspólnie albo indywidualnie, a następnie uzgodnić wynik końcowy dla danego batcha.
+                  Komisja może oceniać zgłoszenia wspólnie albo indywidualnie, a następnie uzgodnić wynik końcowy dla danej tury zgłoszeń.
                 </li>
                 <li>
                   Komisja może kontaktować się z wybranym kandydatem w celu doprecyzowania informacji podanych w zgłoszeniu, ale nie ma takiego obowiązku.
@@ -91,7 +97,7 @@ export default function ScholarshipTerms() {
             <section>
               <h2 className="mb-3 text-xl font-bold text-primary">§4. Punktacja</h2>
               <p className="mb-4">
-                W ramach oceny zgłoszenia kandydat może uzyskać maksymalnie 70 punktów. Punktacja służy porównaniu zgłoszeń w danym batchu i nie gwarantuje przyznania stypendium.
+                W ramach oceny zgłoszenia kandydat może uzyskać maksymalnie 70 punktów. Punktacja służy porównaniu zgłoszeń w danej turze i nie gwarantuje przyznania stypendium.
               </p>
               <div className="overflow-x-auto rounded-2xl border border-gray-100">
                 <table className="w-full min-w-[680px] text-left text-sm">
@@ -119,13 +125,13 @@ export default function ScholarshipTerms() {
               <h2 className="mb-3 text-xl font-bold text-primary">§5. Wybór stypendystów</h2>
               <ol className="list-decimal space-y-2 pl-5">
                 <li>
-                  Po ocenie zgłoszeń komisja tworzy listę rankingową w ramach danego batcha.
+                  Po ocenie zgłoszeń komisja tworzy listę rankingową w ramach danej tury zgłoszeń.
                 </li>
                 <li>
-                  Komisja może przyznać stypendium jednej lub kilku osobom z danego batcha, kierując się liczbą punktów, jakością zgłoszeń, możliwościami organizacyjnymi oraz dostępną pulą wsparcia.
+                  Komisja może przyznać stypendium jednej lub kilku osobom z danej tury zgłoszeń, kierując się liczbą punktów, jakością zgłoszeń, możliwościami organizacyjnymi oraz dostępną pulą wsparcia.
                 </li>
                 <li>
-                  Komisja zastrzega sobie prawo do niewyłonienia żadnego stypendysty w danym batchu.
+                  Komisja zastrzega sobie prawo do niewyłonienia żadnego stypendysty w danej turze zgłoszeń.
                 </li>
                 <li>
                   Decyzja komisji jest ostateczna. Od decyzji nie przysługuje odwołanie.
@@ -174,8 +180,8 @@ export default function ScholarshipTerms() {
                 </li>
                 <li>
                   Kontakt w sprawach konkursu:{" "}
-                  <a href="mailto:kontakt@acadea.org" className="font-semibold text-primary hover:underline">
-                    kontakt@acadea.org
+                  <a href="mailto:contact@acadea.org" className="font-semibold text-primary hover:underline">
+                    contact@acadea.org
                   </a>.
                 </li>
               </ol>
