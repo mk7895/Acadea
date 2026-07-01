@@ -86,10 +86,9 @@ export default function AboutUs() {
         <div className="mb-20">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-primary mb-3">Nasz zespół</h2>
-            <div className="max-w-3xl mx-auto space-y-2 text-gray-500">
-              <p>Eksperci, którzy sami przeszli przez proces aplikacji na studia za granicą i teraz pomagają innym.</p>
-              <p>Doświadczeni tutorzy, którzy od lat pomagają uczniom rozwijać płynność, poprawność oraz pewność w komunikacji.</p>
-            </div>
+            <p className="max-w-3xl mx-auto text-gray-500 leading-relaxed">
+              Eksperci, którzy sami przeszli przez proces aplikacji na studia za granicą i teraz pomagają innym. Doświadczeni tutorzy, którzy od lat pomagają uczniom rozwijać płynność, poprawność oraz pewność w komunikacji.
+            </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {[

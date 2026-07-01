@@ -146,14 +146,11 @@ export default function Scholarship() {
       </section>
 
       {/* Competition section */}
-      <section
-        className="py-12 md:py-16 relative overflow-hidden"
-        style={{ backgroundColor: "rgb(28, 61, 47)" }}
-      >
+      <section className="py-12 md:py-16 relative overflow-hidden bg-[#faf7f1]">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -right-10 h-72 w-72 rounded-full bg-[#fcbc1e]/18 blur-[8px]" />
-          <div className="absolute bottom-10 left-[8%] h-56 w-56 rounded-full bg-[#fcbc1e]/12 blur-[6px]" />
-          <div className="absolute top-[34%] right-[18%] h-40 w-40 rounded-full bg-[#fcbc1e]/10 blur-[4px]" />
+          <div className="absolute -top-44 -right-28 h-[28rem] w-[28rem] rounded-full bg-[#fcbc1e]/18 blur-[22px]" />
+          <div className="absolute bottom-[-9rem] left-[-5rem] h-[24rem] w-[24rem] rounded-full bg-[#fcbc1e]/14 blur-[18px]" />
+          <div className="absolute top-[26%] left-[28%] h-[20rem] w-[20rem] rounded-full bg-primary/8 blur-[18px]" />
         </div>
         <div className="container mx-auto px-4 md:px-6 relative z-10">
           <div className="max-w-4xl mx-auto">
@@ -163,10 +160,10 @@ export default function Scholarship() {
               viewport={{ once: true }}
               className="text-center mb-14"
             >
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              <h2 className="text-4xl md:text-5xl font-bold text-primary mb-6">
                 Konkurs Stypendialny ACADEA
               </h2>
-              <p className="text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto">
+              <p className="text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
                 Szukamy ambitnych, zmotywowanych osób z pasją — niezależnie od tego, czy marzą o studiach za granicą, czy chcą rozwijać swoje zainteresowania, takie jak lotnictwo, taniec czy nauka. To program mentoringowy, w którym pomagamy świadomie wybrać i podążać własną ścieżką.
               </p>
             </motion.div>
@@ -204,10 +201,10 @@ export default function Scholarship() {
                   key={i}
                   variants={itemVariants}
                   data-testid={`criterion-${i}`}
-                  className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20"
+                  className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-primary/10 shadow-sm"
                 >
-                  <h3 className="text-white font-bold text-lg mb-2">{c.title}</h3>
-                  <p className="text-gray-300 text-sm leading-relaxed">{c.desc}</p>
+                  <h3 className="text-primary font-bold text-lg mb-2">{c.title}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">{c.desc}</p>
                 </motion.div>
               ))}
             </motion.div>
@@ -225,11 +222,8 @@ export default function Scholarship() {
             className="max-w-3xl mx-auto text-center"
           >
             <h2 className="text-4xl font-bold text-primary mb-6">Aplikuj o stypendium</h2>
-            <p className="text-lg text-gray-600 mb-4 leading-relaxed">
-              Jeśli masz wybitne wyniki, pasję i wielkie marzenia, ten konkurs jest dla Ciebie.
-            </p>
-            <p className="text-base text-gray-500 mb-10">
-              Wypełnij formularz. Zgłoszenia rozpatrujemy z indywidualną uwagą dla każdej historii.
+            <p className="text-lg text-gray-600 mb-10 leading-relaxed">
+              Jeśli masz wybitne wyniki, pasję i wielkie marzenia, ten konkurs jest dla Ciebie. Wypełnij formularz. Zgłoszenia rozpatrujemy z indywidualną uwagą dla każdej historii.
             </p>
             <Link href="/stypendium/aplikacja">
               <Button
