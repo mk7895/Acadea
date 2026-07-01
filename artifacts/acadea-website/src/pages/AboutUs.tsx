@@ -38,9 +38,9 @@ export default function AboutUs() {
             className="relative h-[500px] rounded-3xl overflow-hidden"
           >
             <img 
-              src="/images/hero-students.jpg" 
-              alt="Studenci na zagranicznej uczelni" 
-              className="w-full h-full object-cover"
+              src="/images/about-together.webp" 
+              alt="Zespół ACADEA" 
+              className="w-full h-full object-cover object-[38%_center]"
             />
             <div className="absolute inset-0 bg-primary/10 mix-blend-multiply"></div>
           </motion.div>
