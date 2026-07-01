@@ -61,6 +61,7 @@ export default function PrivacyPolicy() {
                 <li>Marketing i remarketing w serwisach zewnętrznych</li>
                 <li>Prowadzenie statystyk (użytkowników, ilości odwiedzin, rodzajów urządzeń)</li>
                 <li>Świadczenie usług społecznościowych</li>
+                <li>Zapamiętanie w trakcie sesji zamknięcia komunikatów i popupów informacyjnych wyświetlanych w Serwisie</li>
               </ul>
             </section>
 
@@ -97,7 +98,8 @@ export default function PrivacyPolicy() {
               <p className="mt-3"><strong>Dane gromadzone podczas korzystania z formularzy:</strong> imię i nazwisko, adres e-mail, numer telefonu, treść wiadomości, preferencje dotyczące studiów, informacje przekazywane w formularzu stypendialnym, formularzu mentorskim oraz podczas rezerwacji spotkania.</p>
               <p className="mt-3"><strong>Dane gromadzone w platformie `app.acadea.org`:</strong> dane konta użytkownika, rola i status użytkownika, dane sesji, zgody cookies, profile mentorów i mentee, informacje o spotkaniach, przewodnikach, materiałach oraz dane wpisywane przez użytkownika do formularzy i paneli platformy.</p>
               <p className="mt-3"><strong>Dane techniczne i bezpieczeństwa:</strong> tokeny sesji przechowywane lokalnie w przeglądarce, dane związane z resetem hasła, odpowiedzi mechanizmów antyspamowych oraz logi techniczne związane z bezpieczeństwem i działaniem usług.</p>
-              <p className="mt-3">Część danych (bez danych identyfikujących) może być przechowywana w plikach cookies lub przekazywana do dostawców usług statystycznych, reklamowych, bezpieczeństwa lub infrastruktury technicznej.</p>
+              <p className="mt-3"><strong>Dane interfejsu:</strong> informacje o zaakceptowanych ustawieniach cookies, wybranej strefie czasowej oraz zamknięciu komunikatów lub popupów w trakcie danej sesji przeglądarki.</p>
+              <p className="mt-3">Część danych (bez danych identyfikujących) może być przechowywana w plikach cookies, localStorage lub sessionStorage przeglądarki albo przekazywana do dostawców usług statystycznych, reklamowych, bezpieczeństwa lub infrastruktury technicznej.</p>
             </section>
 
             <section>

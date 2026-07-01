@@ -185,6 +185,20 @@ export default function Booking() {
   }, [canUsePreferencesCookies, timezone]);
 
   useEffect(() => {
+    const resetBooking = () => {
+      setStep(0);
+      setSelectedDayKey(null);
+      setSelectedSlotStart(null);
+      setSubmitError("");
+      setFormErrors({});
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    window.addEventListener("acadea:booking-reset", resetBooking);
+    return () => window.removeEventListener("acadea:booking-reset", resetBooking);
+  }, []);
+
+  useEffect(() => {
     setSelectedDayKey(null);
     setSelectedSlotStart(null);
     if (step > 0 && step < 3) {
@@ -593,7 +607,14 @@ export default function Booking() {
 
         {step < 3 && (
           <div className="flex flex-wrap justify-center gap-6 mt-8 text-sm text-gray-400">
-            {["Bezpłatna konsultacja", "Zoom", "Bez zobowiązań"].map((item) => (
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event("acadea:booking-reset"))}
+              className="flex items-center gap-2 transition-colors hover:text-primary"
+            >
+              <CheckCircle2 size={14} className="text-primary" /> Bezpłatna konsultacja
+            </button>
+            {["Zoom", "Bez zobowiązań"].map((item) => (
               <span key={item} className="flex items-center gap-2">
                 <CheckCircle2 size={14} className="text-primary" /> {item}
               </span>

@@ -7,6 +7,7 @@
   { "path": "/baza-wiedzy", "source": "pages/Blog.tsx", "includeInSitemap": true },
   { "path": "/stypendium", "source": "pages/Scholarship.tsx", "includeInSitemap": true },
   { "path": "/stypendium/aplikacja", "source": "pages/ScholarshipForm.tsx", "includeInSitemap": true },
+  { "path": "/stypendium/regulamin", "source": "pages/ScholarshipTerms.tsx", "includeInSitemap": true },
   { "path": "/umow-spotkanie", "source": "pages/Booking.tsx", "includeInSitemap": true },
   { "path": "/mentoruj", "source": "pages/MentorForm.tsx", "includeInSitemap": true },
   { "path": "/polityka-prywatnosci", "source": "pages/PrivacyPolicy.tsx", "includeInSitemap": true },

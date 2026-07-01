@@ -16,6 +16,7 @@ import Contact from "@/pages/Contact";
 import Blog from "@/pages/Blog";
 import Scholarship from "@/pages/Scholarship";
 import ScholarshipForm from "@/pages/ScholarshipForm";
+import ScholarshipTerms from "@/pages/ScholarshipTerms";
 import Booking from "@/pages/Booking";
 import MentorForm from "@/pages/MentorForm";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
@@ -25,6 +26,7 @@ import ArticlePage from "@/pages/ArticlePage";
 import AdminArticles from "@/pages/AdminArticles";
 import { CookieConsentProvider } from "@/components/CookieConsent";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { ConsultationPrompt } from "@/components/ConsultationPrompt";
 
 const queryClient = new QueryClient();
 
@@ -90,6 +92,7 @@ function Router() {
         <Route path="/baza-wiedzy/:slug" component={ArticlePage} />
         <Route path="/stypendium" component={Scholarship} />
         <Route path="/stypendium/aplikacja" component={ScholarshipForm} />
+        <Route path="/stypendium/regulamin" component={ScholarshipTerms} />
         <Route path="/umow-spotkanie" component={Booking} />
         <Route path="/mentoruj" component={MentorForm} />
         <Route path="/polityka-prywatnosci" component={PrivacyPolicy} />
@@ -111,6 +114,7 @@ function App() {
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <ScrollManager />
             <Router />
+            <ConsultationPrompt />
           </WouterRouter>
           <Toaster />
         </TooltipProvider>

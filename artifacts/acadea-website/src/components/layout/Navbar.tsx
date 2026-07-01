@@ -19,6 +19,12 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const resetBookingIfCurrentPage = () => {
+    if (location === "/umow-spotkanie") {
+      window.dispatchEvent(new Event("acadea:booking-reset"));
+    }
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -79,7 +85,7 @@ export function Navbar() {
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
-          <Link href="/umow-spotkanie">
+          <Link href="/umow-spotkanie" onClick={resetBookingIfCurrentPage}>
             <Button className="rounded-full px-6 bg-primary text-white hover:bg-primary/90 transition-all font-semibold">
               Bezpłatna konsultacja
             </Button>
@@ -122,9 +128,9 @@ export function Navbar() {
                   </Link>
                 ))}
                 <div className="mt-8 border-t border-gray-100 pt-8">
-                  <Link href="/kontakt">
+                  <Link href="/umow-spotkanie" onClick={resetBookingIfCurrentPage}>
                     <Button className="w-full rounded-full h-14 text-lg bg-primary text-white">
-                      Bezpłatna Konsultacja
+                      Bezpłatna konsultacja
                     </Button>
                   </Link>
                 </div>

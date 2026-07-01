@@ -146,8 +146,9 @@ function CookieConsentBanner() {
             <h2 className="text-2xl font-bold text-primary mb-2">Szanujemy Twoją prywatność</h2>
             <p className="text-sm text-gray-600 leading-relaxed">
               Używamy plików cookies niezbędnych do działania serwisu oraz, za Twoją zgodą,
-              plików cookies preferencji, analitycznych i marketingowych. Więcej informacji znajdziesz
-              w polityce prywatności.
+              plików cookies preferencji, analitycznych i marketingowych. Możemy też zapamiętać
+              w trakcie sesji zamknięcie komunikatów wyświetlanych na stronie. Więcej informacji
+              znajdziesz w polityce prywatności.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
@@ -212,7 +213,7 @@ function CookiePreferencesModal() {
         <div className="space-y-4">
           <CookieRow
             title="Niezbędne"
-            description="Odpowiadają za podstawowe działanie strony i zabezpieczenia formularzy. Są zawsze aktywne."
+            description="Odpowiadają za podstawowe działanie strony, zgody cookies, zabezpieczenia formularzy oraz zapamiętanie zamknięcia komunikatów w trakcie sesji. Są zawsze aktywne."
             checked
             disabled
             onChange={() => undefined}
@@ -231,7 +232,7 @@ function CookiePreferencesModal() {
           />
           <CookieRow
             title="Marketingowe"
-            description="Będą używane po wdrożeniu narzędzi reklamowych i remarketingowych."
+            description="Będą używane po wdrożeniu narzędzi reklamowych, remarketingowych i pomiaru skuteczności komunikatów zachęcających do kontaktu."
             checked={draft.marketing}
             onChange={(checked) => updateDraft({ marketing: checked })}
           />

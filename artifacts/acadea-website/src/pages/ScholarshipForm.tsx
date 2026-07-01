@@ -52,7 +52,8 @@ const MENTORS = [
   },
 ] as const;
 
-const MENTOR_NAMES = MENTORS.map((mentor) => mentor.name);
+const SORTED_MENTORS = [...MENTORS].sort((a, b) => a.name.localeCompare(b.name, "pl"));
+const MENTOR_NAMES = SORTED_MENTORS.map((mentor) => mentor.name);
 
 export default function ScholarshipForm() {
   const [form, setForm] = useState({
@@ -323,7 +324,7 @@ export default function ScholarshipForm() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">
-                  {MENTORS.map((mentor) => (
+                  {SORTED_MENTORS.map((mentor) => (
                     <div key={mentor.name} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                       <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-2">
                         <GraduationCap size={16} />

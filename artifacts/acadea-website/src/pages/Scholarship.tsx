@@ -63,7 +63,7 @@ const scholarshipMentors = [
     name: "Oskar Krawczyk",
     desc: "Pomaga kandydatom uchwycić najmocniejsze strony ich historii i dobrze je pokazać w aplikacji.",
   },
-];
+].sort((a, b) => a.name.localeCompare(b.name, "pl"));
 
 export default function Scholarship() {
   return (
@@ -106,11 +106,16 @@ export default function Scholarship() {
               <div className="w-full max-w-[340px] rounded-[32px] border border-primary/10 bg-gradient-to-br from-primary/[0.04] via-white to-accent/10 p-4 md:p-5 shadow-[0_22px_60px_rgba(22,101,52,0.08)]">
                 <div className="overflow-hidden rounded-3xl border border-primary/10 aspect-[9/16] bg-black">
                   <video
-                    src="https://media.acadea.org/acadeaVideoR2HD.mp4"
+                    src="https://media.acadea.org/acadeaVideoR2HD.mp4#t=0.1"
                     className="h-full w-full object-cover"
                     controls
                     playsInline
-                    preload="metadata"
+                    preload="auto"
+                    onLoadedMetadata={(event) => {
+                      if (event.currentTarget.currentTime < 0.1) {
+                        event.currentTarget.currentTime = 0.1;
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -222,9 +227,12 @@ export default function Scholarship() {
                   Stypendium to nie tylko wsparcie finansowe, ale też ludzie, którzy pomagają przekuć potencjał w konkretny plan.
                 </p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex flex-wrap justify-center gap-4">
                 {scholarshipMentors.map((mentor) => (
-                  <div key={mentor.name} className="rounded-2xl border border-primary/10 bg-white/85 p-6 shadow-sm">
+                  <div
+                    key={mentor.name}
+                    className="w-full rounded-2xl border border-primary/10 bg-white/85 p-6 shadow-sm md:basis-[calc((100%_-_2rem)/3)] md:max-w-[calc((100%_-_2rem)/3)]"
+                  >
                     <div className="w-11 h-11 rounded-full bg-primary/8 text-primary flex items-center justify-center mb-4">
                       <GraduationCap size={20} />
                     </div>
@@ -251,15 +259,20 @@ export default function Scholarship() {
             <p className="text-lg text-gray-600 mb-10 leading-relaxed">
               Jeśli masz wybitne wyniki, pasję i wielkie marzenia, ten konkurs jest dla Ciebie. Wypełnij formularz. Zgłoszenia rozpatrujemy z indywidualną uwagą dla każdej historii.
             </p>
-            <Link href="/stypendium/aplikacja">
-              <Button
-                size="lg"
-                data-testid="button-apply-scholarship"
-                className="h-14 px-10 text-base bg-primary text-white hover:bg-primary/90 rounded-full font-bold shadow-lg"
-              >
-                Wypełnij formularz <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+            <div className="flex flex-col items-center gap-4">
+              <Link href="/stypendium/aplikacja">
+                <Button
+                  size="lg"
+                  data-testid="button-apply-scholarship"
+                  className="h-14 px-10 text-base bg-primary text-white hover:bg-primary/90 rounded-full font-bold shadow-lg"
+                >
+                  Wypełnij formularz <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/stypendium/regulamin" className="text-sm font-semibold text-primary hover:underline">
+                Regulamin konkursu stypendialnego
+              </Link>
+            </div>
             <p className="text-sm text-gray-400 mt-5">
               Wypełnienie formularza zajmuje kilka minut.
             </p>

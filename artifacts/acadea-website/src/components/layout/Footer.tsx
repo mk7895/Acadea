@@ -174,9 +174,10 @@ export function Footer() {
 
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
           <p>&copy; {new Date().getFullYear()} ACADEA. Wszelkie prawa zastrzeżone.</p>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
             <Link href="/polityka-prywatnosci" className="hover:text-white transition-colors">Polityka Prywatności</Link>
             <Link href="/regulamin" className="hover:text-white transition-colors">Regulamin</Link>
+            <Link href="/stypendium/regulamin" className="hover:text-white transition-colors">Regulamin Stypendium</Link>
             <Link href="/regulamin-platformy" className="hover:text-white transition-colors">Regulamin Platformy</Link>
             <button onClick={openPreferences} className="hover:text-white transition-colors">
               Ustawienia cookies
