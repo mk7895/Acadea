@@ -3,12 +3,12 @@ import { Link } from "wouter";
 import {
   ArrowRight,
   Heart,
-  PlayCircle,
   Clock,
   Calendar,
   GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getApiBase } from "@/lib/api-base";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -19,6 +19,8 @@ const itemVariants: Variants = {
   hidden: { opacity: 0, y: 24 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
+
+const API_BASE = getApiBase();
 
 const criteria = [
   {
@@ -105,22 +107,14 @@ export default function Scholarship() {
               className="relative flex justify-center xl:justify-end xl:-translate-x-20"
             >
               <div className="w-full max-w-[340px] rounded-[32px] border border-primary/10 bg-gradient-to-br from-primary/[0.04] via-white to-accent/10 p-4 md:p-5 shadow-[0_22px_60px_rgba(22,101,52,0.08)]">
-                <div className="relative overflow-hidden rounded-3xl border border-primary/10 bg-gradient-to-br from-primary to-primary/85 aspect-[9/16]">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(252,188,30,0.30),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.14),transparent_32%)]" />
-                  <div className="relative z-10 flex h-full flex-col items-center justify-center gap-4 text-center text-white px-6">
-                    <PlayCircle size={64} className="text-accent drop-shadow-[0_10px_30px_rgba(0,0,0,0.2)]" />
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-accent/90 mb-2">
-                        Placeholder wideo
-                      </p>
-                      <h2 className="text-2xl md:text-3xl font-bold leading-tight">
-                        Miejsce na film o programie stypendialnym
-                      </h2>
-                    </div>
-                    <span className="inline-flex items-center justify-center rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/90 border border-white/20">
-                      9:16
-                    </span>
-                  </div>
+                <div className="overflow-hidden rounded-3xl border border-primary/10 aspect-[9/16] bg-black">
+                  <video
+                    src={`${API_BASE}/media/r2?key=${encodeURIComponent("acadeaVideoR2HD.mp4")}`}
+                    className="h-full w-full object-cover"
+                    controls
+                    playsInline
+                    preload="metadata"
+                  />
                 </div>
               </div>
             </motion.div>
@@ -180,8 +174,6 @@ export default function Scholarship() {
       {/* Competition section */}
       <section className="py-12 md:py-16 relative overflow-hidden bg-[#faf7f1]">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-44 -right-28 h-[28rem] w-[28rem] rounded-full bg-[#fcbc1e]/18 blur-[22px]" />
-          <div className="absolute bottom-[-9rem] left-[-5rem] h-[24rem] w-[24rem] rounded-full bg-[#fcbc1e]/14 blur-[18px]" />
           <div className="absolute top-[26%] left-[28%] h-[20rem] w-[20rem] rounded-full bg-primary/8 blur-[18px]" />
         </div>
         <div className="container mx-auto px-4 md:px-6 relative z-10">

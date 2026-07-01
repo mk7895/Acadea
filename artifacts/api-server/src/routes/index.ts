@@ -6,6 +6,7 @@ import googleAuthRouter from "./googleAuth";
 import articlesRouter from "./articles";
 import adminRouter from "./admin";
 import platformRouter from "./platform";
+import mediaRouter from "./media";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(googleAuthRouter);
 router.use(articlesRouter);
 router.use(adminRouter);
 router.use(platformRouter);
+router.use(mediaRouter);
 
 export default router;
