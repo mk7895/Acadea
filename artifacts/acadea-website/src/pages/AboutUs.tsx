@@ -88,14 +88,13 @@ export default function AboutUs() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-primary mb-3">Nasz zespół</h2>
             <p className="max-w-3xl mx-auto text-gray-500 leading-relaxed">
-              Eksperci, którzy sami przeszli przez proces aplikacji na studia za granicą i teraz pomagają innym. Doświadczeni tutorzy, którzy od lat pomagają uczniom rozwijać płynność, poprawność oraz pewność w komunikacji.
+              Eksperci, którzy sami przeszli przez proces aplikacji na studia za granicą i dziś wspierają innych. Od lat pomagają uczniom rozwijać płynność, poprawność oraz pewność w komunikacji.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
                 name: "Marlena Sołtysińska",
-                role: "Mentorka",
                 desc: "Absolwentka UCL (Education and Technology) i NYU. Od ponad 5 lat wspiera uczniów na każdym etapie procesu aplikacyjnego.",
                 initials: "MS",
                 linkedin: "https://www.linkedin.com/in/marlena-soltysinska/",
@@ -103,7 +102,6 @@ export default function AboutUs() {
               },
               {
                 name: "Mateusz Klepacki",
-                role: "Mentor",
                 desc: "Absolwent LSE (Econometrics and Mathematical Economics) i NYU. Ma za sobą 100+ udanych współprac.",
                 initials: "MK",
                 linkedin: "https://www.linkedin.com/in/mateusz-klepacki/",
@@ -111,7 +109,6 @@ export default function AboutUs() {
               },
               {
                 name: "Weronika Klepacka",
-                role: "Tutorka",
                 desc: "Przygotowuje do IELTS, TOEFL i egzaminów Cambridge — krok po kroku, bez stresu.",
                 initials: "WK",
                 linkedin: "https://www.linkedin.com/in/weronika-klepacka-7349b51b6",
@@ -119,7 +116,6 @@ export default function AboutUs() {
               },
               {
                 name: "Bartosz Kuźma",
-                role: "Tutor",
                 desc: "Nauczyciel języka angielskiego z certyfikatem TEFL, absolwent prawa.",
                 initials: "BK",
                 linkedin: "https://www.linkedin.com/in/bartosz-ku%C5%BAma-243945259/",
@@ -143,8 +139,7 @@ export default function AboutUs() {
                   </div>
                 </div>
                 <h3 className="text-lg font-bold text-primary mb-0.5">{member.name}</h3>
-                <p className="text-accent font-semibold text-sm mb-2">{member.role}</p>
-                <p className="text-gray-500 text-sm leading-relaxed mb-4 max-w-[200px]">{member.desc}</p>
+                <p className="text-gray-500 text-sm leading-relaxed mb-4 mt-2 max-w-[200px]">{member.desc}</p>
                 <a
                   href={member.linkedin}
                   target="_blank"
@@ -174,7 +169,7 @@ export default function AboutUs() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/mentoruj">
                 <Button size="lg" className="rounded-full px-8 h-14 text-base bg-primary text-white hover:bg-primary/90 font-bold">
-                  Aplikuj jako mentor(ka) <ArrowRight className="ml-2 h-5 w-5" />
+                  Aplikuj do zespołu <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link href="/kontakt">

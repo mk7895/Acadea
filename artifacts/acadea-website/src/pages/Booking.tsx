@@ -73,7 +73,6 @@ type DayGroup = {
 
 const TOPICS = [
   "Wybór uczelni i kierunku",
-  "Program Stypendialny ACADEA",
   "Przygotowanie dokumentów",
   "Esej motywacyjny",
   "Formalności po przyjęciu i zakwaterowanie",

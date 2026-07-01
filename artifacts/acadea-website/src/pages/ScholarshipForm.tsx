@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Loader2,
   GraduationCap,
+  ChevronDown,
 } from "lucide-react";
 import { Link } from "wouter";
 import { getApiBase } from "@/lib/api-base";
@@ -281,19 +282,22 @@ export default function ScholarshipForm() {
                   ].map((field) => (
                     <div key={field.key}>
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">{field.label}</label>
-                      <select
-                        value={form[field.key as keyof typeof form] as string}
-                        onChange={(e) => set(field.key, e.target.value)}
-                        disabled={form.noMentorPreference}
-                        className={`flex h-12 w-full rounded-xl border bg-white px-4 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${errors[field.key] ? "border-red-400" : "border-gray-200"} ${form.noMentorPreference ? "opacity-60" : ""}`}
-                      >
-                        <option value="">Wybierz mentora</option>
-                        {MENTOR_NAMES.map((mentorName) => (
-                          <option key={mentorName} value={mentorName}>
-                            {mentorName}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={form[field.key as keyof typeof form] as string}
+                          onChange={(e) => set(field.key, e.target.value)}
+                          disabled={form.noMentorPreference}
+                          className={`flex h-12 w-full appearance-none rounded-xl border bg-gray-50 px-4 pr-10 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${errors[field.key] ? "border-red-400" : "border-gray-200"} ${form.noMentorPreference ? "opacity-60" : ""}`}
+                        >
+                          <option value="">Wybierz mentora</option>
+                          {MENTOR_NAMES.map((mentorName) => (
+                            <option key={mentorName} value={mentorName}>
+                              {mentorName}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      </div>
                       {errors[field.key] && <p className="text-red-500 text-xs mt-1">{errors[field.key]}</p>}
                     </div>
                   ))}

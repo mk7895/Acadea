@@ -47,7 +47,7 @@ const services = [
     icon: <Globe size={22} className="text-primary" />,
   },
   {
-    title: "Formalności po przyjęciu i zakwaterowanie",
+    title: "Formalności po przyjęciu i\u00A0zakwaterowanie",
     desc: "Nie znikamy po przyjęciu — pomagamy odnaleźć się w kolejnych krokach po otrzymaniu oferty, organizacji zakwaterowania i kontakcie z uczelnią.",
     icon: <MapPin size={22} className="text-primary" />,
   },
@@ -210,7 +210,7 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.7, delay: 0.1 }}
-              className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary/5 to-accent/10 border border-primary/10 min-h-[360px] p-2 md:p-2.5"
+              className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-primary/5 to-accent/10 border border-primary/10 min-h-[360px] p-2 md:p-2.5"
             >
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent/10 blur-[80px]" />
@@ -224,7 +224,7 @@ export default function Home() {
                   loading="lazy"
                 />
               </div>
-              <div className="relative z-10 mt-6 flex items-center gap-2 px-2 text-sm text-primary/80">
+              <div className="relative z-10 mt-2 flex items-center gap-2 px-2 text-sm text-primary/80">
                 <MapPin size={16} className="shrink-0 text-accent" />
                 <span>wewnątrz Bodleian Library, University of Oxford</span>
               </div>

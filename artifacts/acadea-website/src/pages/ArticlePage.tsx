@@ -148,7 +148,7 @@ export default function ArticlePage() {
 
   return (
     <div className="min-h-screen bg-[#fffdfa] pt-28 md:pt-32 pb-16 md:pb-20">
-      <div className="pointer-events-none fixed left-0 right-0 top-[88px] z-[60] h-[4px] md:top-[112px]">
+      <div className="pointer-events-none fixed left-0 right-0 top-0 z-[70] h-[4px]">
         <div
           className="h-[4px] bg-primary transition-[width] duration-150"
           style={{ width: `${readingProgress}%` }}
@@ -169,7 +169,7 @@ export default function ArticlePage() {
           </div>
         </div>
 
-        <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="grid gap-10 lg:items-start lg:grid-cols-[minmax(0,1fr)_300px]">
           <article className="min-w-0">
             <header className="mb-10">
               <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -281,7 +281,7 @@ export default function ArticlePage() {
             </div>
           </article>
 
-          <aside className="xl:sticky xl:top-28 xl:self-start xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
+          <aside className="lg:sticky lg:top-28 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
             <div className="rounded-[28px] border border-[#ece4d7] bg-white p-6 shadow-sm">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#f5f1e8] px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[#8d7b5c]">
                 <List size={12} />

@@ -43,7 +43,6 @@ export default function Blog() {
       if (!cancelled) {
         setArticleItems(rows);
         setTaxonomyGroups(taxonomy.groups);
-        setActiveGroupSlug((current) => current || taxonomy.groups[0]?.slug || "");
       }
     });
 
@@ -71,7 +70,7 @@ export default function Blog() {
   );
 
   const activeGroup = useMemo(
-    () => taxonomyGroups.find((group) => group.slug === activeGroupSlug) ?? taxonomyGroups[0] ?? null,
+    () => taxonomyGroups.find((group) => group.slug === activeGroupSlug) ?? null,
     [activeGroupSlug, taxonomyGroups],
   );
 
@@ -171,7 +170,10 @@ export default function Blog() {
                 );
               })}
               <button
-                onClick={() => setSelectedFilters({})}
+                onClick={() => {
+                  setSelectedFilters({});
+                  setActiveGroupSlug("");
+                }}
                 className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${
                   !hasActiveFilters
                     ? "border-primary bg-primary text-white"

@@ -33,19 +33,36 @@ const criteria = [
 
 const scholarshipMentors = [
   {
+    name: "Nikodem Ciomcia",
+    desc: "Wspiera kandydatów, którzy chcą połączyć ambitne cele z dobrze ułożoną strategią aplikacyjną.",
+  },
+  {
+    name: "Krzysztof Sosnowski",
+    desc: "Pomaga uporządkować proces aplikacyjny i przełożyć zainteresowania na mocny, spójny profil kandydata.",
+  },
+  {
+    name: "Małgorzata Słowikowska",
+    desc: "Wnosi dużo uważności na historię ucznia, motywację i to, jak dobrze pokazać własny potencjał.",
+  },
+  {
+    name: "Mikołaj Błaszczyk",
+    desc: "Pomaga kandydatom budować pewność w decyzjach dotyczących kierunku, uczelni i dalszych kroków.",
+  },
+  {
     name: "Marlena Sołtysińska",
-    role: "Mentorka aplikacyjna",
     desc: "Absolwentka UCL (Education and Technology) i NYU. Od lat wspiera uczniów w planowaniu ścieżki, strategii aplikacyjnej i budowaniu pewności w procesie.",
   },
   {
     name: "Mateusz Klepacki",
-    role: "Mentor akademicki",
     desc: "Absolwent LSE i NYU. Pomaga kandydatom przekładać ambicję na konkretny plan działania i mocny profil aplikacyjny.",
   },
   {
-    name: "Weronika Klepacka",
-    role: "Tutorka językowa",
-    desc: "Przygotowuje do IELTS, TOEFL i egzaminów Cambridge. Wspiera tam, gdzie aplikacja wymaga sprawnego i pewnego języka.",
+    name: "Amelia Kudasik",
+    desc: "Wspiera osoby, które chcą rozwijać swój profil w sposób uporządkowany i autentyczny.",
+  },
+  {
+    name: "Oskar Krawczyk",
+    desc: "Pomaga kandydatom uchwycić najmocniejsze strony ich historii i dobrze je pokazać w aplikacji.",
   },
 ];
 
@@ -61,16 +78,12 @@ export default function Scholarship() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/20 text-primary text-xs font-semibold mb-6 uppercase tracking-widest border border-accent/40">
-                <Heart size={13} className="fill-accent text-accent" />
-                <span>Program Stypendialny ACADEA</span>
-              </div>
               <h1 className="text-5xl md:text-7xl font-bold text-gray-900 leading-[1.05] tracking-tight mb-5">
                 Twoja pasja.<br />
                 <span className="text-primary">Nasze wsparcie.</span>
               </h1>
               <p className="text-xl text-gray-500 leading-relaxed max-w-2xl mb-8 md:mb-10">
-                Program Stypendialny ACADEA to mentoring i wsparcie dla ambitnych, zmotywowanych osób — niezależnie od tego, czy marzą o studiach za granicą, czy chcą rozwijać inną pasję, jak lotnictwo czy taniec. Pomagamy świadomie wybrać i podążać własną ścieżką.
+                Program Stypendialny ACADEA to mentoring i wsparcie dla ambitnych, zmotywowanych osób, które chcą świadomie wybrać i podążać własną ścieżką.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <a href="#konkurs">
@@ -122,15 +135,15 @@ export default function Scholarship() {
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 text-primary text-center"
+            className="flex flex-wrap items-center justify-center gap-4 text-primary text-center"
           >
-            <div className="flex items-center gap-2 font-bold text-lg">
-              <Calendar size={22} className="shrink-0" />
-              <span>Zgłoszenia</span>
-            </div>
             <div className="flex items-center gap-2 bg-primary/10 rounded-full px-5 py-2 font-bold text-base">
               <Clock size={18} className="shrink-0" />
               <span>Rozpatrywane na bieżąco</span>
+            </div>
+            <div className="flex items-center gap-2 bg-primary/10 rounded-full px-5 py-2 font-bold text-base">
+              <Calendar size={18} className="shrink-0" />
+              <span>Online</span>
             </div>
           </motion.div>
         </div>
@@ -157,7 +170,7 @@ export default function Scholarship() {
                 — Nelson Mandela
               </p>
               <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
-                Wierzymy w to każdego dnia. Dlatego stworzyliśmy program, który daje ambitnym, zmotywowanym osobom dostęp do mentoringu i wsparcia w realizacji ich marzeń — niezależnie od tego, skąd pochodzą i jaką ścieżkę wybiorą.
+                Wierzymy w to każdego dnia. Dlatego stworzyliśmy program, który daje ambitnym, zmotywowanym osobom dostęp do mentoringu i wsparcia w realizacji ich marzeń i celów naukowych.
               </p>
             </motion.div>
           </div>
@@ -235,7 +248,7 @@ export default function Scholarship() {
               className="mt-12"
             >
               <div className="text-center mb-8">
-                <h3 className="text-2xl md:text-3xl font-bold text-primary mb-3">Mentorzy programu</h3>
+                <h3 className="text-2xl md:text-3xl font-bold text-primary mb-3">Nasi mentorzy</h3>
                 <p className="text-gray-600 max-w-2xl mx-auto">
                   Stypendium to nie tylko wsparcie finansowe, ale też ludzie, którzy pomagają przekuć potencjał w konkretny plan.
                 </p>
@@ -247,8 +260,7 @@ export default function Scholarship() {
                       <GraduationCap size={20} />
                     </div>
                     <h4 className="text-lg font-bold text-primary">{mentor.name}</h4>
-                    <p className="text-accent font-semibold text-sm mt-1 mb-3">{mentor.role}</p>
-                    <p className="text-sm text-gray-600 leading-relaxed">{mentor.desc}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed mt-3">{mentor.desc}</p>
                   </div>
                 ))}
               </div>
