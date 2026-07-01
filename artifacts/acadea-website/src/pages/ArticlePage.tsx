@@ -148,28 +148,22 @@ export default function ArticlePage() {
 
   return (
     <div className="min-h-screen bg-[#fffdfa] pt-24 md:pt-28 pb-16 md:pb-20">
-      <div className="fixed left-0 right-0 top-[72px] z-40 h-1 bg-transparent">
+      <div className="fixed left-0 right-0 top-[72px] z-40 h-[4px] bg-transparent">
         <div
-          className="h-full bg-primary transition-[width] duration-150"
+          className="h-[4px] bg-primary transition-[width] duration-150"
           style={{ width: `${readingProgress}%` }}
         />
       </div>
 
       <div className="container mx-auto max-w-7xl px-4 md:px-6">
         <div className="mb-8 flex items-center justify-between gap-4">
-          <button
-            onClick={() => {
-              if (window.history.length > 1) {
-                window.history.back();
-              } else {
-                setLocation("/baza-wiedzy");
-              }
-            }}
+          <Link
+            href="/baza-wiedzy"
             className="inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-primary"
           >
             <ChevronLeft size={16} />
             Wróć do Bazy Wiedzy
-          </button>
+          </Link>
           <div className="text-xs font-semibold uppercase tracking-[0.24em] text-[#b7aa8d]">
             Baza Wiedzy
           </div>
