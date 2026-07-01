@@ -3,6 +3,27 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users } from "lucide-react";
 
+const featuredFounders = [
+  {
+    name: "Marlena Sołtysińska",
+    imageSrc: "/images/about-soltysinska.jpg",
+    imagePosition: "object-[50%_35%]",
+    imageOrder: "md:order-1",
+    textOrder: "md:order-2",
+    description:
+      "Studentka University College London, od ponad 10 lat pierwszego na świecie uniwersytetu z Nauk o Edukacji. Założycielka Fundacji Acadea, pasjonatka implementowania nowych technologii, szczególnie w edukacji. W 2025 roku z wyróżnieniem ukończyła Bachelor of Science na Uniwersytecie Nowojorskim (NYU), w trakcie którego w aż pięciu krajach studiowała Finanse, Ekonomię oraz Język Chiński. Swoje prace prezentowała na międzynarodowych konferencjach naukowych. Wyróżniona w programach takich jak Liderzy Innowacji Kancelarii Prezesa Rady Ministrów, Krajowy Fundusz na rzecz Dzieci oraz ADAMED SmartUP. Ma na koncie liczne sukcesy w olimpiadach i konkursach, działała w Radzie Dzieci i Młodzieży przy Ministrze Edukacji i Nauki oraz Radzie Młodzieżowej Województwa Zachodniopomorskiego. Wspierając małe ojczyzny i początkujących dziennikarzy, współprzewodniczyła Ogólnopolskiej Federacji Młodych i Fundacji Polemika. Od pięciu lat Marlena pomaga innym dostać się na ich wymarzone studia - ma za sobą udane współprace z setkami aplikantów, a jej podopieczni otrzymali oferty z topowych uczelni na całym świecie.",
+  },
+  {
+    name: "Mateusz Klepacki",
+    imageSrc: "/images/about-klepacki.jpg",
+    imagePosition: "object-[50%_22%]",
+    imageOrder: "md:order-2",
+    textOrder: "md:order-1",
+    description:
+      "Absolwent London School of Economics, gdzie ukończył MSc Econometrics and Mathematical Economics, oraz New York University, na którym studiował Business and Finance oraz Economics. Alumn I.S.E.O. Summer School i Akademii Liderów Rynku Kapitałowego, w trakcie swojej ścieżki akademickiej i zawodowej zdobywał doświadczenie na styku analizy, strategii i finansów, był pracownikiem zarówno Boston Consulting Group, jak i zeb consulting. Za swoje wyniki był wielokrotnie wyróżniany akademicko, a wcześniej odnosił liczne sukcesy w olimpiadach i konkursach, w tym jako podwójny laureat Olimpiady Statystycznej i finalista Olimpiady Wiedzy Ekonomicznej. Angażował się również społecznie, między innymi jako członek Rady Krajowej Ogólnopolskiej Federacji Młodych. Od pięciu lat pomaga kandydatom dostawać się na studia w bardzo różnych systemach edukacyjnych - od Stanów Zjednoczonych po Koreę Południową i od Finlandii po Maltę. Ma za sobą setki godzin pracy z aplikantami i wspiera ich w budowaniu strategii, profilu oraz decyzji, które realnie otwierają drzwi do światowych uczelni.",
+  },
+];
+
 export default function AboutUs() {
   return (
     <div className="w-full pt-28 pb-20">
@@ -88,67 +109,33 @@ export default function AboutUs() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-primary mb-3">Nasz zespół</h2>
             <p className="max-w-3xl mx-auto text-gray-500 leading-relaxed">
-              Eksperci, którzy sami przeszli przez proces aplikacji na studia za granicą i dziś wspierają innych. Od lat pomagają uczniom rozwijać płynność, poprawność oraz pewność w komunikacji.
+              Poznaj osoby, które zbudowały ACADEA na własnych doświadczeniach aplikacyjnych i od lat prowadzą kolejnych uczniów przez ten proces.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                name: "Marlena Sołtysińska",
-                desc: "Absolwentka UCL (Education and Technology) i NYU. Od ponad 5 lat wspiera uczniów na każdym etapie procesu aplikacyjnego.",
-                initials: "MS",
-                linkedin: "https://www.linkedin.com/in/marlena-soltysinska/",
-                color: "#166534",
-              },
-              {
-                name: "Mateusz Klepacki",
-                desc: "Absolwent LSE (Econometrics and Mathematical Economics) i NYU. Ma za sobą 100+ udanych współprac.",
-                initials: "MK",
-                linkedin: "https://www.linkedin.com/in/mateusz-klepacki/",
-                color: "#14532d",
-              },
-              {
-                name: "Weronika Klepacka",
-                desc: "Przygotowuje do IELTS, TOEFL i egzaminów Cambridge — krok po kroku, bez stresu.",
-                initials: "WK",
-                linkedin: "https://www.linkedin.com/in/weronika-klepacka-7349b51b6",
-                color: "#166534",
-              },
-              {
-                name: "Bartosz Kuźma",
-                desc: "Nauczyciel języka angielskiego z certyfikatem TEFL, absolwent prawa.",
-                initials: "BK",
-                linkedin: "https://www.linkedin.com/in/bartosz-ku%C5%BAma-243945259/",
-                color: "#14532d",
-              },
-            ].map((member, idx) => (
+          <div className="space-y-16">
+            {featuredFounders.map((member, idx) => (
               <motion.div
-                key={idx}
+                key={member.name}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
-                className="flex flex-col items-center text-center group"
+                className="grid grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,320px)_minmax(0,1fr)] md:gap-12"
               >
-                <div className="w-44 h-44 rounded-full overflow-hidden mb-5 shadow-lg ring-4 ring-white">
-                  <div
-                    className="w-full h-full flex items-center justify-center text-white font-bold text-4xl select-none"
-                    style={{ backgroundColor: member.color }}
-                  >
-                    {member.initials}
+                <div className={member.imageOrder}>
+                  <div className="relative mx-auto aspect-square w-full max-w-[320px] overflow-hidden rounded-full border border-primary/10 bg-[#f8f4ec] shadow-[0_20px_60px_rgba(22,101,52,0.08)]">
+                    <img
+                      src={member.imageSrc}
+                      alt={member.name}
+                      className={`h-full w-full object-cover ${member.imagePosition}`}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-primary/12 via-transparent to-transparent" />
                   </div>
                 </div>
-                <h3 className="text-lg font-bold text-primary mb-0.5">{member.name}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed mb-4 mt-2 max-w-[200px]">{member.desc}</p>
-                <a
-                  href={member.linkedin}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary/60 hover:text-primary transition-colors border border-primary/20 hover:border-primary rounded-full px-4 py-1.5"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                  LinkedIn
-                </a>
+                <div className={`${member.textOrder} max-w-3xl`}>
+                  <h3 className="mb-5 text-3xl font-bold text-primary md:text-4xl">{member.name}</h3>
+                  <p className="text-base leading-8 text-gray-600 md:text-lg">{member.description}</p>
+                </div>
               </motion.div>
             ))}
           </div>
