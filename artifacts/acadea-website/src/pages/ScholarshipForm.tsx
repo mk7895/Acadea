@@ -14,46 +14,12 @@ import {
 import { Link } from "wouter";
 import { getApiBase } from "@/lib/api-base";
 import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
+import {
+  SCHOLARSHIP_MENTOR_NAMES,
+  SORTED_SCHOLARSHIP_MENTORS,
+} from "@/data/scholarship-mentors";
 
 const API_BASE = getApiBase();
-
-const MENTORS = [
-  {
-    name: "Nikodem Ciomcia",
-    desc: "Wspiera kandydatów, którzy chcą połączyć ambitne cele z dobrze ułożoną strategią aplikacyjną.",
-  },
-  {
-    name: "Krzysztof Sosnowski",
-    desc: "Pomaga uporządkować proces aplikacyjny i przełożyć zainteresowania na mocny, spójny profil kandydata.",
-  },
-  {
-    name: "Małgorzata Słowikowska",
-    desc: "Wnosi dużo uważności na historię ucznia, motywację i to, jak dobrze pokazać własny potencjał.",
-  },
-  {
-    name: "Mikołaj Błaszczyk",
-    desc: "Pomaga kandydatom budować pewność w decyzjach dotyczących kierunku, uczelni i dalszych kroków.",
-  },
-  {
-    name: "Marlena Sołtysińska",
-    desc: "Absolwentka UCL i NYU. Od lat wspiera uczniów w planowaniu ścieżki i świadomym wyborze kolejnych etapów.",
-  },
-  {
-    name: "Mateusz Klepacki",
-    desc: "Absolwent LSE i NYU. Pomaga kandydatom przełożyć ambicję i osiągnięcia na konkretną strategię aplikacyjną.",
-  },
-  {
-    name: "Amelia Kudasik",
-    desc: "Wspiera osoby, które chcą rozwijać swój profil w sposób uporządkowany i autentyczny.",
-  },
-  {
-    name: "Oskar Krawczyk",
-    desc: "Pomaga kandydatom uchwycić najmocniejsze strony ich historii i dobrze je pokazać w aplikacji.",
-  },
-] as const;
-
-const SORTED_MENTORS = [...MENTORS].sort((a, b) => a.name.localeCompare(b.name, "pl"));
-const MENTOR_NAMES = SORTED_MENTORS.map((mentor) => mentor.name);
 
 export default function ScholarshipForm() {
   const [form, setForm] = useState({
@@ -291,7 +257,7 @@ export default function ScholarshipForm() {
                           className={`flex h-12 w-full appearance-none rounded-xl border bg-gray-50 px-4 pr-10 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${errors[field.key] ? "border-red-400" : "border-gray-200"} ${form.noMentorPreference ? "opacity-60" : ""}`}
                         >
                           <option value="">Wybierz mentora</option>
-                          {MENTOR_NAMES.map((mentorName) => (
+                          {SCHOLARSHIP_MENTOR_NAMES.map((mentorName) => (
                             <option key={mentorName} value={mentorName}>
                               {mentorName}
                             </option>
@@ -324,7 +290,7 @@ export default function ScholarshipForm() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">
-                  {SORTED_MENTORS.map((mentor) => (
+                  {SORTED_SCHOLARSHIP_MENTORS.map((mentor) => (
                     <div key={mentor.name} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                       <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-2">
                         <GraduationCap size={16} />

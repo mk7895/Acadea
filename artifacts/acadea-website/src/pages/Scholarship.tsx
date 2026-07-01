@@ -8,6 +8,7 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SORTED_SCHOLARSHIP_MENTORS } from "@/data/scholarship-mentors";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -29,41 +30,6 @@ const criteria = [
     desc: "Chcesz studiować za granicą, latać samolotami, tańczyć albo rozwijać zupełnie inną dziedzinę? Pomożemy Ci zaplanować własną ścieżkę.",
   },
 ];
-
-const scholarshipMentors = [
-  {
-    name: "Nikodem Ciomcia",
-    desc: "Wspiera kandydatów, którzy chcą połączyć ambitne cele z dobrze ułożoną strategią aplikacyjną.",
-  },
-  {
-    name: "Krzysztof Sosnowski",
-    desc: "Pomaga uporządkować proces aplikacyjny i przełożyć zainteresowania na mocny, spójny profil kandydata.",
-  },
-  {
-    name: "Małgorzata Słowikowska",
-    desc: "Wnosi dużo uważności na historię ucznia, motywację i to, jak dobrze pokazać własny potencjał.",
-  },
-  {
-    name: "Mikołaj Błaszczyk",
-    desc: "Pomaga kandydatom budować pewność w decyzjach dotyczących kierunku, uczelni i dalszych kroków.",
-  },
-  {
-    name: "Marlena Sołtysińska",
-    desc: "Absolwentka UCL (Education and Technology) i NYU. Od lat wspiera uczniów w planowaniu ścieżki, strategii aplikacyjnej i budowaniu pewności w procesie.",
-  },
-  {
-    name: "Mateusz Klepacki",
-    desc: "Absolwent LSE i NYU. Pomaga kandydatom przekładać ambicję na konkretny plan działania i mocny profil aplikacyjny.",
-  },
-  {
-    name: "Amelia Kudasik",
-    desc: "Wspiera osoby, które chcą rozwijać swój profil w sposób uporządkowany i autentyczny.",
-  },
-  {
-    name: "Oskar Krawczyk",
-    desc: "Pomaga kandydatom uchwycić najmocniejsze strony ich historii i dobrze je pokazać w aplikacji.",
-  },
-].sort((a, b) => a.name.localeCompare(b.name, "pl"));
 
 export default function Scholarship() {
   return (
@@ -228,7 +194,7 @@ export default function Scholarship() {
                 </p>
               </div>
               <div className="flex flex-wrap justify-center gap-4">
-                {scholarshipMentors.map((mentor) => (
+                {SORTED_SCHOLARSHIP_MENTORS.map((mentor) => (
                   <div
                     key={mentor.name}
                     className="w-full rounded-2xl border border-primary/10 bg-white/85 p-6 shadow-sm md:basis-[calc((100%_-_2rem)/3)] md:max-w-[calc((100%_-_2rem)/3)]"
