@@ -15,9 +15,8 @@ const featuredFounders = [
   },
   {
     name: "Mateusz Klepacki",
-    imageSrc: "/images/about-klepacki.jpg",
-    imagePosition: "object-[50%_14%]",
-    imageScale: "scale-[1.08]",
+    imageSrc: "/images/about-klepacki-centered.jpeg",
+    imagePosition: "object-center",
     imageOrder: "md:order-2",
     textOrder: "md:order-1",
     description:
