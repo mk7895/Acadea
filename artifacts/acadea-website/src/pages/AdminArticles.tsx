@@ -89,7 +89,7 @@ export default function AdminArticles() {
   useSeo({
     title: "Panel artykułów | ACADEA",
     description: "Panel administracyjny artykułów ACADEA.",
-    path: "/panel/artykuly",
+    path: "/panel",
     noindex: true,
   });
 
