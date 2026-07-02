@@ -117,7 +117,7 @@ export default function Home() {
       <section className="relative min-h-screen flex items-center overflow-x-hidden bg-white pt-28 md:pt-36 pb-10 md:pb-14">
         {/* Background accent shapes */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-[700px] h-[700px] rounded-full bg-primary/6" />
+          <div className="absolute -top-52 -right-40 w-[700px] h-[700px] rounded-full bg-primary/6" />
           <div className="absolute bottom-0 left-1/2 w-[500px] h-[500px] rounded-full bg-accent/8 -translate-x-1/2 translate-y-1/3" />
         </div>
 

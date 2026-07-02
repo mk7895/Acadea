@@ -42,8 +42,8 @@ export function Navbar() {
     <header
       className={`fixed top-0 z-50 w-full transition-all duration-300 ${
         isScrolled
-          ? "bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-200/50 py-3"
-          : "bg-transparent py-5"
+          ? "bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-200/50 py-2.5"
+          : "bg-transparent py-4"
       }`}
     >
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
@@ -51,12 +51,12 @@ export function Navbar() {
           <img
             src={isScrolled ? logoGreen : logoGreen}
             alt="ACADEA Logo"
-            className="h-20 md:h-24 w-auto shrink-0"
+            className="h-20 md:h-[5.5rem] w-auto shrink-0"
           />
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-6 md:translate-y-[0.525rem]">
+        <nav className="hidden md:flex items-center gap-6 md:translate-y-[0.65rem]">
           {links.map((link) => (
             link.highlight ? (
               <Link
@@ -84,7 +84,7 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden md:flex items-center gap-4 md:translate-y-[0.525rem]">
+        <div className="hidden md:flex items-center gap-4 md:translate-y-[0.65rem]">
           <Link href="/umow-spotkanie" onClick={resetBookingIfCurrentPage}>
             <Button className="rounded-full px-6 bg-primary text-white hover:bg-primary/90 transition-all font-semibold">
               Bezpłatna konsultacja
