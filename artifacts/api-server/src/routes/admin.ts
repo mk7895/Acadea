@@ -1,6 +1,7 @@
 import { Router, type NextFunction, type Request, type Response } from "express";
 import { asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
+import { hasDatabaseConfig } from "../lib/databaseConfig";
 import {
   estimateReadMinutes,
   extractMarkdownHeadings,
@@ -184,7 +185,7 @@ async function loadArticleTaxonomy() {
 }
 
 router.post("/admin/auth/login", async (req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -241,7 +242,7 @@ router.get("/admin/auth/status", (req, res) => {
 });
 
 router.get("/admin/article-taxonomy", requireAdmin, async (_req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -249,7 +250,7 @@ router.get("/admin/article-taxonomy", requireAdmin, async (_req, res) => {
 });
 
 router.post("/admin/article-category-groups", requireAdmin, async (req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -273,7 +274,7 @@ router.post("/admin/article-category-groups", requireAdmin, async (req, res) => 
 });
 
 router.put("/admin/article-category-groups/:id", requireAdmin, async (req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -308,7 +309,7 @@ router.put("/admin/article-category-groups/:id", requireAdmin, async (req, res) 
 });
 
 router.delete("/admin/article-category-groups/:id", requireAdmin, async (req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -332,7 +333,7 @@ router.delete("/admin/article-category-groups/:id", requireAdmin, async (req, re
 });
 
 router.post("/admin/article-categories", requireAdmin, async (req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -357,7 +358,7 @@ router.post("/admin/article-categories", requireAdmin, async (req, res) => {
 });
 
 router.put("/admin/article-categories/:id", requireAdmin, async (req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -393,7 +394,7 @@ router.put("/admin/article-categories/:id", requireAdmin, async (req, res) => {
 });
 
 router.delete("/admin/article-categories/:id", requireAdmin, async (req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -416,7 +417,7 @@ router.delete("/admin/article-categories/:id", requireAdmin, async (req, res) =>
 });
 
 router.get("/admin/articles", requireAdmin, async (req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -436,7 +437,7 @@ router.get("/admin/articles", requireAdmin, async (req, res) => {
 });
 
 router.post("/admin/articles", requireAdmin, async (req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -488,7 +489,7 @@ router.post("/admin/articles", requireAdmin, async (req, res) => {
 });
 
 router.put("/admin/articles/:id", requireAdmin, async (req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -551,7 +552,7 @@ router.put("/admin/articles/:id", requireAdmin, async (req, res) => {
 });
 
 router.delete("/admin/articles/:id", requireAdmin, async (req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -574,7 +575,7 @@ router.delete("/admin/articles/:id", requireAdmin, async (req, res) => {
 });
 
 router.post("/admin/assets", requireAdmin, async (req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 

@@ -2,6 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { asc, eq, inArray } from "drizzle-orm";
+import { hasDatabaseConfig } from "../lib/databaseConfig";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -116,7 +117,7 @@ function toSitemapEntry(route: string, lastmod: string) {
 }
 
 router.get("/articles", async (req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -131,7 +132,7 @@ router.get("/articles", async (req, res) => {
 });
 
 router.get("/article-taxonomy", async (_req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -139,7 +140,7 @@ router.get("/article-taxonomy", async (_req, res) => {
 });
 
 router.get("/articles/:slug", async (req, res) => {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
@@ -197,7 +198,7 @@ router.get("/content/sitemap.xml", async (_req, res) => {
     const staticRoutes = (await loadStaticRoutesForSitemap()).filter((route) => route.includeInSitemap);
 
     let dynamicArticles: Array<{ slug: string; updatedAt: Date }> = [];
-    if (process.env.DATABASE_URL) {
+    if (hasDatabaseConfig()) {
       const { db, articlesTable } = await import("@workspace/db");
       dynamicArticles = await db
         .select({
@@ -235,7 +236,7 @@ router.get("/content/sitemap.xml", async (_req, res) => {
 });
 
 async function sendArticleAsset(req: Request, res: Response) {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     return res.status(404).end();
   }
 
