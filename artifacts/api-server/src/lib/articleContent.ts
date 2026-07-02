@@ -1,4 +1,5 @@
 export const ARTICLE_CONTACT_FORM_MARKER = "***CONTACT FORM BLOCK***";
+export const ARTICLE_WHATSAPP_GROUP_MARKER = "***WHATSAPP GROUP BLOCK***";
 
 export function normalizeArticleSlug(input: string) {
   const trimmed = input.trim();
@@ -35,10 +36,15 @@ export function normalizeCategorySlug(input: string) {
 }
 
 export function normalizeContactFormMarkers(markdown: string) {
-  return markdown.replace(
-    /\*\*\*\s*CONTACT FORM BLOCK\s*\*\*\*/gi,
-    ARTICLE_CONTACT_FORM_MARKER,
-  );
+  return markdown
+    .replace(
+      /\*\*\*\s*CONTACT FORM BLOCK\s*\*\*\*/gi,
+      ARTICLE_CONTACT_FORM_MARKER,
+    )
+    .replace(
+      /\*\*\*\s*WHATSAPP GROUP BLOCK\s*\*\*\*/gi,
+      ARTICLE_WHATSAPP_GROUP_MARKER,
+    );
 }
 
 export function stripLeadingTitleHeading(markdown: string) {

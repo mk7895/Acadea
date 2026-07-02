@@ -4,14 +4,20 @@ import { Link, useLocation, useParams } from "wouter";
 import { ArrowRight, ChevronLeft, Clock, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ArticleInlineContactForm } from "@/components/articles/ArticleInlineContactForm";
+import { ArticleWhatsAppGroupBlock } from "@/components/articles/ArticleWhatsAppGroupBlock";
 import { fetchArticleDetail, type ArticleDetail } from "@/lib/article-api";
 import {
   ARTICLE_CONTACT_FORM_MARKER,
+  ARTICLE_WHATSAPP_GROUP_MARKER,
   normalizeTocItems,
   splitRelatedSection,
   stripLeadingTitleHeading,
   type ArticleTocItem,
 } from "@/lib/article-content";
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 export default function ArticlePage() {
   const params = useParams<{ slug: string }>();
@@ -113,6 +119,35 @@ export default function ArticlePage() {
     return splitRelatedSection(stripLeadingTitleHeading(article.markdown)).body;
   }, [article]);
 
+  const articleBlocks = useMemo(() => {
+    if (!articleBody) {
+      return [] as Array<
+        | { type: "markdown"; content: string }
+        | { type: "contact" }
+        | { type: "whatsapp" }
+      >;
+    }
+
+    const markerPattern = new RegExp(
+      `(${escapeRegExp(ARTICLE_CONTACT_FORM_MARKER)}|${escapeRegExp(ARTICLE_WHATSAPP_GROUP_MARKER)})`,
+      "g",
+    );
+
+    return articleBody
+      .split(markerPattern)
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        if (part === ARTICLE_CONTACT_FORM_MARKER) {
+          return { type: "contact" as const };
+        }
+        if (part === ARTICLE_WHATSAPP_GROUP_MARKER) {
+          return { type: "whatsapp" as const };
+        }
+        return { type: "markdown" as const, content: part };
+      });
+  }, [articleBody]);
+
   const renderedTocItems = useMemo(
     () => normalizeTocItems(articleBody, article?.tocItems ?? []).filter((item) => item.include),
     [article?.tocItems, articleBody],
@@ -122,18 +157,6 @@ export default function ArticlePage() {
     () => normalizeTocItems(articleBody, article?.tocItems ?? []),
     [article?.tocItems, articleBody],
   );
-
-  const articleSections = useMemo(() => {
-    if (!articleBody) {
-      return { intro: "", remainder: "" };
-    }
-
-    const [intro, ...rest] = articleBody.split(ARTICLE_CONTACT_FORM_MARKER);
-    return {
-      intro: intro.trim(),
-      remainder: rest.join(ARTICLE_CONTACT_FORM_MARKER).trim(),
-    };
-  }, [articleBody]);
 
   const markdownComponents = (() => {
     const counter = { value: 0 };
@@ -190,9 +213,6 @@ export default function ArticlePage() {
   }
 
   const related = article.relatedArticles;
-  const showInlineForm = articleBody.includes(ARTICLE_CONTACT_FORM_MARKER);
-  const introMarkdown = showInlineForm ? articleSections.intro : articleBody;
-  const remainderMarkdown = showInlineForm ? articleSections.remainder : "";
 
   return (
     <div className="min-h-screen bg-[#fffdfa] pt-28 md:pt-32 pb-16 md:pb-20">
@@ -251,29 +271,34 @@ export default function ArticlePage() {
               />
             </div>
 
-            <div className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-primary prose-h2:mb-4 prose-h2:mt-10 prose-p:mb-5 prose-p:leading-relaxed prose-p:text-gray-600 prose-ul:list-disc prose-ul:pl-6 prose-ul:space-y-2 prose-ol:list-decimal prose-ol:pl-6 prose-ol:space-y-2 prose-li:text-gray-600 prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
-              <ReactMarkdown
-                components={markdownComponents}
-              >
-                {introMarkdown}
-              </ReactMarkdown>
-            </div>
+            {articleBlocks.map((block, index) => {
+              if (block.type === "contact") {
+                return (
+                  <div key={`contact-${index}`} className="my-12">
+                    <ArticleInlineContactForm articleTitle={article.title} />
+                  </div>
+                );
+              }
 
-            {showInlineForm ? (
-              <div className="my-12">
-                <ArticleInlineContactForm articleTitle={article.title} />
-              </div>
-            ) : null}
+              if (block.type === "whatsapp") {
+                return (
+                  <div key={`whatsapp-${index}`} className="my-12">
+                    <ArticleWhatsAppGroupBlock />
+                  </div>
+                );
+              }
 
-            {remainderMarkdown ? (
-              <div className="prose prose-lg mt-12 max-w-none prose-headings:font-bold prose-headings:text-primary prose-h2:mb-4 prose-h2:mt-10 prose-p:mb-5 prose-p:leading-relaxed prose-p:text-gray-600 prose-ul:list-disc prose-ul:pl-6 prose-ul:space-y-2 prose-ol:list-decimal prose-ol:pl-6 prose-ol:space-y-2 prose-li:text-gray-600 prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
-                <ReactMarkdown
-                  components={markdownComponents}
+              return (
+                <div
+                  key={`markdown-${index}`}
+                  className={`prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-primary prose-h2:mb-4 prose-h2:mt-10 prose-p:mb-5 prose-p:leading-relaxed prose-p:text-gray-600 prose-ul:list-disc prose-ul:pl-6 prose-ul:space-y-2 prose-ol:list-decimal prose-ol:pl-6 prose-ol:space-y-2 prose-li:text-gray-600 prose-a:text-primary prose-a:no-underline hover:prose-a:underline ${
+                    index > 0 ? "mt-12" : ""
+                  }`}
                 >
-                  {remainderMarkdown}
-                </ReactMarkdown>
-              </div>
-            ) : null}
+                  <ReactMarkdown components={markdownComponents}>{block.content}</ReactMarkdown>
+                </div>
+              );
+            })}
 
             {related.length > 0 && (
               <section className="mt-12 border-t border-gray-100 pt-10 md:mt-16">
@@ -335,7 +360,7 @@ export default function ArticlePage() {
           <aside className="hidden xl:block xl:w-[300px] xl:shrink-0">
             <div
               id="article-toc-box"
-              className="xl:fixed xl:w-[300px] rounded-[28px] border border-[#ece4d7] bg-white p-6 shadow-sm"
+              className="xl:fixed xl:flex xl:w-[300px] xl:flex-col overflow-hidden rounded-[28px] border border-[#ece4d7] bg-white p-6 shadow-sm"
               style={{
                 top: `${tocTop}px`,
                 right: "max(1rem, calc((100vw - 80rem) / 2 + 1.5rem))",
@@ -348,7 +373,7 @@ export default function ArticlePage() {
               </div>
 
               {renderedTocItems.length > 0 ? (
-                <nav className="space-y-2">
+                <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-2">
                   {renderedTocItems.map((item) => (
                     <a
                       key={`${item.sourceIndex}-${item.anchorId}`}

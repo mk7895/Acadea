@@ -5,7 +5,11 @@ import {
   type Article as StaticArticle,
 } from "@/data/articles";
 import { STATIC_ARTICLE_TAXONOMY } from "@/data/article-taxonomy";
-import type { ArticleCategoryGroup, ArticleTocItem } from "@/lib/article-content";
+import {
+  normalizeContactFormMarkers,
+  type ArticleCategoryGroup,
+  type ArticleTocItem,
+} from "@/lib/article-content";
 
 const API_BASE = getApiBase();
 
@@ -86,7 +90,11 @@ export async function fetchArticleDetail(slug: string) {
       throw new Error("Failed to fetch article");
     }
 
-    return (await response.json()) as ArticleDetail;
+    const article = (await response.json()) as ArticleDetail;
+    return {
+      ...article,
+      markdown: normalizeContactFormMarkers(article.markdown),
+    } satisfies ArticleDetail;
   } catch {
     const article = findStaticArticle(slug);
     if (!article) {
