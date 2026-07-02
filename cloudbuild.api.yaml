@@ -25,10 +25,13 @@ steps:
       - ${_REGION}
       - --platform
       - managed
-      - --allow-unauthenticated
+      - --no-invoker-iam-check
 
 images:
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$BUILD_ID
+
+options:
+  logging: CLOUD_LOGGING_ONLY
 
 substitutions:
   _REGION: europe-west1
