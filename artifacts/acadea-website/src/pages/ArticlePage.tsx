@@ -251,7 +251,7 @@ export default function ArticlePage() {
               />
             </div>
 
-            <div className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-primary prose-h2:mb-4 prose-h2:mt-10 prose-p:mb-5 prose-p:leading-relaxed prose-p:text-gray-600 prose-li:text-gray-600 prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
+            <div className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-primary prose-h2:mb-4 prose-h2:mt-10 prose-p:mb-5 prose-p:leading-relaxed prose-p:text-gray-600 prose-ul:list-disc prose-ul:pl-6 prose-ul:space-y-2 prose-ol:list-decimal prose-ol:pl-6 prose-ol:space-y-2 prose-li:text-gray-600 prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
               <ReactMarkdown
                 components={markdownComponents}
               >
@@ -266,7 +266,7 @@ export default function ArticlePage() {
             ) : null}
 
             {remainderMarkdown ? (
-              <div className="prose prose-lg mt-12 max-w-none prose-headings:font-bold prose-headings:text-primary prose-h2:mb-4 prose-h2:mt-10 prose-p:mb-5 prose-p:leading-relaxed prose-p:text-gray-600 prose-li:text-gray-600 prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
+              <div className="prose prose-lg mt-12 max-w-none prose-headings:font-bold prose-headings:text-primary prose-h2:mb-4 prose-h2:mt-10 prose-p:mb-5 prose-p:leading-relaxed prose-p:text-gray-600 prose-ul:list-disc prose-ul:pl-6 prose-ul:space-y-2 prose-ol:list-decimal prose-ol:pl-6 prose-ol:space-y-2 prose-li:text-gray-600 prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
                 <ReactMarkdown
                   components={markdownComponents}
                 >

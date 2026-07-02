@@ -4,6 +4,7 @@ import {
   findArticle as findStaticArticle,
   type Article as StaticArticle,
 } from "@/data/articles";
+import { STATIC_ARTICLE_TAXONOMY } from "@/data/article-taxonomy";
 import type { ArticleCategoryGroup, ArticleTocItem } from "@/lib/article-content";
 
 const API_BASE = getApiBase();
@@ -116,7 +117,7 @@ export async function fetchArticleTaxonomy() {
 
     return (await response.json()) as ArticleTaxonomyResponse;
   } catch {
-    return { groups: [] } satisfies ArticleTaxonomyResponse;
+    return { groups: STATIC_ARTICLE_TAXONOMY } satisfies ArticleTaxonomyResponse;
   }
 }
 
