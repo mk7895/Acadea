@@ -250,6 +250,22 @@ export default function AdminArticles() {
     }));
   }
 
+  function resetTocLabelsAndAnchors() {
+    setEditor((current) => {
+      const includeBySourceIndex = new Map(current.tocItems.map((item) => [item.sourceIndex, item.include]));
+      return {
+        ...current,
+        tocItems: markdownHeadings.map((item) => ({
+          ...item,
+          label: item.sourceText,
+          anchorId: normalizeCategorySlug(item.sourceText) || item.anchorId,
+          include: includeBySourceIndex.get(item.sourceIndex) ?? item.include,
+        })),
+      };
+    });
+    setStatus("Nazwy i anchory w spisie treści zostały przywrócone do nagłówków.");
+  }
+
   async function handleLogin() {
     setLoginError("");
     if (isTurnstileEnabled() && !loginTurnstileToken) {
@@ -850,7 +866,18 @@ export default function AdminArticles() {
 
               <div className="space-y-6">
                 <section className="rounded-[24px] border border-[#ece3d6] bg-[#fcfbf8] p-5">
-                  <h2 className="mb-4 text-lg font-bold text-primary">Spis treści i anchors</h2>
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <h2 className="text-lg font-bold text-primary">Spis treści i anchors</h2>
+                    {markdownHeadings.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={resetTocLabelsAndAnchors}
+                        className="inline-flex h-10 items-center justify-center rounded-full bg-[#f1ece2] px-4 text-sm font-semibold text-primary transition-colors hover:bg-[#e7dfd0]"
+                      >
+                        Resetuj nazwy i anchory
+                      </button>
+                    ) : null}
+                  </div>
                   {markdownHeadings.length === 0 ? (
                     <p className="text-sm text-gray-500">Dodaj nagłówki `##`, `###` lub `####`, aby skonfigurować spis treści.</p>
                   ) : (
