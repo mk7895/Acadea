@@ -25,6 +25,12 @@ steps:
       - ${_REGION}
       - --platform
       - managed
+      - --network
+      - default
+      - --subnet
+      - default
+      - --vpc-egress
+      - private-ranges-only
       - --no-invoker-iam-check
 
 images:
