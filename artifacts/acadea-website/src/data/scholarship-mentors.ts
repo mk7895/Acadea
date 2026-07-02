@@ -9,7 +9,7 @@ export const SCHOLARSHIP_MENTORS = [
   },
   {
     name: "Małgorzata Słowikowska",
-    desc: "Tancerka i choreografka szkoląca się między innymi w Nowym Jorku i Modenie. Wspiera osoby rozwijające się artystycznie i budujące mocny, autentyczny profil twórczy.",
+    desc: "Tancerka i choreografka zdobywająca doświadczenia między innymi w Nowym Jorku i Modenie. Wspiera osoby rozwijające się artystycznie i budujące mocny, autentyczny profil twórczy.",
   },
   {
     name: "Mikołaj Błaszczyk",
@@ -21,20 +21,25 @@ export const SCHOLARSHIP_MENTORS = [
   },
   {
     name: "Mateusz Klepacki",
-    desc: "Absolwent LSE i NYU, z doświadczeniem w Boston Consulting Group (BCG) i zeb Consulting. Pomaga kandydatom przekładać ambicję, osiągnięcia i cele na mocną strategię aplikacyjną.",
+    desc: "Absolwent LSE i NYU, z doświadczeniem w BCG i zeb Consulting. Pomaga kandydatom przekładać ambicję, osiągnięcia i cele na mocną strategię aplikacyjną.",
   },
   {
     name: "Amelia Kudasik",
-    desc: "Studentka prawa na Durham University, łącząca zainteresowania prawem, zdrowiem i edukacją. Wspiera kandydatów budujących spójny profil do nauk społecznych i humanistycznych.",
+    desc: "Studentka prawa na Durham University, łącząca zainteresowania prawem i zdrowiem. Wspiera kandydatów budujących spójny profil do nauk społecznych i humanistycznych.",
   },
   {
     name: "Oskar Krawczyk",
-    desc: "Rozwija się w obszarze sztucznej inteligencji, matematyki i informatyki analitycznej. Pomaga kandydatom dobrze pokazać potencjał w kierunkach ilościowych i technologicznych.",
+    desc: "Rozwija się w obszarze sztucznej inteligencji, matematyki i informatyki analitycznej. Pomaga podopiecznym dobrze pokazać potencjał w kierunkach ilościowych i technologicznych.",
   },
 ] as const;
 
+const surnameKey = (name: string) => {
+  const parts = name.trim().split(/\s+/);
+  return parts.length > 1 ? `${parts.at(-1)} ${parts.slice(0, -1).join(" ")}` : name;
+};
+
 export const SORTED_SCHOLARSHIP_MENTORS = [...SCHOLARSHIP_MENTORS].sort((a, b) =>
-  a.name.localeCompare(b.name, "pl"),
+  surnameKey(a.name).localeCompare(surnameKey(b.name), "pl"),
 );
 
 export const SCHOLARSHIP_MENTOR_NAMES = SORTED_SCHOLARSHIP_MENTORS.map((mentor) => mentor.name);
