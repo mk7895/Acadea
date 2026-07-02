@@ -1,4 +1,33 @@
+import {
+  createBreadcrumbSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  createWebPageSchema,
+  useSeo,
+} from "@/lib/seo";
+
 export default function PrivacyPolicy() {
+  useSeo({
+    title: "Polityka prywatności | ACADEA",
+    description:
+      "Polityka prywatności ACADEA: informacje o przetwarzaniu danych osobowych, cookies, formularzach, platformie i prawach użytkownika.",
+    path: "/polityka-prywatnosci",
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createWebPageSchema({
+        path: "/polityka-prywatnosci",
+        title: "Polityka prywatności | ACADEA",
+        description:
+          "Dokument opisujący zasady prywatności, cookies i przetwarzania danych osobowych w serwisie ACADEA.",
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Polityka Prywatności", path: "/polityka-prywatnosci" },
+      ]),
+    ],
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-20">
       <div className="container mx-auto px-4 max-w-3xl">

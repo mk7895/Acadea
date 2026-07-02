@@ -1,4 +1,33 @@
+import {
+  createBreadcrumbSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  createWebPageSchema,
+  useSeo,
+} from "@/lib/seo";
+
 export default function Regulamin() {
+  useSeo({
+    title: "Regulamin serwisu | ACADEA",
+    description:
+      "Regulamin serwisu ACADEA określający zasady korzystania z witryny, formularzy, rezerwacji spotkań i komunikacji elektronicznej.",
+    path: "/regulamin",
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createWebPageSchema({
+        path: "/regulamin",
+        title: "Regulamin serwisu | ACADEA",
+        description:
+          "Regulamin korzystania z serwisu ACADEA wraz z zasadami formularzy, rezerwacji i odpowiedzialności.",
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Regulamin", path: "/regulamin" },
+      ]),
+    ],
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-20">
       <div className="container mx-auto px-4 max-w-3xl">

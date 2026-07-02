@@ -14,9 +14,27 @@ import {
   stripLeadingTitleHeading,
   type ArticleTocItem,
 } from "@/lib/article-content";
+import {
+  createArticleSchema,
+  createBreadcrumbSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  useSeo,
+} from "@/lib/seo";
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function estimateWordCount(markdown: string) {
+  return markdown
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, " ")
+    .replace(/\[[^\]]+\]\([^)]+\)/g, " ")
+    .replace(/[#>*_-]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean).length;
 }
 
 export default function ArticlePage() {
@@ -213,6 +231,43 @@ export default function ArticlePage() {
   }
 
   const related = article.relatedArticles;
+  const articlePath = `/baza-wiedzy${slug}`;
+  const wordCount = estimateWordCount(articleBody);
+
+  useSeo({
+    title: `${article.title} | ACADEA`,
+    description: article.excerpt,
+    path: articlePath,
+    image: article.image,
+    type: "article",
+    publishedTime: article.updatedAt,
+    modifiedTime: article.updatedAt,
+    keywords: [
+      article.category,
+      article.title,
+      "studia za granicą",
+      "ACADEA",
+    ],
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createArticleSchema({
+        path: articlePath,
+        title: article.title,
+        description: article.excerpt,
+        image: article.image,
+        updatedAt: article.updatedAt,
+        category: article.category,
+        keywords: [article.category, article.title, "studia za granicą", "ACADEA"],
+        wordCount,
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Baza Wiedzy", path: "/baza-wiedzy" },
+        { name: article.title, path: articlePath },
+      ]),
+    ],
+  });
 
   return (
     <div className="min-h-screen bg-[#fffdfa] pt-28 md:pt-32 pb-16 md:pb-20">

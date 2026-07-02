@@ -1,11 +1,11 @@
 import type { MouseEvent } from "react";
 import { Link } from "wouter";
-import logo from "@/assets/logo-white.png";
+import logo from "@/assets/logo-white.webp";
 import { Facebook, Instagram, Linkedin, Mail, Phone, Heart, MessageCircle } from "lucide-react";
 import { useCookieConsent } from "@/components/CookieConsent";
 
 const serviceLinks = [
-  { label: "Doradztwo w Wyborze Uczelni", href: "/jak-pomagamy#wybor-uczelni" },
+  { label: "Doradztwo w Wyborze Uczelni", href: "/jak-to-dziala#wybor-uczelni" },
   { label: "Egzaminy i Certyfikaty", href: "/jak-to-dziala#egzaminy-i-certyfikaty" },
   { label: "Przygotowanie Dokumentów", href: "/jak-to-dziala#przygotowanie-dokumentow" },
   { label: "Eseje, CV i Listy Motywacyjne", href: "/jak-to-dziala#eseje-cv-i-listy-motywacyjne" },
@@ -33,6 +33,10 @@ export function Footer() {
 
   return (
     <footer className="bg-primary text-white pt-16 pb-8">
+      <div className="sr-only" aria-hidden="true">
+        Fundacja Acadea, Jedności Narodowej 55-57 / 15, 50-262 Wrocław, Polska.
+        Kontakt: kontakt@acadea.org, telefon +48 728 492 936.
+      </div>
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           <div className="space-y-6">

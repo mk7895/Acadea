@@ -2,6 +2,13 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users } from "lucide-react";
+import {
+  createBreadcrumbSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  createWebPageSchema,
+  useSeo,
+} from "@/lib/seo";
 
 const featuredFounders = [
   {
@@ -25,6 +32,28 @@ const featuredFounders = [
 ];
 
 export default function AboutUs() {
+  useSeo({
+    title: "Poznajmy się | Zespół ACADEA",
+    description:
+      "Poznaj zespół ACADEA i historię osób, które same przeszły proces aplikacji na studia za granicą, a dziś wspierają kolejnych kandydatów.",
+    path: "/o-nas",
+    keywords: ["o nas ACADEA", "zespół ACADEA", "mentorzy studia za granicą"],
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createWebPageSchema({
+        path: "/o-nas",
+        title: "Poznajmy się | Zespół ACADEA",
+        description:
+          "Strona o zespole ACADEA, jego wartościach i doświadczeniu w aplikacji na studia za granicą.",
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Poznajmy się", path: "/o-nas" },
+      ]),
+    ],
+  });
+
   return (
     <div className="w-full pt-28 pb-20">
       <div className="container mx-auto px-4 md:px-6">

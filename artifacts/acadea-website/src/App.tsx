@@ -1,34 +1,33 @@
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout/Layout";
 
-// Pages
-import Home from "@/pages/Home";
-import HowItWorks from "@/pages/HowItWorks";
-import Countries from "@/pages/Countries";
-import CountryDetail from "@/pages/CountryDetail";
-import AboutUs from "@/pages/AboutUs";
-import Contact from "@/pages/Contact";
-import Blog from "@/pages/Blog";
-import Scholarship from "@/pages/Scholarship";
-import ScholarshipForm from "@/pages/ScholarshipForm";
-import ScholarshipTerms from "@/pages/ScholarshipTerms";
-import Booking from "@/pages/Booking";
-import MentorForm from "@/pages/MentorForm";
-import PrivacyPolicy from "@/pages/PrivacyPolicy";
-import Regulamin from "@/pages/Regulamin";
-import PlatformTerms from "@/pages/PlatformTerms";
-import ArticlePage from "@/pages/ArticlePage";
-import AdminArticles from "@/pages/AdminArticles";
 import { CookieConsentProvider } from "@/components/CookieConsent";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { ConsultationPrompt } from "@/components/ConsultationPrompt";
 
 const queryClient = new QueryClient();
+const Home = lazy(() => import("@/pages/Home"));
+const HowItWorks = lazy(() => import("@/pages/HowItWorks"));
+const Countries = lazy(() => import("@/pages/Countries"));
+const CountryDetail = lazy(() => import("@/pages/CountryDetail"));
+const AboutUs = lazy(() => import("@/pages/AboutUs"));
+const Contact = lazy(() => import("@/pages/Contact"));
+const Blog = lazy(() => import("@/pages/Blog"));
+const Scholarship = lazy(() => import("@/pages/Scholarship"));
+const ScholarshipForm = lazy(() => import("@/pages/ScholarshipForm"));
+const ScholarshipTerms = lazy(() => import("@/pages/ScholarshipTerms"));
+const Booking = lazy(() => import("@/pages/Booking"));
+const MentorForm = lazy(() => import("@/pages/MentorForm"));
+const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
+const Regulamin = lazy(() => import("@/pages/Regulamin"));
+const PlatformTerms = lazy(() => import("@/pages/PlatformTerms"));
+const ArticlePage = lazy(() => import("@/pages/ArticlePage"));
+const AdminArticles = lazy(() => import("@/pages/AdminArticles"));
+const NotFound = lazy(() => import("@/pages/not-found"));
 
 function ScrollManager() {
   const [location] = useLocation();
@@ -81,26 +80,34 @@ function ScrollManager() {
 function Router() {
   return (
     <Layout>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/jak-to-dziala" component={HowItWorks} />
-        <Route path="/kraje" component={Countries} />
-        <Route path="/kraje/:slug" component={CountryDetail} />
-        <Route path="/o-nas" component={AboutUs} />
-        <Route path="/kontakt" component={Contact} />
-        <Route path="/baza-wiedzy" component={Blog} />
-        <Route path="/baza-wiedzy/:slug" component={ArticlePage} />
-        <Route path="/stypendium" component={Scholarship} />
-        <Route path="/stypendium/aplikacja" component={ScholarshipForm} />
-        <Route path="/stypendium/regulamin" component={ScholarshipTerms} />
-        <Route path="/umow-spotkanie" component={Booking} />
-        <Route path="/mentoruj" component={MentorForm} />
-        <Route path="/polityka-prywatnosci" component={PrivacyPolicy} />
-        <Route path="/regulamin" component={Regulamin} />
-        <Route path="/regulamin-platformy" component={PlatformTerms} />
-        <Route path="/panel" component={AdminArticles} />
-        <Route component={NotFound} />
-      </Switch>
+      <Suspense
+        fallback={
+          <div className="flex min-h-[60vh] items-center justify-center px-4 pt-28 text-center text-gray-500">
+            Ładowanie…
+          </div>
+        }
+      >
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/jak-to-dziala" component={HowItWorks} />
+          <Route path="/kraje" component={Countries} />
+          <Route path="/kraje/:slug" component={CountryDetail} />
+          <Route path="/o-nas" component={AboutUs} />
+          <Route path="/kontakt" component={Contact} />
+          <Route path="/baza-wiedzy" component={Blog} />
+          <Route path="/baza-wiedzy/:slug" component={ArticlePage} />
+          <Route path="/stypendium" component={Scholarship} />
+          <Route path="/stypendium/aplikacja" component={ScholarshipForm} />
+          <Route path="/stypendium/regulamin" component={ScholarshipTerms} />
+          <Route path="/umow-spotkanie" component={Booking} />
+          <Route path="/mentoruj" component={MentorForm} />
+          <Route path="/polityka-prywatnosci" component={PrivacyPolicy} />
+          <Route path="/regulamin" component={Regulamin} />
+          <Route path="/regulamin-platformy" component={PlatformTerms} />
+          <Route path="/panel" component={AdminArticles} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
     </Layout>
   );
 }

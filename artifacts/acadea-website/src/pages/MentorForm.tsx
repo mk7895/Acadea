@@ -15,6 +15,13 @@ import {
 import { Link } from "wouter";
 import { getApiBase } from "@/lib/api-base";
 import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
+import {
+  createBreadcrumbSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  createWebPageSchema,
+  useSeo,
+} from "@/lib/seo";
 
 const API_BASE = getApiBase();
 
@@ -33,6 +40,28 @@ const ROLES = [
 type Role = "paid" | "volunteer" | "both" | "";
 
 export default function MentorForm() {
+  useSeo({
+    title: "Dołącz do zespołu mentorów | ACADEA",
+    description:
+      "Aplikuj do zespołu ACADEA jako mentor lub wolontariusz i wspieraj kandydatów aplikujących na studia za granicą.",
+    path: "/mentoruj",
+    keywords: ["mentor ACADEA", "dołącz do zespołu", "mentoring studia za granicą"],
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createWebPageSchema({
+        path: "/mentoruj",
+        title: "Dołącz do zespołu mentorów | ACADEA",
+        description:
+          "Formularz zgłoszeniowy dla osób, które chcą współpracować z ACADEA jako mentorzy lub wolontariusze.",
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Mentoruj", path: "/mentoruj" },
+      ]),
+    ],
+  });
+
   const [form, setForm] = useState({
     name: "", email: "", phone: "",
     university: "", country: "", field: "", graduationYear: "",

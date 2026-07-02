@@ -1,0 +1,23 @@
+{
+  "name": "ACADEA",
+  "short_name": "ACADEA",
+  "description": "Studia za granicą i doradztwo aplikacyjne.",
+  "lang": "pl-PL",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#166534",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

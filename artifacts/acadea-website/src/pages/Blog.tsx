@@ -11,6 +11,13 @@ import {
 } from "@/lib/article-api";
 import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
 import type { ArticleCategoryGroup } from "@/lib/article-content";
+import {
+  createBreadcrumbSchema,
+  createCollectionPageSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  useSeo,
+} from "@/lib/seo";
 
 const API_BASE = getApiBase();
 
@@ -27,6 +34,33 @@ const itemVariants: Variants = {
 type SelectedFilters = Record<string, string[]>;
 
 export default function Blog() {
+  useSeo({
+    title: "Baza wiedzy o studiach za granicą | ACADEA",
+    description:
+      "Poradniki ACADEA o studiach za granicą: aplikacja, terminy, dokumenty, egzaminy, kierunki, kraje, uczelnie i stypendia.",
+    path: "/baza-wiedzy",
+    keywords: [
+      "baza wiedzy studia za granicą",
+      "poradniki studia za granicą",
+      "aplikacja na studia poradnik",
+      "ACADEA blog",
+    ],
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createCollectionPageSchema({
+        path: "/baza-wiedzy",
+        title: "Baza wiedzy o studiach za granicą | ACADEA",
+        description:
+          "Artykuły i poradniki ACADEA o aplikacji na studia za granicą, uczelniach, krajach, egzaminach i finansowaniu.",
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Baza Wiedzy", path: "/baza-wiedzy" },
+      ]),
+    ],
+  });
+
   const [email, setEmail] = useState("");
   const [newsStatus, setNewsStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [articleItems, setArticleItems] = useState<ArticleSummary[]>([]);

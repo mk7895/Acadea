@@ -18,10 +18,40 @@ import {
   SCHOLARSHIP_MENTOR_NAMES,
   SORTED_SCHOLARSHIP_MENTORS,
 } from "@/data/scholarship-mentors";
+import {
+  createBreadcrumbSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  createWebPageSchema,
+  useSeo,
+} from "@/lib/seo";
 
 const API_BASE = getApiBase();
 
 export default function ScholarshipForm() {
+  useSeo({
+    title: "Aplikacja do konkursu stypendialnego | ACADEA",
+    description:
+      "Wypełnij formularz zgłoszeniowy do Konkursu Stypendialnego ACADEA i opowiedz o swoich planach, osiągnięciach oraz motywacji.",
+    path: "/stypendium/aplikacja",
+    keywords: ["formularz stypendium", "aplikacja stypendialna", "konkurs stypendialny ACADEA"],
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createWebPageSchema({
+        path: "/stypendium/aplikacja",
+        title: "Aplikacja do konkursu stypendialnego | ACADEA",
+        description:
+          "Formularz zgłoszeniowy do programu stypendialnego ACADEA dla kandydatów aplikujących o wsparcie.",
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Stypendia", path: "/stypendium" },
+        { name: "Aplikacja", path: "/stypendium/aplikacja" },
+      ]),
+    ],
+  });
+
   const [form, setForm] = useState({
     name: "",
     email: "",

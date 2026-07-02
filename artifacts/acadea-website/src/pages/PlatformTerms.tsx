@@ -1,4 +1,33 @@
+import {
+  createBreadcrumbSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  createWebPageSchema,
+  useSeo,
+} from "@/lib/seo";
+
 export default function PlatformTerms() {
+  useSeo({
+    title: "Regulamin platformy ACADEA",
+    description:
+      "Regulamin platformy ACADEA opisujący zasady korzystania z kont, materiałów, spotkań, danych i integracji zewnętrznych.",
+    path: "/regulamin-platformy",
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createWebPageSchema({
+        path: "/regulamin-platformy",
+        title: "Regulamin platformy ACADEA",
+        description:
+          "Regulamin korzystania z platformy ACADEA, w tym kont, dokumentów, materiałów i integracji zewnętrznych.",
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Regulamin Platformy", path: "/regulamin-platformy" },
+      ]),
+    ],
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-20">
       <div className="container mx-auto px-4 max-w-3xl">

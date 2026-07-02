@@ -22,6 +22,7 @@ import {
   type ArticleCategoryGroup,
   type ArticleTocItem,
 } from "@/lib/article-content";
+import { useSeo } from "@/lib/seo";
 
 const API_BASE = getApiBase();
 const ADMIN_TOKEN_KEY = "acadea-admin-session";
@@ -85,6 +86,13 @@ async function fileToDataUrl(file: File) {
 }
 
 export default function AdminArticles() {
+  useSeo({
+    title: "Panel artykułów | ACADEA",
+    description: "Panel administracyjny artykułów ACADEA.",
+    path: "/panel/artykuly",
+    noindex: true,
+  });
+
   const querySecret = new URLSearchParams(window.location.search).get("secret")?.trim() ?? "";
   const [token, setToken] = useState(() => localStorage.getItem(ADMIN_TOKEN_KEY) ?? "");
   const [entryGranted, setEntryGranted] = useState(false);

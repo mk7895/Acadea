@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { motion, type Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,8 +18,20 @@ import {
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { Link } from "wouter";
-import { GlobeSection } from "@/components/GlobeSection";
-import scholarshipHomePhoto from "@/assets/scholarship-home-photo.jpg";
+import scholarshipHomePhoto from "@/assets/scholarship-home-photo.webp";
+import {
+  createBreadcrumbSchema,
+  createLocalBusinessSchema,
+  createSiteNavigationSchema,
+  createOrganizationSchema,
+  createWebPageSchema,
+  createWebSiteSchema,
+  useSeo,
+} from "@/lib/seo";
+
+const GlobeSection = lazy(() =>
+  import("@/components/GlobeSection").then((module) => ({ default: module.GlobeSection })),
+);
 
 const services = [
   {
@@ -63,6 +76,41 @@ const itemVariants: Variants = {
 };
 
 export default function Home() {
+  useSeo({
+    title: "Studia za granicą i doradztwo aplikacyjne | ACADEA",
+    description:
+      "Pomagamy kandydatom dostać się na studia za granicą. ACADEA wspiera w wyborze uczelni, esejach, dokumentach, egzaminach i planowaniu aplikacji.",
+    path: "/",
+    keywords: [
+      "studia za granicą",
+      "doradztwo aplikacyjne",
+      "aplikacja na studia",
+      "studia za granicą pomoc",
+      "ACADEA",
+    ],
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createWebSiteSchema(),
+      createWebPageSchema({
+        path: "/",
+        title: "Studia za granicą i doradztwo aplikacyjne | ACADEA",
+        description:
+          "ACADEA pomaga w aplikacji na studia za granicą, wyborze uczelni, dokumentach, esejach, stypendiach i planowaniu całego procesu.",
+      }),
+      createBreadcrumbSchema([{ name: "Strona Główna", path: "/" }]),
+      createSiteNavigationSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Jak pomagamy", path: "/jak-to-dziala" },
+        { name: "Kraje i Uczelnie", path: "/kraje" },
+        { name: "Baza Wiedzy", path: "/baza-wiedzy" },
+        { name: "Stypendia", path: "/stypendium" },
+        { name: "Poznajmy się", path: "/o-nas" },
+        { name: "Kontakt", path: "/kontakt" },
+      ]),
+    ],
+  });
+
   return (
     <div className="w-full">
       {/* ── HERO ─────────────────────────────────────────────────────── */}
@@ -133,7 +181,9 @@ export default function Home() {
               transition={{ duration: 0.9, ease: "easeOut", delay: 0.2 }}
               className="hidden lg:flex items-center justify-center"
             >
-              <GlobeSection />
+              <Suspense fallback={<div className="h-[520px] w-full max-w-[520px] rounded-full bg-primary/5" />}>
+                <GlobeSection />
+              </Suspense>
             </motion.div>
           </div>
         </div>

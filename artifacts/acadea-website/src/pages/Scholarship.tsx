@@ -9,6 +9,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SORTED_SCHOLARSHIP_MENTORS } from "@/data/scholarship-mentors";
+import {
+  createBreadcrumbSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  createWebPageSchema,
+  useSeo,
+} from "@/lib/seo";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -32,6 +39,33 @@ const criteria = [
 ];
 
 export default function Scholarship() {
+  useSeo({
+    title: "Program Stypendialny ACADEA | Konkurs stypendialny",
+    description:
+      "Poznaj Program Stypendialny ACADEA i sprawdź zasady konkursu dla ambitnych kandydatów, którzy potrzebują wsparcia mentoringowego i edukacyjnego.",
+    path: "/stypendium",
+    keywords: [
+      "stypendium ACADEA",
+      "konkurs stypendialny",
+      "program stypendialny",
+      "stypendium studia za granicą",
+    ],
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createWebPageSchema({
+        path: "/stypendium",
+        title: "Program Stypendialny ACADEA | Konkurs stypendialny",
+        description:
+          "Strona programu stypendialnego ACADEA z opisem konkursu, mentorów i formularza zgłoszeniowego.",
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Stypendia", path: "/stypendium" },
+      ]),
+    ],
+  });
+
   return (
     <div className="w-full">
       {/* Hero */}

@@ -2,6 +2,13 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Check, Search, PenTool, Send, Home as HomeIcon, BookOpen, MessageCircle } from "lucide-react";
 import { Link } from "wouter";
+import {
+  createBreadcrumbSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  createWebPageSchema,
+  useSeo,
+} from "@/lib/seo";
 
 const steps = [
   {
@@ -56,6 +63,33 @@ const steps = [
 ];
 
 export default function HowItWorks() {
+  useSeo({
+    title: "Jak pomagamy w aplikacji na studia za granicą | ACADEA",
+    description:
+      "Zobacz, jak wygląda współpraca z ACADEA krok po kroku: wybór uczelni, egzaminy, dokumenty, eseje, aplikacja, rozmowy i formalności po przyjęciu.",
+    path: "/jak-to-dziala",
+    keywords: [
+      "jak aplikować na studia za granicą",
+      "pomoc w aplikacji",
+      "eseje aplikacyjne",
+      "doradztwo studia za granicą",
+    ],
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createWebPageSchema({
+        path: "/jak-to-dziala",
+        title: "Jak pomagamy w aplikacji na studia za granicą | ACADEA",
+        description:
+          "Opis procesu współpracy z ACADEA przy aplikacji na studia za granicą od wyboru uczelni po wyjazd.",
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Jak pomagamy", path: "/jak-to-dziala" },
+      ]),
+    ],
+  });
+
   return (
     <div className="w-full pt-24 md:pt-28 pb-12 md:pb-16">
       <div className="container mx-auto px-4 md:px-6">

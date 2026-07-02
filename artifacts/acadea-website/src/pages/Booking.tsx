@@ -19,6 +19,13 @@ import { getApiBase } from "@/lib/api-base";
 import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
 import { TIMEZONE_COOKIE_NAME, getCookie, setLongLivedCookie } from "@/lib/cookies";
 import { useCookieConsent } from "@/components/CookieConsent";
+import {
+  createBreadcrumbSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  createWebPageSchema,
+  useSeo,
+} from "@/lib/seo";
 
 const API_BASE = getApiBase();
 const DEFAULT_TIMEZONE = "Europe/Warsaw";
@@ -141,6 +148,28 @@ function findTimezoneOption(value: string) {
 }
 
 export default function Booking() {
+  useSeo({
+    title: "Umów bezpłatną konsultację | ACADEA",
+    description:
+      "Wybierz termin i umów bezpłatną konsultację z ACADEA dotyczącą studiów za granicą, wyboru uczelni i planu aplikacji.",
+    path: "/umow-spotkanie",
+    keywords: ["umów konsultację", "bezpłatna konsultacja ACADEA", "spotkanie studia za granicą"],
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createWebPageSchema({
+        path: "/umow-spotkanie",
+        title: "Umów bezpłatną konsultację | ACADEA",
+        description:
+          "Strona rezerwacji bezpłatnej konsultacji ACADEA dla kandydatów zainteresowanych studiami za granicą.",
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Umów spotkanie", path: "/umow-spotkanie" },
+      ]),
+    ],
+  });
+
   const { canUsePreferencesCookies } = useCookieConsent();
   const [step, setStep] = useState(0);
   const [rawSlots, setRawSlots] = useState<Slot[]>([]);

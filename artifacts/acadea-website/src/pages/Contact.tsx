@@ -12,6 +12,13 @@ import { Mail, Phone, Loader2, MessageCircle } from "lucide-react";
 import { Link } from "wouter";
 import { getApiBase } from "@/lib/api-base";
 import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
+import {
+  createBreadcrumbSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  createWebPageSchema,
+  useSeo,
+} from "@/lib/seo";
 
 const CONTACT_EMAIL = "kontakt@acadea.org";
 const CONTACT_PHONE = "+48 728 492 936";
@@ -33,6 +40,28 @@ const contactSchema = z.object({
 type ContactFormValues = z.infer<typeof contactSchema>;
 
 export default function Contact() {
+  useSeo({
+    title: "Kontakt i bezpłatna konsultacja | ACADEA",
+    description:
+      "Skontaktuj się z ACADEA i umów bezpłatną konsultację dotyczącą studiów za granicą, wyboru uczelni i procesu aplikacyjnego.",
+    path: "/kontakt",
+    keywords: ["kontakt ACADEA", "bezpłatna konsultacja studia za granicą", "doradztwo kontakt"],
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createWebPageSchema({
+        path: "/kontakt",
+        title: "Kontakt i bezpłatna konsultacja | ACADEA",
+        description:
+          "Dane kontaktowe ACADEA oraz formularz kontaktowy dla kandydatów zainteresowanych studiami za granicą.",
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Kontakt", path: "/kontakt" },
+      ]),
+    ],
+  });
+
   const { toast } = useToast();
   const [isPending, setIsPending] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");

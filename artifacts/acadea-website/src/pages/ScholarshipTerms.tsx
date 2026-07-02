@@ -1,4 +1,11 @@
 import { Link } from "wouter";
+import {
+  createBreadcrumbSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  createWebPageSchema,
+  useSeo,
+} from "@/lib/seo";
 
 const scoringRows = [
   {
@@ -24,6 +31,29 @@ const scoringRows = [
 ];
 
 export default function ScholarshipTerms() {
+  useSeo({
+    title: "Regulamin Konkursu Stypendialnego ACADEA",
+    description:
+      "Przeczytaj regulamin Konkursu Stypendialnego ACADEA, zasady zgłoszeń, punktację, sposób oceny oraz warunki wyboru stypendystów.",
+    path: "/stypendium/regulamin",
+    keywords: ["regulamin stypendium", "konkurs stypendialny regulamin", "ACADEA regulamin stypendium"],
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createWebPageSchema({
+        path: "/stypendium/regulamin",
+        title: "Regulamin Konkursu Stypendialnego ACADEA",
+        description:
+          "Regulamin programu stypendialnego ACADEA z zasadami zgłoszeń, oceną i wyborem stypendystów.",
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Stypendia", path: "/stypendium" },
+        { name: "Regulamin Stypendium", path: "/stypendium/regulamin" },
+      ]),
+    ],
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 pt-28 pb-20 md:pt-32">
       <div className="container mx-auto max-w-3xl px-4">
@@ -180,8 +210,8 @@ export default function ScholarshipTerms() {
                 </li>
                 <li>
                   Kontakt w sprawach konkursu:{" "}
-                  <a href="mailto:contact@acadea.org" className="font-semibold text-primary hover:underline">
-                    contact@acadea.org
+                  <a href="mailto:kontakt@acadea.org" className="font-semibold text-primary hover:underline">
+                    kontakt@acadea.org
                   </a>.
                 </li>
               </ol>

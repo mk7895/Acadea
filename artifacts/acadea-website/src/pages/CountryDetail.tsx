@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { countryBySlug, countryLocative, uniDomain } from "@/data/countries";
 import { fetchPublishedArticles, type ArticleSummary } from "@/lib/article-api";
 import NotFound from "@/pages/not-found";
+import {
+  createBreadcrumbSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  createWebPageSchema,
+  useSeo,
+} from "@/lib/seo";
 
 const SKIP_CLEARBIT = new Set([
   "dtu.dk",
@@ -108,6 +115,32 @@ export default function CountryDetail() {
   if (!country) return <NotFound />;
 
   const locative = countryLocative[country.slug] ?? country.name;
+
+  useSeo({
+    title: `Studia w ${country.name} | Uczelnie i aplikacja | ACADEA`,
+    description: country.intro,
+    path: `/kraje/${country.slug}`,
+    keywords: [
+      `studia w ${country.name}`,
+      `${country.name} uczelnie`,
+      `${country.name} aplikacja`,
+      `studia za granicą ${country.name}`,
+    ],
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createWebPageSchema({
+        path: `/kraje/${country.slug}`,
+        title: `Studia w ${country.name} | Uczelnie i aplikacja | ACADEA`,
+        description: country.intro,
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Kraje i Uczelnie", path: "/kraje" },
+        { name: country.name, path: `/kraje/${country.slug}` },
+      ]),
+    ],
+  });
 
   return (
     <div className="w-full pt-36 md:pt-40 pb-20 bg-gray-50 min-h-screen">

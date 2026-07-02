@@ -1,11 +1,57 @@
+import { Suspense, lazy } from "react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { GlobeSection } from "@/components/GlobeSection";
 import { countries } from "@/data/countries";
+import {
+  createBreadcrumbSchema,
+  createCollectionPageSchema,
+  createItemListSchema,
+  createLocalBusinessSchema,
+  createOrganizationSchema,
+  useSeo,
+} from "@/lib/seo";
+
+const GlobeSection = lazy(() =>
+  import("@/components/GlobeSection").then((module) => ({ default: module.GlobeSection })),
+);
 
 export default function Countries() {
+  useSeo({
+    title: "Kraje i uczelnie za granicą | ACADEA",
+    description:
+      "Poznaj kraje i uczelnie, do których pomagamy aplikować. Sprawdź wymagania, kierunki i możliwości studiowania za granicą z ACADEA.",
+    path: "/kraje",
+    keywords: [
+      "studia za granicą kraje",
+      "uczelnie za granicą",
+      "gdzie studiować za granicą",
+      "kraje i uczelnie",
+    ],
+    schemas: [
+      createOrganizationSchema(),
+      createLocalBusinessSchema(),
+      createCollectionPageSchema({
+        path: "/kraje",
+        title: "Kraje i uczelnie za granicą | ACADEA",
+        description:
+          "Przegląd krajów i uczelni, do których pomagamy aplikować w ramach doradztwa ACADEA.",
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Kraje i Uczelnie", path: "/kraje" },
+      ]),
+      createItemListSchema({
+        name: "Kraje dostępne w ACADEA",
+        items: countries.map((country) => ({
+          name: country.name,
+          path: `/kraje/${country.slug}`,
+        })),
+      }),
+    ],
+  });
+
   return (
     <div className="w-full pt-24 md:pt-28 pb-12 md:pb-16 bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 md:px-6">
@@ -35,7 +81,9 @@ export default function Countries() {
             transition={{ duration: 0.6 }}
             className="flex justify-center"
           >
-            <GlobeSection />
+            <Suspense fallback={<div className="h-[520px] w-full max-w-[520px] rounded-full bg-primary/5" />}>
+              <GlobeSection />
+            </Suspense>
           </motion.div>
         </div>
 
