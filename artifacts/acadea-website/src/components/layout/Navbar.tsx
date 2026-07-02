@@ -56,7 +56,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-6 md:translate-y-2">
+        <nav className="hidden md:flex items-center gap-6 md:translate-y-[0.525rem]">
           {links.map((link) => (
             link.highlight ? (
               <Link
@@ -84,7 +84,7 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden md:flex items-center gap-4 md:translate-y-2">
+        <div className="hidden md:flex items-center gap-4 md:translate-y-[0.525rem]">
           <Link href="/umow-spotkanie" onClick={resetBookingIfCurrentPage}>
             <Button className="rounded-full px-6 bg-primary text-white hover:bg-primary/90 transition-all font-semibold">
               Bezpłatna konsultacja
