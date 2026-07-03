@@ -176,6 +176,61 @@ export default function ArticlePage() {
     [article?.tocItems, articleBody],
   );
 
+  const articlePath = `/baza-wiedzy${slug}`;
+  const wordCount = estimateWordCount(articleBody);
+
+  useSeo(
+    article
+      ? {
+          title: `${article.title} | ACADEA`,
+          description: article.excerpt,
+          path: articlePath,
+          image: article.image,
+          type: "article",
+          publishedTime: article.updatedAt,
+          modifiedTime: article.updatedAt,
+          keywords: [
+            article.category,
+            article.title,
+            "studia za granicą",
+            "ACADEA",
+          ],
+          schemas: [
+            createOrganizationSchema(),
+            createLocalBusinessSchema(),
+            createArticleSchema({
+              path: articlePath,
+              title: article.title,
+              description: article.excerpt,
+              image: article.image,
+              updatedAt: article.updatedAt,
+              category: article.category,
+              keywords: [article.category, article.title, "studia za granicą", "ACADEA"],
+              wordCount,
+            }),
+            createBreadcrumbSchema([
+              { name: "Strona Główna", path: "/" },
+              { name: "Baza Wiedzy", path: "/baza-wiedzy" },
+              { name: article.title, path: articlePath },
+            ]),
+          ],
+        }
+      : {
+          title: "Baza Wiedzy | ACADEA",
+          description: "Artykuły i poradniki o studiach za granicą od ACADEA.",
+          path: articlePath,
+          noindex: true,
+          schemas: [
+            createOrganizationSchema(),
+            createLocalBusinessSchema(),
+            createBreadcrumbSchema([
+              { name: "Strona Główna", path: "/" },
+              { name: "Baza Wiedzy", path: "/baza-wiedzy" },
+            ]),
+          ],
+        },
+  );
+
   const markdownComponents = (() => {
     const counter = { value: 0 };
     const renderHeading =
@@ -231,43 +286,6 @@ export default function ArticlePage() {
   }
 
   const related = article.relatedArticles;
-  const articlePath = `/baza-wiedzy${slug}`;
-  const wordCount = estimateWordCount(articleBody);
-
-  useSeo({
-    title: `${article.title} | ACADEA`,
-    description: article.excerpt,
-    path: articlePath,
-    image: article.image,
-    type: "article",
-    publishedTime: article.updatedAt,
-    modifiedTime: article.updatedAt,
-    keywords: [
-      article.category,
-      article.title,
-      "studia za granicą",
-      "ACADEA",
-    ],
-    schemas: [
-      createOrganizationSchema(),
-      createLocalBusinessSchema(),
-      createArticleSchema({
-        path: articlePath,
-        title: article.title,
-        description: article.excerpt,
-        image: article.image,
-        updatedAt: article.updatedAt,
-        category: article.category,
-        keywords: [article.category, article.title, "studia za granicą", "ACADEA"],
-        wordCount,
-      }),
-      createBreadcrumbSchema([
-        { name: "Strona Główna", path: "/" },
-        { name: "Baza Wiedzy", path: "/baza-wiedzy" },
-        { name: article.title, path: articlePath },
-      ]),
-    ],
-  });
 
   return (
     <div className="min-h-screen bg-[#fffdfa] pt-28 md:pt-32 pb-16 md:pb-20">
