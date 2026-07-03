@@ -4844,7 +4844,22 @@ function MenteeSection({
   const selectedMentorDay = selectedMentorDayKey
     ? mentorSlotDayIndex[selectedMentorDayKey] ?? null
     : null;
-  const visibleMaterialTemplates = materialTemplates ?? [];
+  const visibleMaterialTemplates = (materialTemplates ?? [])
+    .map((template: any) => {
+      const visibleRows = Array.isArray(template.structure)
+        ? template.structure.filter((row: any) =>
+            (guides ?? []).some((guide: any) => rowAppliesToGuide(row, guide)),
+          )
+        : [];
+      return {
+        ...template,
+        visibleRows,
+      };
+    })
+    .filter((template: any) => {
+      const hasVisibleRows = (template.visibleRows ?? []).some((row: any) => row.level === "item");
+      return hasVisibleRows;
+    });
   const materialItemStateMap = new Map<string, MaterialItemState>(
     materialItemStates.map((entry: any) => [`${entry.templateId}:${entry.rowKey}`, entry]),
   );
@@ -4855,9 +4870,7 @@ function MenteeSection({
         .filter((template: any) => templateAppliesToGuide(template, guide))
         .map((template: any) => ({
           ...template,
-          visibleRows: Array.isArray(template.structure)
-            ? template.structure.filter((row: any) => rowAppliesToGuide(row, guide))
-            : [],
+          visibleRows: (template.visibleRows ?? []).filter((row: any) => rowAppliesToGuide(row, guide)),
         })),
     ]),
   );
@@ -5634,9 +5647,9 @@ function MenteeSection({
                         ))}
                       </div>
                     ) : null}
-                    {(template.structure ?? []).length ? (
+                    {(template.visibleRows ?? []).length ? (
                       <div className="list" style={{ marginTop: 12 }}>
-                        {(template.structure ?? []).map((row: any, index: number) => {
+                        {(template.visibleRows ?? []).map((row: any, index: number) => {
                           const applicableGuides = guides.filter((guide: any) => rowAppliesToGuide(row, guide));
                           const universityNames = uniqueStrings(applicableGuides.map((guide: any) => guide.universityName));
                           const countryNames = uniqueStrings(applicableGuides.map((guide: any) => guide.country));
