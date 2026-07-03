@@ -86,12 +86,40 @@ type GoogleDocsStructuralElement = {
   };
 };
 
+type GoogleDocsHeader = {
+  content?: GoogleDocsStructuralElement[];
+  headerId?: string;
+};
+
+type GoogleDocsFooter = {
+  content?: GoogleDocsStructuralElement[];
+  footerId?: string;
+};
+
+type GoogleDocsDocumentStyle = {
+  defaultFooterId?: string;
+  defaultHeaderId?: string;
+  flipPageOrientation?: boolean;
+  marginBottom?: Record<string, unknown>;
+  marginFooter?: Record<string, unknown>;
+  marginHeader?: Record<string, unknown>;
+  marginLeft?: Record<string, unknown>;
+  marginRight?: Record<string, unknown>;
+  marginTop?: Record<string, unknown>;
+  pageSize?: Record<string, unknown>;
+  useEvenPageHeaderFooter?: boolean;
+  useFirstPageHeaderFooter?: boolean;
+};
+
 type GoogleDocsTab = {
   childTabs?: GoogleDocsTab[];
   documentTab?: {
     body?: {
       content?: GoogleDocsStructuralElement[];
     };
+    documentStyle?: GoogleDocsDocumentStyle;
+    footers?: Record<string, GoogleDocsFooter>;
+    headers?: Record<string, GoogleDocsHeader>;
   };
   tabProperties?: {
     tabId?: string;
@@ -531,6 +559,12 @@ export async function createDocumentTab(input: {
     throw new Error("Google Docs did not return the new tab ID.");
   }
 
+  await setDocumentTabPageStyle({
+    documentId: input.documentId,
+    style: null,
+    tabId,
+  });
+
   const initialText = input.initialText?.trim();
   if (initialText) {
     await googleWorkspaceJson(
@@ -803,6 +837,89 @@ function extractClonableParagraphs(
   return paragraphs;
 }
 
+async function createDefaultHeader(
+  documentId: string,
+  tabId: string,
+) {
+  const response = await googleWorkspaceJson<{
+    replies?: Array<{
+      createHeader?: {
+        headerId?: string;
+      };
+    }>;
+  }>(
+    `${GOOGLE_DOCS_API_BASE}/documents/${encodeURIComponent(documentId)}:batchUpdate`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        requests: [
+          {
+            createHeader: {
+              sectionBreakLocation: {
+                index: 0,
+                tabId,
+              },
+              type: "DEFAULT",
+            },
+          },
+        ],
+        writeControl: undefined,
+      }),
+    },
+    ["https://www.googleapis.com/auth/documents", "https://www.googleapis.com/auth/drive"],
+  );
+
+  const headerId = response.replies?.[0]?.createHeader?.headerId;
+  if (!headerId) {
+    throw new Error("Google Docs did not return the new header ID.");
+  }
+  return headerId;
+}
+
+async function createDefaultFooter(
+  documentId: string,
+  tabId: string,
+) {
+  const response = await googleWorkspaceJson<{
+    replies?: Array<{
+      createFooter?: {
+        footerId?: string;
+      };
+    }>;
+  }>(
+    `${GOOGLE_DOCS_API_BASE}/documents/${encodeURIComponent(documentId)}:batchUpdate`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        requests: [
+          {
+            createFooter: {
+              sectionBreakLocation: {
+                index: 0,
+                tabId,
+              },
+              type: "DEFAULT",
+            },
+          },
+        ],
+      }),
+    },
+    ["https://www.googleapis.com/auth/documents", "https://www.googleapis.com/auth/drive"],
+  );
+
+  const footerId = response.replies?.[0]?.createFooter?.footerId;
+  if (!footerId) {
+    throw new Error("Google Docs did not return the new footer ID.");
+  }
+  return footerId;
+}
+
 async function batchUpdateDocument(
   documentId: string,
   requests: Array<Record<string, unknown>>,
@@ -824,37 +941,32 @@ async function batchUpdateDocument(
   );
 }
 
-export async function cloneDocumentTabToTarget(input: {
-  sourceDocumentId: string;
-  sourceTabId: string;
-  targetDocumentId: string;
-  targetTabId: string;
+async function cloneContentIntoSegment(input: {
+  document: GoogleDocsDocument;
+  documentId: string;
+  elements: GoogleDocsStructuralElement[] | undefined;
+  segmentId: string;
+  tabId: string;
 }) {
-  const document = await getDocumentWithTabs(input.sourceDocumentId);
-  const sourceTab = findGoogleDocTab(document, input.sourceTabId);
-  if (!sourceTab) {
-    throw new Error("Source Google Docs tab was not found.");
-  }
-
-  const paragraphs = extractClonableParagraphs(document, sourceTab.documentTab?.body?.content);
+  const paragraphs = extractClonableParagraphs(input.document, input.elements);
   const allText = paragraphs.map((paragraph) => paragraph.text).join("");
   if (!allText) {
     return;
   }
 
-  await batchUpdateDocument(input.targetDocumentId, [
+  await batchUpdateDocument(input.documentId, [
     {
       insertText: {
-        location: {
-          index: 1,
-          tabId: input.targetTabId,
+        endOfSegmentLocation: {
+          segmentId: input.segmentId,
+          tabId: input.tabId,
         },
         text: allText,
       },
     },
   ]);
 
-  let currentIndex = 1;
+  let currentIndex = 0;
   const styleRequests: Array<Record<string, unknown>> = [];
 
   for (const paragraph of paragraphs) {
@@ -870,8 +982,9 @@ export async function cloneDocumentTabToTarget(input: {
             paragraphStyle: paragraph.paragraphStyle,
             range: {
               endIndex: paragraphEnd,
+              segmentId: input.segmentId,
               startIndex: paragraphStart,
-              tabId: input.targetTabId,
+              tabId: input.tabId,
             },
           },
         });
@@ -884,8 +997,9 @@ export async function cloneDocumentTabToTarget(input: {
           bulletPreset: paragraph.bulletPreset,
           range: {
             endIndex: paragraphEnd,
+            segmentId: input.segmentId,
             startIndex: paragraphStart,
-            tabId: input.targetTabId,
+            tabId: input.tabId,
           },
         },
       });
@@ -903,9 +1017,10 @@ export async function cloneDocumentTabToTarget(input: {
         updateTextStyle: {
           fields,
           range: {
-            endIndex: paragraphStart + textRun.endOffset,
-            startIndex: paragraphStart + textRun.startOffset,
-            tabId: input.targetTabId,
+            endIndex: textRun.endOffset,
+            segmentId: input.segmentId,
+            startIndex: textRun.startOffset,
+            tabId: input.tabId,
           },
           textStyle: textRun.textStyle,
         },
@@ -915,7 +1030,197 @@ export async function cloneDocumentTabToTarget(input: {
     currentIndex = paragraphEnd;
   }
 
-  await batchUpdateDocument(input.targetDocumentId, styleRequests);
+  await batchUpdateDocument(input.documentId, styleRequests);
+}
+
+async function setDocumentTabPageStyle(input: {
+  documentId: string;
+  tabId: string;
+  style?: GoogleDocsDocumentStyle | null;
+}) {
+  const sourceStyle = input.style ?? {};
+  const documentStyle: Record<string, unknown> = {};
+
+  if (sourceStyle.pageSize && Object.keys(sourceStyle.pageSize).length) {
+    documentStyle.pageSize = sourceStyle.pageSize;
+  } else {
+    documentStyle.pageSize = {
+      height: { magnitude: 842, unit: "PT" },
+      width: { magnitude: 595, unit: "PT" },
+    };
+  }
+
+  for (const key of [
+    "flipPageOrientation",
+    "marginBottom",
+    "marginFooter",
+    "marginHeader",
+    "marginLeft",
+    "marginRight",
+    "marginTop",
+    "useEvenPageHeaderFooter",
+    "useFirstPageHeaderFooter",
+  ] as const) {
+    const value = sourceStyle[key];
+    if (value !== undefined) {
+      documentStyle[key] = value;
+    }
+  }
+
+  const fields = buildFieldMask(documentStyle).join(",");
+  if (!fields) {
+    return;
+  }
+
+  await batchUpdateDocument(input.documentId, [
+    {
+      updateDocumentStyle: {
+        documentStyle,
+        fields,
+        tabId: input.tabId,
+      },
+    },
+  ]);
+}
+
+export async function cloneDocumentTabToTarget(input: {
+  sourceDocumentId: string;
+  sourceTabId: string;
+  targetDocumentId: string;
+  targetTabId: string;
+}) {
+  const document = await getDocumentWithTabs(input.sourceDocumentId);
+  const sourceTab = findGoogleDocTab(document, input.sourceTabId);
+  if (!sourceTab) {
+    throw new Error("Source Google Docs tab was not found.");
+  }
+
+  await setDocumentTabPageStyle({
+    documentId: input.targetDocumentId,
+    style: sourceTab.documentTab?.documentStyle ?? null,
+    tabId: input.targetTabId,
+  });
+
+  const paragraphs = extractClonableParagraphs(document, sourceTab.documentTab?.body?.content);
+  const allText = paragraphs.map((paragraph) => paragraph.text).join("");
+  if (!allText) {
+    // Continue to headers/footers even if the body is empty.
+  } else {
+    await batchUpdateDocument(input.targetDocumentId, [
+      {
+        insertText: {
+          location: {
+            index: 1,
+            tabId: input.targetTabId,
+          },
+          text: allText,
+        },
+      },
+    ]);
+
+    let currentIndex = 1;
+    const styleRequests: Array<Record<string, unknown>> = [];
+
+    for (const paragraph of paragraphs) {
+      const paragraphStart = currentIndex;
+      const paragraphEnd = currentIndex + paragraph.text.length;
+
+      if (paragraph.paragraphStyle) {
+        const fields = buildFieldMask(paragraph.paragraphStyle).join(",");
+        if (fields) {
+          styleRequests.push({
+            updateParagraphStyle: {
+              fields,
+              paragraphStyle: paragraph.paragraphStyle,
+              range: {
+                endIndex: paragraphEnd,
+                startIndex: paragraphStart,
+                tabId: input.targetTabId,
+              },
+            },
+          });
+        }
+      }
+
+      if (paragraph.bulletPreset) {
+        styleRequests.push({
+          createParagraphBullets: {
+            bulletPreset: paragraph.bulletPreset,
+            range: {
+              endIndex: paragraphEnd,
+              startIndex: paragraphStart,
+              tabId: input.targetTabId,
+            },
+          },
+        });
+      }
+
+      for (const textRun of paragraph.textRuns) {
+        if (!textRun.textStyle) {
+          continue;
+        }
+        const fields = buildFieldMask(textRun.textStyle).join(",");
+        if (!fields) {
+          continue;
+        }
+        styleRequests.push({
+          updateTextStyle: {
+            fields,
+            range: {
+              endIndex: paragraphStart + textRun.endOffset,
+              startIndex: paragraphStart + textRun.startOffset,
+              tabId: input.targetTabId,
+            },
+            textStyle: textRun.textStyle,
+          },
+        });
+      }
+
+      currentIndex = paragraphEnd;
+    }
+
+    await batchUpdateDocument(input.targetDocumentId, styleRequests);
+  }
+
+  const sourceDocumentStyle = sourceTab.documentTab?.documentStyle ?? {};
+  const sourceDefaultHeaderId = sourceDocumentStyle.defaultHeaderId?.trim() ?? "";
+  const sourceDefaultFooterId = sourceDocumentStyle.defaultFooterId?.trim() ?? "";
+
+  if (sourceDefaultHeaderId) {
+    const sourceHeader = sourceTab.documentTab?.headers?.[sourceDefaultHeaderId];
+    if (sourceHeader?.content?.length) {
+      try {
+        const targetHeaderId = await createDefaultHeader(input.targetDocumentId, input.targetTabId);
+        await cloneContentIntoSegment({
+          document,
+          documentId: input.targetDocumentId,
+          elements: sourceHeader.content,
+          segmentId: targetHeaderId,
+          tabId: input.targetTabId,
+        });
+      } catch {
+        // Ignore header cloning failures so body/template creation still succeeds.
+      }
+    }
+  }
+
+  if (sourceDefaultFooterId) {
+    const sourceFooter = sourceTab.documentTab?.footers?.[sourceDefaultFooterId];
+    if (sourceFooter?.content?.length) {
+      try {
+        const targetFooterId = await createDefaultFooter(input.targetDocumentId, input.targetTabId);
+        await cloneContentIntoSegment({
+          document,
+          documentId: input.targetDocumentId,
+          elements: sourceFooter.content,
+          segmentId: targetFooterId,
+          tabId: input.targetTabId,
+        });
+      } catch {
+        // Ignore footer cloning failures so body/template creation still succeeds.
+      }
+    }
+  }
 }
 
 export async function getDriveFileMetadata(fileId: string) {
