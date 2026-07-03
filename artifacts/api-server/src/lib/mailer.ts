@@ -564,3 +564,51 @@ export async function sendPlatformPasswordResetEmail(input: {
     return { sent: false };
   }
 }
+
+export async function sendPlatformDriveShareEmail(input: {
+  email: string;
+  folderUrl: string;
+  fullName: string;
+  roleLabel: "mentor" | "mentee";
+}) {
+  const { senderEmail } = await resolveOrganizationMailbox();
+
+  if (!senderEmail || !(await hasGoogleGmailCredentials())) {
+    logger.warn("Unable to send platform Drive share email because Gmail credentials are incomplete");
+    return { sent: false };
+  }
+
+  const subject = "ACADEA Platform: udostępniono Ci folder Google Drive";
+  const text = [
+    `Cześć ${input.fullName},`,
+    "",
+    `udostępniliśmy Ci folder Google Drive powiązany z Twoim kontem ${input.roleLabel} w platformie ACADEA.`,
+    "Możesz otworzyć go tutaj:",
+    input.folderUrl,
+    "",
+    "Jeśli używasz adresu e-mail spoza Gmaila, Google może poprosić Cię o potwierdzenie dostępu lub utworzenie konta Google dla tego adresu.",
+    "",
+    "Pozdrawiamy,",
+    "Zespół ACADEA",
+  ].join("\n");
+
+  const html = renderEmailShell({
+    title: "Udostępniono Ci folder Google Drive",
+    intro: `Cześć ${input.fullName}, udostępniliśmy Ci folder Google Drive powiązany z Twoim kontem ${input.roleLabel} w platformie ACADEA.`,
+    bodyHtml: `<p style="margin:0 0 14px;">Możesz otworzyć go tutaj:</p><p style="margin:0;"><a href="${escapeHtml(input.folderUrl)}" style="display:inline-block;padding:12px 18px;border-radius:999px;background:${BRAND_PRIMARY};color:#ffffff;text-decoration:none;font-weight:700;">Otwórz folder</a></p><p style="margin:16px 0 0;">Jeśli używasz adresu e-mail spoza Gmaila, Google może poprosić Cię o potwierdzenie dostępu lub utworzenie konta Google dla tego adresu.</p>`,
+  });
+
+  try {
+    const sent = await sendGmailMessage({
+      from: senderEmail,
+      to: { email: input.email, name: input.fullName },
+      subject,
+      text,
+      html,
+    });
+    return { sent };
+  } catch (err) {
+    logger.warn({ err }, "platform drive share email failed");
+    return { sent: false };
+  }
+}

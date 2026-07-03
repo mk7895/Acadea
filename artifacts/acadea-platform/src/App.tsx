@@ -51,6 +51,7 @@ type Overview = {
 type LeadKind = "contact" | "mentor" | "scholarship" | "newsletter" | "booking";
 
 type MaterialItemAction = "check_only" | "file_required" | "file_or_doc" | "check_or_file";
+const MAX_MATERIAL_UPLOAD_BYTES = 15 * 1024 * 1024;
 
 type MaterialRowEditor = {
   actionType: MaterialItemAction;
@@ -154,6 +155,11 @@ function buildDerivedMaterialTemplates(guides: any[], materialTemplates: any[]) 
   const derived = new Map<string, any>();
 
   for (const guide of guides) {
+    const hasExplicitTemplates = materialTemplates.some((template: any) => templateAppliesToGuide(template, guide));
+    if (hasExplicitTemplates) {
+      continue;
+    }
+
     for (const item of guide.items ?? []) {
       const title = String(item.title ?? "").trim();
       if (!title) {
@@ -4651,8 +4657,13 @@ function MenteeSection({
   }
 
   async function uploadMaterialFile(templateId: number, rowKey: string, file: File) {
+    if (file.size > MAX_MATERIAL_UPLOAD_BYTES) {
+      setStatus("Plik jest zbyt duży. Maksymalny rozmiar uploadu to 15 MB.");
+      return;
+    }
+
     setMaterialActionKey(`${templateId}:${rowKey}:upload`);
-    setStatus("");
+    setStatus(`Wgrywanie pliku "${file.name}" do Google Drive...`);
     try {
       const base64Content = await fileToBase64(file);
       await apiFetch("/mentee/material-items/upload", {
@@ -5150,6 +5161,15 @@ function MenteeSection({
           <div className="dashboard-card">
             <h2>Twoje Materiały</h2>
             <p className="muted">Tutaj zbierają się wszystkie materiały wymagane przez Twoje uczelnie. Dokumenty wspólne są łączone razem, a eseje i zadania pokazują, do których krajów i uczelni należą.</p>
+            {materialActionKey ? (
+              <div className="status" style={{ marginTop: 16 }}>
+                {materialActionKey.endsWith(":upload")
+                  ? "Trwa wgrywanie pliku do Google Drive. Nie zamykaj tej karty."
+                  : materialActionKey.endsWith(":doc")
+                    ? "Tworzenie zakładki w Essay Doc..."
+                    : "Zapisywanie zmiany..."}
+              </div>
+            ) : null}
             {googleWorkspace?.folderUrl || googleWorkspace?.essayDocUrl ? (
               <div className="button-row" style={{ marginTop: 16 }}>
                 {googleWorkspace?.folderUrl ? (

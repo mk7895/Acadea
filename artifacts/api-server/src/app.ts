@@ -28,9 +28,16 @@ app.use(
 );
 app.use(cors());
 app.use(cookieParser());
-app.use(express.json({ limit: "12mb" }));
-app.use(express.urlencoded({ extended: true, limit: "12mb" }));
+app.use(express.json({ limit: "25mb" }));
+app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
 app.use("/api", router);
+
+app.use((err: any, _req: any, res: any, next: any) => {
+  if (err?.type === "entity.too.large") {
+    return res.status(413).json({ error: "Payload too large. Maksymalny rozmiar uploadu to 15 MB." });
+  }
+  return next(err);
+});
 
 export default app;

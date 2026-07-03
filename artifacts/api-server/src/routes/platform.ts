@@ -53,6 +53,7 @@ import { hashPassword, verifyPassword } from "../lib/adminAuth";
 import { logger } from "../lib/logger";
 import {
   sendGmailMessageWithAccessToken,
+  sendPlatformDriveShareEmail,
   sendPlatformPasswordResetEmail,
 } from "../lib/mailer";
 import {
@@ -324,6 +325,8 @@ const guideImportBlueprintSchema = z.object({
   itemGuides: z.array(guideImportItemGuideSchema).optional(),
   materialTemplates: z.array(guideImportMaterialTemplateSchema).min(1),
 });
+
+const MAX_MATERIAL_UPLOAD_BYTES = 15 * 1024 * 1024;
 
 const mentorMaterialRowsSchema = z.object({
   rows: z.array(z.record(z.string(), z.unknown())).default([]),
@@ -919,6 +922,13 @@ async function ensureMentorDriveFolder(db: any, mentorUserId: number) {
       },
     });
 
+  void sendPlatformDriveShareEmail({
+    email: mentor.email,
+    folderUrl: folder.url,
+    fullName: mentor.fullName,
+    roleLabel: "mentor",
+  }).catch(() => undefined);
+
   return {
     folderId: folder.id,
     folderUrl: folder.url,
@@ -969,6 +979,7 @@ async function ensureMenteeWorkspace(db: any, menteeUserId: number) {
   }
 
   const sharedDriveId = getGoogleSharedDriveId();
+  const createdFolder = !(mentee.googleDriveFolderId && mentee.googleDriveFolderUrl);
   const folder =
     mentee.googleDriveFolderId && mentee.googleDriveFolderUrl
       ? {
@@ -1015,6 +1026,15 @@ async function ensureMenteeWorkspace(db: any, menteeUserId: number) {
         updatedAt: new Date(),
       },
     });
+
+  if (createdFolder) {
+    void sendPlatformDriveShareEmail({
+      email: mentee.email,
+      folderUrl: folder.url,
+      fullName: mentee.fullName,
+      roleLabel: "mentee",
+    }).catch(() => undefined);
+  }
 
   return {
     folderId: folder.id,
@@ -1073,6 +1093,13 @@ async function ensureMentorAccessToMenteeWorkspace(
     parentId: mentorFolder.folderId,
     targetId: workspace.folderId,
   });
+
+  void sendPlatformDriveShareEmail({
+    email: mentor.email,
+    folderUrl: workspace.folderUrl,
+    fullName: mentor.fullName,
+    roleLabel: "mentor",
+  }).catch(() => undefined);
 
   const [link] = await db
     .insert(platformMentorWorkspaceLinksTable)
@@ -3699,6 +3726,9 @@ router.post(
     }
 
     const buffer = Buffer.from(parsed.data.base64Content, "base64");
+    if (buffer.byteLength > MAX_MATERIAL_UPLOAD_BYTES) {
+      return res.status(413).json({ error: "Plik jest zbyt duży. Maksymalny rozmiar uploadu to 15 MB." });
+    }
     const uploaded = await uploadFileToDrive({
       fileName: parsed.data.fileName,
       mimeType: parsed.data.mimeType,
