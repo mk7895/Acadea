@@ -75,12 +75,14 @@ import {
   createDriveFolder,
   createDriveShortcut,
   createGoogleDocument,
+  deleteDocumentTab,
   findDriveDocuments,
   getGoogleSharedDriveId,
   hasGoogleWorkspaceServiceAccount,
   listDocumentTabs,
   parseGoogleDriveId,
   shareDriveItemWithUser,
+  trashDriveFile,
   uploadFileToDrive,
 } from "../lib/googleWorkspace";
 
@@ -355,6 +357,11 @@ const menteeMaterialUploadSchema = z.object({
 });
 
 const menteeMaterialDocTabSchema = z.object({
+  templateId: z.number().int().positive(),
+  rowKey: z.string().trim().min(1),
+});
+
+const menteeMaterialRemoveSchema = z.object({
   templateId: z.number().int().positive(),
   rowKey: z.string().trim().min(1),
 });
@@ -4132,12 +4139,28 @@ router.post(
       title: row.docTabTitle || row.task || "Essay task",
     });
     if (sourceDocumentId && sourceTabId) {
-      await cloneDocumentTabToTarget({
-        sourceDocumentId,
-        sourceTabId,
-        targetDocumentId: workspace.essayDocId,
-        targetTabId: docTab.tabId,
-      });
+      try {
+        await cloneDocumentTabToTarget({
+          sourceDocumentId,
+          sourceTabId,
+          targetDocumentId: workspace.essayDocId,
+          targetTabId: docTab.tabId,
+        });
+      } catch (err) {
+        logger.warn(
+          {
+            err,
+            rowKey: parsed.data.rowKey,
+            sourceDocumentId,
+            sourceTabId,
+            targetDocumentId: workspace.essayDocId,
+            targetTabId: docTab.tabId,
+            templateId: parsed.data.templateId,
+            userId: req.platformUser!.id,
+          },
+          "failed to clone Google Docs tab template after tab creation",
+        );
+      }
     }
 
     const state = await upsertMaterialItemState(db, {
@@ -4157,6 +4180,181 @@ router.post(
       state,
       tab: docTab,
     });
+  },
+);
+
+router.post(
+  "/platform/mentee/material-items/remove-file",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = menteeMaterialRemoveSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+
+    const { db } = await import("@workspace/db");
+    const [template] = await db
+      .select()
+      .from(platformMaterialTemplatesTable)
+      .where(
+        and(
+          eq(platformMaterialTemplatesTable.id, parsed.data.templateId),
+          eq(platformMaterialTemplatesTable.isActive, true),
+        ),
+      )
+      .limit(1);
+    if (!template) {
+      return res.status(404).json({ error: "Nie znaleziono kafla materiałów." });
+    }
+    if (!(await menteeCanAccessMaterialRow(db, {
+      menteeUserId: req.platformUser!.id,
+      rowKey: parsed.data.rowKey,
+      template,
+    }))) {
+      return res.status(403).json({ error: "Nie masz dostępu do tego elementu." });
+    }
+
+    const [existingState] = await db
+      .select()
+      .from(platformMaterialItemStatesTable)
+      .where(
+        and(
+          eq(platformMaterialItemStatesTable.templateId, parsed.data.templateId),
+          eq(platformMaterialItemStatesTable.menteeUserId, req.platformUser!.id),
+          eq(platformMaterialItemStatesTable.rowKey, parsed.data.rowKey),
+        ),
+      )
+      .limit(1);
+
+    if (!existingState?.currentFileAssetId) {
+      return res.status(404).json({ error: "Brak pliku do usunięcia." });
+    }
+
+    const [asset] = await db
+      .select()
+      .from(platformFileAssetsTable)
+      .where(eq(platformFileAssetsTable.id, existingState.currentFileAssetId))
+      .limit(1);
+
+    if (asset?.objectKey) {
+      try {
+        await trashDriveFile(asset.objectKey);
+      } catch (err) {
+        logger.warn(
+          {
+            err,
+            fileId: asset.objectKey,
+            rowKey: parsed.data.rowKey,
+            templateId: parsed.data.templateId,
+            userId: req.platformUser!.id,
+          },
+          "failed to trash google drive file while removing material item file",
+        );
+      }
+    }
+
+    const state = await upsertMaterialItemState(db, {
+      templateId: parsed.data.templateId,
+      menteeUserId: req.platformUser!.id,
+      rowKey: parsed.data.rowKey,
+      values: {
+        completed: Boolean(existingState.googleDocTabId),
+        completionMethod: existingState.googleDocTabId ? "google_doc_tab" : null,
+        currentFileAssetId: null,
+      },
+    });
+
+    return res.json({ state });
+  },
+);
+
+router.post(
+  "/platform/mentee/material-items/remove-doc-tab",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = menteeMaterialRemoveSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+
+    const { db } = await import("@workspace/db");
+    const [template] = await db
+      .select()
+      .from(platformMaterialTemplatesTable)
+      .where(
+        and(
+          eq(platformMaterialTemplatesTable.id, parsed.data.templateId),
+          eq(platformMaterialTemplatesTable.isActive, true),
+        ),
+      )
+      .limit(1);
+    if (!template) {
+      return res.status(404).json({ error: "Nie znaleziono kafla materiałów." });
+    }
+    if (!(await menteeCanAccessMaterialRow(db, {
+      menteeUserId: req.platformUser!.id,
+      rowKey: parsed.data.rowKey,
+      template,
+    }))) {
+      return res.status(403).json({ error: "Nie masz dostępu do tego elementu." });
+    }
+
+    const [existingState] = await db
+      .select()
+      .from(platformMaterialItemStatesTable)
+      .where(
+        and(
+          eq(platformMaterialItemStatesTable.templateId, parsed.data.templateId),
+          eq(platformMaterialItemStatesTable.menteeUserId, req.platformUser!.id),
+          eq(platformMaterialItemStatesTable.rowKey, parsed.data.rowKey),
+        ),
+      )
+      .limit(1);
+
+    if (!existingState?.googleDocTabId) {
+      return res.status(404).json({ error: "Brak zakładki do usunięcia." });
+    }
+
+    const workspace = await ensureMenteeWorkspace(db, req.platformUser!.id);
+    if (!workspace.essayDocId) {
+      return res.status(500).json({ error: "Brak Essay Doc dla mentee." });
+    }
+
+    try {
+      await deleteDocumentTab({
+        documentId: workspace.essayDocId,
+        tabId: existingState.googleDocTabId,
+      });
+    } catch (err) {
+      logger.warn(
+        {
+          err,
+          documentId: workspace.essayDocId,
+          rowKey: parsed.data.rowKey,
+          tabId: existingState.googleDocTabId,
+          templateId: parsed.data.templateId,
+          userId: req.platformUser!.id,
+        },
+        "failed to delete google docs tab while removing material item tab",
+      );
+    }
+
+    const state = await upsertMaterialItemState(db, {
+      templateId: parsed.data.templateId,
+      menteeUserId: req.platformUser!.id,
+      rowKey: parsed.data.rowKey,
+      values: {
+        completed: Boolean(existingState.currentFileAssetId),
+        completionMethod: existingState.currentFileAssetId ? "file_upload" : null,
+        googleDocTabId: null,
+        googleDocTabTitle: null,
+        googleDocTabUrl: null,
+      },
+    });
+
+    return res.json({ state });
   },
 );
 

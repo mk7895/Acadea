@@ -5007,6 +5007,46 @@ function MenteeSection({
     }
   }
 
+  async function removeMaterialFile(templateId: number, rowKey: string) {
+    setMaterialActionKey(`${templateId}:${rowKey}:remove-file`);
+    setStatus("");
+    try {
+      await apiFetch("/mentee/material-items/remove-file", {
+        method: "POST",
+        body: JSON.stringify({
+          rowKey,
+          templateId,
+        }),
+      }, token);
+      await refreshOverview();
+      setStatus("Plik został odłączony od tego elementu i przeniesiony do kosza Google Drive.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się usunąć pliku.");
+    } finally {
+      setMaterialActionKey(null);
+    }
+  }
+
+  async function removeMaterialDocTab(templateId: number, rowKey: string) {
+    setMaterialActionKey(`${templateId}:${rowKey}:remove-doc`);
+    setStatus("");
+    try {
+      await apiFetch("/mentee/material-items/remove-doc-tab", {
+        method: "POST",
+        body: JSON.stringify({
+          rowKey,
+          templateId,
+        }),
+      }, token);
+      await refreshOverview();
+      setStatus("Zakładka została usunięta z Essay Doca.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się usunąć zakładki.");
+    } finally {
+      setMaterialActionKey(null);
+    }
+  }
+
   return (
     <>
       {status ? <div className="status">{status}</div> : null}
@@ -5469,6 +5509,10 @@ function MenteeSection({
                   ? "Trwa wgrywanie pliku do Google Drive. Nie zamykaj tej karty."
                   : materialActionKey.endsWith(":doc")
                     ? "Tworzenie zakładki w Essay Doc..."
+                    : materialActionKey.endsWith(":remove-file")
+                      ? "Usuwanie pliku z tego elementu..."
+                      : materialActionKey.endsWith(":remove-doc")
+                        ? "Usuwanie zakładki z Essay Doca..."
                     : "Zapisywanie zmiany..."}
               </div>
             ) : null}
@@ -5589,6 +5633,34 @@ function MenteeSection({
                                           {state.googleDocTabTitle || "Otwórz zakładkę"}
                                         </a>
                                       </div>
+                                    ) : null}
+                                    {state?.currentFileUrl ? (
+                                      <button
+                                        className="btn btn-secondary"
+                                        disabled={!canPersistAction || materialActionKey === `${actionPrefix}:remove-file`}
+                                        onClick={() => {
+                                          if (canPersistAction) {
+                                            void removeMaterialFile(Number(template.id), row.displayKey);
+                                          }
+                                        }}
+                                        type="button"
+                                      >
+                                        Usuń plik
+                                      </button>
+                                    ) : null}
+                                    {state?.googleDocTabUrl ? (
+                                      <button
+                                        className="btn btn-secondary"
+                                        disabled={!canPersistAction || materialActionKey === `${actionPrefix}:remove-doc`}
+                                        onClick={() => {
+                                          if (canPersistAction) {
+                                            void removeMaterialDocTab(Number(template.id), row.displayKey);
+                                          }
+                                        }}
+                                        type="button"
+                                      >
+                                        Usuń zakładkę
+                                      </button>
                                     ) : null}
                                     {(actionType === "check_only" || actionType === "check_or_file") ? (
                                       <label className="selector-option" style={{ marginTop: 6 }}>

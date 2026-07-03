@@ -517,6 +517,22 @@ export async function uploadFileToDrive(input: {
   };
 }
 
+export async function trashDriveFile(fileId: string) {
+  await googleWorkspaceJson(
+    `${GOOGLE_DRIVE_API_BASE}/files/${encodeURIComponent(fileId)}?supportsAllDrives=true`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        trashed: true,
+      }),
+    },
+    ["https://www.googleapis.com/auth/drive"],
+  );
+}
+
 export async function createDocumentTab(input: {
   documentId: string;
   title: string;
@@ -559,11 +575,19 @@ export async function createDocumentTab(input: {
     throw new Error("Google Docs did not return the new tab ID.");
   }
 
-  await setDocumentTabPageStyle({
-    documentId: input.documentId,
-    style: null,
-    tabId,
-  });
+  try {
+    await setDocumentTabPageStyle({
+      documentId: input.documentId,
+      style: null,
+      tabId,
+    });
+  } catch (error) {
+    console.warn("Failed to set default page style for Google Docs tab", {
+      documentId: input.documentId,
+      error,
+      tabId,
+    });
+  }
 
   const initialText = input.initialText?.trim();
   if (initialText) {
@@ -596,6 +620,31 @@ export async function createDocumentTab(input: {
     tabUrl: buildGoogleDocTabUrl(input.documentId, tabId),
     title: input.title,
   };
+}
+
+export async function deleteDocumentTab(input: {
+  documentId: string;
+  tabId: string;
+}) {
+  await googleWorkspaceJson(
+    `${GOOGLE_DOCS_API_BASE}/documents/${encodeURIComponent(input.documentId)}:batchUpdate`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        requests: [
+          {
+            deleteTab: {
+              tabId: input.tabId,
+            },
+          },
+        ],
+      }),
+    },
+    ["https://www.googleapis.com/auth/documents", "https://www.googleapis.com/auth/drive"],
+  );
 }
 
 function flattenGoogleDocTabs(tabs: GoogleDocsTab[] | undefined, output: GoogleDocsTab[] = []) {
@@ -1095,11 +1144,21 @@ export async function cloneDocumentTabToTarget(input: {
     throw new Error("Source Google Docs tab was not found.");
   }
 
-  await setDocumentTabPageStyle({
-    documentId: input.targetDocumentId,
-    style: sourceTab.documentTab?.documentStyle ?? null,
-    tabId: input.targetTabId,
-  });
+  try {
+    await setDocumentTabPageStyle({
+      documentId: input.targetDocumentId,
+      style: sourceTab.documentTab?.documentStyle ?? null,
+      tabId: input.targetTabId,
+    });
+  } catch (error) {
+    console.warn("Failed to copy page style for Google Docs tab", {
+      error,
+      sourceDocumentId: input.sourceDocumentId,
+      sourceTabId: input.sourceTabId,
+      targetDocumentId: input.targetDocumentId,
+      targetTabId: input.targetTabId,
+    });
+  }
 
   const paragraphs = extractClonableParagraphs(document, sourceTab.documentTab?.body?.content);
   const allText = paragraphs.map((paragraph) => paragraph.text).join("");
