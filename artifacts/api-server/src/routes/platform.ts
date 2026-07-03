@@ -253,16 +253,81 @@ const materialTemplateSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
-const mentorMaterialRowsSchema = z.object({
-  rows: z.array(z.record(z.string(), z.unknown())).default([]),
-});
-
 const PLATFORM_MATERIAL_ITEM_ACTIONS = [
   "check_only",
   "file_required",
   "file_or_doc",
   "check_or_file",
 ] as const;
+
+const guideImportChecklistItemSchema = z.object({
+  sortOrder: z.number().int().min(0).optional(),
+  sectionTitle: z.string().trim().min(1).optional(),
+  title: z.string().trim().min(1),
+  description: z.string().trim().optional(),
+  itemType: z.enum(PLATFORM_CHECKLIST_ITEM_TYPES).optional(),
+  suggestedFilename: z.string().trim().optional(),
+  externalUrl: z.string().trim().optional(),
+  linkedGuideItemId: z.number().int().positive().nullable().optional(),
+  isRequired: z.boolean().optional(),
+  isCompleted: z.boolean().optional(),
+  fileUrl: z.string().trim().optional(),
+});
+
+const guideImportGuideSchema = z.object({
+  title: z.string().trim().min(1),
+  slug: z.string().trim().min(1),
+  country: z.string().trim().min(1),
+  universityName: z.string().trim().min(1),
+  summary: z.string().trim().optional(),
+  descriptionMarkdown: z.string().trim().optional(),
+  estimatedReadMin: z.number().int().min(1).optional(),
+  status: z.enum(PLATFORM_GUIDE_STATUSES).optional(),
+  guideType: z.enum(["admin_template", "mentor_blueprint"]).optional(),
+  isVisibleToUnapprovedUsers: z.boolean().optional(),
+  items: z.array(guideImportChecklistItemSchema).optional(),
+});
+
+const guideImportItemGuideSchema = guideImportGuideSchema.extend({
+  key: z.string().trim().min(1),
+  appliesToGuideSlugs: z.array(z.string().trim().min(1)).optional(),
+});
+
+const guideImportMaterialRowSchema = z.object({
+  level: z.enum(["country", "university", "item"]),
+  country: z.string().trim().optional(),
+  university: z.string().trim().optional(),
+  task: z.string().trim().optional(),
+  actionType: z.enum(PLATFORM_MATERIAL_ITEM_ACTIONS).optional(),
+  suggestedFilename: z.string().trim().optional(),
+  docTabTitle: z.string().trim().optional(),
+  docTabPrompt: z.string().trim().optional(),
+  guideKey: z.string().trim().optional(),
+  alternativeOptions: z.array(z.string().trim().min(1)).optional(),
+  appliesToGuideSlugs: z.array(z.string().trim().min(1)).optional(),
+});
+
+const guideImportMaterialTemplateSchema = z.object({
+  title: z.string().trim().min(1),
+  description: z.string().trim().optional(),
+  templateType: z.enum(PLATFORM_MATERIAL_TEMPLATE_TYPES).optional(),
+  guideKey: z.string().trim().optional(),
+  appliesToGuideSlugs: z.array(z.string().trim().min(1)).optional(),
+  alternativeOptions: z.array(z.string().trim().min(1)).optional(),
+  isActive: z.boolean().optional(),
+  rows: z.array(guideImportMaterialRowSchema).min(1),
+});
+
+const guideImportBlueprintSchema = z.object({
+  version: z.literal(1),
+  guide: guideImportGuideSchema,
+  itemGuides: z.array(guideImportItemGuideSchema).optional(),
+  materialTemplates: z.array(guideImportMaterialTemplateSchema).min(1),
+});
+
+const mentorMaterialRowsSchema = z.object({
+  rows: z.array(z.record(z.string(), z.unknown())).default([]),
+});
 
 const menteeMaterialCheckSchema = z.object({
   templateId: z.number().int().positive(),
@@ -573,6 +638,220 @@ function normalizeMaterialStructureRows(rows: unknown) {
         : null,
     )
     .filter((row): row is ReturnType<typeof normalizeMaterialStructureRow> => Boolean(row));
+}
+
+function normalizeImportedGuideItems(items: z.infer<typeof guideImportChecklistItemSchema>[] | undefined) {
+  return (items ?? []).map((item, index) => ({
+    sortOrder: item.sortOrder ?? index,
+    sectionTitle: item.sectionTitle ?? "Checklist",
+    title: item.title,
+    description: item.description ?? "",
+    itemType: item.itemType ?? "todo",
+    suggestedFilename: item.suggestedFilename ?? "",
+    externalUrl: item.externalUrl ?? "",
+    linkedGuideItemId: item.linkedGuideItemId ?? null,
+    isRequired: item.isRequired ?? true,
+    isCompleted: item.isCompleted ?? false,
+    fileUrl: item.fileUrl ?? "",
+  }));
+}
+
+function createItemGuideMeta(appliesToGuideIds: number[]) {
+  return `__meta:${JSON.stringify({
+    appliesToGuideIds,
+    kind: "item_guide",
+  })}`;
+}
+
+function resolveGuideIdsFromSlugs(
+  slugs: string[] | undefined,
+  guideIdBySlug: Map<string, number>,
+  fallbackGuideId: number,
+) {
+  const ids = (slugs ?? [])
+    .map((slug) => guideIdBySlug.get(slug))
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  return ids.length ? ids : [fallbackGuideId];
+}
+
+async function importGuideBlueprint(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+  ownerUserId: number,
+  blueprint: z.infer<typeof guideImportBlueprintSchema>,
+) {
+  const existingGuides = await db.select().from(platformGuidesTable);
+  const existingTemplates = await db.select().from(platformMaterialTemplatesTable);
+
+  const upsertGuide = async (
+    payload: {
+      country: string;
+      descriptionMarkdown: string;
+      driveFolderUrl: string | null;
+      estimatedReadMin: number;
+      guideType: "admin_template" | "mentor_blueprint";
+      isVisibleToUnapprovedUsers: boolean;
+      items: ReturnType<typeof normalizeImportedGuideItems>;
+      slug: string;
+      status: "draft" | "published" | "archived";
+      summary: string;
+      title: string;
+      universityName: string;
+    },
+  ) => {
+    const existing = existingGuides.find(
+      (guide) => guide.slug === payload.slug && guide.guideType === payload.guideType,
+    );
+
+    if (existing) {
+      const [updated] = await db
+        .update(platformGuidesTable)
+        .set({
+          title: payload.title,
+          slug: normalizeSlug(payload.slug),
+          country: payload.country,
+          universityName: payload.universityName,
+          summary: payload.summary,
+          descriptionMarkdown: payload.descriptionMarkdown,
+          estimatedReadMin: payload.estimatedReadMin,
+          driveFolderUrl: payload.driveFolderUrl,
+          status: payload.status,
+          isVisibleToUnapprovedUsers: payload.isVisibleToUnapprovedUsers,
+          updatedAt: new Date(),
+        })
+        .where(eq(platformGuidesTable.id, existing.id))
+        .returning();
+      await upsertGuideItems(db, updated.id, payload.items);
+      return updated;
+    }
+
+    const [created] = await db
+      .insert(platformGuidesTable)
+      .values({
+        guideType: payload.guideType,
+        status: payload.status,
+        title: payload.title,
+        slug: normalizeSlug(payload.slug),
+        country: payload.country,
+        universityName: payload.universityName,
+        summary: payload.summary,
+        descriptionMarkdown: payload.descriptionMarkdown,
+        estimatedReadMin: payload.estimatedReadMin,
+        ownerUserId,
+        menteeUserId: null,
+        sourceGuideId: null,
+        driveFolderUrl: payload.driveFolderUrl,
+        isVisibleToUnapprovedUsers: payload.isVisibleToUnapprovedUsers,
+      })
+      .returning();
+    await upsertGuideItems(db, created.id, payload.items);
+    return created;
+  };
+
+  const mainGuide = await upsertGuide({
+    country: blueprint.guide.country,
+    descriptionMarkdown: blueprint.guide.descriptionMarkdown ?? "",
+    driveFolderUrl: null,
+    estimatedReadMin: blueprint.guide.estimatedReadMin ?? 12,
+    guideType: blueprint.guide.guideType ?? "admin_template",
+    isVisibleToUnapprovedUsers: blueprint.guide.isVisibleToUnapprovedUsers ?? true,
+    items: normalizeImportedGuideItems(blueprint.guide.items),
+    slug: blueprint.guide.slug,
+    status: blueprint.guide.status ?? "published",
+    summary: blueprint.guide.summary ?? "",
+    title: blueprint.guide.title,
+    universityName: blueprint.guide.universityName,
+  });
+
+  const refreshedGuides = await db.select().from(platformGuidesTable);
+  const guideIdBySlug = new Map<string, number>([[mainGuide.slug, mainGuide.id]]);
+  const itemGuideIdByKey = new Map<string, number>();
+
+  for (const itemGuide of blueprint.itemGuides ?? []) {
+    const appliesToGuideIds = resolveGuideIdsFromSlugs(
+      itemGuide.appliesToGuideSlugs,
+      guideIdBySlug,
+      mainGuide.id,
+    );
+    const upserted = await upsertGuide({
+      country: itemGuide.country,
+      descriptionMarkdown: itemGuide.descriptionMarkdown ?? "",
+      driveFolderUrl: createItemGuideMeta(appliesToGuideIds),
+      estimatedReadMin: itemGuide.estimatedReadMin ?? 5,
+      guideType: itemGuide.guideType ?? "admin_template",
+      isVisibleToUnapprovedUsers: itemGuide.isVisibleToUnapprovedUsers ?? false,
+      items: normalizeImportedGuideItems(itemGuide.items),
+      slug: itemGuide.slug,
+      status: itemGuide.status ?? "published",
+      summary: itemGuide.summary ?? "",
+      title: itemGuide.title,
+      universityName: itemGuide.universityName,
+    });
+    guideIdBySlug.set(upserted.slug, upserted.id);
+    itemGuideIdByKey.set(itemGuide.key, upserted.id);
+  }
+
+  for (const template of blueprint.materialTemplates) {
+    const appliesToGuideIds = resolveGuideIdsFromSlugs(
+      template.appliesToGuideSlugs,
+      guideIdBySlug,
+      mainGuide.id,
+    );
+    const resolvedGuideId = template.guideKey ? itemGuideIdByKey.get(template.guideKey) ?? null : null;
+    const structure = normalizeMaterialStructureRows(
+      template.rows.map((row) => ({
+        actionType: row.actionType ?? "check_only",
+        alternativeOptions: row.alternativeOptions ?? [],
+        appliesToGuideIds: resolveGuideIdsFromSlugs(row.appliesToGuideSlugs, guideIdBySlug, mainGuide.id),
+        country: row.country ?? "",
+        docTabPrompt: row.docTabPrompt ?? "",
+        docTabTitle: row.docTabTitle ?? "",
+        guideId: row.guideKey ? itemGuideIdByKey.get(row.guideKey) ?? null : null,
+        level: row.level,
+        suggestedFilename: row.suggestedFilename ?? "",
+        task: row.task ?? "",
+        university: row.university ?? "",
+      })),
+    );
+
+    const existing = existingTemplates.find(
+      (item) => item.title === template.title && item.guideId === resolvedGuideId,
+    );
+
+    if (existing) {
+      await db
+        .update(platformMaterialTemplatesTable)
+        .set({
+          title: template.title,
+          description: template.description ?? "",
+          templateType: template.templateType ?? "passport_like",
+          guideId: resolvedGuideId,
+          appliesToGuideIds,
+          structure,
+          alternativeOptions: template.alternativeOptions ?? [],
+          isActive: template.isActive ?? true,
+          updatedAt: new Date(),
+        })
+        .where(eq(platformMaterialTemplatesTable.id, existing.id));
+      continue;
+    }
+
+    await db.insert(platformMaterialTemplatesTable).values({
+      ownerUserId,
+      title: template.title,
+      description: template.description ?? "",
+      templateType: template.templateType ?? "passport_like",
+      guideId: resolvedGuideId,
+      appliesToGuideIds,
+      structure,
+      alternativeOptions: template.alternativeOptions ?? [],
+      isActive: template.isActive ?? true,
+    });
+  }
+
+  return {
+    importedGuideSlug: mainGuide.slug,
+    importedGuideTitle: mainGuide.title,
+  };
 }
 
 function findMaterialTemplateRow(template: { structure?: unknown }, rowKey: string) {
@@ -2175,6 +2454,22 @@ router.post(
       isActive: parsed.data.isActive,
     }).returning();
     return res.status(201).json(template);
+  },
+);
+
+router.post(
+  "/platform/admin/import-guide-blueprint",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = guideImportBlueprintSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+
+    const { db } = await import("@workspace/db");
+    const result = await importGuideBlueprint(db, req.platformUser!.id, parsed.data);
+    return res.status(201).json(result);
   },
 );
 

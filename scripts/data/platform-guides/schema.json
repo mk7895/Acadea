@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ACADEA Platform Guide Import Blueprint",
+  "type": "object",
+  "required": ["version", "guide", "materialTemplates"],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "guide": {
+      "$ref": "#/definitions/guide"
+    },
+    "itemGuides": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/itemGuide"
+      }
+    },
+    "materialTemplates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/materialTemplate"
+      }
+    }
+  },
+  "definitions": {
+    "checklistItem": {
+      "type": "object",
+      "required": ["title"],
+      "properties": {
+        "sortOrder": { "type": "integer", "minimum": 0 },
+        "sectionTitle": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "itemType": {
+          "type": "string",
+          "enum": ["document_template", "file_link", "todo", "external_link", "reused_link"]
+        },
+        "suggestedFilename": { "type": "string" },
+        "externalUrl": { "type": "string" },
+        "linkedGuideItemId": { "type": ["integer", "null"] },
+        "isRequired": { "type": "boolean" },
+        "isCompleted": { "type": "boolean" },
+        "fileUrl": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "guide": {
+      "type": "object",
+      "required": ["title", "slug", "country", "universityName"],
+      "properties": {
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "country": { "type": "string" },
+        "universityName": { "type": "string" },
+        "summary": { "type": "string" },
+        "descriptionMarkdown": { "type": "string" },
+        "estimatedReadMin": { "type": "integer", "minimum": 1 },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "published", "archived"]
+        },
+        "guideType": {
+          "type": "string",
+          "enum": ["admin_template", "mentor_blueprint"]
+        },
+        "isVisibleToUnapprovedUsers": { "type": "boolean" },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/checklistItem" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "itemGuide": {
+      "allOf": [
+        { "$ref": "#/definitions/guide" },
+        {
+          "type": "object",
+          "required": ["key"],
+          "properties": {
+            "key": { "type": "string" },
+            "appliesToGuideSlugs": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "materialRow": {
+      "type": "object",
+      "required": ["level"],
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["country", "university", "item"]
+        },
+        "country": { "type": "string" },
+        "university": { "type": "string" },
+        "task": { "type": "string" },
+        "actionType": {
+          "type": "string",
+          "enum": ["check_only", "file_required", "file_or_doc", "check_or_file"]
+        },
+        "suggestedFilename": { "type": "string" },
+        "docTabTitle": { "type": "string" },
+        "docTabPrompt": { "type": "string" },
+        "guideKey": { "type": "string" },
+        "alternativeOptions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "appliesToGuideSlugs": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "materialTemplate": {
+      "type": "object",
+      "required": ["title", "rows"],
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "templateType": {
+          "type": "string",
+          "enum": ["passport_like", "essay_like"]
+        },
+        "guideKey": { "type": "string" },
+        "appliesToGuideSlugs": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "alternativeOptions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "isActive": { "type": "boolean" },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/materialRow" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

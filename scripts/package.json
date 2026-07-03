@@ -8,6 +8,7 @@
     "articles:seed": "tsx ./src/seed-articles.ts",
     "db:read": "tsx ./src/read-db.ts",
     "hello": "tsx ./src/hello.ts",
+    "platform:import-guide": "tsx ./src/platform-import-guide.ts",
     "platform:create-user": "tsx ./src/platform-create-user.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

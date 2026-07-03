@@ -1077,6 +1077,8 @@ function AdminSection({
   });
   const [materialEditorId, setMaterialEditorId] = useState<string>("new");
   const [itemGuideEditorId, setItemGuideEditorId] = useState<string>("new");
+  const [guideImportJson, setGuideImportJson] = useState("");
+  const [guideImporting, setGuideImporting] = useState(false);
   const [itemGuideForm, setItemGuideForm] = useState({
     appliesToGuideIds: [] as string[],
     title: "",
@@ -1592,6 +1594,34 @@ function AdminSection({
       setStatus("Szablon materiału został zaktualizowany.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać szablonu materiału.");
+    }
+  }
+
+  async function importGuideBlueprintFromJson(event: React.FormEvent) {
+    event.preventDefault();
+    setStatus("");
+
+    let payload: unknown;
+    try {
+      payload = JSON.parse(guideImportJson);
+    } catch {
+      setStatus("Wklej poprawny JSON przewodnika.");
+      return;
+    }
+
+    setGuideImporting(true);
+    try {
+      const result = await apiFetch<{ importedGuideTitle: string }>("/admin/import-guide-blueprint", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }, token);
+      await Promise.all([refreshGuides(), refreshDesigner()]);
+      setGuideImportJson("");
+      setStatus(`Zaimportowano przewodnik: ${result.importedGuideTitle}.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zaimportować przewodnika.");
+    } finally {
+      setGuideImporting(false);
     }
   }
 
@@ -2423,6 +2453,25 @@ function AdminSection({
             <p className="muted">
               Tutaj tworzysz kafle materiałów widoczne u mentee. Najpierw zakładasz kafel, potem zaznaczasz, dla których uczelni ma się pokazywać.
             </p>
+            <form className="stack" onSubmit={importGuideBlueprintFromJson} style={{ marginBottom: 24 }}>
+              <div className="field">
+                <label>Import przewodnika z JSON</label>
+                <textarea
+                  placeholder="Wklej blueprint JSON przewodnika wygenerowany według schematu importu."
+                  rows={10}
+                  value={guideImportJson}
+                  onChange={(event) => setGuideImportJson(event.target.value)}
+                />
+                <div className="small muted">
+                  Import utworzy albo zaktualizuje przewodnik, wskazówki do elementów i kafle materiałów. Potem wszystko dalej edytujesz normalnie w panelu.
+                </div>
+              </div>
+              <div className="button-row">
+                <button className="btn btn-secondary" disabled={guideImporting || !guideImportJson.trim()}>
+                  {guideImporting ? "Importowanie..." : "Importuj JSON przewodnika"}
+                </button>
+              </div>
+            </form>
             <form className="stack" onSubmit={saveMaterialTemplate}>
               <div className="grid-2">
                 <div className="field">
