@@ -70,12 +70,15 @@ import {
   PLATFORM_MENTOR_GOOGLE_SCOPES,
 } from "../lib/platform/google";
 import {
+  cloneDocumentTabToTarget,
   createDocumentTab,
   createDriveFolder,
   createDriveShortcut,
   createGoogleDocument,
+  findDriveDocuments,
   getGoogleSharedDriveId,
   hasGoogleWorkspaceServiceAccount,
+  listDocumentTabs,
   parseGoogleDriveId,
   shareDriveItemWithUser,
   uploadFileToDrive,
@@ -299,10 +302,13 @@ const guideImportMaterialRowSchema = z.object({
   country: z.string().trim().optional(),
   university: z.string().trim().optional(),
   task: z.string().trim().optional(),
+  insertAfterTask: z.string().trim().optional(),
   actionType: z.enum(PLATFORM_MATERIAL_ITEM_ACTIONS).optional(),
   suggestedFilename: z.string().trim().optional(),
   docTabTitle: z.string().trim().optional(),
   docTabPrompt: z.string().trim().optional(),
+  sourceDocumentId: z.string().trim().optional(),
+  sourceTabId: z.string().trim().optional(),
   guideKey: z.string().trim().optional(),
   alternativeOptions: z.array(z.string().trim().min(1)).optional(),
   appliesToGuideSlugs: z.array(z.string().trim().min(1)).optional(),
@@ -313,10 +319,12 @@ const guideImportMaterialTemplateSchema = z.object({
   description: z.string().trim().optional(),
   templateType: z.enum(PLATFORM_MATERIAL_TEMPLATE_TYPES).optional(),
   guideKey: z.string().trim().optional(),
+  targetTemplateTitle: z.string().trim().optional(),
+  mergeMode: z.enum(["replace", "append"]).optional(),
   appliesToGuideSlugs: z.array(z.string().trim().min(1)).optional(),
   alternativeOptions: z.array(z.string().trim().min(1)).optional(),
   isActive: z.boolean().optional(),
-  rows: z.array(guideImportMaterialRowSchema).min(1),
+  rows: z.array(guideImportMaterialRowSchema).default([]),
 });
 
 const guideImportBlueprintSchema = z.object({
@@ -349,6 +357,11 @@ const menteeMaterialUploadSchema = z.object({
 const menteeMaterialDocTabSchema = z.object({
   templateId: z.number().int().positive(),
   rowKey: z.string().trim().min(1),
+});
+
+const adminMasterDocCreateTabSchema = z.object({
+  initialText: z.string().optional().default(""),
+  title: z.string().trim().min(1),
 });
 
 const assignMentorAccessSchema = z.object({
@@ -624,6 +637,8 @@ function normalizeMaterialStructureRow(row: Record<string, unknown>, index: numb
     guideId: Number.isFinite(Number(row.guideId)) ? Number(row.guideId) : null,
     level,
     ownerUserId: Number.isFinite(Number(row.ownerUserId)) ? Number(row.ownerUserId) : null,
+    sourceDocumentId: typeof row.sourceDocumentId === "string" ? row.sourceDocumentId.trim() : "",
+    sourceTabId: typeof row.sourceTabId === "string" ? row.sourceTabId.trim() : "",
     suggestedFilename: typeof row.suggestedFilename === "string" ? row.suggestedFilename.trim() : "",
     task,
     university,
@@ -659,6 +674,42 @@ function normalizeImportedGuideItems(items: z.infer<typeof guideImportChecklistI
   }));
 }
 
+function mergeImportedRowsIntoExistingStructure(
+  existingRows: Array<Record<string, unknown>>,
+  importedRows: Array<Record<string, unknown> & { insertAfterTask?: string }>,
+) {
+  const mergedRows = normalizeMaterialStructureRows(existingRows);
+
+  for (const importedRow of importedRows) {
+    const [normalizedImportedRow] = normalizeMaterialStructureRows([importedRow]);
+    if (!normalizedImportedRow) {
+      continue;
+    }
+
+    const anchorTask =
+      typeof importedRow.insertAfterTask === "string" ? importedRow.insertAfterTask.trim().toLowerCase() : "";
+    if (!anchorTask) {
+      mergedRows.push(normalizedImportedRow);
+      continue;
+    }
+
+    const lastMatchingIndex = [...mergedRows]
+      .map((row, index) => ({ index, task: row.task.trim().toLowerCase() }))
+      .filter((row) => row.task === anchorTask)
+      .map((row) => row.index)
+      .pop();
+
+    if (typeof lastMatchingIndex === "number") {
+      mergedRows.splice(lastMatchingIndex + 1, 0, normalizedImportedRow);
+      continue;
+    }
+
+    mergedRows.push(normalizedImportedRow);
+  }
+
+  return mergedRows;
+}
+
 function createItemGuideMeta(appliesToGuideIds: number[]) {
   return `__meta:${JSON.stringify({
     appliesToGuideIds,
@@ -683,7 +734,7 @@ async function importGuideBlueprint(
   blueprint: z.infer<typeof guideImportBlueprintSchema>,
 ) {
   const existingGuides = await db.select().from(platformGuidesTable);
-  const existingTemplates = await db.select().from(platformMaterialTemplatesTable);
+  let existingTemplates = await db.select().from(platformMaterialTemplatesTable);
 
   const upsertGuide = async (
     payload: {
@@ -800,41 +851,75 @@ async function importGuideBlueprint(
       mainGuide.id,
     );
     const resolvedGuideId = template.guideKey ? itemGuideIdByKey.get(template.guideKey) ?? null : null;
-    const structure = normalizeMaterialStructureRows(
-      template.rows.map((row) => ({
-        actionType: row.actionType ?? "check_only",
-        alternativeOptions: row.alternativeOptions ?? [],
-        appliesToGuideIds: resolveGuideIdsFromSlugs(row.appliesToGuideSlugs, guideIdBySlug, mainGuide.id),
-        country: row.country ?? "",
-        docTabPrompt: row.docTabPrompt ?? "",
-        docTabTitle: row.docTabTitle ?? "",
-        guideId: row.guideKey ? itemGuideIdByKey.get(row.guideKey) ?? null : null,
-        level: row.level,
-        suggestedFilename: row.suggestedFilename ?? "",
-        task: row.task ?? "",
-        university: row.university ?? "",
-      })),
-    );
+    const importedRows = template.rows.map((row) => ({
+      actionType: row.actionType ?? "check_only",
+      alternativeOptions: row.alternativeOptions ?? [],
+      appliesToGuideIds: resolveGuideIdsFromSlugs(row.appliesToGuideSlugs, guideIdBySlug, mainGuide.id),
+      country: row.country ?? "",
+      docTabPrompt: row.docTabPrompt ?? "",
+      docTabTitle: row.docTabTitle ?? "",
+      guideId: row.guideKey ? itemGuideIdByKey.get(row.guideKey) ?? null : null,
+      insertAfterTask: row.insertAfterTask ?? "",
+      level: row.level,
+      sourceDocumentId: row.sourceDocumentId ?? "",
+      sourceTabId: row.sourceTabId ?? "",
+      suggestedFilename: row.suggestedFilename ?? "",
+      task: row.task ?? "",
+      university: row.university ?? "",
+    }));
+    const importedStructure = normalizeMaterialStructureRows(importedRows);
 
-    const existing = existingTemplates.find(
-      (item) => item.title === template.title && item.guideId === resolvedGuideId,
-    );
+    const existing =
+      (template.targetTemplateTitle
+        ? existingTemplates.find((item) => item.title === template.targetTemplateTitle)
+        : null) ??
+      existingTemplates.find(
+        (item) => item.title === template.title && item.guideId === resolvedGuideId,
+      );
+
+    if (!existing && importedStructure.length === 0) {
+      throw new Error(
+        `Material template "${template.title}" has no rows and does not match an existing tile.`,
+      );
+    }
+
+    const mergedStructure =
+      template.mergeMode === "append" && existing
+        ? mergeImportedRowsIntoExistingStructure(
+            Array.isArray(existing.structure) ? (existing.structure as Array<Record<string, unknown>>) : [],
+            importedRows,
+          )
+        : importedStructure;
+    const mergedAppliesToGuideIds =
+      template.mergeMode === "append" && existing
+        ? Array.from(
+            new Set([...(existing.appliesToGuideIds ?? []), ...appliesToGuideIds].filter((value) => Number.isFinite(value))),
+          )
+        : appliesToGuideIds;
+    const mergedAlternativeOptions =
+      template.mergeMode === "append" && existing
+        ? Array.from(new Set([...(existing.alternativeOptions ?? []), ...(template.alternativeOptions ?? [])]))
+        : (template.alternativeOptions ?? []);
 
     if (existing) {
       await db
         .update(platformMaterialTemplatesTable)
         .set({
-          title: template.title,
-          description: template.description ?? "",
-          templateType: template.templateType ?? "passport_like",
-          guideId: resolvedGuideId,
-          appliesToGuideIds,
-          structure,
-          alternativeOptions: template.alternativeOptions ?? [],
-          isActive: template.isActive ?? true,
+          title: template.mergeMode === "append" ? existing.title : template.title,
+          description:
+            template.mergeMode === "append"
+              ? [existing.description, template.description ?? ""].filter(Boolean).join("\n\n")
+              : (template.description ?? ""),
+          templateType: template.templateType ?? existing.templateType ?? "passport_like",
+          guideId: template.mergeMode === "append" ? existing.guideId : resolvedGuideId,
+          appliesToGuideIds: mergedAppliesToGuideIds,
+          structure: mergedStructure,
+          alternativeOptions: mergedAlternativeOptions,
+          isActive: template.isActive ?? existing.isActive ?? true,
           updatedAt: new Date(),
         })
         .where(eq(platformMaterialTemplatesTable.id, existing.id));
+      existingTemplates = await db.select().from(platformMaterialTemplatesTable);
       continue;
     }
 
@@ -844,11 +929,12 @@ async function importGuideBlueprint(
       description: template.description ?? "",
       templateType: template.templateType ?? "passport_like",
       guideId: resolvedGuideId,
-      appliesToGuideIds,
-      structure,
-      alternativeOptions: template.alternativeOptions ?? [],
+      appliesToGuideIds: mergedAppliesToGuideIds,
+      structure: mergedStructure,
+      alternativeOptions: mergedAlternativeOptions,
       isActive: template.isActive ?? true,
     });
+    existingTemplates = await db.select().from(platformMaterialTemplatesTable);
   }
 
   return {
@@ -857,9 +943,117 @@ async function importGuideBlueprint(
   };
 }
 
+function getGuideBlueprintAssistantSchema() {
+  return {
+    type: "object",
+    required: ["version", "guide", "materialTemplates"],
+    properties: {
+      version: { const: 1 },
+      guide: {
+        type: "object",
+        required: ["title", "slug", "country", "universityName"],
+      },
+      itemGuides: {
+        type: "array",
+      },
+      materialTemplates: {
+        type: "array",
+        items: {
+          type: "object",
+          required: ["title", "rows"],
+          properties: {
+            title: { type: "string" },
+            targetTemplateTitle: {
+              type: "string",
+              description:
+                "Optional. If set, import will target an existing tile with this exact title instead of creating a new one.",
+            },
+            mergeMode: {
+              type: "string",
+              enum: ["replace", "append"],
+              description:
+                "append = add rows into existing tile; replace = overwrite matched tile/import target.",
+            },
+            rows: {
+              type: "array",
+              description:
+                "May be empty only when attaching an existing tile to a guide via targetTemplateTitle + appliesToGuideSlugs.",
+              items: {
+                type: "object",
+                properties: {
+                  level: {
+                    type: "string",
+                    enum: ["country", "university", "item"],
+                  },
+                  country: { type: "string" },
+                  university: { type: "string" },
+                  task: { type: "string" },
+                  insertAfterTask: { type: "string" },
+                  actionType: {
+                    type: "string",
+                    enum: ["check_only", "file_required", "file_or_doc", "check_or_file"],
+                  },
+                  suggestedFilename: { type: "string" },
+                  docTabTitle: { type: "string" },
+                  docTabPrompt: { type: "string" },
+                  sourceDocumentId: { type: "string" },
+                  sourceTabId: { type: "string" },
+                  guideKey: { type: "string" },
+                  alternativeOptions: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  appliesToGuideSlugs: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+}
+
 function findMaterialTemplateRow(template: { structure?: unknown }, rowKey: string) {
   const normalizedRows = normalizeMaterialStructureRows(template.structure);
   return normalizedRows.find((row) => row.displayKey === rowKey) ?? null;
+}
+
+const PLATFORM_ADMIN_MASTER_TEMPLATE_DOC_NAME = "ACADEA Admin Essay Templates";
+
+async function ensureAdminMasterTemplateDocument() {
+  if (!hasGoogleWorkspaceServiceAccount()) {
+    throw new Error("Google Workspace service account is not configured.");
+  }
+
+  const sharedDriveId = getGoogleSharedDriveId();
+  const [existing] = await findDriveDocuments({
+    mimeType: "application/vnd.google-apps.document",
+    name: PLATFORM_ADMIN_MASTER_TEMPLATE_DOC_NAME,
+    parentId: sharedDriveId,
+  });
+
+  if (existing) {
+    return {
+      documentId: existing.id,
+      title: existing.name,
+      url: existing.url,
+    };
+  }
+
+  const created = await createGoogleDocument({
+    name: PLATFORM_ADMIN_MASTER_TEMPLATE_DOC_NAME,
+    parentId: sharedDriveId,
+  });
+
+  return {
+    documentId: created.id,
+    title: PLATFORM_ADMIN_MASTER_TEMPLATE_DOC_NAME,
+    url: created.url,
+  };
 }
 
 async function ensureMentorDriveFolder(db: any, mentorUserId: number) {
@@ -2500,6 +2694,125 @@ router.post(
   },
 );
 
+router.get(
+  "/platform/admin/google-doc-master",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (_req, res) => {
+    const masterDoc = await ensureAdminMasterTemplateDocument();
+    const tabs = await listDocumentTabs(masterDoc.documentId);
+    return res.json({
+      ...masterDoc,
+      tabs,
+    });
+  },
+);
+
+router.post(
+  "/platform/admin/google-doc-master/tabs",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const parsed = adminMasterDocCreateTabSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+
+    const masterDoc = await ensureAdminMasterTemplateDocument();
+    const tab = await createDocumentTab({
+      documentId: masterDoc.documentId,
+      initialText: parsed.data.initialText,
+      title: parsed.data.title,
+    });
+    const tabs = await listDocumentTabs(masterDoc.documentId);
+    return res.status(201).json({
+      documentId: masterDoc.documentId,
+      tab,
+      tabs,
+      title: masterDoc.title,
+      url: masterDoc.url,
+    });
+  },
+);
+
+router.get(
+  "/platform/admin/guide-blueprint-assistant",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (_req, res) => {
+    const { db } = await import("@workspace/db");
+    const guides = await db.select().from(platformGuidesTable).orderBy(asc(platformGuidesTable.title));
+    const templates = await db
+      .select()
+      .from(platformMaterialTemplatesTable)
+      .orderBy(asc(platformMaterialTemplatesTable.title));
+    const masterDoc = hasGoogleWorkspaceServiceAccount()
+      ? await ensureAdminMasterTemplateDocument().catch(() => null)
+      : null;
+
+    const context = {
+      adminMasterTemplateDoc: masterDoc,
+      existingTiles: templates.map((template) => ({
+        guideId: template.guideId,
+        id: template.id,
+        rows: normalizeMaterialStructureRows(template.structure).map((row) => ({
+          actionType: row.actionType,
+          displayKey: row.displayKey,
+          level: row.level,
+          task: row.task,
+          university: row.university,
+        })),
+        templateType: template.templateType,
+        title: template.title,
+      })),
+      guideTemplates: guides
+        .filter((guide) => !guide.sourceGuideId && !isItemGuideRecord({ driveFolderUrl: guide.driveFolderUrl, guideType: guide.guideType }))
+        .map((guide) => ({
+          country: guide.country,
+          guideType: guide.guideType,
+          id: guide.id,
+          slug: guide.slug,
+          title: guide.title,
+          universityName: guide.universityName,
+        })),
+      itemGuides: guides
+        .filter((guide) => isItemGuideRecord({ driveFolderUrl: guide.driveFolderUrl, guideType: guide.guideType }))
+        .map((guide) => ({
+          id: guide.id,
+          slug: guide.slug,
+          title: guide.title,
+        })),
+      preferredShellTiles: templates
+        .filter((template) => ["paszport", "eseje"].includes(template.title.trim().toLowerCase()))
+        .map((template) => ({
+          id: template.id,
+          title: template.title,
+        })),
+    };
+
+    const promptTemplate = [
+      "Return only valid JSON for ACADEA guide import.",
+      "Use the current DB context provided below.",
+      "If the guide should extend an existing shell tile such as Paszport or Eseje, set materialTemplates[].targetTemplateTitle exactly to that title and set mergeMode to append.",
+      "Only create a brand-new tile when there is a clear product reason not to use an existing shell tile.",
+      "Use file_or_doc for tasks that may either be uploaded as a file or written inside Essay Doc.",
+      "Use docTabTitle and docTabPrompt whenever actionType is file_or_doc.",
+      "If a row should be inserted between existing rows in a tile, set rows[].insertAfterTask to the exact visible task label after which the new row should land.",
+      "By default leave rows[].sourceDocumentId and rows[].sourceTabId empty and use plain docTabPrompt.",
+      "Only set rows[].sourceDocumentId and rows[].sourceTabId when the admin explicitly wants to switch a row to use a master Google Docs template tab.",
+      "Preserve current tile structure conventions and existing guide slugs where appropriate.",
+      "",
+      `Current context:\n${JSON.stringify(context, null, 2)}`,
+    ].join("\n");
+
+    return res.json({
+      context,
+      promptTemplate,
+      schema: getGuideBlueprintAssistantSchema(),
+    });
+  },
+);
+
 router.put(
   "/platform/admin/material-templates/:id",
   requirePlatformAuth,
@@ -2994,6 +3307,8 @@ router.put(
           guideId,
           level: row.level === "country" || row.level === "university" || row.level === "item" ? row.level : "item",
           ownerUserId: req.platformUser!.id,
+          sourceDocumentId: typeof row.sourceDocumentId === "string" ? row.sourceDocumentId : "",
+          sourceTabId: typeof row.sourceTabId === "string" ? row.sourceTabId : "",
           suggestedFilename: typeof row.suggestedFilename === "string" ? row.suggestedFilename : "",
           task: typeof row.task === "string" ? row.task : "",
           university: typeof row.university === "string" ? row.university : "",
@@ -3808,11 +4123,22 @@ router.post(
       return res.status(500).json({ error: "Brak Essay Doc dla mentee." });
     }
 
+    const sourceDocumentId =
+      typeof row.sourceDocumentId === "string" ? row.sourceDocumentId.trim() : "";
+    const sourceTabId = typeof row.sourceTabId === "string" ? row.sourceTabId.trim() : "";
     const docTab = await createDocumentTab({
       documentId: workspace.essayDocId,
-      initialText: row.docTabPrompt || "",
+      initialText: sourceDocumentId && sourceTabId ? "" : row.docTabPrompt || "",
       title: row.docTabTitle || row.task || "Essay task",
     });
+    if (sourceDocumentId && sourceTabId) {
+      await cloneDocumentTabToTarget({
+        sourceDocumentId,
+        sourceTabId,
+        targetDocumentId: workspace.essayDocId,
+        targetTabId: docTab.tabId,
+      });
+    }
 
     const state = await upsertMaterialItemState(db, {
       templateId: parsed.data.templateId,

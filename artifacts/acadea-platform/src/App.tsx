@@ -66,6 +66,8 @@ type MaterialRowEditor = {
   level: "country" | "university" | "item";
   ownerUserId?: number | null;
   readOnly?: boolean;
+  sourceDocumentId?: string;
+  sourceTabId?: string;
   suggestedFilename?: string;
   task: string;
   university: string;
@@ -110,6 +112,10 @@ function materialItemActionLabel(value: MaterialItemAction) {
     default:
       return value;
   }
+}
+
+function getMaterialDocSeedMode(row: Pick<MaterialRowEditor, "sourceDocumentId" | "sourceTabId">) {
+  return row.sourceDocumentId?.trim() && row.sourceTabId?.trim() ? "source_tab" : "plain_text";
 }
 
 function normalizeMaterialKey(value: string) {
@@ -481,6 +487,8 @@ function createEmptyMaterialRow(): MaterialRowEditor {
     guideId: "",
     level: "item",
     readOnly: false,
+    sourceDocumentId: "",
+    sourceTabId: "",
     suggestedFilename: "",
     task: "",
     university: "",
@@ -1085,6 +1093,20 @@ function AdminSection({
   const [itemGuideEditorId, setItemGuideEditorId] = useState<string>("new");
   const [guideImportJson, setGuideImportJson] = useState("");
   const [guideImporting, setGuideImporting] = useState(false);
+  const [assistantBundleLoading, setAssistantBundleLoading] = useState(false);
+  const [assistantBundle, setAssistantBundle] = useState<null | {
+    context: unknown;
+    promptTemplate: string;
+    schema: unknown;
+  }>(null);
+  const [masterTemplateDoc, setMasterTemplateDoc] = useState<null | {
+    documentId: string;
+    tabs: Array<{ tabId: string; title: string; url: string }>;
+    title: string;
+    url: string;
+  }>(null);
+  const [masterTemplateDocLoading, setMasterTemplateDocLoading] = useState(false);
+  const [masterTemplateActionKey, setMasterTemplateActionKey] = useState<string | null>(null);
   const [itemGuideForm, setItemGuideForm] = useState({
     appliesToGuideIds: [] as string[],
     title: "",
@@ -1268,12 +1290,72 @@ function AdminSection({
   }
 
   async function refreshDesigner() {
-    const [fieldsPayload, materialsPayload] = await Promise.all([
+    const [fieldsPayload, materialsPayload, masterDocPayload] = await Promise.all([
       apiFetch<any[]>("/admin/profile-fields", undefined, token),
       apiFetch<any[]>("/admin/material-templates", undefined, token),
+      apiFetch<any>("/admin/google-doc-master", undefined, token),
     ]);
     setProfileFields(fieldsPayload);
     setMaterialTemplates(materialsPayload);
+    setMasterTemplateDoc(masterDocPayload);
+  }
+
+  async function refreshMasterTemplateDoc() {
+    setMasterTemplateDocLoading(true);
+    try {
+      const payload = await apiFetch<any>("/admin/google-doc-master", undefined, token);
+      setMasterTemplateDoc(payload);
+      return payload;
+    } finally {
+      setMasterTemplateDocLoading(false);
+    }
+  }
+
+  async function createMasterTemplateTabForRow(index: number) {
+    const row = materialForm.rows[index];
+    if (!row || row.actionType !== "file_or_doc") {
+      setStatus("Ten wiersz nie obsługuje Google Doc.");
+      return;
+    }
+
+    setMasterTemplateActionKey(row.displayKey ?? `row-${index}`);
+    setStatus("");
+    try {
+      const payload = await apiFetch<any>(
+        "/admin/google-doc-master/tabs",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            initialText: row.docTabPrompt ?? "",
+            title: row.docTabTitle?.trim() || row.task?.trim() || `Template ${index + 1}`,
+          }),
+        },
+        token,
+      );
+      setMasterTemplateDoc({
+        documentId: payload.documentId,
+        tabs: payload.tabs ?? [],
+        title: payload.title,
+        url: payload.url,
+      });
+      setMaterialForm((current) => ({
+        ...current,
+        rows: current.rows.map((entry, rowIndex) =>
+          rowIndex === index
+            ? {
+                ...entry,
+                sourceDocumentId: payload.documentId,
+                sourceTabId: payload.tab?.tabId ?? "",
+              }
+            : entry,
+        ),
+      }));
+      setStatus("Utworzono template tab w master Doc i przypięto go do tego wiersza.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się utworzyć template taba.");
+    } finally {
+      setMasterTemplateActionKey(null);
+    }
   }
 
   function resetProfileFieldForm() {
@@ -1375,6 +1457,8 @@ function AdminSection({
             displayKey: row.displayKey ?? createEditorRowKey("material"),
             level: row.level === "country" || row.level === "university" || row.level === "item" ? row.level : "item",
             ownerUserId: row.ownerUserId ?? null,
+            sourceDocumentId: row.sourceDocumentId ?? "",
+            sourceTabId: row.sourceTabId ?? "",
             suggestedFilename: row.suggestedFilename ?? "",
             task: row.task ?? "",
             university: row.university ?? "",
@@ -1572,6 +1656,8 @@ function AdminSection({
         guideId: row.level === "item" && row.guideId ? Number(row.guideId) : null,
         level: row.level,
         ownerUserId: row.ownerUserId ?? null,
+        sourceDocumentId: row.sourceDocumentId?.trim() || "",
+        sourceTabId: row.sourceTabId?.trim() || "",
         suggestedFilename: row.suggestedFilename?.trim() || "",
         task: row.level === "item" ? row.task.trim() : "",
         university: row.level === "country" ? "" : row.university.trim(),
@@ -1628,6 +1714,24 @@ function AdminSection({
       setStatus(error instanceof Error ? error.message : "Nie udało się zaimportować przewodnika.");
     } finally {
       setGuideImporting(false);
+    }
+  }
+
+  async function loadGuideBlueprintAssistantBundle() {
+    setAssistantBundleLoading(true);
+    setStatus("");
+    try {
+      const payload = await apiFetch<{
+        context: unknown;
+        promptTemplate: string;
+        schema: unknown;
+      }>("/admin/guide-blueprint-assistant", undefined, token);
+      setAssistantBundle(payload);
+      setStatus("Wygenerowano aktualny kontekst dla tworzenia blueprintów.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się wygenerować kontekstu blueprintów.");
+    } finally {
+      setAssistantBundleLoading(false);
     }
   }
 
@@ -2459,6 +2563,26 @@ function AdminSection({
             <p className="muted">
               Tutaj tworzysz kafle materiałów widoczne u mentee. Najpierw zakładasz kafel, potem zaznaczasz, dla których uczelni ma się pokazywać.
             </p>
+            <div className="button-row" style={{ marginBottom: 12 }}>
+              <button
+                className="btn btn-secondary"
+                disabled={masterTemplateDocLoading}
+                onClick={() => void refreshMasterTemplateDoc()}
+                type="button"
+              >
+                {masterTemplateDocLoading ? "Ładowanie master Doc..." : "Odśwież master Doc"}
+              </button>
+              {masterTemplateDoc?.url ? (
+                <a className="btn btn-secondary" href={masterTemplateDoc.url} rel="noreferrer" target="_blank">
+                  Otwórz master Doc
+                </a>
+              ) : null}
+            </div>
+            {masterTemplateDoc ? (
+              <p className="muted small" style={{ marginTop: 0 }}>
+                Master Doc: {masterTemplateDoc.title} • {masterTemplateDoc.tabs.length} zakładek
+              </p>
+            ) : null}
             <form className="stack" onSubmit={importGuideBlueprintFromJson} style={{ marginBottom: 24 }}>
               <div className="field">
                 <label>Import przewodnika z JSON</label>
@@ -2476,8 +2600,32 @@ function AdminSection({
                 <button className="btn btn-secondary" disabled={guideImporting || !guideImportJson.trim()}>
                   {guideImporting ? "Importowanie..." : "Importuj JSON przewodnika"}
                 </button>
+                <button
+                  className="btn btn-secondary"
+                  disabled={assistantBundleLoading}
+                  onClick={() => void loadGuideBlueprintAssistantBundle()}
+                  type="button"
+                >
+                  {assistantBundleLoading ? "Generowanie..." : "Generuj schema/prompt/context"}
+                </button>
               </div>
             </form>
+            {assistantBundle ? (
+              <div className="stack" style={{ marginBottom: 24 }}>
+                <div className="field">
+                  <label>Prompt dla ChatGPT</label>
+                  <textarea readOnly rows={10} value={assistantBundle.promptTemplate} />
+                </div>
+                <div className="field">
+                  <label>Schema / zasady importu</label>
+                  <textarea readOnly rows={10} value={JSON.stringify(assistantBundle.schema, null, 2)} />
+                </div>
+                <div className="field">
+                  <label>Aktualny kontekst bazy</label>
+                  <textarea readOnly rows={12} value={JSON.stringify(assistantBundle.context, null, 2)} />
+                </div>
+              </div>
+            ) : null}
             <form className="stack" onSubmit={saveMaterialTemplate}>
               <div className="grid-2">
                 <div className="field">
@@ -2691,6 +2839,96 @@ function AdminSection({
                                   />
                                 </div>
                                 <div className="field">
+                                  <label>Źródło treści nowej zakładki</label>
+                                  <select
+                                    value={getMaterialDocSeedMode(row)}
+                                    onChange={(event) =>
+                                      updateMaterialRow(index, (current) =>
+                                        event.target.value === "source_tab"
+                                          ? {
+                                              ...current,
+                                              docTabPrompt: "",
+                                            }
+                                          : {
+                                              ...current,
+                                              sourceDocumentId: "",
+                                              sourceTabId: "",
+                                            },
+                                      )
+                                    }
+                                  >
+                                    <option value="plain_text">Plain text / prompt</option>
+                                    <option value="source_tab">Kopia z istniejącej zakładki Google Docs</option>
+                                  </select>
+                                </div>
+                                {getMaterialDocSeedMode(row) === "source_tab" ? (
+                                  <>
+                                    <div className="button-row" style={{ marginBottom: 8 }}>
+                                      <button
+                                        className="btn btn-secondary"
+                                        disabled={masterTemplateActionKey === (row.displayKey ?? `row-${index}`)}
+                                        onClick={() => void createMasterTemplateTabForRow(index)}
+                                        type="button"
+                                      >
+                                        {masterTemplateActionKey === (row.displayKey ?? `row-${index}`)
+                                          ? "Tworzenie template taba..."
+                                          : "Utwórz template tab z tego wiersza"}
+                                      </button>
+                                      {masterTemplateDoc?.url ? (
+                                        <a className="btn btn-secondary" href={masterTemplateDoc.url} rel="noreferrer" target="_blank">
+                                          Otwórz master Doc
+                                        </a>
+                                      ) : null}
+                                    </div>
+                                    {masterTemplateDoc?.tabs?.length ? (
+                                      <div className="field">
+                                        <label>Wybierz source tab z master Doc</label>
+                                        <select
+                                          value={row.sourceTabId ?? ""}
+                                          onChange={(event) =>
+                                            updateMaterialRow(index, (current) => ({
+                                              ...current,
+                                              sourceDocumentId: masterTemplateDoc.documentId,
+                                              sourceTabId: event.target.value,
+                                            }))
+                                          }
+                                        >
+                                          <option value="">Wybierz zakładkę</option>
+                                          {masterTemplateDoc.tabs.map((tab) => (
+                                            <option key={tab.tabId} value={tab.tabId}>
+                                              {tab.title}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    ) : null}
+                                    <div className="field">
+                                      <label>Source document ID</label>
+                                      <input
+                                        value={row.sourceDocumentId ?? ""}
+                                        onChange={(event) =>
+                                          updateMaterialRow(index, (current) => ({
+                                            ...current,
+                                            sourceDocumentId: event.target.value,
+                                          }))
+                                        }
+                                      />
+                                    </div>
+                                    <div className="field">
+                                      <label>Source tab ID</label>
+                                      <input
+                                        value={row.sourceTabId ?? ""}
+                                        onChange={(event) =>
+                                          updateMaterialRow(index, (current) => ({
+                                            ...current,
+                                            sourceTabId: event.target.value,
+                                          }))
+                                        }
+                                      />
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className="field">
                                   <label>Tekst startowy / prompt na początku zakładki</label>
                                   <textarea
                                     value={row.docTabPrompt ?? ""}
@@ -2702,6 +2940,7 @@ function AdminSection({
                                     }
                                   />
                                 </div>
+                                )}
                               </>
                             ) : null}
                             <div className="field">
@@ -3454,6 +3693,8 @@ function MentorSection({
             level: row.level === "country" || row.level === "university" || row.level === "item" ? row.level : "item",
             ownerUserId: row.ownerUserId ?? session.user.id,
             readOnly: false,
+            sourceDocumentId: row.sourceDocumentId ?? "",
+            sourceTabId: row.sourceTabId ?? "",
             suggestedFilename: row.suggestedFilename ?? "",
             task: row.task ?? "",
             university: row.university ?? "",
@@ -4285,17 +4526,62 @@ function MentorSection({
                               <input
                                 disabled={row.readOnly}
                                 value={row.docTabTitle ?? ""}
-                                onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, docTabTitle: event.target.value }))}
+                                  onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, docTabTitle: event.target.value }))}
                               />
                             </div>
                             <div className="field">
-                              <label>Tekst startowy / prompt na początku zakładki</label>
-                              <textarea
+                              <label>Źródło treści nowej zakładki</label>
+                              <select
                                 disabled={row.readOnly}
-                                value={row.docTabPrompt ?? ""}
-                                onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, docTabPrompt: event.target.value }))}
-                              />
+                                value={getMaterialDocSeedMode(row)}
+                                onChange={(event) =>
+                                  updateMentorRow(mentorIndex, (entry) =>
+                                    event.target.value === "source_tab"
+                                      ? {
+                                          ...entry,
+                                          docTabPrompt: "",
+                                        }
+                                      : {
+                                          ...entry,
+                                          sourceDocumentId: "",
+                                          sourceTabId: "",
+                                        },
+                                  )
+                                }
+                              >
+                                <option value="plain_text">Plain text / prompt</option>
+                                <option value="source_tab">Kopia z istniejącej zakładki Google Docs</option>
+                              </select>
                             </div>
+                            {getMaterialDocSeedMode(row) === "source_tab" ? (
+                              <>
+                                <div className="field">
+                                  <label>Source document ID</label>
+                                  <input
+                                    disabled={row.readOnly}
+                                    value={row.sourceDocumentId ?? ""}
+                                    onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, sourceDocumentId: event.target.value }))}
+                                  />
+                                </div>
+                                <div className="field">
+                                  <label>Source tab ID</label>
+                                  <input
+                                    disabled={row.readOnly}
+                                    value={row.sourceTabId ?? ""}
+                                    onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, sourceTabId: event.target.value }))}
+                                  />
+                                </div>
+                              </>
+                            ) : (
+                              <div className="field">
+                                <label>Tekst startowy / prompt na początku zakładki</label>
+                                <textarea
+                                  disabled={row.readOnly}
+                                  value={row.docTabPrompt ?? ""}
+                                  onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, docTabPrompt: event.target.value }))}
+                                />
+                              </div>
+                            )}
                           </>
                         ) : null}
                         <div className="field">

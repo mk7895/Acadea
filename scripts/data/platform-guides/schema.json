@@ -100,6 +100,7 @@
         "country": { "type": "string" },
         "university": { "type": "string" },
         "task": { "type": "string" },
+        "insertAfterTask": { "type": "string" },
         "actionType": {
           "type": "string",
           "enum": ["check_only", "file_required", "file_or_doc", "check_or_file"]
@@ -107,6 +108,8 @@
         "suggestedFilename": { "type": "string" },
         "docTabTitle": { "type": "string" },
         "docTabPrompt": { "type": "string" },
+        "sourceDocumentId": { "type": "string" },
+        "sourceTabId": { "type": "string" },
         "guideKey": { "type": "string" },
         "alternativeOptions": {
           "type": "array",
@@ -129,6 +132,13 @@
           "type": "string",
           "enum": ["passport_like", "essay_like"]
         },
+        "targetTemplateTitle": {
+          "type": "string"
+        },
+        "mergeMode": {
+          "type": "string",
+          "enum": ["replace", "append"]
+        },
         "guideKey": { "type": "string" },
         "appliesToGuideSlugs": {
           "type": "array",
@@ -141,7 +151,6 @@
         "isActive": { "type": "boolean" },
         "rows": {
           "type": "array",
-          "minItems": 1,
           "items": { "$ref": "#/definitions/materialRow" }
         }
       },

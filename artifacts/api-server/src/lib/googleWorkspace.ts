@@ -54,6 +54,71 @@ function buildGoogleDocTabUrl(documentId: string, tabId: string) {
   return `${buildGoogleDocUrl(documentId)}?tab=${encodeURIComponent(tabId)}`;
 }
 
+type GoogleDocsTextRun = {
+  content?: string;
+  textStyle?: Record<string, unknown>;
+};
+
+type GoogleDocsParagraphElement = {
+  textRun?: GoogleDocsTextRun;
+};
+
+type GoogleDocsStructuralElement = {
+  endIndex?: number;
+  startIndex?: number;
+  paragraph?: {
+    elements?: GoogleDocsParagraphElement[];
+    bullet?: {
+      listId?: string;
+      nestingLevel?: number;
+    };
+    paragraphStyle?: Record<string, unknown>;
+  };
+  table?: {
+    tableRows?: Array<{
+      tableCells?: Array<{
+        content?: GoogleDocsStructuralElement[];
+      }>;
+    }>;
+  };
+  tableOfContents?: {
+    content?: GoogleDocsStructuralElement[];
+  };
+};
+
+type GoogleDocsTab = {
+  childTabs?: GoogleDocsTab[];
+  documentTab?: {
+    body?: {
+      content?: GoogleDocsStructuralElement[];
+    };
+  };
+  tabProperties?: {
+    tabId?: string;
+    title?: string;
+  };
+};
+
+type GoogleDocsDocument = {
+  lists?: Record<
+    string,
+    {
+      listProperties?: {
+        nestingLevels?: Array<{
+          glyphType?: string;
+        }>;
+      };
+    }
+  >;
+  tabs?: GoogleDocsTab[];
+};
+
+type GoogleDocsTabSummary = {
+  tabId: string;
+  title: string;
+  url: string;
+};
+
 function parseGoogleServiceAccountCredentials(): GoogleServiceAccountCredentials | null {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim();
   if (!raw) {
@@ -288,6 +353,46 @@ export async function createGoogleDocument(input: {
   };
 }
 
+export async function findDriveDocuments(input: {
+  mimeType?: string;
+  name: string;
+  parentId?: string | null;
+}) {
+  const queryParts = [
+    `name = '${input.name.replace(/'/g, "\\'")}'`,
+    "trashed = false",
+  ];
+  if (input.mimeType) {
+    queryParts.push(`mimeType = '${input.mimeType}'`);
+  }
+  if (input.parentId) {
+    queryParts.push(`'${input.parentId}' in parents`);
+  }
+
+  const search = await googleWorkspaceJson<{
+    files?: DriveFileRecord[];
+  }>(
+    `${GOOGLE_DRIVE_API_BASE}/files?supportsAllDrives=true&includeItemsFromAllDrives=true&fields=files(id,name,mimeType,webViewLink)&q=${encodeURIComponent(
+      queryParts.join(" and "),
+    )}`,
+    undefined,
+    ["https://www.googleapis.com/auth/drive"],
+  );
+
+  return (search.files ?? []).map((file) => ({
+    id: file.id,
+    mimeType: file.mimeType ?? "",
+    name: file.name ?? "",
+    url:
+      file.webViewLink ||
+      (file.mimeType === GOOGLE_DOC_MIME_TYPE
+        ? buildGoogleDocUrl(file.id)
+        : file.mimeType === GOOGLE_FOLDER_MIME_TYPE
+          ? buildGoogleFolderUrl(file.id)
+          : buildGoogleViewUrl(file.id)),
+  }));
+}
+
 export async function shareDriveItemWithUser(input: {
   fileId: string;
   emailAddress: string;
@@ -457,6 +562,360 @@ export async function createDocumentTab(input: {
     tabUrl: buildGoogleDocTabUrl(input.documentId, tabId),
     title: input.title,
   };
+}
+
+function flattenGoogleDocTabs(tabs: GoogleDocsTab[] | undefined, output: GoogleDocsTab[] = []) {
+  for (const tab of tabs ?? []) {
+    output.push(tab);
+    flattenGoogleDocTabs(tab.childTabs, output);
+  }
+  return output;
+}
+
+async function getDocumentWithTabs(documentId: string) {
+  return googleWorkspaceJson<GoogleDocsDocument>(
+    `${GOOGLE_DOCS_API_BASE}/documents/${encodeURIComponent(documentId)}?includeTabsContent=true`,
+    undefined,
+    ["https://www.googleapis.com/auth/documents", "https://www.googleapis.com/auth/drive"],
+  );
+}
+
+function findGoogleDocTab(document: GoogleDocsDocument, tabId: string) {
+  return flattenGoogleDocTabs(document.tabs).find(
+    (entry) => entry.tabProperties?.tabId === tabId,
+  );
+}
+
+function extractTextFromGoogleDocElements(elements: GoogleDocsStructuralElement[] | undefined): string {
+  let text = "";
+  for (const element of elements ?? []) {
+    if (element.paragraph?.elements) {
+      text += element.paragraph.elements
+        .map((paragraphElement) => paragraphElement.textRun?.content ?? "")
+        .join("");
+    }
+    if (element.tableOfContents?.content) {
+      text += extractTextFromGoogleDocElements(element.tableOfContents.content);
+    }
+    if (element.table?.tableRows) {
+      for (const row of element.table.tableRows) {
+        for (const cell of row.tableCells ?? []) {
+          text += extractTextFromGoogleDocElements(cell.content);
+        }
+      }
+    }
+  }
+  return text;
+}
+
+export async function getDocumentTabText(input: {
+  documentId: string;
+  tabId: string;
+}) {
+  const document = await getDocumentWithTabs(input.documentId);
+
+  const tab = findGoogleDocTab(document, input.tabId);
+  if (!tab) {
+    throw new Error("Source Google Docs tab was not found.");
+  }
+
+  const text = extractTextFromGoogleDocElements(tab.documentTab?.body?.content).trim();
+  return {
+    tabId: tab.tabProperties?.tabId ?? input.tabId,
+    text,
+    title: tab.tabProperties?.title ?? "",
+  };
+}
+
+export async function listDocumentTabs(documentId: string): Promise<GoogleDocsTabSummary[]> {
+  const document = await getDocumentWithTabs(documentId);
+  return flattenGoogleDocTabs(document.tabs)
+    .map((tab) => {
+      const tabId = tab.tabProperties?.tabId?.trim();
+      if (!tabId) {
+        return null;
+      }
+      return {
+        tabId,
+        title: tab.tabProperties?.title?.trim() || "Untitled tab",
+        url: buildGoogleDocTabUrl(documentId, tabId),
+      };
+    })
+    .filter((tab): tab is GoogleDocsTabSummary => Boolean(tab));
+}
+
+function pickWritableObject(
+  source: Record<string, unknown> | undefined,
+  allowedKeys: string[],
+): Record<string, unknown> | null {
+  if (!source) {
+    return null;
+  }
+  const next: Record<string, unknown> = {};
+  for (const key of allowedKeys) {
+    if (source[key] !== undefined) {
+      next[key] = source[key];
+    }
+  }
+  return Object.keys(next).length ? next : null;
+}
+
+function buildFieldMask(value: Record<string, unknown>, prefix = ""): string[] {
+  const fields: string[] = [];
+  for (const [key, nestedValue] of Object.entries(value)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (
+      nestedValue &&
+      typeof nestedValue === "object" &&
+      !Array.isArray(nestedValue) &&
+      Object.keys(nestedValue as Record<string, unknown>).length
+    ) {
+      fields.push(...buildFieldMask(nestedValue as Record<string, unknown>, path));
+    } else {
+      fields.push(path);
+    }
+  }
+  return fields;
+}
+
+function inferBulletPreset(document: GoogleDocsDocument, paragraph: NonNullable<GoogleDocsStructuralElement["paragraph"]>) {
+  const listId = paragraph.bullet?.listId;
+  const nestingLevel = paragraph.bullet?.nestingLevel ?? 0;
+  const glyphType =
+    (listId
+      ? document.lists?.[listId]?.listProperties?.nestingLevels?.[nestingLevel]?.glyphType
+      : "") ?? "";
+  const normalized = glyphType.toUpperCase();
+
+  if (!paragraph.bullet) {
+    return null;
+  }
+  if (normalized.includes("DECIMAL")) {
+    return "NUMBERED_DECIMAL_NESTED";
+  }
+  if (normalized.includes("ROMAN")) {
+    return "NUMBERED_UPPERROMAN_UPPERALPHA_DECIMAL";
+  }
+  if (normalized.includes("ALPHA") || normalized.includes("LATIN")) {
+    return "NUMBERED_UPPERALPHA_UPPERALPHA_DECIMAL";
+  }
+  return "BULLET_DISC_CIRCLE_SQUARE";
+}
+
+type ClonableParagraph = {
+  bulletPreset: string | null;
+  paragraphStyle: Record<string, unknown> | null;
+  text: string;
+  textRuns: Array<{
+    endOffset: number;
+    startOffset: number;
+    textStyle: Record<string, unknown> | null;
+  }>;
+};
+
+function extractClonableParagraphs(
+  document: GoogleDocsDocument,
+  elements: GoogleDocsStructuralElement[] | undefined,
+): ClonableParagraph[] {
+  const paragraphs: ClonableParagraph[] = [];
+
+  for (const element of elements ?? []) {
+    if (element.paragraph) {
+      let paragraphText = "";
+      let cursor = 0;
+      const textRuns: ClonableParagraph["textRuns"] = [];
+
+      for (const paragraphElement of element.paragraph.elements ?? []) {
+        const content = paragraphElement.textRun?.content ?? "";
+        if (!content) {
+          continue;
+        }
+        const textStyle = pickWritableObject(paragraphElement.textRun?.textStyle, [
+          "backgroundColor",
+          "baselineOffset",
+          "bold",
+          "fontSize",
+          "foregroundColor",
+          "italic",
+          "link",
+          "smallCaps",
+          "strikethrough",
+          "underline",
+          "weightedFontFamily",
+        ]);
+        textRuns.push({
+          endOffset: cursor + content.length,
+          startOffset: cursor,
+          textStyle,
+        });
+        paragraphText += content;
+        cursor += content.length;
+      }
+
+      if (!paragraphText.endsWith("\n")) {
+        paragraphText += "\n";
+      }
+
+      paragraphs.push({
+        bulletPreset: inferBulletPreset(document, element.paragraph),
+        paragraphStyle: pickWritableObject(element.paragraph.paragraphStyle, [
+          "alignment",
+          "avoidWidowAndOrphan",
+          "borderBetween",
+          "borderBottom",
+          "borderLeft",
+          "borderRight",
+          "borderTop",
+          "direction",
+          "indentEnd",
+          "indentFirstLine",
+          "indentStart",
+          "keepLinesTogether",
+          "keepWithNext",
+          "lineSpacing",
+          "namedStyleType",
+          "pageBreakBefore",
+          "shading",
+          "spaceAbove",
+          "spaceBelow",
+          "spacingMode",
+        ]),
+        text: paragraphText,
+        textRuns,
+      });
+      continue;
+    }
+
+    if (element.tableOfContents?.content) {
+      paragraphs.push(...extractClonableParagraphs(document, element.tableOfContents.content));
+      continue;
+    }
+
+    if (element.table?.tableRows) {
+      for (const row of element.table.tableRows) {
+        for (const cell of row.tableCells ?? []) {
+          paragraphs.push(...extractClonableParagraphs(document, cell.content));
+        }
+      }
+    }
+  }
+
+  return paragraphs;
+}
+
+async function batchUpdateDocument(
+  documentId: string,
+  requests: Array<Record<string, unknown>>,
+) {
+  if (!requests.length) {
+    return;
+  }
+
+  await googleWorkspaceJson(
+    `${GOOGLE_DOCS_API_BASE}/documents/${encodeURIComponent(documentId)}:batchUpdate`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ requests }),
+    },
+    ["https://www.googleapis.com/auth/documents", "https://www.googleapis.com/auth/drive"],
+  );
+}
+
+export async function cloneDocumentTabToTarget(input: {
+  sourceDocumentId: string;
+  sourceTabId: string;
+  targetDocumentId: string;
+  targetTabId: string;
+}) {
+  const document = await getDocumentWithTabs(input.sourceDocumentId);
+  const sourceTab = findGoogleDocTab(document, input.sourceTabId);
+  if (!sourceTab) {
+    throw new Error("Source Google Docs tab was not found.");
+  }
+
+  const paragraphs = extractClonableParagraphs(document, sourceTab.documentTab?.body?.content);
+  const allText = paragraphs.map((paragraph) => paragraph.text).join("");
+  if (!allText) {
+    return;
+  }
+
+  await batchUpdateDocument(input.targetDocumentId, [
+    {
+      insertText: {
+        location: {
+          index: 1,
+          tabId: input.targetTabId,
+        },
+        text: allText,
+      },
+    },
+  ]);
+
+  let currentIndex = 1;
+  const styleRequests: Array<Record<string, unknown>> = [];
+
+  for (const paragraph of paragraphs) {
+    const paragraphStart = currentIndex;
+    const paragraphEnd = currentIndex + paragraph.text.length;
+
+    if (paragraph.paragraphStyle) {
+      const fields = buildFieldMask(paragraph.paragraphStyle).join(",");
+      if (fields) {
+        styleRequests.push({
+          updateParagraphStyle: {
+            fields,
+            paragraphStyle: paragraph.paragraphStyle,
+            range: {
+              endIndex: paragraphEnd,
+              startIndex: paragraphStart,
+              tabId: input.targetTabId,
+            },
+          },
+        });
+      }
+    }
+
+    if (paragraph.bulletPreset) {
+      styleRequests.push({
+        createParagraphBullets: {
+          bulletPreset: paragraph.bulletPreset,
+          range: {
+            endIndex: paragraphEnd,
+            startIndex: paragraphStart,
+            tabId: input.targetTabId,
+          },
+        },
+      });
+    }
+
+    for (const textRun of paragraph.textRuns) {
+      if (!textRun.textStyle) {
+        continue;
+      }
+      const fields = buildFieldMask(textRun.textStyle).join(",");
+      if (!fields) {
+        continue;
+      }
+      styleRequests.push({
+        updateTextStyle: {
+          fields,
+          range: {
+            endIndex: paragraphStart + textRun.endOffset,
+            startIndex: paragraphStart + textRun.startOffset,
+            tabId: input.targetTabId,
+          },
+          textStyle: textRun.textStyle,
+        },
+      });
+    }
+
+    currentIndex = paragraphEnd;
+  }
+
+  await batchUpdateDocument(input.targetDocumentId, styleRequests);
 }
 
 export async function getDriveFileMetadata(fileId: string) {
