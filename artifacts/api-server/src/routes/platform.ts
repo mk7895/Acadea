@@ -524,6 +524,33 @@ function getEligibleHintTemplateIdsForGuides(
   return orderedTemplateIds.slice(0, limits.maxHintGuideCount);
 }
 
+function templateMatchesGuideIds(
+  template: {
+    appliesToGuideIds?: number[] | null;
+    guideId?: number | null;
+    structure?: unknown;
+  },
+  guideIds: number[],
+) {
+  const guideIdSet = new Set(guideIds.filter((value) => Number.isFinite(value)));
+  if (!guideIdSet.size) {
+    return false;
+  }
+
+  if ((template.appliesToGuideIds ?? []).some((guideId) => guideIdSet.has(guideId))) {
+    return true;
+  }
+
+  if (typeof template.guideId === "number" && guideIdSet.has(template.guideId)) {
+    return true;
+  }
+
+  const rows = normalizeMaterialStructureRows(template.structure);
+  return rows.some((row) =>
+    (row.appliesToGuideIds ?? []).some((guideId) => guideIdSet.has(guideId)),
+  );
+}
+
 function serializeMentorProfile(
   profile:
     | {
@@ -1550,6 +1577,24 @@ async function shapeGuideList(
     updatedAt: Date;
   }>,
 ) {
+  const sourceGuideIds = Array.from(
+    new Set(
+      guides
+        .map((guide) => guide.guideType === "self_service_live" ? guide.sourceGuideId : null)
+        .filter((value): value is number => typeof value === "number" && Number.isFinite(value)),
+    ),
+  );
+  const sourceGuides = sourceGuideIds.length
+    ? await db
+        .select({
+          descriptionMarkdown: platformGuidesTable.descriptionMarkdown,
+          id: platformGuidesTable.id,
+          summary: platformGuidesTable.summary,
+        })
+        .from(platformGuidesTable)
+        .where(inArray(platformGuidesTable.id, sourceGuideIds))
+    : [];
+  const sourceGuideMap = new Map(sourceGuides.map((guide) => [guide.id, guide]));
   const itemMap = await loadGuideItems(
     db,
     guides.map((guide) => guide.id),
@@ -1563,6 +1608,14 @@ async function shapeGuideList(
 
     return {
       ...guide,
+      summary:
+        guide.guideType === "self_service_live" && guide.sourceGuideId
+          ? sourceGuideMap.get(guide.sourceGuideId)?.summary ?? guide.summary
+          : guide.summary,
+      descriptionMarkdown:
+        guide.guideType === "self_service_live" && guide.sourceGuideId
+          ? sourceGuideMap.get(guide.sourceGuideId)?.descriptionMarkdown ?? guide.descriptionMarkdown
+          : guide.descriptionMarkdown,
       isItemGuide: isItemGuideRecord(guide),
       itemGuideAppliesToGuideIds: appliesToGuideIds,
       items: itemMap.get(guide.id) ?? [],
@@ -3844,10 +3897,9 @@ router.get(
           .where(eq(platformMaterialTemplatesTable.isActive, true))
           .orderBy(asc(platformMaterialTemplatesTable.templateType), asc(platformMaterialTemplatesTable.title))
       : [];
-    const visibleMaterials = materialTemplates.filter((template) => {
-      const applies = template.appliesToGuideIds ?? [];
-      return applies.length === 0 || applies.some((guideId: number) => accessibleTemplateIds.includes(guideId));
-    });
+    const visibleMaterials = materialTemplates.filter((template) =>
+      templateMatchesGuideIds(template, accessibleTemplateIds),
+    );
     const normalizedVisibleMaterials = visibleMaterials.map((template) => ({
       ...template,
       structure: normalizeMaterialStructureRows(template.structure),
@@ -5010,6 +5062,19 @@ router.post(
         fileUrl: item.fileUrl ?? "",
       })),
     );
+
+    const nextDisabledHintGuideTemplateIds = guideLimits.disabledHintGuideTemplateIds.filter(
+      (guideId) => guideId !== sourceGuide.id,
+    );
+    if (nextDisabledHintGuideTemplateIds.length !== guideLimits.disabledHintGuideTemplateIds.length) {
+      await db
+        .update(menteeProfilesTable)
+        .set({
+          disabledHintGuideTemplateIds: nextDisabledHintGuideTemplateIds,
+          updatedAt: new Date(),
+        })
+        .where(eq(menteeProfilesTable.userId, req.platformUser!.id));
+    }
 
     const [shaped] = await shapeGuideList(db, [guide]);
     return res.status(201).json(shaped);

@@ -332,13 +332,20 @@ function getGuideTemplateId(guide: any) {
 function templateAppliesToGuide(template: any, guide: any) {
   const templateId = getGuideTemplateId(guide);
   const applies = Array.isArray(template?.appliesToGuideIds) ? template.appliesToGuideIds.map(String) : [];
-  return applies.length === 0 || applies.includes(templateId);
+  if (applies.includes(templateId)) {
+    return true;
+  }
+  const rows = Array.isArray(template?.structure) ? template.structure : [];
+  return rows.some((row: any) => {
+    const rowApplies = Array.isArray(row?.appliesToGuideIds) ? row.appliesToGuideIds.map(String) : [];
+    return rowApplies.includes(templateId);
+  });
 }
 
 function rowAppliesToGuide(row: any, guide: any) {
   const templateId = getGuideTemplateId(guide);
   const applies = Array.isArray(row?.appliesToGuideIds) ? row.appliesToGuideIds.map(String) : [];
-  return applies.length === 0 || applies.includes(templateId);
+  return applies.includes(templateId);
 }
 
 function uniqueStrings(values: Array<string | null | undefined>) {
@@ -1034,7 +1041,7 @@ function Dashboard({
 }) {
   const defaultSection = session.user.role === "mentee" ? "universities" : "overview";
   const [section, setSection] = useState(defaultSection);
-  const [expandedMaterialTemplateId, setExpandedMaterialTemplateId] = useState<number | null>(null);
+  const [expandedMaterialTemplateIds, setExpandedMaterialTemplateIds] = useState<number[]>([]);
 
   const menu = useMemo(() => {
     if (session.user.role === "admin") {
@@ -1102,10 +1109,14 @@ function Dashboard({
           </div>
           <div className="dashboard-main">
             <RoleSection
-              expandedMaterialTemplateId={expandedMaterialTemplateId}
+              expandedMaterialTemplateIds={expandedMaterialTemplateIds}
               onNavigateMentee={(nextSection, nextTemplateId) => {
                 setSection(nextSection);
-                setExpandedMaterialTemplateId(nextTemplateId ?? null);
+                if (typeof nextTemplateId === "number") {
+                  setExpandedMaterialTemplateIds((current) =>
+                    current.includes(nextTemplateId) ? current : [...current, nextTemplateId],
+                  );
+                }
               }}
               section={section}
               session={session}
@@ -1119,13 +1130,13 @@ function Dashboard({
 }
 
 function RoleSection({
-  expandedMaterialTemplateId,
+  expandedMaterialTemplateIds,
   onNavigateMentee,
   section,
   session,
   token,
 }: {
-  expandedMaterialTemplateId: number | null;
+  expandedMaterialTemplateIds: number[];
   onNavigateMentee: (nextSection: string, nextTemplateId?: number | null) => void;
   section: string;
   session: SessionPayload;
@@ -1139,7 +1150,7 @@ function RoleSection({
   }
   return (
     <MenteeSection
-      expandedMaterialTemplateId={expandedMaterialTemplateId}
+      expandedMaterialTemplateIds={expandedMaterialTemplateIds}
       onNavigate={onNavigateMentee}
       section={section}
       token={token}
@@ -4818,12 +4829,12 @@ function MentorSection({
 }
 
 function MenteeSection({
-  expandedMaterialTemplateId,
+  expandedMaterialTemplateIds,
   onNavigate,
   section,
   token,
 }: {
-  expandedMaterialTemplateId: number | null;
+  expandedMaterialTemplateIds: number[];
   onNavigate: (nextSection: string, nextTemplateId?: number | null) => void;
   section: string;
   token: string;
@@ -4847,6 +4858,7 @@ function MenteeSection({
   const [materialActionKey, setMaterialActionKey] = useState<string | null>(null);
   const [meetingTurnstileToken, setMeetingTurnstileToken] = useState("");
   const [meetingTurnstileResetKey, setMeetingTurnstileResetKey] = useState(0);
+  const [openMaterialTemplateIds, setOpenMaterialTemplateIds] = useState<number[]>(expandedMaterialTemplateIds);
   const [viewerTimezone, setViewerTimezone] = useState(() => {
     const saved = getCookie(TIMEZONE_COOKIE_NAME);
     return saved && findTimezoneOption(saved) ? saved : DEFAULT_TIMEZONE;
@@ -4959,6 +4971,15 @@ function MenteeSection({
       setLongLivedCookie(TIMEZONE_COOKIE_NAME, viewerTimezone);
     }
   }, [canUsePreferencesCookies, viewerTimezone]);
+
+  useEffect(() => {
+    if (!expandedMaterialTemplateIds.length) {
+      return;
+    }
+    setOpenMaterialTemplateIds((current) =>
+      Array.from(new Set([...current, ...expandedMaterialTemplateIds])),
+    );
+  }, [expandedMaterialTemplateIds]);
 
   useEffect(() => {
     if (section === "universities" || section === "materials" || section === "profile" || section === "meetings" || section === "mentors") {
@@ -5697,9 +5718,17 @@ function MenteeSection({
                   key={template.id}
                   onToggle={(event) => {
                     const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
-                    onNavigate("materials", nextOpen ? Number(template.id) : null);
+                    const templateId = Number(template.id);
+                    setOpenMaterialTemplateIds((current) =>
+                      nextOpen
+                        ? (current.includes(templateId) ? current : [...current, templateId])
+                        : current.filter((value) => value !== templateId),
+                    );
+                    if (nextOpen) {
+                      onNavigate("materials", templateId);
+                    }
                   }}
-                  open={expandedMaterialTemplateId === Number(template.id)}
+                  open={openMaterialTemplateIds.includes(Number(template.id))}
                 >
                   <summary>
                     <strong>{template.title}</strong>
