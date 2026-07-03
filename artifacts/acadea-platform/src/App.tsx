@@ -60,6 +60,7 @@ type MaterialRowEditor = {
   anchorAfterKey?: string;
   country: string;
   displayKey?: string;
+  docSeedMode?: "plain_text" | "source_tab";
   docTabPrompt?: string;
   docTabTitle?: string;
   guideId: string;
@@ -114,7 +115,12 @@ function materialItemActionLabel(value: MaterialItemAction) {
   }
 }
 
-function getMaterialDocSeedMode(row: Pick<MaterialRowEditor, "sourceDocumentId" | "sourceTabId">) {
+function getMaterialDocSeedMode(
+  row: Pick<MaterialRowEditor, "docSeedMode" | "sourceDocumentId" | "sourceTabId">,
+) {
+  if (row.docSeedMode === "plain_text" || row.docSeedMode === "source_tab") {
+    return row.docSeedMode;
+  }
   return row.sourceDocumentId?.trim() && row.sourceTabId?.trim() ? "source_tab" : "plain_text";
 }
 
@@ -482,6 +488,7 @@ function createEmptyMaterialRow(): MaterialRowEditor {
     anchorAfterKey: "",
     country: "",
     displayKey: createEditorRowKey("mentor"),
+    docSeedMode: "plain_text",
     docTabPrompt: "",
     docTabTitle: "",
     guideId: "",
@@ -1344,6 +1351,7 @@ function AdminSection({
           rowIndex === index
             ? {
                 ...entry,
+                docSeedMode: "source_tab",
                 sourceDocumentId: payload.documentId,
                 sourceTabId: payload.tab?.tabId ?? "",
               }
@@ -1451,6 +1459,8 @@ function AdminSection({
             alternativeOptions: Array.isArray(row.alternativeOptions) ? row.alternativeOptions.filter(Boolean) : [],
             appliesToGuideIds: Array.isArray(row.appliesToGuideIds) ? row.appliesToGuideIds.map((id: any) => String(id)) : [],
             country: row.country ?? "",
+            docSeedMode:
+              row.sourceDocumentId && row.sourceTabId ? "source_tab" : "plain_text",
             guideId: row.guideId ? String(row.guideId) : "",
             docTabPrompt: row.docTabPrompt ?? "",
             docTabTitle: row.docTabTitle ?? "",
@@ -2847,10 +2857,12 @@ function AdminSection({
                                         event.target.value === "source_tab"
                                           ? {
                                               ...current,
+                                              docSeedMode: "source_tab",
                                               docTabPrompt: "",
                                             }
                                           : {
                                               ...current,
+                                              docSeedMode: "plain_text",
                                               sourceDocumentId: "",
                                               sourceTabId: "",
                                             },
@@ -2888,6 +2900,7 @@ function AdminSection({
                                           onChange={(event) =>
                                             updateMaterialRow(index, (current) => ({
                                               ...current,
+                                              docSeedMode: "source_tab",
                                               sourceDocumentId: masterTemplateDoc.documentId,
                                               sourceTabId: event.target.value,
                                             }))
@@ -3687,6 +3700,7 @@ function MentorSection({
             appliesToGuideIds: Array.isArray(row.appliesToGuideIds) ? row.appliesToGuideIds.map((id: any) => String(id)) : [],
             country: row.country ?? "",
             displayKey: typeof row.displayKey === "string" && row.displayKey ? row.displayKey : createEditorRowKey("mentor"),
+            docSeedMode: row.sourceDocumentId && row.sourceTabId ? "source_tab" : "plain_text",
             docTabPrompt: row.docTabPrompt ?? "",
             docTabTitle: row.docTabTitle ?? "",
             guideId: row.guideId ? String(row.guideId) : "",
@@ -4539,10 +4553,12 @@ function MentorSection({
                                     event.target.value === "source_tab"
                                       ? {
                                           ...entry,
+                                          docSeedMode: "source_tab",
                                           docTabPrompt: "",
                                         }
                                       : {
                                           ...entry,
+                                          docSeedMode: "plain_text",
                                           sourceDocumentId: "",
                                           sourceTabId: "",
                                         },
