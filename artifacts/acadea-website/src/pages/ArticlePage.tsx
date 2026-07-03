@@ -42,6 +42,7 @@ export default function ArticlePage() {
   const [, setLocation] = useLocation();
   const slug = `/${params.slug}`;
   const [article, setArticle] = useState<ArticleDetail | null | undefined>(undefined);
+  const [articleError, setArticleError] = useState(false);
   const [readingProgress, setReadingProgress] = useState(0);
   const [navbarHeight, setNavbarHeight] = useState(96);
   const [tocTop, setTocTop] = useState(120);
@@ -49,12 +50,20 @@ export default function ArticlePage() {
   useEffect(() => {
     let cancelled = false;
     setArticle(undefined);
+    setArticleError(false);
 
-    void fetchArticleDetail(slug).then((value) => {
-      if (!cancelled) {
-        setArticle(value);
-      }
-    });
+    void fetchArticleDetail(slug)
+      .then((value) => {
+        if (!cancelled) {
+          setArticle(value);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setArticle(null);
+          setArticleError(true);
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -273,7 +282,14 @@ export default function ArticlePage() {
     return (
       <div className="min-h-screen flex items-center justify-center pt-28">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-primary mb-4">Artykuł nie znaleziony</h1>
+          <h1 className="text-2xl font-bold text-primary mb-4">
+            {articleError ? "Artykuł jest chwilowo niedostępny" : "Artykuł nie znaleziony"}
+          </h1>
+          <p className="mb-6 max-w-md text-gray-500">
+            {articleError
+              ? "Nie udało się pobrać aktualnej wersji artykułu z bazy danych. Spróbuj ponownie za chwilę."
+              : "Ten adres nie prowadzi już do opublikowanego artykułu."}
+          </p>
           <button
             onClick={() => setLocation("/baza-wiedzy")}
             className="inline-flex items-center rounded-full bg-primary px-6 py-3 font-semibold text-white"

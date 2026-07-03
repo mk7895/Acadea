@@ -1,5 +1,5 @@
-import QRCode from "react-qr-code";
 import { CheckCircle2, MessageCircle } from "lucide-react";
+import { ResponsiveQrCode } from "@/components/ResponsiveQrCode";
 
 const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/Cg8sKNNvAFIKBfDjBLqWKl";
 
@@ -51,13 +51,11 @@ export function ArticleWhatsAppGroupBlock() {
 
         <div className="flex flex-col items-center justify-center bg-primary px-6 py-8 text-center md:px-8">
           <div className="rounded-[24px] bg-white p-5 shadow-lg">
-            <QRCode
+            <ResponsiveQrCode
               value={WHATSAPP_GROUP_URL}
               size={176}
-              fgColor="#166534"
-              bgColor="#ffffff"
               title="Kod QR do grupy WhatsApp ACADEA"
-              style={{ height: "auto", maxWidth: "100%", width: "176px" }}
+              className="h-auto w-full max-w-[176px]"
             />
           </div>
           <p className="mt-5 text-base font-bold text-white">Zeskanuj kod QR</p>

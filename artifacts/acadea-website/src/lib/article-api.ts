@@ -12,6 +12,7 @@ import {
 } from "@/lib/article-content";
 
 const API_BASE = getApiBase();
+const allowStaticArticleFallback = import.meta.env.DEV;
 
 export interface ArticleSummary {
   id?: number;
@@ -79,7 +80,11 @@ export async function fetchPublishedArticles() {
 
     return (await response.json()) as ArticleSummary[];
   } catch {
-    return staticArticles.map(toSummary);
+    if (allowStaticArticleFallback) {
+      return staticArticles.map(toSummary);
+    }
+
+    throw new Error("Published articles are unavailable");
   }
 }
 
@@ -96,6 +101,10 @@ export async function fetchArticleDetail(slug: string) {
       markdown: normalizeContactFormMarkers(article.markdown),
     } satisfies ArticleDetail;
   } catch {
+    if (!allowStaticArticleFallback) {
+      throw new Error("Article detail is unavailable");
+    }
+
     const article = findStaticArticle(slug);
     if (!article) {
       return null;
@@ -125,7 +134,11 @@ export async function fetchArticleTaxonomy() {
 
     return (await response.json()) as ArticleTaxonomyResponse;
   } catch {
-    return { groups: STATIC_ARTICLE_TAXONOMY } satisfies ArticleTaxonomyResponse;
+    if (allowStaticArticleFallback) {
+      return { groups: STATIC_ARTICLE_TAXONOMY } satisfies ArticleTaxonomyResponse;
+    }
+
+    throw new Error("Article taxonomy is unavailable");
   }
 }
 

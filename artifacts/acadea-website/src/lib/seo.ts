@@ -318,6 +318,26 @@ export function createArticleSchema(input: {
   } satisfies JsonLdSchema;
 }
 
+export function createFaqSchema(
+  items: ReadonlyArray<{
+    question: string;
+    answer: string;
+  }>,
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: normalizeText(item.question),
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: normalizeText(item.answer),
+      },
+    })),
+  } satisfies JsonLdSchema;
+}
+
 export function useSeo(config: SeoConfig) {
   const serializedConfig = JSON.stringify(config);
 

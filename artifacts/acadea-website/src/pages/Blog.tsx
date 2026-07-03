@@ -69,16 +69,31 @@ export default function Blog() {
   const [activeGroupSlug, setActiveGroupSlug] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [articleLoadError, setArticleLoadError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
-    void Promise.all([fetchPublishedArticles(), fetchArticleTaxonomy()]).then(([rows, taxonomy]) => {
-      if (!cancelled) {
-        setArticleItems(rows);
-        setTaxonomyGroups(taxonomy.groups);
+    void (async () => {
+      try {
+        const [rows, taxonomy] = await Promise.all([
+          fetchPublishedArticles(),
+          fetchArticleTaxonomy(),
+        ]);
+
+        if (!cancelled) {
+          setArticleItems(rows);
+          setTaxonomyGroups(taxonomy.groups);
+          setArticleLoadError(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setArticleItems([]);
+          setTaxonomyGroups([]);
+          setArticleLoadError(true);
+        }
       }
-    });
+    })();
 
     return () => {
       cancelled = true;
@@ -246,10 +261,21 @@ export default function Blog() {
 
       <section className="min-h-[50vh] bg-gray-50 py-12 md:py-16">
         <div className="container mx-auto px-4 md:px-6">
+          {articleLoadError ? (
+            <div className="mb-6 rounded-[28px] border border-amber-200 bg-amber-50 px-6 py-5 text-sm leading-relaxed text-amber-900">
+              Nie udało się teraz wczytać aktualnych artykułów z bazy danych. Odśwież stronę za chwilę albo wróć później.
+            </div>
+          ) : null}
           {visible.length === 0 ? (
             <div className="rounded-[28px] border border-dashed border-[#d8d0c1] bg-white px-6 py-12 text-center">
-              <h2 className="text-2xl font-bold text-primary">Brak artykułów dla wybranych filtrów</h2>
-              <p className="mt-3 text-gray-500">Odznacz część kategorii albo wróć do widoku wszystkich artykułów.</p>
+              <h2 className="text-2xl font-bold text-primary">
+                {articleLoadError ? "Artykuły są chwilowo niedostępne" : "Brak artykułów dla wybranych filtrów"}
+              </h2>
+              <p className="mt-3 text-gray-500">
+                {articleLoadError
+                  ? "To wygląda na problem z połączeniem z API artykułów, a nie na brak treści."
+                  : "Odznacz część kategorii albo wróć do widoku wszystkich artykułów."}
+              </p>
             </div>
           ) : (
             <AnimatePresence mode="wait">

@@ -4,12 +4,15 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   BookOpen,
+  Building2,
   CheckCircle2,
+  Mail,
   Globe,
   GraduationCap,
   Heart,
   MapPin,
   MessageCircle,
+  SearchCheck,
   Users,
   ShieldCheck,
   Wallet,
@@ -21,6 +24,7 @@ import { Link } from "wouter";
 import scholarshipHomePhoto from "@/assets/scholarship-home-photo.webp";
 import {
   createBreadcrumbSchema,
+  createFaqSchema,
   createLocalBusinessSchema,
   createSiteNavigationSchema,
   createOrganizationSchema,
@@ -28,6 +32,8 @@ import {
   createWebSiteSchema,
   useSeo,
 } from "@/lib/seo";
+import { HOME_FAQ_ITEMS } from "@/data/home-faq";
+import { ResponsiveQrCode } from "@/components/ResponsiveQrCode";
 
 const GlobeSection = lazy(() =>
   import("@/components/GlobeSection").then((module) => ({ default: module.GlobeSection })),
@@ -77,15 +83,16 @@ const itemVariants: Variants = {
 
 export default function Home() {
   useSeo({
-    title: "Studia za granicą i doradztwo aplikacyjne | ACADEA",
+    title: "Studia za granicą | Doradztwo aplikacyjne i wybór uczelni | ACADEA",
     description:
-      "Pomagamy kandydatom dostać się na studia za granicą. ACADEA wspiera w wyborze uczelni, esejach, dokumentach, egzaminach i planowaniu aplikacji.",
+      "Pomagamy kandydatom dostać się na studia za granicą. ACADEA wspiera w wyborze uczelni, dokumentach, esejach, stypendiach, egzaminach i planowaniu całej aplikacji.",
     path: "/",
     keywords: [
       "studia za granicą",
       "doradztwo aplikacyjne",
+      "wybór uczelni za granicą",
       "aplikacja na studia",
-      "studia za granicą pomoc",
+      "stypendia studia za granicą",
       "ACADEA",
     ],
     schemas: [
@@ -94,10 +101,11 @@ export default function Home() {
       createWebSiteSchema(),
       createWebPageSchema({
         path: "/",
-        title: "Studia za granicą i doradztwo aplikacyjne | ACADEA",
+        title: "Studia za granicą | Doradztwo aplikacyjne i wybór uczelni | ACADEA",
         description:
           "ACADEA pomaga w aplikacji na studia za granicą, wyborze uczelni, dokumentach, esejach, stypendiach i planowaniu całego procesu.",
       }),
+      createFaqSchema(HOME_FAQ_ITEMS),
       createBreadcrumbSchema([{ name: "Strona Główna", path: "/" }]),
       createSiteNavigationSchema([
         { name: "Strona Główna", path: "/" },
@@ -136,13 +144,17 @@ export default function Home() {
               </div>
 
               <h1 className="text-5xl md:text-6xl xl:text-7xl font-bold text-gray-900 leading-[1.05] tracking-tight mb-6">
-                Twoje miejsce<br />
-                na <span className="text-primary">światowej</span><br />
-                uczelni czeka.
+                Studia za granica
+                <br />
+                zaczynaja sie od
+                <br />
+                <span className="text-primary">dobrego planu.</span>
               </h1>
 
-              <p className="text-lg text-gray-500 leading-relaxed mb-10 max-w-lg">
-                Pomagamy dostać się na wymarzone uczelnie na całym świecie. 
+              <p className="text-lg text-gray-500 leading-relaxed mb-10 max-w-xl">
+                Pomagamy kandydatom dostac sie na studia za granica: od wyboru kraju i uczelni, przez
+                dokumenty, eseje i certyfikaty, po stypendia, finansowanie i spokojne przejscie przez
+                cala aplikacje.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-10 md:mb-14">
@@ -195,7 +207,9 @@ export default function Home() {
           <div className="max-w-3xl mx-auto text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold text-primary mb-6">W czym pomożemy Tobie lub Twojemu Dziecku?</h2>
             <p className="text-lg text-gray-500">
-              Aplikacja na studia to proces, który wymaga strategii. Przeprowadzimy Cię przez niego krok po kroku.
+              Doradztwo aplikacyjne do studiow za granica obejmuje nie tylko formularz, ale tez strategię,
+              wybor uczelni, dokumenty, egzaminy jezykowe i plan finansowy. Przeprowadzimy Cię przez ten
+              proces krok po kroku.
             </p>
           </div>
 
@@ -220,6 +234,89 @@ export default function Home() {
               </motion.div>
             ))}
           </motion.div>
+        </div>
+      </section>
+
+      <section className="bg-white py-12 md:py-16">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)] lg:items-start">
+            <div>
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/8 px-4 py-2 text-sm font-semibold text-primary">
+                <SearchCheck size={16} />
+                <span>Jak wyglada pomoc ACADEA</span>
+              </div>
+              <h2 className="mb-5 text-3xl font-bold leading-tight text-gray-900 md:text-5xl">
+                Doradztwo na studia za granica, ktore pomaga podejmowac lepsze decyzje
+              </h2>
+              <p className="max-w-3xl text-lg leading-relaxed text-gray-500">
+                Aplikacja na studia za granica rzadko wykoleja sie przez brak ambicji. Znacznie czesciej
+                problemem sa chaos, zle zalozenia, przypadkowy wybor uczelni albo niedoszacowanie kosztow.
+                Dlatego laczymy strategię, wiedze o krajach i uczelniach oraz realne wsparcie w dokumentach,
+                esejach i terminach.
+              </p>
+
+              <div className="mt-8 grid gap-4 md:grid-cols-3">
+                {[
+                  {
+                    title: "Wybor kraju i uczelni",
+                    text: "Pomagamy porownac kierunki, systemy edukacji, selektywnosc, koszty i styl nauki, zeby lista uczelni byla ambitna, ale realistyczna.",
+                  },
+                  {
+                    title: "Dokumenty i eseje",
+                    text: "Pracujemy nad CV, recommendation letters, personal statementami, esejami i wszystkimi dokumentami, ktore decyduja o jakosci aplikacji.",
+                  },
+                  {
+                    title: "Terminy i finansowanie",
+                    text: "Pilnujemy deadline'ow, egzaminow, stypendiow i planu kosztow, zeby proces byl przewidywalny i dobrze rozlozony w czasie.",
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="rounded-2xl border border-gray-100 bg-gray-50 p-6 shadow-sm">
+                    <h3 className="mb-3 text-lg font-bold text-primary">{item.title}</h3>
+                    <p className="text-sm leading-relaxed text-gray-600">{item.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[28px] border border-[#e6dfd3] bg-[#faf7f1] p-6 shadow-sm md:p-8">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[#8d7b5c]">
+                <Building2 size={12} />
+                Zaufanie i kontakt
+              </div>
+              <h3 className="text-2xl font-bold text-primary">ACADEA we Wroclawiu</h3>
+              <p className="mt-3 text-sm leading-relaxed text-gray-600">
+                Pracujemy z kandydatami z calej Polski i z zagranicy, ale mamy tez realne miejsce, realny
+                zespol i normalny kontakt wtedy, gdy trzeba szybko uporzadkowac kolejny krok aplikacji.
+              </p>
+
+              <div className="mt-6 space-y-4 text-sm text-gray-700">
+                <div className="flex items-start gap-3">
+                  <MapPin size={18} className="mt-0.5 shrink-0 text-primary" />
+                  <span>Jednosci Narodowej 55-57 / 15, 50-262 Wroclaw, Polska</span>
+                </div>
+                <a href="tel:+48728492936" className="flex items-start gap-3 transition-colors hover:text-primary">
+                  <PhoneCall size={18} className="mt-0.5 shrink-0 text-primary" />
+                  <span>+48 728 492 936</span>
+                </a>
+                <a
+                  href="mailto:kontakt@acadea.org"
+                  className="flex items-start gap-3 transition-colors hover:text-primary"
+                >
+                  <Mail size={18} className="mt-0.5 shrink-0 text-primary" />
+                  <span>kontakt@acadea.org</span>
+                </a>
+                <a
+                  href="https://wa.me/48799831204"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-3 transition-colors hover:text-primary"
+                >
+                  <MessageCircle size={18} className="mt-0.5 shrink-0 text-primary" />
+                  <span>WhatsApp: +48 799 831 204</span>
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -395,13 +492,11 @@ export default function Home() {
                 transition={{ duration: 0.5 }}
                 className="bg-white rounded-3xl p-6 shadow-xl"
               >
-                <QRCode
+                <ResponsiveQrCode
                   value="https://chat.whatsapp.com/Cg8sKNNvAFIKBfDjBLqWKl"
                   size={200}
-                  fgColor="#166534"
-                  bgColor="#ffffff"
                   title="Kod QR do grupy WhatsApp ACADEA"
-                  style={{ height: "auto", maxWidth: "100%", width: "200px" }}
+                  className="h-auto w-full max-w-[200px]"
                 />
               </motion.div>
               <p className="text-white font-bold text-lg mt-7">Zeskanuj kod QR</p>
@@ -410,6 +505,34 @@ export default function Home() {
               </p>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      <section className="bg-white py-12 md:py-16">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="mx-auto max-w-4xl">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-4 py-2 text-sm font-semibold text-accent">
+              <BookOpen size={16} />
+              <span>Najczestsze pytania</span>
+            </div>
+            <h2 className="mb-5 text-3xl font-bold leading-tight text-gray-900 md:text-5xl">
+              Studia za granica bez chaosu i przypadkowych decyzji
+            </h2>
+            <p className="mb-10 max-w-3xl text-lg leading-relaxed text-gray-500">
+              Ponizej zebraliśmy pytania, z ktorymi najczesciej przychodza kandydaci i rodzice planujacy
+              aplikację na studia za granica. To dobry punkt startowy, jesli chcesz zrozumiec, jak wyglada
+              wspolpraca, kiedy zaczac i na co zwrocic uwage jeszcze przed pierwszym deadlinem.
+            </p>
+
+            <div className="space-y-4">
+              {HOME_FAQ_ITEMS.map((item) => (
+                <article key={item.question} className="rounded-2xl border border-gray-100 bg-gray-50 p-6 shadow-sm">
+                  <h3 className="text-lg font-bold text-primary">{item.question}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-gray-600 md:text-base">{item.answer}</p>
+                </article>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 

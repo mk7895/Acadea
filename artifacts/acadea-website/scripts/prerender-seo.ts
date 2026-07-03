@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { articles } from "../src/data/articles";
 import { countries } from "../src/data/countries";
+import { HOME_FAQ_ITEMS } from "../src/data/home-faq";
 import {
   DEFAULT_OG_IMAGE,
   SITE_NAME,
@@ -10,6 +11,7 @@ import {
   createArticleSchema,
   createBreadcrumbSchema,
   createCollectionPageSchema,
+  createFaqSchema,
   createItemListSchema,
   createLocalBusinessSchema,
   createOrganizationSchema,
@@ -166,10 +168,11 @@ function buildStaticRouteMeta(): RouteMeta[] {
         createWebSiteSchema(),
         createWebPageSchema({
           path: "/",
-          title: "Studia za granicą i doradztwo aplikacyjne | ACADEA",
+          title: "Studia za granicą | Doradztwo aplikacyjne i wybór uczelni | ACADEA",
           description:
             "ACADEA pomaga w aplikacji na studia za granicą, wyborze uczelni, dokumentach, esejach, stypendiach i planowaniu całego procesu.",
         }),
+        createFaqSchema(HOME_FAQ_ITEMS),
         createBreadcrumbSchema([{ name: "Strona Główna", path: "/" }]),
         createSiteNavigationSchema([
           { name: "Strona Główna", path: "/" },
