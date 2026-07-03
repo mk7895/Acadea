@@ -338,6 +338,15 @@ const guideImportBlueprintSchema = z.object({
 
 const MAX_MATERIAL_UPLOAD_BYTES = 15 * 1024 * 1024;
 
+function normalizePlatformSlug(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 const mentorMaterialRowsSchema = z.object({
   rows: z.array(z.record(z.string(), z.unknown())).default([]),
 });
@@ -3808,13 +3817,22 @@ router.get(
     const activeSourceGuideIds = new Set(
       uniqueGuides.map((guide) => guide.sourceGuideId ?? guide.id).filter((value): value is number => Number.isFinite(value)),
     );
+    const activeGuideKeys = new Set(
+      uniqueGuides.map((guide) =>
+        `${normalizePlatformSlug(guide.country ?? "")}::${normalizePlatformSlug(guide.universityName ?? "")}::${normalizePlatformSlug(guide.title ?? "")}`,
+      ),
+    );
     const availableGuideTemplatesRaw = [
       ...visibleAdminTemplates,
       ...assignedGuideTemplates,
     ];
     const availableGuideTemplates = availableGuideTemplatesRaw.filter((guide, index, array) => {
       const sourceId = guide.sourceGuideId ?? guide.id;
+      const guideKey = `${normalizePlatformSlug(guide.country ?? "")}::${normalizePlatformSlug(guide.universityName ?? "")}::${normalizePlatformSlug(guide.title ?? "")}`;
       if (activeSourceGuideIds.has(sourceId)) {
+        return false;
+      }
+      if (activeGuideKeys.has(guideKey)) {
         return false;
       }
       return array.findIndex((entry) => (entry.sourceGuideId ?? entry.id) === sourceId) === index;

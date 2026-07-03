@@ -2,10 +2,53 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, Route, Switch, useLocation } from "wouter";
 import { apiFetch } from "@/lib/api";
 import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
-import { CookieConsentProvider } from "@/components/CookieConsent";
+import { CookieConsentProvider, useCookieConsent } from "@/components/CookieConsent";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { getCookie, setLongLivedCookie } from "@/lib/cookies";
 
 const TOKEN_KEY = "acadea-platform-session";
+const TIMEZONE_COOKIE_NAME = "acadea_timezone";
+const DEFAULT_TIMEZONE = "Europe/Warsaw";
+const TIMEZONE_OPTIONS = [
+  { value: "Europe/Warsaw", label: "Polska" },
+  { value: "Europe/London", label: "Wielka Brytania" },
+  { value: "Europe/Paris", label: "Europa Zachodnia" },
+  { value: "Europe/Berlin", label: "Niemcy" },
+  { value: "Europe/Amsterdam", label: "Holandia" },
+  { value: "Europe/Brussels", label: "Belgia" },
+  { value: "Europe/Vienna", label: "Austria" },
+  { value: "Europe/Madrid", label: "Hiszpania" },
+  { value: "Europe/Rome", label: "Włochy" },
+  { value: "Europe/Zurich", label: "Szwajcaria" },
+  { value: "Europe/Stockholm", label: "Szwecja" },
+  { value: "Europe/Copenhagen", label: "Dania" },
+  { value: "Europe/Helsinki", label: "Finlandia" },
+  { value: "Europe/Athens", label: "Grecja" },
+  { value: "Europe/Istanbul", label: "Turcja" },
+  { value: "Europe/Dublin", label: "Irlandia" },
+  { value: "America/New_York", label: "USA Wschód" },
+  { value: "America/Toronto", label: "Kanada Wschód" },
+  { value: "America/Chicago", label: "USA Central" },
+  { value: "America/Mexico_City", label: "Meksyk" },
+  { value: "America/Denver", label: "USA Góry Skaliste" },
+  { value: "America/Phoenix", label: "Arizona" },
+  { value: "America/Los_Angeles", label: "USA Zachód" },
+  { value: "America/Vancouver", label: "Kanada Zachód" },
+  { value: "America/Sao_Paulo", label: "Brazylia" },
+  { value: "Asia/Dubai", label: "Zatoka Perska" },
+  { value: "Asia/Jerusalem", label: "Izrael" },
+  { value: "Asia/Riyadh", label: "Arabia Saudyjska" },
+  { value: "Asia/Singapore", label: "Singapur" },
+  { value: "Asia/Hong_Kong", label: "Hongkong" },
+  { value: "Asia/Shanghai", label: "Chiny" },
+  { value: "Asia/Tokyo", label: "Japonia" },
+  { value: "Asia/Seoul", label: "Korea Południowa" },
+  { value: "Asia/Kolkata", label: "Indie" },
+  { value: "Australia/Sydney", label: "Australia" },
+  { value: "Australia/Melbourne", label: "Australia Melbourne" },
+  { value: "Australia/Perth", label: "Australia Perth" },
+  { value: "Pacific/Auckland", label: "Nowa Zelandia" },
+] as const;
 
 type PlatformUser = {
   avatarUrl: string | null;
@@ -113,6 +156,67 @@ function materialItemActionLabel(value: MaterialItemAction) {
     default:
       return value;
   }
+}
+
+function findTimezoneOption(value: string) {
+  return TIMEZONE_OPTIONS.find((option) => option.value === value);
+}
+
+function getMaterialActionStatusMessage(actionKey: string | null) {
+  if (!actionKey) {
+    return "";
+  }
+  if (actionKey.endsWith(":upload")) {
+    return "Trwa wgrywanie pliku do Google Drive. Nie zamykaj tej karty.";
+  }
+  if (actionKey.endsWith(":doc")) {
+    return "Tworzenie zakładki w Essay Doc...";
+  }
+  if (actionKey.endsWith(":remove-file")) {
+    return "Usuwanie pliku z tego elementu...";
+  }
+  if (actionKey.endsWith(":remove-doc")) {
+    return "Usuwanie zakładki z Essay Doca...";
+  }
+  if (actionKey.endsWith(":check")) {
+    return "Zapisywanie statusu wykonania...";
+  }
+  return "Zapisywanie zmiany...";
+}
+
+function FloatingStatus({ message }: { message: string }) {
+  if (!message) {
+    return null;
+  }
+
+  return (
+    <div className="floating-status" role="status" aria-live="polite">
+      {message}
+    </div>
+  );
+}
+
+function TimezoneSelect({
+  label = "Strefa czasowa",
+  onChange,
+  value,
+}: {
+  label?: string;
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  return (
+    <div className="field">
+      <label>{label}</label>
+      <select value={value} onChange={(event) => onChange(event.target.value)}>
+        {TIMEZONE_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
 }
 
 function getMaterialDocSeedMode(
@@ -930,6 +1034,7 @@ function Dashboard({
 }) {
   const defaultSection = session.user.role === "mentee" ? "universities" : "overview";
   const [section, setSection] = useState(defaultSection);
+  const [expandedMaterialTemplateId, setExpandedMaterialTemplateId] = useState<number | null>(null);
 
   const menu = useMemo(() => {
     if (session.user.role === "admin") {
@@ -996,7 +1101,16 @@ function Dashboard({
             ))}
           </div>
           <div className="dashboard-main">
-            <RoleSection section={section} session={session} token={token} />
+            <RoleSection
+              expandedMaterialTemplateId={expandedMaterialTemplateId}
+              onNavigateMentee={(nextSection, nextTemplateId) => {
+                setSection(nextSection);
+                setExpandedMaterialTemplateId(nextTemplateId ?? null);
+              }}
+              section={section}
+              session={session}
+              token={token}
+            />
           </div>
         </div>
       </div>
@@ -1005,10 +1119,14 @@ function Dashboard({
 }
 
 function RoleSection({
+  expandedMaterialTemplateId,
+  onNavigateMentee,
   section,
   session,
   token,
 }: {
+  expandedMaterialTemplateId: number | null;
+  onNavigateMentee: (nextSection: string, nextTemplateId?: number | null) => void;
   section: string;
   session: SessionPayload;
   token: string;
@@ -1019,7 +1137,14 @@ function RoleSection({
   if (session.user.role === "mentor") {
     return <MentorSection section={section} token={token} session={session} />;
   }
-  return <MenteeSection section={section} token={token} />;
+  return (
+    <MenteeSection
+      expandedMaterialTemplateId={expandedMaterialTemplateId}
+      onNavigate={onNavigateMentee}
+      section={section}
+      token={token}
+    />
+  );
 }
 
 function AdminSection({
@@ -1877,7 +2002,7 @@ function AdminSection({
 
   return (
     <>
-      {status ? <div className="status">{status}</div> : null}
+      <FloatingStatus message={status} />
       {section === "overview" && overview ? (
         <div className="dashboard-card">
           <h2>Przegląd platformy</h2>
@@ -3380,6 +3505,10 @@ function MentorSection({
     (connection) => connection.connectionType === "calendar",
   );
   const mentorTimezone = profile.timezone || "Europe/Warsaw";
+  const mentorTodayKey = useMemo(
+    () => formatSlotDayKey(new Date().toISOString(), mentorTimezone),
+    [mentorTimezone],
+  );
   const overrideCountByDate = useMemo(
     () =>
       availabilityOverrides.reduce<Record<string, number>>((accumulator, entry) => {
@@ -3436,6 +3565,7 @@ function MentorSection({
   useEffect(() => {
     const monthDayKeys = availabilityMonthCells
       .filter((entry): entry is Extract<(typeof availabilityMonthCells)[number], { kind: "day" }> => entry.kind === "day")
+      .filter((entry) => entry.dateKey >= mentorTodayKey)
       .map((entry) => entry.dateKey);
     if (!monthDayKeys.length) {
       return;
@@ -3443,7 +3573,7 @@ function MentorSection({
     if (!selectedOverrideDate || !monthDayKeys.includes(selectedOverrideDate)) {
       setSelectedOverrideDate(monthDayKeys[0]);
     }
-  }, [availabilityMonthCells, selectedOverrideDate]);
+  }, [availabilityMonthCells, mentorTodayKey, selectedOverrideDate]);
 
   useEffect(() => {
     if (section !== "profile" && section !== "availability") {
@@ -3796,7 +3926,7 @@ function MentorSection({
 
   return (
     <>
-      {status ? <div className="status">{status}</div> : null}
+      <FloatingStatus message={status} />
       {section === "overview" ? (
         <div className="dashboard-card">
           <h2>Mentor dashboard</h2>
@@ -3827,10 +3957,11 @@ function MentorSection({
                 <textarea value={profile.bio ?? ""} onChange={(event) => setProfile((current: any) => ({ ...current, bio: event.target.value }))} />
               </div>
               <div className="grid-2">
-                <div className="field">
-                  <label>Strefa czasowa</label>
-                  <input value={profile.timezone ?? "Europe/Warsaw"} onChange={(event) => setProfile((current: any) => ({ ...current, timezone: event.target.value }))} />
-                </div>
+                <TimezoneSelect
+                  label="Strefa czasowa"
+                  value={profile.timezone ?? "Europe/Warsaw"}
+                  onChange={(value) => setProfile((current: any) => ({ ...current, timezone: value }))}
+                />
                 <div className="field">
                   <label>Metoda spotkań</label>
                   <select value={profile.meetingMethod ?? "zoom_link"} onChange={(event) => setProfile((current: any) => ({ ...current, meetingMethod: event.target.value }))}>
@@ -4124,6 +4255,7 @@ function MentorSection({
               <div className="button-row" style={{ marginTop: 10, marginBottom: 12 }}>
                 <button
                   className="btn btn-secondary"
+                  disabled={availabilityMonth <= formatMonthKey(new Date(), mentorTimezone)}
                   onClick={() => setAvailabilityMonth((current) => shiftMonthKey(current, -1))}
                   type="button"
                 >
@@ -4159,21 +4291,31 @@ function MentorSection({
                   ) : (
                     <button
                       className={selectedOverrideDate === cell.dateKey ? "btn btn-primary" : "btn btn-secondary"}
+                      disabled={cell.dateKey < mentorTodayKey}
                       key={cell.key}
                       onClick={() => setSelectedOverrideDate(cell.dateKey)}
                       style={{
-                        minHeight: 72,
+                        minHeight: 64,
                         padding: "10px 8px",
                         display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background:
+                          cell.availableCount > 0 && selectedOverrideDate !== cell.dateKey
+                            ? "#fff3df"
+                            : undefined,
+                        borderColor:
+                          cell.availableCount > 0 && selectedOverrideDate !== cell.dateKey
+                            ? "#f0c36a"
+                            : undefined,
+                        color:
+                          cell.availableCount > 0 && selectedOverrideDate !== cell.dateKey
+                            ? "#9a6a06"
+                            : undefined,
                       }}
                       type="button"
                     >
                       <strong>{cell.dayNumber}</strong>
-                      <span className="small">
-                        {cell.availableCount > 0 ? `${cell.availableCount} override` : "bazowo"}
-                      </span>
                     </button>
                   ),
                 )}
@@ -4676,12 +4818,17 @@ function MentorSection({
 }
 
 function MenteeSection({
+  expandedMaterialTemplateId,
+  onNavigate,
   section,
   token,
 }: {
+  expandedMaterialTemplateId: number | null;
+  onNavigate: (nextSection: string, nextTemplateId?: number | null) => void;
   section: string;
   token: string;
 }) {
+  const { canUsePreferencesCookies } = useCookieConsent();
   const [overview, setOverview] = useState<any>(null);
   const [mentors, setMentors] = useState<any[]>([]);
   const [mentorSlots, setMentorSlots] = useState<Array<{ end: string; start: string }>>([]);
@@ -4700,13 +4847,17 @@ function MenteeSection({
   const [materialActionKey, setMaterialActionKey] = useState<string | null>(null);
   const [meetingTurnstileToken, setMeetingTurnstileToken] = useState("");
   const [meetingTurnstileResetKey, setMeetingTurnstileResetKey] = useState(0);
+  const [viewerTimezone, setViewerTimezone] = useState(() => {
+    const saved = getCookie(TIMEZONE_COOKIE_NAME);
+    return saved && findTimezoneOption(saved) ? saved : DEFAULT_TIMEZONE;
+  });
   const [meetingForm, setMeetingForm] = useState({
     mentorUserId: "",
     title: "Spotkanie mentoringowe",
     description: "",
     startsAt: "",
     endsAt: "",
-    timezone: "Europe/Warsaw",
+    timezone: DEFAULT_TIMEZONE,
     method: "zoom_link",
     meetingUrl: "",
   });
@@ -4742,8 +4893,6 @@ function MenteeSection({
   const selectedMentor = assignedMentors.find(
     (mentor: any) => String(mentor.mentorId) === String(meetingForm.mentorUserId),
   );
-  const viewerTimezone =
-    Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Warsaw";
   const selectedMentorMaxMonth = selectedMentor
     ? formatMonthKey(
         new Date(
@@ -4806,6 +4955,12 @@ function MenteeSection({
     return payload;
   }
   useEffect(() => {
+    if (canUsePreferencesCookies) {
+      setLongLivedCookie(TIMEZONE_COOKIE_NAME, viewerTimezone);
+    }
+  }, [canUsePreferencesCookies, viewerTimezone]);
+
+  useEffect(() => {
     if (section === "universities" || section === "materials" || section === "profile" || section === "meetings" || section === "mentors") {
       void refreshOverview().catch((error) => setStatus(error.message));
     }
@@ -4858,8 +5013,9 @@ function MenteeSection({
       ...current,
       startsAt: "",
       endsAt: "",
+      timezone: viewerTimezone,
     }));
-  }, [meetingForm.mentorUserId, mentorSlotsMonth]);
+  }, [meetingForm.mentorUserId, mentorSlotsMonth, viewerTimezone]);
 
   async function requestMeeting(event: React.FormEvent) {
     event.preventDefault();
@@ -5049,7 +5205,7 @@ function MenteeSection({
 
   return (
     <>
-      {status ? <div className="status">{status}</div> : null}
+      <FloatingStatus message={status || getMaterialActionStatusMessage(materialActionKey)} />
       {section === "universities" && overview ? (
         <div className="stack">
           <div className="dashboard-card">
@@ -5063,7 +5219,6 @@ function MenteeSection({
                 {tipAccessGuides.map((guide: any) => (
                   <div className="list-item" key={`tip-access-guide-${guide.id}`}>
                     <h3>{guide.universityName}</h3>
-                    <div className="small muted">{guide.country} • {guide.universityName}</div>
                   </div>
                 ))}
               </div>
@@ -5076,13 +5231,11 @@ function MenteeSection({
           <div className="dashboard-card">
             <h2>Twoje Uczelnie</h2>
             <p className="muted">Tutaj widzisz swoje aktywne uczelnie. Po kliknięciu kafla otwierasz checklistę i wymagania przypisane do tej konkretnej aplikacji.</p>
-            <div className="tile-grid" style={{ marginTop: 18 }}>
+            <div className="tile-grid tile-grid-two" style={{ marginTop: 18 }}>
               {guides.map((guide: any) => (
                 <details className="tile tile-detail" key={guide.id}>
                   <summary>
                     <strong>{guide.universityName}</strong>
-                    <div className="small muted">{guide.country}</div>
-                    <div className="small muted">{guide.title}</div>
                   </summary>
                   <div style={{ marginTop: 12 }}>
                     <p className="muted">{guide.summary}</p>
@@ -5123,17 +5276,27 @@ function MenteeSection({
                                         {universityNames.length ? (
                                           <div className="small muted">{formatUniversityNamesPreview(universityNames)}</div>
                                         ) : null}
-                                        {showHints && hintGuide ? (
-                                          <div className="button-row" style={{ marginTop: 8 }}>
-                                            <button
-                                              className="btn btn-secondary"
-                                              onClick={() => setOpenHintGuide(hintGuide)}
-                                              type="button"
-                                            >
-                                              Otwórz wskazówki
-                                            </button>
-                                          </div>
-                                        ) : null}
+                                        <div className="button-row" style={{ marginTop: 8 }}>
+                                          <button
+                                            className="btn btn-secondary"
+                                            disabled={!showHints || !hintGuide}
+                                            onClick={() => {
+                                              if (showHints && hintGuide) {
+                                                setOpenHintGuide(hintGuide);
+                                              }
+                                            }}
+                                            type="button"
+                                          >
+                                            Pokaż wskazówkę
+                                          </button>
+                                          <button
+                                            className="btn btn-secondary"
+                                            onClick={() => onNavigate("materials", Number(template.id))}
+                                            type="button"
+                                          >
+                                            Pokaż materiały
+                                          </button>
+                                        </div>
                                         {row.alternativeOptions?.length ? (
                                           <div className="small muted" style={{ marginTop: 6 }}>
                                             Alternatywnie: {row.alternativeOptions.join(" • ")}
@@ -5170,12 +5333,10 @@ function MenteeSection({
             <div className="dashboard-card panel-scroll">
               <h2>Dodaj kolejną uczelnię</h2>
               <p className="muted">Te uczelnie ACADEA możesz samodzielnie dodać do swojego panelu.</p>
-              <div className="tile-grid" style={{ marginTop: 18 }}>
+              <div className="tile-grid tile-grid-two" style={{ marginTop: 18 }}>
                 {availableGuideTemplates.map((guide: any) => (
                   <div className="tile" key={`available-${guide.id}`}>
                     <strong>{guide.universityName}</strong>
-                    <div className="small muted">{guide.country}</div>
-                    <div className="small muted" style={{ marginTop: 4 }}>{guide.title}</div>
                     <p className="muted" style={{ marginTop: 12 }}>{guide.summary}</p>
                     <div className="button-row" style={{ marginTop: 14 }}>
                       <button
@@ -5257,6 +5418,14 @@ function MenteeSection({
           <div className="dashboard-card">
             <h2>Umów spotkanie</h2>
             <form className="stack" onSubmit={requestMeeting}>
+              <TimezoneSelect
+                label="Strefa czasowa"
+                value={viewerTimezone}
+                onChange={(value) => {
+                  setViewerTimezone(value);
+                  setMentorSlotsMonth(formatMonthKey(new Date(), value));
+                }}
+              />
               <div className="field">
                 <label>Przydzielony mentor</label>
                 <select
@@ -5347,19 +5516,16 @@ function MenteeSection({
                               key={cell.key}
                               onClick={() => setSelectedMentorDayKey(cell.dateKey)}
                               style={{
-                                minHeight: 76,
+                                minHeight: 64,
                                 padding: "10px 8px",
                                 display: "flex",
-                                flexDirection: "column",
-                                justifyContent: "space-between",
+                                alignItems: "center",
+                                justifyContent: "center",
                                 opacity: cell.availableCount === 0 ? 0.5 : 1,
                               }}
                               type="button"
                             >
                               <strong>{cell.dayNumber}</strong>
-                              <span className="small">
-                                {cell.availableCount > 0 ? `${cell.availableCount} slotów` : "Brak"}
-                              </span>
                             </button>
                           ),
                         )}
@@ -5406,6 +5572,11 @@ function MenteeSection({
                 </div>
               ) : (
                 <div className="grid-2">
+                  <div className="status">Wybierz najpierw mentora, aby zobaczyć terminy lub ręczny formularz spotkania.</div>
+                </div>
+              )}
+              {selectedMentor && !selectedMentor.googleCalendarConnected ? (
+                <div className="grid-2">
                   <div className="field">
                     <label>Start</label>
                     <input type="datetime-local" value={meetingForm.startsAt} onChange={(event) => setMeetingForm((current) => ({ ...current, startsAt: event.target.value }))} />
@@ -5415,11 +5586,13 @@ function MenteeSection({
                     <input type="datetime-local" value={meetingForm.endsAt} onChange={(event) => setMeetingForm((current) => ({ ...current, endsAt: event.target.value }))} />
                   </div>
                 </div>
-              )}
-              <div className="field">
-                <label>Opis spotkania</label>
-                <textarea value={meetingForm.description} onChange={(event) => setMeetingForm((current) => ({ ...current, description: event.target.value }))} />
-              </div>
+              ) : null}
+              {selectedMentor ? (
+                <div className="field">
+                  <label>Opis spotkania</label>
+                  <textarea value={meetingForm.description} onChange={(event) => setMeetingForm((current) => ({ ...current, description: event.target.value }))} />
+                </div>
+              ) : null}
               <div className="stack" style={{ gap: 8 }}>
                 <TurnstileWidget onTokenChange={setMeetingTurnstileToken} resetKey={meetingTurnstileResetKey} />
                 {isTurnstileEnabled() ? (
@@ -5503,19 +5676,6 @@ function MenteeSection({
           <div className="dashboard-card">
             <h2>Twoje Materiały</h2>
             <p className="muted">Tutaj zbierają się wszystkie materiały wymagane przez Twoje uczelnie. Dokumenty wspólne są łączone razem, a eseje i zadania pokazują, do których krajów i uczelni należą.</p>
-            {materialActionKey ? (
-              <div className="status" style={{ marginTop: 16 }}>
-                {materialActionKey.endsWith(":upload")
-                  ? "Trwa wgrywanie pliku do Google Drive. Nie zamykaj tej karty."
-                  : materialActionKey.endsWith(":doc")
-                    ? "Tworzenie zakładki w Essay Doc..."
-                    : materialActionKey.endsWith(":remove-file")
-                      ? "Usuwanie pliku z tego elementu..."
-                      : materialActionKey.endsWith(":remove-doc")
-                        ? "Usuwanie zakładki z Essay Doca..."
-                    : "Zapisywanie zmiany..."}
-              </div>
-            ) : null}
             {googleWorkspace?.folderUrl || googleWorkspace?.essayDocUrl ? (
               <div className="button-row" style={{ marginTop: 16 }}>
                 {googleWorkspace?.folderUrl ? (
@@ -5530,9 +5690,17 @@ function MenteeSection({
                 ) : null}
               </div>
             ) : null}
-            <div className="tile-grid" style={{ marginTop: 18 }}>
+            <div className="tile-grid tile-grid-two" style={{ marginTop: 18 }}>
               {visibleMaterialTemplates.map((template: any) => (
-                <details className="tile tile-detail" key={template.id}>
+                <details
+                  className="tile tile-detail"
+                  key={template.id}
+                  onToggle={(event) => {
+                    const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
+                    onNavigate("materials", nextOpen ? Number(template.id) : null);
+                  }}
+                  open={expandedMaterialTemplateId === Number(template.id)}
+                >
                   <summary>
                     <strong>{template.title}</strong>
                     <div className="small muted">
@@ -5587,130 +5755,116 @@ function MenteeSection({
                               {universityNames.length ? (
                                 <div className="small muted">{formatUniversityNamesPreview(universityNames)}</div>
                               ) : null}
-                              <div className="small muted" style={{ marginTop: 6 }}>
-                                {materialItemActionLabel((row.actionType ?? "check_only") as MaterialItemAction)}
-                              </div>
-                              {Array.isArray(row.alternativeOptions) && row.alternativeOptions.length ? (
-                                <div className="small muted" style={{ marginTop: 8 }}>
-                                  Alternatywnie: {row.alternativeOptions.join(" • ")}
-                                </div>
-                              ) : null}
-                              {row.suggestedFilename ? (
-                                <div className="small muted" style={{ marginTop: 8 }}>
-                                  Sugerowana nazwa pliku: {row.suggestedFilename}
-                                </div>
-                              ) : null}
-                              {showHints && hintGuide ? (
-                                <div className="button-row" style={{ marginTop: 8 }}>
-                                  <button
-                                    className="btn btn-secondary"
-                                    onClick={() => setOpenHintGuide(hintGuide)}
-                                    type="button"
-                                  >
-                                    Otwórz wskazówki
-                                  </button>
-                                </div>
-                              ) : null}
                               {(() => {
                                 const canPersistAction = Number.isFinite(Number(template.id)) && Boolean(row.displayKey);
                                 const state = materialItemStateMap.get(`${template.id}:${row.displayKey}`);
                                 const actionType = (row.actionType ?? "check_only") as MaterialItemAction;
                                 const actionPrefix = `${template.id}:${row.displayKey}`;
+                                const hasHintAccess = Boolean(showHints && hintGuide);
                                 return (
-                                  <div className="stack" style={{ marginTop: 12 }}>
+                                  <div className="stack material-actions" style={{ marginTop: 12 }}>
+                                    <div className="button-row material-actions-row">
+                                      <button
+                                        className="btn btn-secondary"
+                                        disabled={!hasHintAccess}
+                                        onClick={() => {
+                                          if (hasHintAccess && hintGuide) {
+                                            setOpenHintGuide(hintGuide);
+                                          }
+                                        }}
+                                        type="button"
+                                      >
+                                        Otwórz wskazówki
+                                      </button>
+                                      {(actionType === "file_required" || actionType === "file_or_doc" || actionType === "check_or_file") ? (
+                                        <label className="btn btn-secondary material-file-button" style={{ cursor: "pointer" }}>
+                                          {state?.currentFileUrl ? "Zastąp plik" : "Wgraj plik"}
+                                          <input
+                                            hidden
+                                            disabled={!canPersistAction || materialActionKey === `${actionPrefix}:upload`}
+                                            type="file"
+                                            onChange={(event) => {
+                                              const file = event.target.files?.[0];
+                                              event.currentTarget.value = "";
+                                              if (file && canPersistAction) {
+                                                void uploadMaterialFile(Number(template.id), row.displayKey, file);
+                                              }
+                                            }}
+                                          />
+                                        </label>
+                                      ) : null}
+                                    </div>
                                     {state?.currentFileUrl ? (
-                                      <div className="small muted">
-                                        Aktualny plik:{" "}
-                                        <a href={state.currentFileUrl} target="_blank" rel="noreferrer">
+                                      <div className="button-row material-actions-row">
+                                        <a className="btn btn-secondary" href={state.currentFileUrl} target="_blank" rel="noreferrer">
                                           {state.currentFileName || "Otwórz plik"}
                                         </a>
-                                      </div>
-                                    ) : null}
-                                    {state?.googleDocTabUrl ? (
-                                      <div className="small muted">
-                                        Zakładka eseju:{" "}
-                                        <a href={state.googleDocTabUrl} target="_blank" rel="noreferrer">
-                                          {state.googleDocTabTitle || "Otwórz zakładkę"}
-                                        </a>
-                                      </div>
-                                    ) : null}
-                                    {state?.currentFileUrl ? (
-                                      <button
-                                        className="btn btn-secondary"
-                                        disabled={!canPersistAction || materialActionKey === `${actionPrefix}:remove-file`}
-                                        onClick={() => {
-                                          if (canPersistAction) {
-                                            void removeMaterialFile(Number(template.id), row.displayKey);
-                                          }
-                                        }}
-                                        type="button"
-                                      >
-                                        Usuń plik
-                                      </button>
-                                    ) : null}
-                                    {state?.googleDocTabUrl ? (
-                                      <button
-                                        className="btn btn-secondary"
-                                        disabled={!canPersistAction || materialActionKey === `${actionPrefix}:remove-doc`}
-                                        onClick={() => {
-                                          if (canPersistAction) {
-                                            void removeMaterialDocTab(Number(template.id), row.displayKey);
-                                          }
-                                        }}
-                                        type="button"
-                                      >
-                                        Usuń zakładkę
-                                      </button>
-                                    ) : null}
-                                    {(actionType === "check_only" || actionType === "check_or_file") ? (
-                                      <label className="selector-option" style={{ marginTop: 6 }}>
-                                        <input
-                                          checked={Boolean(state?.completed && state?.completionMethod === "checkbox")}
-                                          disabled={!canPersistAction || materialActionKey === `${actionPrefix}:check`}
-                                          type="checkbox"
-                                          onChange={(event) => {
-                                            if (canPersistAction) {
-                                              void toggleMaterialCheck(Number(template.id), row.displayKey, event.target.checked);
-                                            }
-                                          }}
-                                        />
-                                        <span className="selector-copy">
-                                          <strong>Oznacz jako wykonane</strong>
-                                        </span>
-                                      </label>
-                                    ) : null}
-                                    {(actionType === "file_required" || actionType === "file_or_doc" || actionType === "check_or_file") ? (
-                                      <label className="btn btn-secondary" style={{ width: "fit-content", cursor: "pointer" }}>
-                                        {state?.currentFileUrl ? "Zastąp plik" : "Wgraj plik"}
-                                        <input
-                                          hidden
-                                          disabled={!canPersistAction || materialActionKey === `${actionPrefix}:upload`}
-                                          type="file"
-                                          onChange={(event) => {
-                                            const file = event.target.files?.[0];
-                                            event.currentTarget.value = "";
-                                            if (file && canPersistAction) {
-                                              void uploadMaterialFile(Number(template.id), row.displayKey, file);
-                                            }
-                                          }}
-                                        />
-                                      </label>
-                                    ) : null}
-                                    {actionType === "file_or_doc" ? (
-                                      !state?.googleDocTabUrl ? (
                                         <button
                                           className="btn btn-secondary"
-                                          disabled={!canPersistAction || materialActionKey === `${actionPrefix}:doc`}
+                                          disabled={!canPersistAction || materialActionKey === `${actionPrefix}:remove-file`}
                                           onClick={() => {
                                             if (canPersistAction) {
-                                              void createMaterialDocTab(Number(template.id), row.displayKey);
+                                              void removeMaterialFile(Number(template.id), row.displayKey);
                                             }
                                           }}
                                           type="button"
                                         >
-                                          Utwórz zakładkę w Essay Doc
+                                          Usuń plik
                                         </button>
-                                      ) : null
+                                      </div>
+                                    ) : null}
+                                    {state?.googleDocTabUrl ? (
+                                      <div className="button-row material-actions-row">
+                                        <a className="btn btn-secondary" href={state.googleDocTabUrl} target="_blank" rel="noreferrer">
+                                          {state.googleDocTabTitle || "Otwórz zakładkę"}
+                                        </a>
+                                        <button
+                                          className="btn btn-secondary"
+                                          disabled={!canPersistAction || materialActionKey === `${actionPrefix}:remove-doc`}
+                                          onClick={() => {
+                                            if (canPersistAction) {
+                                              void removeMaterialDocTab(Number(template.id), row.displayKey);
+                                            }
+                                          }}
+                                          type="button"
+                                        >
+                                          Usuń zakładkę
+                                        </button>
+                                      </div>
+                                    ) : null}
+                                    {actionType === "file_or_doc" && !state?.googleDocTabUrl ? (
+                                      <button
+                                        className="btn btn-secondary"
+                                        disabled={!canPersistAction || materialActionKey === `${actionPrefix}:doc`}
+                                        onClick={() => {
+                                          if (canPersistAction) {
+                                            void createMaterialDocTab(Number(template.id), row.displayKey);
+                                          }
+                                        }}
+                                        type="button"
+                                      >
+                                        Utwórz zakładkę w Essay Doc
+                                      </button>
+                                    ) : null}
+                                    {(actionType === "check_only" || actionType === "check_or_file") ? (
+                                      <button
+                                        className={`btn ${state?.completed && state?.completionMethod === "checkbox" ? "btn-primary" : "btn-secondary"}`}
+                                        disabled={!canPersistAction || materialActionKey === `${actionPrefix}:check`}
+                                        onClick={() => {
+                                          if (canPersistAction) {
+                                            void toggleMaterialCheck(
+                                              Number(template.id),
+                                              row.displayKey,
+                                              !(state?.completed && state?.completionMethod === "checkbox"),
+                                            );
+                                          }
+                                        }}
+                                        type="button"
+                                      >
+                                        {state?.completed && state?.completionMethod === "checkbox"
+                                          ? "Oznaczone jako wykonane"
+                                          : "Oznacz jako wykonane"}
+                                      </button>
                                     ) : null}
                                   </div>
                                 );
