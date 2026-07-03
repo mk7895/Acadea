@@ -9,6 +9,7 @@ import {
   googleApiRequest,
   hasGoogleOAuthCredentials,
 } from "../lib/google";
+import { hasDatabaseConfig } from "../lib/databaseConfig";
 
 const router = Router();
 
@@ -223,7 +224,7 @@ router.post("/create", async (req, res) => {
       "Calendar connector credentials unavailable; confirming local development booking without calendar sync",
     );
 
-    if (process.env.DATABASE_URL) {
+    if (hasDatabaseConfig()) {
       try {
         const { db, bookingLeadsTable } = await import("@workspace/db");
         await db.insert(bookingLeadsTable).values({
@@ -305,7 +306,7 @@ router.post("/create", async (req, res) => {
     }
 
     // Save visitor to mailing list via contact_submissions
-    if (process.env.DATABASE_URL) {
+    if (hasDatabaseConfig()) {
       try {
         const { db, bookingLeadsTable } = await import("@workspace/db");
         await db.insert(bookingLeadsTable).values({
@@ -319,7 +320,7 @@ router.post("/create", async (req, res) => {
       }
     } else {
       logger.warn(
-        "DATABASE_URL not set; skipping booking lead persistence",
+        "Database config not set; skipping booking lead persistence",
       );
     }
 

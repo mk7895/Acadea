@@ -4,6 +4,7 @@ import { z } from "zod";
 import { logger } from "../lib/logger";
 import { sendContactEmails } from "../lib/mailer";
 import { verifyTurnstileToken } from "../lib/turnstile";
+import { hasDatabaseConfig } from "../lib/databaseConfig";
 
 const router: IRouter = Router();
 let nextSubmissionId = 1;
@@ -56,7 +57,7 @@ router.post("/contact", async (req, res) => {
     return;
   }
 
-  if (process.env.DATABASE_URL) {
+  if (hasDatabaseConfig()) {
     const {
       db,
       contactSubmissionsTable,
@@ -133,7 +134,7 @@ router.post("/contact", async (req, res) => {
   localSubmissions.push(row);
   logger.warn(
     { submissionId: row.id, type: row.type },
-    "DATABASE_URL not set; storing contact submission in memory only",
+    "Database config not set; storing contact submission in memory only",
   );
 
   void sendContactEmails({

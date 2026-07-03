@@ -43,6 +43,16 @@ type EditorState = {
   isPublished: boolean;
 };
 
+type GoogleConnectionState = {
+  configured: boolean;
+  connected: boolean;
+  calendarAccessible: boolean;
+  accountEmail: string | null;
+  calendarId: string | null;
+  status: "not_configured" | "not_connected" | "connected" | "error";
+  reason?: string;
+};
+
 const emptyEditor: EditorState = {
   sortOrder: 0,
   category: "Artykuł",
@@ -114,6 +124,8 @@ export default function AdminArticles() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategorySlug, setNewCategorySlug] = useState("");
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
+  const [googleConnection, setGoogleConnection] = useState<GoogleConnectionState | null>(null);
+  const [isCheckingGoogleConnection, setIsCheckingGoogleConnection] = useState(false);
   const markdownRef = useRef<HTMLTextAreaElement | null>(null);
 
   async function loadAdminData(currentToken: string) {
@@ -125,6 +137,38 @@ export default function AdminArticles() {
     setArticles(rows);
     setTaxonomyGroups(taxonomy.groups);
     return rows;
+  }
+
+  async function loadGoogleConnection(currentToken: string) {
+    setIsCheckingGoogleConnection(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/admin/google/auth/status`, {
+        headers: {
+          Authorization: `Bearer ${currentToken}`,
+        },
+      });
+
+      const data = (await response.json().catch(() => ({}))) as
+        | (GoogleConnectionState & { error?: string })
+        | { error?: string };
+
+      if (!response.ok) {
+        setGoogleConnection(null);
+        if ("error" in data && data.error) {
+          setStatus(data.error);
+        }
+        return null;
+      }
+
+      setGoogleConnection(data as GoogleConnectionState);
+      return data as GoogleConnectionState;
+    } catch {
+      setGoogleConnection(null);
+      return null;
+    } finally {
+      setIsCheckingGoogleConnection(false);
+    }
   }
 
   useEffect(() => {
@@ -215,10 +259,23 @@ export default function AdminArticles() {
         }
       });
 
+    void loadGoogleConnection(token);
+
     return () => {
       cancelled = true;
     };
   }, [token, selectedId]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    function handleFocus() {
+      void loadGoogleConnection(token);
+    }
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [token]);
 
   const estimatedReadMin = useMemo(() => estimateReadMinutes(editor.markdown), [editor.markdown]);
   const sortedArticles = useMemo(
@@ -338,7 +395,7 @@ export default function AdminArticles() {
         window.location.href = data.authorizationUrl;
       }
 
-      setStatus("Otwarto okno logowania Google.");
+      setStatus("Otwarto okno logowania Google. Po zakończeniu wróć do panelu, a status połączenia odświeży się automatycznie.");
     } catch {
       popup?.close();
       setStatus("Nie udało się rozpocząć połączenia Google.");
@@ -346,6 +403,48 @@ export default function AdminArticles() {
       setIsConnectingGoogle(false);
     }
   }
+
+  const googleBadge = useMemo(() => {
+    if (isCheckingGoogleConnection && !googleConnection) {
+      return {
+        label: "Sprawdzanie Google…",
+        className: "border-[#d8cfbf] bg-white text-[#7c6c56]",
+      };
+    }
+
+    if (!googleConnection) {
+      return {
+        label: "Status Google nieznany",
+        className: "border-[#e7dccf] bg-[#fcfbf8] text-[#7c6c56]",
+      };
+    }
+
+    if (googleConnection.status === "connected") {
+      return {
+        label: "Google połączone",
+        className: "border-green-200 bg-green-50 text-green-800",
+      };
+    }
+
+    if (googleConnection.status === "not_connected") {
+      return {
+        label: "Google wymaga połączenia",
+        className: "border-amber-200 bg-amber-50 text-amber-800",
+      };
+    }
+
+    if (googleConnection.status === "not_configured") {
+      return {
+        label: "Google nie skonfigurowane",
+        className: "border-red-200 bg-red-50 text-red-700",
+      };
+    }
+
+    return {
+      label: "Google wymaga ponownego połączenia",
+      className: "border-red-200 bg-red-50 text-red-700",
+    };
+  }, [googleConnection, isCheckingGoogleConnection]);
 
   async function saveArticle() {
     setIsSaving(true);
@@ -617,6 +716,17 @@ export default function AdminArticles() {
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78]">Edytor</p>
                 <h1 className="text-3xl font-bold text-primary">{editor.id ? "Edytuj artykuł" : "Nowy artykuł"}</h1>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${googleBadge.className}`}>
+                    {googleBadge.label}
+                  </span>
+                  {googleConnection?.accountEmail ? (
+                    <span className="text-sm text-[#7c6c56]">Konto: {googleConnection.accountEmail}</span>
+                  ) : null}
+                </div>
+                {googleConnection?.reason ? (
+                  <p className="mt-2 max-w-2xl text-sm text-[#8a5b2d]">{googleConnection.reason}</p>
+                ) : null}
               </div>
               <div className="flex flex-wrap gap-3">
                 <button
@@ -624,7 +734,11 @@ export default function AdminArticles() {
                   disabled={isConnectingGoogle}
                   className="rounded-full border border-[#d8cfbf] px-5 py-3 font-semibold text-primary disabled:opacity-60"
                 >
-                  {isConnectingGoogle ? "Łączenie Google…" : "Połącz Google"}
+                  {isConnectingGoogle
+                    ? "Łączenie Google…"
+                    : googleConnection?.status === "connected"
+                      ? "Połącz ponownie Google"
+                      : "Połącz Google"}
                 </button>
                 <button onClick={logout} className="rounded-full border border-[#d8cfbf] px-5 py-3 font-semibold text-primary">
                   Wyloguj

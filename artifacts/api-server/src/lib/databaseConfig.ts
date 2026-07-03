@@ -1,7 +1,3 @@
-function hasDirectConnectionString() {
-  return Boolean(process.env.DATABASE_URL);
-}
-
 function hasSocketConnectionConfig() {
   return Boolean(
     process.env.PGHOST &&
@@ -12,5 +8,5 @@ function hasSocketConnectionConfig() {
 }
 
 export function hasDatabaseConfig() {
-  return hasDirectConnectionString() || hasSocketConnectionConfig();
+  return hasSocketConnectionConfig();
 }

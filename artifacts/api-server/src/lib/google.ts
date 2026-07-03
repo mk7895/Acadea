@@ -1,6 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { eq } from "drizzle-orm";
+import { hasDatabaseConfig } from "./databaseConfig";
 
 type GoogleConfigOverride = Partial<{
   googleClientId: string;
@@ -59,7 +60,7 @@ function readStaticConfig() {
 }
 
 async function loadTokensFromDatabase() {
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseConfig()) {
     databaseTokenCache = null;
     return databaseTokenCache;
   }
@@ -333,6 +334,95 @@ export async function getGoogleAccountEmail() {
   return googleAccountEmailCache;
 }
 
+type GoogleConnectionStatus = {
+  configured: boolean;
+  connected: boolean;
+  calendarAccessible: boolean;
+  accountEmail: string | null;
+  calendarId: string | null;
+  status: "not_configured" | "not_connected" | "connected" | "error";
+  reason?: string;
+};
+
+export async function getGoogleConnectionStatus(): Promise<GoogleConnectionStatus> {
+  const { googleClientId, googleClientSecret, googleRefreshToken } =
+    await readConfig();
+
+  if (!googleClientId || !googleClientSecret) {
+    return {
+      configured: false,
+      connected: false,
+      calendarAccessible: false,
+      accountEmail: null,
+      calendarId: null,
+      status: "not_configured",
+      reason: "Google OAuth client credentials are incomplete.",
+    };
+  }
+
+  if (!googleRefreshToken) {
+    return {
+      configured: true,
+      connected: false,
+      calendarAccessible: false,
+      accountEmail: null,
+      calendarId: null,
+      status: "not_connected",
+      reason: "Google refresh token is missing.",
+    };
+  }
+
+  try {
+    const accessToken = await getGoogleAccessToken();
+    const configuredCalendarId = getGoogleCalendarId();
+    const [accountEmail, calendarResponse] = await Promise.all([
+      getGoogleAccountEmailForAccessToken(accessToken),
+      googleApiRequestWithAccessToken(
+        accessToken,
+        `/calendar/v3/calendars/${encodeURIComponent(configuredCalendarId)}`,
+      ),
+    ]);
+
+    if (!calendarResponse.ok) {
+      const body = await calendarResponse
+        .text()
+        .catch(() => "");
+
+      return {
+        configured: true,
+        connected: false,
+        calendarAccessible: false,
+        accountEmail,
+        calendarId: configuredCalendarId,
+        status: "error",
+        reason:
+          body.slice(0, 300) ||
+          `Calendar access failed with status ${calendarResponse.status}.`,
+      };
+    }
+
+    return {
+      configured: true,
+      connected: true,
+      calendarAccessible: true,
+      accountEmail,
+      calendarId: configuredCalendarId,
+      status: "connected",
+    };
+  } catch (error) {
+    return {
+      configured: true,
+      connected: false,
+      calendarAccessible: false,
+      accountEmail: null,
+      calendarId: getGoogleCalendarId(),
+      status: "error",
+      reason:
+        error instanceof Error ? error.message : "Unknown Google connection error.",
+    };
+  }
+}
+
 export async function updateStoredGoogleTokens(input: {
   calendarRefreshToken: string;
   gmailRefreshToken: string;
@@ -347,7 +437,7 @@ export async function updateStoredGoogleTokens(input: {
   };
   googleAccountEmailCache = undefined;
 
-  if (process.env.DATABASE_URL) {
+  if (hasDatabaseConfig()) {
     const { db } = await import("@workspace/db");
     const { googleAuthTokensTable } = await import("@workspace/db/schema");
     await db

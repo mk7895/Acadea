@@ -52,21 +52,14 @@ function resolveSslMode() {
 }
 
 const ssl = resolveSslMode();
-const connectionString = process.env.DATABASE_URL;
-
-const poolConfig = connectionString
-  ? {
-      connectionString,
-      ...(ssl ? { ssl } : {}),
-    }
-  : {
-      host: requireEnv("PGHOST"),
-      port: parsePort(process.env.PGPORT),
-      database: requireEnv("PGDATABASE"),
-      user: requireEnv("PGUSER"),
-      password: requireEnv("PGPASSWORD"),
-      ...(ssl ? { ssl } : {}),
-    };
+const poolConfig = {
+  host: requireEnv("PGHOST"),
+  port: parsePort(process.env.PGPORT),
+  database: requireEnv("PGDATABASE"),
+  user: requireEnv("PGUSER"),
+  password: requireEnv("PGPASSWORD"),
+  ...(ssl ? { ssl } : {}),
+};
 
 export const pool = new Pool(poolConfig);
 export const db = drizzle(pool, { schema });

@@ -5,6 +5,7 @@ import { mentorProfilesTable, platformGoogleConnectionsTable } from "@workspace/
 import { logger } from "../lib/logger";
 import { hasDatabaseConfig } from "../lib/databaseConfig";
 import {
+  getGoogleConnectionStatus,
   getGooglePrimaryCalendarIdForAccessToken,
   getGoogleOAuthClientCredentials,
   updateStoredGoogleTokens,
@@ -119,18 +120,27 @@ router.get("/google/auth/start", (req, res) => {
   return res.redirect(createAdminGoogleAuthUrl(req));
 });
 
-router.get("/admin/google/auth/status", (req, res) => {
+router.get("/admin/google/auth/status", async (req, res) => {
   if (!requireAdminSession(req)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  return res.json({
-    configured: true,
-    redirectUri: getRedirectUri(req),
-    scopes: GOOGLE_SCOPES,
-    testingModeReminder:
-      "If the OAuth app is still in Testing mode, refresh tokens may expire sooner.",
-  });
+  try {
+    const connection = await getGoogleConnectionStatus();
+
+    return res.json({
+      ...connection,
+      redirectUri: getRedirectUri(req),
+      scopes: GOOGLE_SCOPES,
+      testingModeReminder:
+        "If the OAuth app is still in Testing mode, refresh tokens may expire sooner.",
+    });
+  } catch (err) {
+    logger.error({ err }, "google auth status check failed");
+    return res.status(500).json({
+      error: "Nie udało się sprawdzić połączenia Google.",
+    });
+  }
 });
 
 router.post("/admin/google/auth/start", (req, res) => {
