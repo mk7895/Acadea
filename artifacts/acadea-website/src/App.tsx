@@ -6,8 +6,15 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout/Layout";
 
 import { CookieConsentProvider } from "@/components/CookieConsent";
+import { useCookieConsent } from "@/components/CookieConsent";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { ConsultationPrompt } from "@/components/ConsultationPrompt";
+import {
+  ARTICLE_PREFETCH_SESSION_COOKIE_NAME,
+  getCookie,
+  setSessionCookie,
+} from "@/lib/cookies";
+import { prefetchPublicArticleIndex } from "@/lib/article-api";
 
 const queryClient = new QueryClient();
 const Home = lazy(() => import("@/pages/Home"));
@@ -112,6 +119,45 @@ function Router() {
   );
 }
 
+function PublicArticlePrefetch() {
+  const { canUsePreferencesCookies } = useCookieConsent();
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (!canUsePreferencesCookies) {
+      return;
+    }
+
+    if (getCookie(ARTICLE_PREFETCH_SESSION_COOKIE_NAME) === "1") {
+      return;
+    }
+
+    const browserWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+
+    const prefetch = () => {
+      // Mark the session before the network call so route changes do not trigger duplicate preloads.
+      setSessionCookie(ARTICLE_PREFETCH_SESSION_COOKIE_NAME, "1");
+      void prefetchPublicArticleIndex();
+    };
+
+    if (browserWindow.requestIdleCallback) {
+      const callbackId = browserWindow.requestIdleCallback(prefetch, { timeout: 2000 });
+      return () => browserWindow.cancelIdleCallback?.(callbackId);
+    }
+
+    const timeoutId = globalThis.setTimeout(prefetch, 1200);
+    return () => globalThis.clearTimeout(timeoutId);
+  }, [canUsePreferencesCookies]);
+
+  return null;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -119,6 +165,7 @@ function App() {
         <GoogleAnalytics />
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <PublicArticlePrefetch />
             <ScrollManager />
             <Router />
             <ConsultationPrompt />

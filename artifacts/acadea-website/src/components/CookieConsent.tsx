@@ -1,11 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  ARTICLE_PREFETCH_SESSION_COOKIE_NAME,
   COOKIE_CONSENT_COOKIE_NAME,
+  PLATFORM_COOKIE_CONSENT_COOKIE_NAME,
   getCookie,
   TIMEZONE_COOKIE_NAME,
   deleteCookie,
   setLongLivedCookie,
 } from "@/lib/cookies";
+import { clearPublicArticleCache } from "@/lib/article-api";
 
 type CookieConsentPreferences = {
   necessary: true;
@@ -49,6 +52,20 @@ function serializeConsent(preferences: DraftPreferences): CookieConsentPreferenc
   };
 }
 
+function normalizeConsent(raw: unknown): CookieConsentPreferences {
+  const parsed = (raw ?? {}) as Partial<CookieConsentPreferences>;
+  return {
+    necessary: true,
+    preferences: Boolean(parsed.preferences),
+    analytics: Boolean(parsed.analytics),
+    marketing: Boolean(parsed.marketing),
+    consentedAt:
+      typeof parsed.consentedAt === "string" && parsed.consentedAt.length > 0
+        ? parsed.consentedAt
+        : new Date().toISOString(),
+  };
+}
+
 export function CookieConsentProvider({ children }: { children: ReactNode }) {
   const [consent, setConsent] = useState<CookieConsentPreferences | null>(null);
   const [draft, setDraft] = useState<DraftPreferences>(defaultDraft);
@@ -56,22 +73,32 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const raw = getCookie(COOKIE_CONSENT_COOKIE_NAME) ?? getCookie("acadea_platform_cookie_consent_v1");
+    const primaryRaw = getCookie(COOKIE_CONSENT_COOKIE_NAME);
+    const fallbackRaw = getCookie(PLATFORM_COOKIE_CONSENT_COOKIE_NAME);
+    const raw = primaryRaw ?? fallbackRaw;
     if (!raw) {
       setLoaded(true);
       return;
     }
 
     try {
-      const parsed = JSON.parse(raw) as CookieConsentPreferences;
+      const parsed = normalizeConsent(JSON.parse(raw));
+      const serialized = JSON.stringify(parsed);
       setConsent(parsed);
       setDraft({
         preferences: Boolean(parsed.preferences),
         analytics: Boolean(parsed.analytics),
         marketing: Boolean(parsed.marketing),
       });
+      if (primaryRaw !== serialized) {
+        setLongLivedCookie(COOKIE_CONSENT_COOKIE_NAME, serialized);
+      }
+      if (fallbackRaw !== serialized) {
+        setLongLivedCookie(PLATFORM_COOKIE_CONSENT_COOKIE_NAME, serialized);
+      }
     } catch {
       deleteCookie(COOKIE_CONSENT_COOKIE_NAME);
+      deleteCookie(PLATFORM_COOKIE_CONSENT_COOKIE_NAME);
     } finally {
       setLoaded(true);
     }
@@ -79,11 +106,15 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
 
   function persistConsent(nextDraft: DraftPreferences) {
     const nextConsent = serializeConsent(nextDraft);
+    const serializedConsent = JSON.stringify(nextConsent);
     setConsent(nextConsent);
     setDraft(nextDraft);
-    setLongLivedCookie(COOKIE_CONSENT_COOKIE_NAME, JSON.stringify(nextConsent));
+    setLongLivedCookie(COOKIE_CONSENT_COOKIE_NAME, serializedConsent);
+    setLongLivedCookie(PLATFORM_COOKIE_CONSENT_COOKIE_NAME, serializedConsent);
     if (!nextConsent.preferences) {
       deleteCookie(TIMEZONE_COOKIE_NAME);
+      deleteCookie(ARTICLE_PREFETCH_SESSION_COOKIE_NAME);
+      clearPublicArticleCache();
     }
     setIsPreferencesOpen(false);
   }
@@ -147,8 +178,10 @@ function CookieConsentBanner() {
             <p className="text-sm text-gray-600 leading-relaxed">
               Używamy plików cookies niezbędnych do działania serwisu oraz, za Twoją zgodą,
               plików cookies preferencji, analitycznych i marketingowych. Możemy też zapamiętać
-              w trakcie sesji zamknięcie komunikatów wyświetlanych na stronie. Więcej informacji
-              znajdziesz w polityce prywatności.
+              w trakcie sesji zamknięcie komunikatów wyświetlanych na stronie. Do kategorii
+              preferencji zaliczamy też szybsze wczytywanie listy artykułów w Bazie Wiedzy oraz
+              tymczasowy cache tej listy w przeglądarce.
+              Więcej informacji znajdziesz w polityce prywatności.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
@@ -220,7 +253,7 @@ function CookiePreferencesModal() {
           />
           <CookieRow
             title="Preferencje"
-            description="Pozwalają zapamiętać ustawienia strony, takie jak wybrana strefa czasowa."
+            description="Pozwalają zapamiętać ustawienia strony, takie jak wybrana strefa czasowa, uruchomić jednorazowe przyspieszenie wczytywania listy artykułów w Bazie Wiedzy podczas bieżącej sesji oraz przechować tymczasowy cache tej listy w przeglądarce."
             checked={draft.preferences}
             onChange={(checked) => updateDraft({ preferences: checked })}
           />

@@ -7,6 +7,8 @@ import { getApiBase } from "@/lib/api-base";
 import {
   fetchArticleTaxonomy,
   fetchPublishedArticles,
+  getCachedArticleTaxonomy,
+  getCachedPublishedArticles,
   type ArticleSummary,
 } from "@/lib/article-api";
 import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
@@ -34,6 +36,9 @@ const itemVariants: Variants = {
 type SelectedFilters = Record<string, string[]>;
 
 export default function Blog() {
+  const cachedArticles = getCachedPublishedArticles();
+  const cachedTaxonomy = getCachedArticleTaxonomy();
+
   useSeo({
     title: "Baza wiedzy o studiach za granicą | ACADEA",
     description:
@@ -63,13 +68,18 @@ export default function Blog() {
 
   const [email, setEmail] = useState("");
   const [newsStatus, setNewsStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
-  const [articleItems, setArticleItems] = useState<ArticleSummary[]>([]);
-  const [taxonomyGroups, setTaxonomyGroups] = useState<ArticleCategoryGroup[]>([]);
+  const [articleItems, setArticleItems] = useState<ArticleSummary[]>(cachedArticles ?? []);
+  const [taxonomyGroups, setTaxonomyGroups] = useState<ArticleCategoryGroup[]>(
+    cachedTaxonomy?.groups ?? [],
+  );
   const [selectedFilters, setSelectedFilters] = useState<SelectedFilters>({});
   const [activeGroupSlug, setActiveGroupSlug] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [articleLoadError, setArticleLoadError] = useState(false);
+  const [articleIndexLoading, setArticleIndexLoading] = useState(
+    !(cachedArticles?.length && cachedTaxonomy?.groups.length),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -85,12 +95,12 @@ export default function Blog() {
           setArticleItems(rows);
           setTaxonomyGroups(taxonomy.groups);
           setArticleLoadError(false);
+          setArticleIndexLoading(false);
         }
       } catch {
         if (!cancelled) {
-          setArticleItems([]);
-          setTaxonomyGroups([]);
           setArticleLoadError(true);
+          setArticleIndexLoading(false);
         }
       }
     })();
@@ -266,7 +276,25 @@ export default function Blog() {
               Nie udało się teraz wczytać aktualnych artykułów z bazy danych. Odśwież stronę za chwilę albo wróć później.
             </div>
           ) : null}
-          {visible.length === 0 ? (
+          {articleIndexLoading && visible.length === 0 ? (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm"
+                >
+                  <div className="h-48 animate-pulse bg-gray-100" />
+                  <div className="space-y-3 p-6">
+                    <div className="h-3 w-24 animate-pulse rounded bg-gray-100" />
+                    <div className="h-6 w-4/5 animate-pulse rounded bg-gray-100" />
+                    <div className="h-4 w-full animate-pulse rounded bg-gray-100" />
+                    <div className="h-4 w-5/6 animate-pulse rounded bg-gray-100" />
+                    <div className="h-4 w-28 animate-pulse rounded bg-gray-100" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : visible.length === 0 ? (
             <div className="rounded-[28px] border border-dashed border-[#d8d0c1] bg-white px-6 py-12 text-center">
               <h2 className="text-2xl font-bold text-primary">
                 {articleLoadError ? "Artykuły są chwilowo niedostępne" : "Brak artykułów dla wybranych filtrów"}

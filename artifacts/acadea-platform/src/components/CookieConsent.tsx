@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  COOKIE_CONSENT_COOKIE_NAME,
   PLATFORM_COOKIE_CONSENT_COOKIE_NAME,
   deleteCookie,
   getCookie,
@@ -8,6 +9,7 @@ import {
 
 type PlatformCookieConsent = {
   necessary: true;
+  preferences: boolean;
   analytics: boolean;
   marketing: boolean;
   consentedAt: string;
@@ -26,9 +28,11 @@ type CookieConsentContextValue = {
   acceptAll: () => void;
   rejectOptional: () => void;
   saveDraft: () => void;
+  canUsePreferencesCookies: boolean;
 };
 
 const defaultDraft: DraftPreferences = {
+  preferences: false,
   analytics: false,
   marketing: false,
 };
@@ -38,9 +42,24 @@ const CookieConsentContext = createContext<CookieConsentContextValue | null>(nul
 function serializeConsent(preferences: DraftPreferences): PlatformCookieConsent {
   return {
     necessary: true,
+    preferences: preferences.preferences,
     analytics: preferences.analytics,
     marketing: preferences.marketing,
     consentedAt: new Date().toISOString(),
+  };
+}
+
+function normalizeConsent(raw: unknown): PlatformCookieConsent {
+  const parsed = (raw ?? {}) as Partial<PlatformCookieConsent>;
+  return {
+    necessary: true,
+    preferences: Boolean(parsed.preferences),
+    analytics: Boolean(parsed.analytics),
+    marketing: Boolean(parsed.marketing),
+    consentedAt:
+      typeof parsed.consentedAt === "string" && parsed.consentedAt.length > 0
+        ? parsed.consentedAt
+        : new Date().toISOString(),
   };
 }
 
@@ -51,21 +70,32 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const raw = getCookie(PLATFORM_COOKIE_CONSENT_COOKIE_NAME) ?? getCookie("acadea_cookie_consent_v1");
+    const primaryRaw = getCookie(PLATFORM_COOKIE_CONSENT_COOKIE_NAME);
+    const fallbackRaw = getCookie(COOKIE_CONSENT_COOKIE_NAME);
+    const raw = primaryRaw ?? fallbackRaw;
     if (!raw) {
       setLoaded(true);
       return;
     }
 
     try {
-      const parsed = JSON.parse(raw) as PlatformCookieConsent;
+      const parsed = normalizeConsent(JSON.parse(raw));
+      const serialized = JSON.stringify(parsed);
       setConsent(parsed);
       setDraft({
+        preferences: Boolean(parsed.preferences),
         analytics: Boolean(parsed.analytics),
         marketing: Boolean(parsed.marketing),
       });
+      if (primaryRaw !== serialized) {
+        setLongLivedCookie(PLATFORM_COOKIE_CONSENT_COOKIE_NAME, serialized);
+      }
+      if (fallbackRaw !== serialized) {
+        setLongLivedCookie(COOKIE_CONSENT_COOKIE_NAME, serialized);
+      }
     } catch {
       deleteCookie(PLATFORM_COOKIE_CONSENT_COOKIE_NAME);
+      deleteCookie(COOKIE_CONSENT_COOKIE_NAME);
     } finally {
       setLoaded(true);
     }
@@ -73,9 +103,11 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
 
   function persistConsent(nextDraft: DraftPreferences) {
     const nextConsent = serializeConsent(nextDraft);
+    const serializedConsent = JSON.stringify(nextConsent);
     setConsent(nextConsent);
     setDraft(nextDraft);
-    setLongLivedCookie(PLATFORM_COOKIE_CONSENT_COOKIE_NAME, JSON.stringify(nextConsent));
+    setLongLivedCookie(PLATFORM_COOKIE_CONSENT_COOKIE_NAME, serializedConsent);
+    setLongLivedCookie(COOKIE_CONSENT_COOKIE_NAME, serializedConsent);
     setIsPreferencesOpen(false);
   }
 
@@ -88,9 +120,15 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
       openPreferences: () => setIsPreferencesOpen(true),
       closePreferences: () => setIsPreferencesOpen(false),
       updateDraft: (patch) => setDraft((current) => ({ ...current, ...patch })),
-      acceptAll: () => persistConsent({ analytics: true, marketing: true }),
+      acceptAll: () =>
+        persistConsent({
+          preferences: true,
+          analytics: true,
+          marketing: true,
+        }),
       rejectOptional: () => persistConsent(defaultDraft),
       saveDraft: () => persistConsent(draft),
+      canUsePreferencesCookies: Boolean(consent?.preferences),
     }),
     [consent, draft, isPreferencesOpen, loaded],
   );
@@ -128,8 +166,11 @@ function CookieConsentBanner() {
           <h2>Szanujemy Twoją prywatność</h2>
           <p>
             Używamy plików cookies niezbędnych do działania serwisu oraz, za Twoją zgodą,
-            plików cookies analitycznych i marketingowych. Więcej informacji znajdziesz
-            w polityce prywatności.
+            plików cookies preferencji, analitycznych i marketingowych. Możemy też zapamiętać
+            w trakcie sesji zamknięcie komunikatów wyświetlanych na stronie. Do kategorii
+            preferencji zaliczamy też szybsze wczytywanie listy artykułów w Bazie Wiedzy oraz
+            tymczasowy cache tej listy w przeglądarce. Więcej informacji znajdziesz w polityce
+            prywatności.
           </p>
         </div>
         <div className="cookie-banner-actions">
@@ -171,20 +212,26 @@ function CookiePreferencesModal() {
         <div className="cookie-rows">
           <CookieRow
             title="Niezbędne"
-            description="Obsługują logowanie, utrzymanie sesji, bezpieczeństwo formularzy oraz podstawowe działanie platformy."
+            description="Odpowiadają za podstawowe działanie strony, zgody cookies, zabezpieczenia formularzy oraz zapamiętanie zamknięcia komunikatów w trakcie sesji. Są zawsze aktywne."
             checked
             disabled
             onChange={() => undefined}
           />
           <CookieRow
+            title="Preferencje"
+            description="Pozwalają zapamiętać ustawienia strony, takie jak wybrana strefa czasowa, uruchomić jednorazowe przyspieszenie wczytywania listy artykułów w Bazie Wiedzy podczas bieżącej sesji oraz przechować tymczasowy cache tej listy w przeglądarce."
+            checked={draft.preferences}
+            onChange={(checked) => updateDraft({ preferences: checked })}
+          />
+          <CookieRow
             title="Analityczne"
-            description="Pozwolą mierzyć ruch i korzystanie z panelu, gdy wdrożymy analitykę także dla aplikacji."
+            description="Będą używane po wdrożeniu narzędzi analitycznych, aby mierzyć ruch i ulepszać stronę."
             checked={draft.analytics}
             onChange={(checked) => updateDraft({ analytics: checked })}
           />
           <CookieRow
             title="Marketingowe"
-            description="Będą używane dopiero wtedy, gdy uruchomimy funkcje reklamowe lub remarketingowe dla platformy."
+            description="Będą używane po wdrożeniu narzędzi reklamowych, remarketingowych i pomiaru skuteczności komunikatów zachęcających do kontaktu."
             checked={draft.marketing}
             onChange={(checked) => updateDraft({ marketing: checked })}
           />

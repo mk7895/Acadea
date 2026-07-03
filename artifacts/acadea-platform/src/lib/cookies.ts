@@ -1,3 +1,4 @@
+export const COOKIE_CONSENT_COOKIE_NAME = "acadea_cookie_consent_v1";
 export const PLATFORM_COOKIE_CONSENT_COOKIE_NAME = "acadea_platform_cookie_consent_v1";
 
 const COOKIE_MAX_AGE_365_DAYS = 60 * 60 * 24 * 365;
