@@ -3,6 +3,7 @@ import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
 import { mentorProfilesTable, platformGoogleConnectionsTable } from "@workspace/db/schema";
 import { logger } from "../lib/logger";
+import { hasDatabaseConfig } from "../lib/databaseConfig";
 import {
   getGooglePrimaryCalendarIdForAccessToken,
   getGoogleOAuthClientCredentials,
@@ -12,6 +13,7 @@ import {
   getPlatformGoogleConnectionMetadata,
   parsePlatformGoogleOAuthState,
 } from "../lib/platform/google";
+import { verifyAdminSessionToken } from "../lib/adminAuth";
 
 const router: IRouter = Router();
 
@@ -53,6 +55,40 @@ function requireAdminSecret(secret: string | undefined) {
   return secretsMatch(secret, getAdminSecret());
 }
 
+function getBearerToken(req: Parameters<typeof router.get>[1] extends never ? never : any) {
+  const header = req.get("authorization");
+  if (!header?.startsWith("Bearer ")) {
+    return undefined;
+  }
+
+  return header.slice("Bearer ".length).trim();
+}
+
+function requireAdminSession(req: Parameters<typeof router.get>[1] extends never ? never : any) {
+  return verifyAdminSessionToken(getBearerToken(req));
+}
+
+function createAdminGoogleAuthUrl(req: Parameters<typeof router.get>[1] extends never ? never : any) {
+  pruneExpiredStates();
+
+  const { clientId } = getGoogleOAuthClientCredentials();
+  const state = randomBytes(24).toString("hex");
+  pendingStates.set(state, Date.now() + STATE_TTL_MS);
+
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: getRedirectUri(req),
+    response_type: "code",
+    access_type: "offline",
+    prompt: "consent",
+    include_granted_scopes: "true",
+    scope: GOOGLE_SCOPES.join(" "),
+    state,
+  });
+
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
 function pruneExpiredStates(now = Date.now()) {
   for (const [state, expiresAt] of pendingStates.entries()) {
     if (expiresAt <= now) {
@@ -80,26 +116,31 @@ router.get("/google/auth/start", (req, res) => {
     return res.status(403).send("Forbidden");
   }
 
-  pruneExpiredStates();
+  return res.redirect(createAdminGoogleAuthUrl(req));
+});
 
-  const { clientId } = getGoogleOAuthClientCredentials();
-  const state = randomBytes(24).toString("hex");
-  pendingStates.set(state, Date.now() + STATE_TTL_MS);
+router.get("/admin/google/auth/status", (req, res) => {
+  if (!requireAdminSession(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
 
-  const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: getRedirectUri(req),
-    response_type: "code",
-    access_type: "offline",
-    prompt: "consent",
-    include_granted_scopes: "true",
-    scope: GOOGLE_SCOPES.join(" "),
-    state,
+  return res.json({
+    configured: true,
+    redirectUri: getRedirectUri(req),
+    scopes: GOOGLE_SCOPES,
+    testingModeReminder:
+      "If the OAuth app is still in Testing mode, refresh tokens may expire sooner.",
   });
+});
 
-  return res.redirect(
-    `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`,
-  );
+router.post("/admin/google/auth/start", (req, res) => {
+  if (!requireAdminSession(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  return res.json({
+    authorizationUrl: createAdminGoogleAuthUrl(req),
+  });
 });
 
 router.get("/google/auth/callback", async (req, res) => {
@@ -310,7 +351,7 @@ router.get("/google/auth/callback", async (req, res) => {
       gmailRefreshToken: tokenData.refresh_token,
     });
 
-    const storageTarget = process.env.DATABASE_URL
+    const storageTarget = hasDatabaseConfig()
       ? "the database and the running server"
       : ".env.local and the running server";
 

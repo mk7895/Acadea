@@ -113,6 +113,7 @@ export default function AdminArticles() {
   const [newCategoryGroupId, setNewCategoryGroupId] = useState<number | "">("");
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategorySlug, setNewCategorySlug] = useState("");
+  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
   const markdownRef = useRef<HTMLTextAreaElement | null>(null);
 
   async function loadAdminData(currentToken: string) {
@@ -304,6 +305,46 @@ export default function AdminArticles() {
     setPassword("");
     setLoginTurnstileToken("");
     setLoginTurnstileResetKey((value) => value + 1);
+  }
+
+  async function connectGoogle() {
+    setStatus("");
+    setIsConnectingGoogle(true);
+    const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
+
+    try {
+      const response = await fetch(`${API_BASE}/admin/google/auth/start`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        authorizationUrl?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !data.authorizationUrl) {
+        popup?.close();
+        setStatus(data.error ?? "Nie udało się rozpocząć połączenia Google.");
+        return;
+      }
+
+      if (popup) {
+        popup.location.href = data.authorizationUrl;
+        popup.focus();
+      } else {
+        window.location.href = data.authorizationUrl;
+      }
+
+      setStatus("Otwarto okno logowania Google.");
+    } catch {
+      popup?.close();
+      setStatus("Nie udało się rozpocząć połączenia Google.");
+    } finally {
+      setIsConnectingGoogle(false);
+    }
   }
 
   async function saveArticle() {
@@ -578,6 +619,13 @@ export default function AdminArticles() {
                 <h1 className="text-3xl font-bold text-primary">{editor.id ? "Edytuj artykuł" : "Nowy artykuł"}</h1>
               </div>
               <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={connectGoogle}
+                  disabled={isConnectingGoogle}
+                  className="rounded-full border border-[#d8cfbf] px-5 py-3 font-semibold text-primary disabled:opacity-60"
+                >
+                  {isConnectingGoogle ? "Łączenie Google…" : "Połącz Google"}
+                </button>
                 <button onClick={logout} className="rounded-full border border-[#d8cfbf] px-5 py-3 font-semibold text-primary">
                   Wyloguj
                 </button>
