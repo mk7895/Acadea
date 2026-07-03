@@ -4047,6 +4047,18 @@ router.post(
       return res.status(500).json({ error: "Brak folderu Google Drive dla mentee." });
     }
 
+    const [existingState] = await db
+      .select()
+      .from(platformMaterialItemStatesTable)
+      .where(
+        and(
+          eq(platformMaterialItemStatesTable.templateId, parsed.data.templateId),
+          eq(platformMaterialItemStatesTable.menteeUserId, req.platformUser!.id),
+          eq(platformMaterialItemStatesTable.rowKey, parsed.data.rowKey),
+        ),
+      )
+      .limit(1);
+
     const buffer = Buffer.from(parsed.data.base64Content, "base64");
     if (buffer.byteLength > MAX_MATERIAL_UPLOAD_BYTES) {
       return res.status(413).json({ error: "Plik jest zbyt duży. Maksymalny rozmiar uploadu to 15 MB." });
@@ -4079,6 +4091,30 @@ router.post(
         currentFileAssetId: asset.id,
       },
     });
+
+    if (existingState?.currentFileAssetId) {
+      const [previousAsset] = await db
+        .select()
+        .from(platformFileAssetsTable)
+        .where(eq(platformFileAssetsTable.id, existingState.currentFileAssetId))
+        .limit(1);
+      if (previousAsset?.objectKey) {
+        try {
+          await trashDriveFile(previousAsset.objectKey);
+        } catch (err) {
+          logger.warn(
+            {
+              err,
+              fileId: previousAsset.objectKey,
+              rowKey: parsed.data.rowKey,
+              templateId: parsed.data.templateId,
+              userId: req.platformUser!.id,
+            },
+            "failed to trash previous google drive file after replacement upload",
+          );
+        }
+      }
+    }
 
     return res.status(201).json({
       asset,
@@ -4128,6 +4164,23 @@ router.post(
     const workspace = await ensureMenteeWorkspace(db, req.platformUser!.id);
     if (!workspace.essayDocId) {
       return res.status(500).json({ error: "Brak Essay Doc dla mentee." });
+    }
+
+    const [existingState] = await db
+      .select()
+      .from(platformMaterialItemStatesTable)
+      .where(
+        and(
+          eq(platformMaterialItemStatesTable.templateId, parsed.data.templateId),
+          eq(platformMaterialItemStatesTable.menteeUserId, req.platformUser!.id),
+          eq(platformMaterialItemStatesTable.rowKey, parsed.data.rowKey),
+        ),
+      )
+      .limit(1);
+    if (existingState?.googleDocTabId) {
+      return res.status(409).json({
+        error: "Ten element ma już aktywną zakładkę w Essay Doc. Usuń ją najpierw, a potem utwórz nową.",
+      });
     }
 
     const sourceDocumentId =

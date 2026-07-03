@@ -5681,7 +5681,7 @@ function MenteeSection({
                                     ) : null}
                                     {(actionType === "file_required" || actionType === "file_or_doc" || actionType === "check_or_file") ? (
                                       <label className="btn btn-secondary" style={{ width: "fit-content", cursor: "pointer" }}>
-                                        {state?.currentFileUrl ? "Wgraj nowszy plik" : "Wgraj plik"}
+                                        {state?.currentFileUrl ? "Zastąp plik" : "Wgraj plik"}
                                         <input
                                           hidden
                                           disabled={!canPersistAction || materialActionKey === `${actionPrefix}:upload`}
@@ -5697,18 +5697,20 @@ function MenteeSection({
                                       </label>
                                     ) : null}
                                     {actionType === "file_or_doc" ? (
-                                      <button
-                                        className="btn btn-secondary"
-                                        disabled={!canPersistAction || materialActionKey === `${actionPrefix}:doc`}
-                                        onClick={() => {
-                                          if (canPersistAction) {
-                                            void createMaterialDocTab(Number(template.id), row.displayKey);
-                                          }
-                                        }}
-                                        type="button"
-                                      >
-                                        {state?.googleDocTabUrl ? "Dodaj kolejną zakładkę" : "Utwórz zakładkę w Essay Doc"}
-                                      </button>
+                                      !state?.googleDocTabUrl ? (
+                                        <button
+                                          className="btn btn-secondary"
+                                          disabled={!canPersistAction || materialActionKey === `${actionPrefix}:doc`}
+                                          onClick={() => {
+                                            if (canPersistAction) {
+                                              void createMaterialDocTab(Number(template.id), row.displayKey);
+                                            }
+                                          }}
+                                          type="button"
+                                        >
+                                          Utwórz zakładkę w Essay Doc
+                                        </button>
+                                      ) : null
                                     ) : null}
                                   </div>
                                 );
