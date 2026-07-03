@@ -131,6 +131,7 @@ export const mentorProfilesTable = pgTable(
       .notNull()
       .default(sql`'[]'::jsonb`),
     googleCalendarEmail: text("google_calendar_email"),
+    googleDriveFolderId: text("google_drive_folder_id"),
     googleDriveFolderUrl: text("google_drive_folder_url"),
     adminApproved: boolean("admin_approved").notNull().default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -161,6 +162,10 @@ export const menteeProfilesTable = pgTable(
       .$type<number[]>()
       .notNull()
       .default(sql`'[]'::jsonb`),
+    googleDriveFolderId: text("google_drive_folder_id"),
+    googleDriveFolderUrl: text("google_drive_folder_url"),
+    googleEssayDocId: text("google_essay_doc_id"),
+    googleEssayDocUrl: text("google_essay_doc_url"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -405,6 +410,60 @@ export const platformFileAssetsTable = pgTable("platform_file_assets", {
   sizeBytes: integer("size_bytes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const platformMaterialItemStatesTable = pgTable(
+  "platform_material_item_states",
+  {
+    id: serial("id").primaryKey(),
+    templateId: integer("template_id")
+      .references(() => platformMaterialTemplatesTable.id, { onDelete: "cascade" })
+      .notNull(),
+    menteeUserId: integer("mentee_user_id")
+      .references(() => platformUsersTable.id, { onDelete: "cascade" })
+      .notNull(),
+    rowKey: text("row_key").notNull(),
+    completed: boolean("completed").notNull().default(false),
+    completionMethod: text("completion_method"),
+    currentFileAssetId: integer("current_file_asset_id").references(() => platformFileAssetsTable.id, {
+      onDelete: "set null",
+    }),
+    googleDocTabId: text("google_doc_tab_id"),
+    googleDocTabUrl: text("google_doc_tab_url"),
+    googleDocTabTitle: text("google_doc_tab_title"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    templateMenteeRowUnique: uniqueIndex("platform_material_item_states_template_mentee_row_unique").on(
+      table.templateId,
+      table.menteeUserId,
+      table.rowKey,
+    ),
+  }),
+);
+
+export const platformMentorWorkspaceLinksTable = pgTable(
+  "platform_mentor_workspace_links",
+  {
+    id: serial("id").primaryKey(),
+    menteeUserId: integer("mentee_user_id")
+      .references(() => platformUsersTable.id, { onDelete: "cascade" })
+      .notNull(),
+    mentorUserId: integer("mentor_user_id")
+      .references(() => platformUsersTable.id, { onDelete: "cascade" })
+      .notNull(),
+    shortcutFileId: text("shortcut_file_id"),
+    shortcutFileUrl: text("shortcut_file_url"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    mentorWorkspaceUnique: uniqueIndex("platform_mentor_workspace_links_unique").on(
+      table.menteeUserId,
+      table.mentorUserId,
+    ),
+  }),
+);
 
 export const insertPlatformUserSchema = createInsertSchema(platformUsersTable, {
   role: z.enum(PLATFORM_USER_ROLES),

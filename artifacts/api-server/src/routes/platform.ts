@@ -14,9 +14,12 @@ import {
   platformGuideAssignmentsTable,
   platformGuideChecklistItemsTable,
   platformGuidesTable,
+  platformFileAssetsTable,
+  platformMaterialItemStatesTable,
   platformMeetingsTable,
   platformMaterialTemplatesTable,
   platformMentorAssignmentsTable,
+  platformMentorWorkspaceLinksTable,
   platformPasswordResetTokensTable,
   platformProfileFieldsTable,
   platformProfileResponsesTable,
@@ -65,6 +68,17 @@ import {
   getPlatformGoogleConnectionMetadata,
   PLATFORM_MENTOR_GOOGLE_SCOPES,
 } from "../lib/platform/google";
+import {
+  createDocumentTab,
+  createDriveFolder,
+  createDriveShortcut,
+  createGoogleDocument,
+  getGoogleSharedDriveId,
+  hasGoogleWorkspaceServiceAccount,
+  parseGoogleDriveId,
+  shareDriveItemWithUser,
+  uploadFileToDrive,
+} from "../lib/googleWorkspace";
 
 const router = Router();
 const PLATFORM_TERMS_VERSION = "2026-06-29";
@@ -243,6 +257,32 @@ const mentorMaterialRowsSchema = z.object({
   rows: z.array(z.record(z.string(), z.unknown())).default([]),
 });
 
+const PLATFORM_MATERIAL_ITEM_ACTIONS = [
+  "check_only",
+  "file_required",
+  "file_or_doc",
+  "check_or_file",
+] as const;
+
+const menteeMaterialCheckSchema = z.object({
+  templateId: z.number().int().positive(),
+  rowKey: z.string().trim().min(1),
+  completed: z.boolean(),
+});
+
+const menteeMaterialUploadSchema = z.object({
+  templateId: z.number().int().positive(),
+  rowKey: z.string().trim().min(1),
+  base64Content: z.string().min(1),
+  fileName: z.string().trim().min(1),
+  mimeType: z.string().trim().min(1),
+});
+
+const menteeMaterialDocTabSchema = z.object({
+  templateId: z.number().int().positive(),
+  rowKey: z.string().trim().min(1),
+});
+
 const assignMentorAccessSchema = z.object({
   menteeUserId: z.number().int().positive(),
   mentorUserId: z.number().int().positive(),
@@ -403,6 +443,7 @@ function serializeMentorProfile(
         bio?: string | null;
         bookingWindowDays?: number | null;
         googleCalendarEmail?: string | null;
+        googleDriveFolderId?: string | null;
         googleDriveFolderUrl?: string | null;
         headline?: string | null;
         id?: number;
@@ -439,6 +480,7 @@ function serializeMentorProfile(
     bio: profile.bio ?? "",
     bookingWindowDays: profile.bookingWindowDays ?? 30,
     googleCalendarEmail: profile.googleCalendarEmail ?? "",
+    googleDriveFolderId: profile.googleDriveFolderId ?? "",
     googleDriveFolderUrl: profile.googleDriveFolderUrl ?? "",
     headline: profile.headline ?? "",
     meetingLink: profile.meetingLink ?? "",
@@ -462,6 +504,424 @@ function serializeUser(user: NonNullable<AuthenticatedRequest["platformUser"]>) 
     updatedAt: user.updatedAt.toISOString(),
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
   };
+}
+
+function slugifyWorkspaceToken(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+function buildUserWorkspaceSlug(user: { email: string; fullName: string; id: number }) {
+  const emailLocal = user.email.split("@")[0] ?? "";
+  return slugifyWorkspaceToken(emailLocal) || slugifyWorkspaceToken(user.fullName) || `user-${user.id}`;
+}
+
+function normalizeMaterialStructureRow(row: Record<string, unknown>, index: number) {
+  const level =
+    row.level === "country" || row.level === "university" || row.level === "item"
+      ? row.level
+      : "item";
+  const country = typeof row.country === "string" ? row.country.trim() : "";
+  const university = typeof row.university === "string" ? row.university.trim() : "";
+  const task = typeof row.task === "string" ? row.task.trim() : "";
+  const rowKeySource =
+    typeof row.displayKey === "string" && row.displayKey.trim()
+      ? row.displayKey
+      : `${level}-${task || university || country || `row-${index + 1}`}-${index + 1}`;
+  const actionType =
+    row.actionType && PLATFORM_MATERIAL_ITEM_ACTIONS.includes(row.actionType as (typeof PLATFORM_MATERIAL_ITEM_ACTIONS)[number])
+      ? (row.actionType as (typeof PLATFORM_MATERIAL_ITEM_ACTIONS)[number])
+      : "check_only";
+  return {
+    ...row,
+    actionType,
+    alternativeOptions: Array.isArray(row.alternativeOptions)
+      ? row.alternativeOptions.map((value) => String(value).trim()).filter(Boolean)
+      : [],
+    appliesToGuideIds: Array.isArray(row.appliesToGuideIds)
+      ? row.appliesToGuideIds
+          .map((value) => Number(value))
+          .filter((value) => Number.isFinite(value) && value > 0)
+      : [],
+    country,
+    displayKey: slugifyWorkspaceToken(String(rowKeySource)) || `row-${index + 1}`,
+    docTabPrompt: typeof row.docTabPrompt === "string" ? row.docTabPrompt.trim() : "",
+    docTabTitle: typeof row.docTabTitle === "string" ? row.docTabTitle.trim() : "",
+    guideId: Number.isFinite(Number(row.guideId)) ? Number(row.guideId) : null,
+    level,
+    ownerUserId: Number.isFinite(Number(row.ownerUserId)) ? Number(row.ownerUserId) : null,
+    suggestedFilename: typeof row.suggestedFilename === "string" ? row.suggestedFilename.trim() : "",
+    task,
+    university,
+  };
+}
+
+function normalizeMaterialStructureRows(rows: unknown) {
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+  return rows
+    .map((row, index) =>
+      typeof row === "object" && row !== null
+        ? normalizeMaterialStructureRow(row as Record<string, unknown>, index)
+        : null,
+    )
+    .filter((row): row is ReturnType<typeof normalizeMaterialStructureRow> => Boolean(row));
+}
+
+function findMaterialTemplateRow(template: { structure?: unknown }, rowKey: string) {
+  const normalizedRows = normalizeMaterialStructureRows(template.structure);
+  return normalizedRows.find((row) => row.displayKey === rowKey) ?? null;
+}
+
+async function ensureMentorDriveFolder(db: any, mentorUserId: number) {
+  const [mentor] = await db
+    .select({
+      email: platformUsersTable.email,
+      fullName: platformUsersTable.fullName,
+      id: platformUsersTable.id,
+      profileId: mentorProfilesTable.id,
+      googleDriveFolderId: mentorProfilesTable.googleDriveFolderId,
+      googleDriveFolderUrl: mentorProfilesTable.googleDriveFolderUrl,
+    })
+    .from(platformUsersTable)
+    .leftJoin(mentorProfilesTable, eq(mentorProfilesTable.userId, platformUsersTable.id))
+    .where(eq(platformUsersTable.id, mentorUserId))
+    .limit(1);
+
+  if (!mentor) {
+    throw new Error("Mentor not found.");
+  }
+
+  const existingFolderId =
+    mentor.googleDriveFolderId || parseGoogleDriveId(mentor.googleDriveFolderUrl);
+  if (existingFolderId && mentor.googleDriveFolderUrl) {
+    return {
+      folderId: existingFolderId,
+      folderUrl: mentor.googleDriveFolderUrl,
+    };
+  }
+
+  if (!hasGoogleWorkspaceServiceAccount()) {
+    throw new Error("Google Workspace service account is not configured.");
+  }
+
+  const sharedDriveId = getGoogleSharedDriveId();
+  const folder = await createDriveFolder({
+    name: `Mentor - ${buildUserWorkspaceSlug(mentor)}`,
+    parentId: sharedDriveId,
+  });
+  await shareDriveItemWithUser({
+    fileId: folder.id,
+    emailAddress: mentor.email,
+    role: "writer",
+  });
+
+  await db
+    .insert(mentorProfilesTable)
+    .values({
+      userId: mentorUserId,
+      bio: "",
+      googleDriveFolderId: folder.id,
+      googleDriveFolderUrl: folder.url,
+    })
+    .onConflictDoUpdate({
+      target: mentorProfilesTable.userId,
+      set: {
+        googleDriveFolderId: folder.id,
+        googleDriveFolderUrl: folder.url,
+        updatedAt: new Date(),
+      },
+    });
+
+  return {
+    folderId: folder.id,
+    folderUrl: folder.url,
+  };
+}
+
+async function ensureMenteeWorkspace(db: any, menteeUserId: number) {
+  const [mentee] = await db
+    .select({
+      email: platformUsersTable.email,
+      fullName: platformUsersTable.fullName,
+      id: platformUsersTable.id,
+      googleDriveFolderId: menteeProfilesTable.googleDriveFolderId,
+      googleDriveFolderUrl: menteeProfilesTable.googleDriveFolderUrl,
+      googleEssayDocId: menteeProfilesTable.googleEssayDocId,
+      googleEssayDocUrl: menteeProfilesTable.googleEssayDocUrl,
+    })
+    .from(platformUsersTable)
+    .leftJoin(menteeProfilesTable, eq(menteeProfilesTable.userId, platformUsersTable.id))
+    .where(eq(platformUsersTable.id, menteeUserId))
+    .limit(1);
+
+  if (!mentee) {
+    throw new Error("Mentee not found.");
+  }
+
+  if (
+    mentee.googleDriveFolderId &&
+    mentee.googleDriveFolderUrl &&
+    mentee.googleEssayDocId &&
+    mentee.googleEssayDocUrl
+  ) {
+    return {
+      folderId: mentee.googleDriveFolderId,
+      folderUrl: mentee.googleDriveFolderUrl,
+      essayDocId: mentee.googleEssayDocId,
+      essayDocUrl: mentee.googleEssayDocUrl,
+    };
+  }
+
+  if (!hasGoogleWorkspaceServiceAccount()) {
+    return {
+      folderId: mentee.googleDriveFolderId ?? "",
+      folderUrl: mentee.googleDriveFolderUrl ?? "",
+      essayDocId: mentee.googleEssayDocId ?? "",
+      essayDocUrl: mentee.googleEssayDocUrl ?? "",
+    };
+  }
+
+  const sharedDriveId = getGoogleSharedDriveId();
+  const folder =
+    mentee.googleDriveFolderId && mentee.googleDriveFolderUrl
+      ? {
+          id: mentee.googleDriveFolderId,
+          url: mentee.googleDriveFolderUrl,
+        }
+      : await createDriveFolder({
+          name: `Mentee - ${buildUserWorkspaceSlug(mentee)}`,
+          parentId: sharedDriveId,
+        });
+  await shareDriveItemWithUser({
+    fileId: folder.id,
+    emailAddress: mentee.email,
+    role: "writer",
+  });
+  const essayDoc =
+    mentee.googleEssayDocId && mentee.googleEssayDocUrl
+      ? {
+          id: mentee.googleEssayDocId,
+          url: mentee.googleEssayDocUrl,
+        }
+      : await createGoogleDocument({
+          name: "Essay doc",
+          parentId: folder.id,
+        });
+
+  await db
+    .insert(menteeProfilesTable)
+    .values({
+      userId: menteeUserId,
+      adminApproved: false,
+      googleDriveFolderId: folder.id,
+      googleDriveFolderUrl: folder.url,
+      googleEssayDocId: essayDoc.id,
+      googleEssayDocUrl: essayDoc.url,
+    })
+    .onConflictDoUpdate({
+      target: menteeProfilesTable.userId,
+      set: {
+        googleDriveFolderId: folder.id,
+        googleDriveFolderUrl: folder.url,
+        googleEssayDocId: essayDoc.id,
+        googleEssayDocUrl: essayDoc.url,
+        updatedAt: new Date(),
+      },
+    });
+
+  return {
+    folderId: folder.id,
+    folderUrl: folder.url,
+    essayDocId: essayDoc.id,
+    essayDocUrl: essayDoc.url,
+  };
+}
+
+async function ensureMentorAccessToMenteeWorkspace(
+  db: any,
+  input: { menteeUserId: number; mentorUserId: number },
+) {
+  if (!hasGoogleWorkspaceServiceAccount()) {
+    return null;
+  }
+
+  const workspace = await ensureMenteeWorkspace(db, input.menteeUserId);
+  const mentorFolder = await ensureMentorDriveFolder(db, input.mentorUserId);
+  const [mentor] = await db
+    .select({
+      email: platformUsersTable.email,
+      fullName: platformUsersTable.fullName,
+    })
+    .from(platformUsersTable)
+    .where(eq(platformUsersTable.id, input.mentorUserId))
+    .limit(1);
+
+  if (!mentor) {
+    throw new Error("Mentor not found.");
+  }
+
+  await shareDriveItemWithUser({
+    fileId: workspace.folderId,
+    emailAddress: mentor.email,
+    role: "writer",
+  });
+
+  const [existingLink] = await db
+    .select()
+    .from(platformMentorWorkspaceLinksTable)
+    .where(
+      and(
+        eq(platformMentorWorkspaceLinksTable.menteeUserId, input.menteeUserId),
+        eq(platformMentorWorkspaceLinksTable.mentorUserId, input.mentorUserId),
+      ),
+    )
+    .limit(1);
+
+  if (existingLink?.shortcutFileId) {
+    return existingLink;
+  }
+
+  const shortcut = await createDriveShortcut({
+    name: `Mentee - ${workspace.folderId}`,
+    parentId: mentorFolder.folderId,
+    targetId: workspace.folderId,
+  });
+
+  const [link] = await db
+    .insert(platformMentorWorkspaceLinksTable)
+    .values({
+      menteeUserId: input.menteeUserId,
+      mentorUserId: input.mentorUserId,
+      shortcutFileId: shortcut.id,
+      shortcutFileUrl: shortcut.url,
+    })
+    .onConflictDoUpdate({
+      target: [
+        platformMentorWorkspaceLinksTable.menteeUserId,
+        platformMentorWorkspaceLinksTable.mentorUserId,
+      ] as never,
+      set: {
+        shortcutFileId: shortcut.id,
+        shortcutFileUrl: shortcut.url,
+        updatedAt: new Date(),
+      },
+    })
+    .returning();
+
+  return link;
+}
+
+async function safeEnsureMenteeWorkspace(db: any, menteeUserId: number) {
+  try {
+    return await ensureMenteeWorkspace(db, menteeUserId);
+  } catch (err) {
+    logger.warn({ err, menteeUserId }, "failed to ensure mentee google workspace");
+    return null;
+  }
+}
+
+async function safeEnsureMentorAccessToMenteeWorkspace(
+  db: any,
+  input: { menteeUserId: number; mentorUserId: number },
+) {
+  try {
+    return await ensureMentorAccessToMenteeWorkspace(db, input);
+  } catch (err) {
+    logger.warn({ err, ...input }, "failed to ensure mentor access to mentee workspace");
+    return null;
+  }
+}
+
+async function upsertMaterialItemState(
+  db: any,
+  input: {
+    templateId: number;
+    menteeUserId: number;
+    rowKey: string;
+    values: Record<string, unknown>;
+  },
+) {
+  const [state] = await db
+    .insert(platformMaterialItemStatesTable)
+    .values({
+      templateId: input.templateId,
+      menteeUserId: input.menteeUserId,
+      rowKey: input.rowKey,
+      ...input.values,
+    })
+    .onConflictDoUpdate({
+      target: [
+        platformMaterialItemStatesTable.templateId,
+        platformMaterialItemStatesTable.menteeUserId,
+        platformMaterialItemStatesTable.rowKey,
+      ] as never,
+      set: {
+        ...input.values,
+        updatedAt: new Date(),
+      },
+    })
+    .returning();
+  return state;
+}
+
+async function getAccessibleTemplateIdsForMentee(db: any, menteeUserId: number) {
+  const guides = await db
+    .select({
+      id: platformGuidesTable.id,
+      sourceGuideId: platformGuidesTable.sourceGuideId,
+    })
+    .from(platformGuidesTable)
+    .where(
+      and(
+        eq(platformGuidesTable.menteeUserId, menteeUserId),
+        eq(platformGuidesTable.status, "published"),
+      ),
+    );
+  const assignedGuideAccess = await db
+    .select({ guideId: platformGuideAssignmentsTable.guideId })
+    .from(platformGuideAssignmentsTable)
+    .where(eq(platformGuideAssignmentsTable.menteeUserId, menteeUserId));
+
+  return Array.from(
+    new Set([
+      ...assignedGuideAccess.map((row: { guideId: number }) => row.guideId),
+      ...guides
+        .map((guide: { id: number; sourceGuideId: number | null }) => guide.sourceGuideId ?? guide.id)
+        .filter((value: number | null): value is number => Number.isFinite(value)),
+    ]),
+  );
+}
+
+async function menteeCanAccessMaterialRow(
+  db: any,
+  input: {
+    menteeUserId: number;
+    template: { appliesToGuideIds?: number[] | null; structure?: unknown };
+    rowKey: string;
+  },
+) {
+  const accessibleTemplateIds = await getAccessibleTemplateIdsForMentee(db, input.menteeUserId);
+  const templateApplies = input.template.appliesToGuideIds ?? [];
+  if (templateApplies.length && !templateApplies.some((guideId: number) => accessibleTemplateIds.includes(guideId))) {
+    return false;
+  }
+  const row = findMaterialTemplateRow(input.template, input.rowKey);
+  if (!row) {
+    return false;
+  }
+  const rowApplies = Array.isArray(row.appliesToGuideIds) ? row.appliesToGuideIds : [];
+  if (rowApplies.length && !rowApplies.some((guideId: number) => accessibleTemplateIds.includes(guideId))) {
+    return false;
+  }
+  return true;
 }
 
 async function requirePlatformAuth(
@@ -1344,6 +1804,7 @@ router.post("/platform/auth/signup-mentee", async (req, res) => {
     userId: user.id,
     adminApproved: false,
   });
+  await safeEnsureMenteeWorkspace(db, user.id);
 
   const session = await createPlatformSession(user.id);
 
@@ -1709,7 +2170,7 @@ router.post(
       templateType: parsed.data.templateType,
       guideId: parsed.data.guideId ?? null,
       appliesToGuideIds: parsed.data.appliesToGuideIds,
-      structure: parsed.data.structure,
+      structure: normalizeMaterialStructureRows(parsed.data.structure),
       alternativeOptions: parsed.data.alternativeOptions,
       isActive: parsed.data.isActive,
     }).returning();
@@ -1734,7 +2195,7 @@ router.put(
       templateType: parsed.data.templateType,
       guideId: parsed.data.guideId ?? null,
       appliesToGuideIds: parsed.data.appliesToGuideIds,
-      structure: parsed.data.structure,
+      structure: normalizeMaterialStructureRows(parsed.data.structure),
       alternativeOptions: parsed.data.alternativeOptions,
       isActive: parsed.data.isActive,
       updatedAt: new Date(),
@@ -1860,15 +2321,18 @@ router.patch(
     }
 
     const { db } = await import("@workspace/db");
+    const googleDriveFolderId = parseGoogleDriveId(parsed.data.googleDriveFolderUrl || null);
     const [profile] = await db
       .insert(mentorProfilesTable)
       .values({
         userId: id,
+        googleDriveFolderId,
         googleDriveFolderUrl: parsed.data.googleDriveFolderUrl || null,
       })
       .onConflictDoUpdate({
         target: mentorProfilesTable.userId,
         set: {
+          googleDriveFolderId,
           googleDriveFolderUrl: parsed.data.googleDriveFolderUrl || null,
           updatedAt: new Date(),
         },
@@ -1876,6 +2340,27 @@ router.patch(
       .returning();
 
     return res.json(serializeMentorProfile(profile));
+  },
+);
+
+router.post(
+  "/platform/admin/mentors/:id/google-drive-folder",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(422).json({ error: "Invalid mentor id." });
+    }
+    const { db } = await import("@workspace/db");
+    try {
+      const folder = await ensureMentorDriveFolder(db, id);
+      return res.status(201).json(folder);
+    } catch (error) {
+      return res.status(500).json({
+        error: error instanceof Error ? error.message : "Nie udało się utworzyć folderu mentora.",
+      });
+    }
   },
 );
 
@@ -2174,13 +2659,20 @@ router.put(
           throw new Error("Mentor może podpinać tylko dostępne wskazówki elementów.");
         }
         return {
+          actionType:
+            row.actionType && PLATFORM_MATERIAL_ITEM_ACTIONS.includes(row.actionType as (typeof PLATFORM_MATERIAL_ITEM_ACTIONS)[number])
+              ? row.actionType
+              : "check_only",
           alternativeOptions: Array.isArray(row.alternativeOptions) ? row.alternativeOptions.filter((value) => typeof value === "string") : [],
           anchorAfterKey: typeof row.anchorAfterKey === "string" ? row.anchorAfterKey : "",
           appliesToGuideIds,
           country: typeof row.country === "string" ? row.country : "",
+          docTabPrompt: typeof row.docTabPrompt === "string" ? row.docTabPrompt : "",
+          docTabTitle: typeof row.docTabTitle === "string" ? row.docTabTitle : "",
           guideId,
           level: row.level === "country" || row.level === "university" || row.level === "item" ? row.level : "item",
           ownerUserId: req.platformUser!.id,
+          suggestedFilename: typeof row.suggestedFilename === "string" ? row.suggestedFilename : "",
           task: typeof row.task === "string" ? row.task : "",
           university: typeof row.university === "string" ? row.university : "",
         };
@@ -2552,11 +3044,19 @@ router.get(
   requirePlatformRole("mentee"),
   async (req: AuthenticatedRequest, res) => {
     const { db } = await import("@workspace/db");
-    const [profile] = await db
+    let [profile] = await db
       .select()
       .from(menteeProfilesTable)
       .where(eq(menteeProfilesTable.userId, req.platformUser!.id))
       .limit(1);
+    const ensuredWorkspace = await safeEnsureMenteeWorkspace(db, req.platformUser!.id);
+    if (ensuredWorkspace) {
+      [profile] = await db
+        .select()
+        .from(menteeProfilesTable)
+        .where(eq(menteeProfilesTable.userId, req.platformUser!.id))
+        .limit(1);
+    }
     const guideLimits = getMenteeGuideLimits(profile);
     const assignedMentors = await db
       .select({
@@ -2686,9 +3186,13 @@ router.get(
       const applies = template.appliesToGuideIds ?? [];
       return applies.length === 0 || applies.some((guideId: number) => accessibleTemplateIds.includes(guideId));
     });
+    const normalizedVisibleMaterials = visibleMaterials.map((template) => ({
+      ...template,
+      structure: normalizeMaterialStructureRows(template.structure),
+    }));
     const hintGuideIds = Array.from(
       new Set(
-        visibleMaterials.flatMap((template) => [
+        normalizedVisibleMaterials.flatMap((template) => [
           ...(typeof template.guideId === "number" ? [template.guideId] : []),
           ...((template.structure ?? [])
             .map((row: any) => (typeof row?.guideId === "number" ? row.guideId : null))
@@ -2731,11 +3235,48 @@ router.get(
           .where(inArray(platformGuidesTable.id, hintEligibleTemplateIds))
           .orderBy(asc(platformGuidesTable.country), asc(platformGuidesTable.universityName))
       : [];
+    const materialTemplateIds = normalizedVisibleMaterials
+      .map((template) => Number(template.id))
+      .filter((value) => Number.isFinite(value));
+    const materialStates = materialTemplateIds.length
+      ? await db
+          .select({
+            completed: platformMaterialItemStatesTable.completed,
+            completionMethod: platformMaterialItemStatesTable.completionMethod,
+            currentFileAssetId: platformMaterialItemStatesTable.currentFileAssetId,
+            currentFileMimeType: platformFileAssetsTable.mimeType,
+            currentFileName: platformFileAssetsTable.originalFilename,
+            currentFileUrl: platformFileAssetsTable.publicUrl,
+            googleDocTabId: platformMaterialItemStatesTable.googleDocTabId,
+            googleDocTabTitle: platformMaterialItemStatesTable.googleDocTabTitle,
+            googleDocTabUrl: platformMaterialItemStatesTable.googleDocTabUrl,
+            rowKey: platformMaterialItemStatesTable.rowKey,
+            templateId: platformMaterialItemStatesTable.templateId,
+            updatedAt: platformMaterialItemStatesTable.updatedAt,
+          })
+          .from(platformMaterialItemStatesTable)
+          .leftJoin(
+            platformFileAssetsTable,
+            eq(platformFileAssetsTable.id, platformMaterialItemStatesTable.currentFileAssetId),
+          )
+          .where(
+            and(
+              eq(platformMaterialItemStatesTable.menteeUserId, req.platformUser!.id),
+              inArray(platformMaterialItemStatesTable.templateId, materialTemplateIds),
+            ),
+          )
+      : [];
 
     return res.json({
       guideLimits: {
         maxActiveGuideCount: guideLimits.maxActiveGuideCount,
         maxHintGuideCount: guideLimits.maxHintGuideCount,
+      },
+      googleWorkspace: {
+        essayDocId: profile?.googleEssayDocId ?? "",
+        essayDocUrl: profile?.googleEssayDocUrl ?? "",
+        folderId: profile?.googleDriveFolderId ?? "",
+        folderUrl: profile?.googleDriveFolderUrl ?? "",
       },
       profile,
       assignedMentors: assignedMentors.map((mentor) => ({
@@ -2759,7 +3300,211 @@ router.get(
       hintGuides: await shapeGuideList(db, hintGuides),
       hintEligibleTemplateIds,
       tipAccessGuides: await shapeGuideList(db, tipAccessGuides),
-      materialTemplates: visibleMaterials,
+      materialItemStates: materialStates.map((state) => ({
+        ...state,
+        updatedAt: state.updatedAt.toISOString(),
+      })),
+      materialTemplates: normalizedVisibleMaterials,
+    });
+  },
+);
+
+router.post(
+  "/platform/mentee/material-items/check",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = menteeMaterialCheckSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [template] = await db
+      .select()
+      .from(platformMaterialTemplatesTable)
+      .where(
+        and(
+          eq(platformMaterialTemplatesTable.id, parsed.data.templateId),
+          eq(platformMaterialTemplatesTable.isActive, true),
+        ),
+      )
+      .limit(1);
+    if (!template) {
+      return res.status(404).json({ error: "Nie znaleziono kafla materiałów." });
+    }
+    if (!(await menteeCanAccessMaterialRow(db, {
+      menteeUserId: req.platformUser!.id,
+      rowKey: parsed.data.rowKey,
+      template,
+    }))) {
+      return res.status(403).json({ error: "Nie masz dostępu do tego elementu." });
+    }
+    const row = findMaterialTemplateRow(template, parsed.data.rowKey);
+    if (!row || row.level !== "item") {
+      return res.status(404).json({ error: "Nie znaleziono wskazanego elementu." });
+    }
+    if (!["check_only", "check_or_file"].includes(String(row.actionType))) {
+      return res.status(400).json({ error: "Tego elementu nie można oznaczyć tylko checkboxem." });
+    }
+
+    const state = await upsertMaterialItemState(db, {
+      templateId: parsed.data.templateId,
+      menteeUserId: req.platformUser!.id,
+      rowKey: parsed.data.rowKey,
+      values: {
+        completed: parsed.data.completed,
+        completionMethod: parsed.data.completed ? "checkbox" : null,
+      },
+    });
+    return res.json(state);
+  },
+);
+
+router.post(
+  "/platform/mentee/material-items/upload",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = menteeMaterialUploadSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [template] = await db
+      .select()
+      .from(platformMaterialTemplatesTable)
+      .where(
+        and(
+          eq(platformMaterialTemplatesTable.id, parsed.data.templateId),
+          eq(platformMaterialTemplatesTable.isActive, true),
+        ),
+      )
+      .limit(1);
+    if (!template) {
+      return res.status(404).json({ error: "Nie znaleziono kafla materiałów." });
+    }
+    if (!(await menteeCanAccessMaterialRow(db, {
+      menteeUserId: req.platformUser!.id,
+      rowKey: parsed.data.rowKey,
+      template,
+    }))) {
+      return res.status(403).json({ error: "Nie masz dostępu do tego elementu." });
+    }
+    const row = findMaterialTemplateRow(template, parsed.data.rowKey);
+    if (!row || row.level !== "item") {
+      return res.status(404).json({ error: "Nie znaleziono wskazanego elementu." });
+    }
+    if (!["file_required", "file_or_doc", "check_or_file"].includes(String(row.actionType))) {
+      return res.status(400).json({ error: "Ten element nie pozwala na upload pliku." });
+    }
+
+    const workspace = await ensureMenteeWorkspace(db, req.platformUser!.id);
+    if (!workspace.folderId) {
+      return res.status(500).json({ error: "Brak folderu Google Drive dla mentee." });
+    }
+
+    const buffer = Buffer.from(parsed.data.base64Content, "base64");
+    const uploaded = await uploadFileToDrive({
+      fileName: parsed.data.fileName,
+      mimeType: parsed.data.mimeType,
+      parentId: workspace.folderId,
+      data: buffer,
+    });
+    const [asset] = await db
+      .insert(platformFileAssetsTable)
+      .values({
+        ownerUserId: req.platformUser!.id,
+        mimeType: parsed.data.mimeType,
+        objectKey: uploaded.id,
+        originalFilename: parsed.data.fileName,
+        publicUrl: uploaded.url,
+        sizeBytes: buffer.byteLength,
+      })
+      .returning();
+
+    const state = await upsertMaterialItemState(db, {
+      templateId: parsed.data.templateId,
+      menteeUserId: req.platformUser!.id,
+      rowKey: parsed.data.rowKey,
+      values: {
+        completed: true,
+        completionMethod: "file_upload",
+        currentFileAssetId: asset.id,
+      },
+    });
+
+    return res.status(201).json({
+      asset,
+      state,
+    });
+  },
+);
+
+router.post(
+  "/platform/mentee/material-items/create-doc-tab",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = menteeMaterialDocTabSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [template] = await db
+      .select()
+      .from(platformMaterialTemplatesTable)
+      .where(
+        and(
+          eq(platformMaterialTemplatesTable.id, parsed.data.templateId),
+          eq(platformMaterialTemplatesTable.isActive, true),
+        ),
+      )
+      .limit(1);
+    if (!template) {
+      return res.status(404).json({ error: "Nie znaleziono kafla materiałów." });
+    }
+    if (!(await menteeCanAccessMaterialRow(db, {
+      menteeUserId: req.platformUser!.id,
+      rowKey: parsed.data.rowKey,
+      template,
+    }))) {
+      return res.status(403).json({ error: "Nie masz dostępu do tego elementu." });
+    }
+    const row = findMaterialTemplateRow(template, parsed.data.rowKey);
+    if (!row || row.level !== "item") {
+      return res.status(404).json({ error: "Nie znaleziono wskazanego elementu." });
+    }
+    if (row.actionType !== "file_or_doc") {
+      return res.status(400).json({ error: "Ten element nie pozwala na utworzenie zakładki w Essay Doc." });
+    }
+
+    const workspace = await ensureMenteeWorkspace(db, req.platformUser!.id);
+    if (!workspace.essayDocId) {
+      return res.status(500).json({ error: "Brak Essay Doc dla mentee." });
+    }
+
+    const docTab = await createDocumentTab({
+      documentId: workspace.essayDocId,
+      initialText: row.docTabPrompt || "",
+      title: row.docTabTitle || row.task || "Essay task",
+    });
+
+    const state = await upsertMaterialItemState(db, {
+      templateId: parsed.data.templateId,
+      menteeUserId: req.platformUser!.id,
+      rowKey: parsed.data.rowKey,
+      values: {
+        completed: true,
+        completionMethod: "google_doc_tab",
+        googleDocTabId: docTab.tabId,
+        googleDocTabTitle: docTab.title,
+        googleDocTabUrl: docTab.tabUrl,
+      },
+    });
+
+    return res.status(201).json({
+      state,
+      tab: docTab,
     });
   },
 );
@@ -3587,6 +4332,7 @@ router.post(
         userId: user.id,
         adminApproved: parsed.data.status === "active",
       });
+      await safeEnsureMenteeWorkspace(db, user.id);
     }
 
     return res.status(201).json({ user: serializeUser(user) });
@@ -3831,6 +4577,10 @@ router.put(
         },
       })
       .returning();
+    await safeEnsureMentorAccessToMenteeWorkspace(db, {
+      menteeUserId: id,
+      mentorUserId,
+    });
     return res.json(profile);
   },
 );
@@ -3868,6 +4618,11 @@ router.post(
         .limit(1);
       return res.json(existing);
     }
+
+    await safeEnsureMentorAccessToMenteeWorkspace(db, {
+      menteeUserId: parsed.data.menteeUserId,
+      mentorUserId: parsed.data.mentorUserId,
+    });
 
     return res.status(201).json(row);
   },

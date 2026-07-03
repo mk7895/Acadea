@@ -50,16 +50,22 @@ type Overview = {
 
 type LeadKind = "contact" | "mentor" | "scholarship" | "newsletter" | "booking";
 
+type MaterialItemAction = "check_only" | "file_required" | "file_or_doc" | "check_or_file";
+
 type MaterialRowEditor = {
+  actionType: MaterialItemAction;
   alternativeOptions: string[];
   appliesToGuideIds: string[];
   anchorAfterKey?: string;
   country: string;
   displayKey?: string;
+  docTabPrompt?: string;
+  docTabTitle?: string;
   guideId: string;
   level: "country" | "university" | "item";
   ownerUserId?: number | null;
   readOnly?: boolean;
+  suggestedFilename?: string;
   task: string;
   university: string;
 };
@@ -85,6 +91,21 @@ function materialTemplateTypeLabel(value: string) {
       return "Wspólne dokumenty";
     case "essay_like":
       return "Eseje i zadania";
+    default:
+      return value;
+  }
+}
+
+function materialItemActionLabel(value: MaterialItemAction) {
+  switch (value) {
+    case "check_only":
+      return "Tylko checkbox";
+    case "file_required":
+      return "Tylko upload pliku";
+    case "file_or_doc":
+      return "Upload pliku lub Google Doc";
+    case "check_or_file":
+      return "Checkbox lub upload pliku";
     default:
       return value;
   }
@@ -165,9 +186,11 @@ function buildDerivedMaterialTemplates(guides: any[], materialTemplates: any[]) 
       }
 
       entry.structure.push({
+        actionType: "check_only",
         alternativeOptions: [],
         appliesToGuideIds: [String(guide.id)],
         country: guide.country,
+        displayKey: createEditorRowKey("derived"),
         guideId: "",
         level: "item",
         task: title,
@@ -441,17 +464,31 @@ function createEditorRowKey(prefix = "row") {
 
 function createEmptyMaterialRow(): MaterialRowEditor {
   return {
+    actionType: "check_only",
     alternativeOptions: [],
     appliesToGuideIds: [],
     anchorAfterKey: "",
     country: "",
     displayKey: createEditorRowKey("mentor"),
+    docTabPrompt: "",
+    docTabTitle: "",
     guideId: "",
     level: "item",
     readOnly: false,
+    suggestedFilename: "",
     task: "",
     university: "",
   };
+}
+
+async function fileToBase64(file: File) {
+  const buffer = await file.arrayBuffer();
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  for (let index = 0; index < bytes.byteLength; index += 1) {
+    binary += String.fromCharCode(bytes[index]);
+  }
+  return btoa(binary);
 }
 
 function formatDate(value: string | null | undefined) {
@@ -1318,14 +1355,19 @@ function AdminSection({
       templateType: material.templateType ?? "passport_like",
       guideId: material.guideId ? String(material.guideId) : "",
       appliesToGuideIds: (material.appliesToGuideIds ?? []).map((id: number) => String(id)),
-          rows: (material.structure ?? []).length
+      rows: (material.structure ?? []).length
         ? (material.structure ?? []).map((row: any) => ({
+            actionType: row.actionType ?? "check_only",
             alternativeOptions: Array.isArray(row.alternativeOptions) ? row.alternativeOptions.filter(Boolean) : [],
             appliesToGuideIds: Array.isArray(row.appliesToGuideIds) ? row.appliesToGuideIds.map((id: any) => String(id)) : [],
             country: row.country ?? "",
             guideId: row.guideId ? String(row.guideId) : "",
+            docTabPrompt: row.docTabPrompt ?? "",
+            docTabTitle: row.docTabTitle ?? "",
+            displayKey: row.displayKey ?? createEditorRowKey("material"),
             level: row.level === "country" || row.level === "university" || row.level === "item" ? row.level : "item",
             ownerUserId: row.ownerUserId ?? null,
+            suggestedFilename: row.suggestedFilename ?? "",
             task: row.task ?? "",
             university: row.university ?? "",
           }))
@@ -1510,14 +1552,19 @@ function AdminSection({
     const allowedGuideIds = new Set(appliesToGuideIds);
     const structure = materialForm.rows
       .map((row) => ({
+        actionType: row.actionType,
         alternativeOptions: row.alternativeOptions.filter(Boolean),
         appliesToGuideIds: row.appliesToGuideIds
           .map((value) => Number(value))
           .filter((value) => Number.isFinite(value) && value > 0 && allowedGuideIds.has(value)),
         country: row.country.trim(),
+        displayKey: row.displayKey || createEditorRowKey("material"),
+        docTabPrompt: row.docTabPrompt?.trim() || "",
+        docTabTitle: row.docTabTitle?.trim() || "",
         guideId: row.level === "item" && row.guideId ? Number(row.guideId) : null,
         level: row.level,
         ownerUserId: row.ownerUserId ?? null,
+        suggestedFilename: row.suggestedFilename?.trim() || "",
         task: row.level === "item" ? row.task.trim() : "",
         university: row.level === "country" ? "" : row.university.trim(),
       }))
@@ -1655,6 +1702,22 @@ function AdminSection({
         }, token);
       },
       "Folder Google Drive mentora został zapisany.",
+    );
+  }
+
+  async function generateMentorDriveFolder(userId: number) {
+    await runUserAction(
+      userId,
+      async () => {
+        const created = await apiFetch<{ folderUrl: string }>(`/admin/mentors/${userId}/google-drive-folder`, {
+          method: "POST",
+        }, token);
+        setMentorDriveDrafts((current) => ({
+          ...current,
+          [String(userId)]: created.folderUrl ?? current[String(userId)] ?? "",
+        }));
+      },
+      "Folder Google Drive mentora został utworzony.",
     );
   }
 
@@ -1948,6 +2011,16 @@ function AdminSection({
                           type="button"
                         >
                           Zapisz folder Drive
+                        </button>
+                      ) : null}
+                      {user.role === "mentor" ? (
+                        <button
+                          className="btn btn-secondary"
+                          disabled={userActionId === user.id}
+                          onClick={() => void generateMentorDriveFolder(user.id)}
+                          type="button"
+                        >
+                          Wygeneruj folder mentora
                         </button>
                       ) : null}
                       {user.role === "mentor" ? (
@@ -2519,6 +2592,63 @@ function AdminSection({
                                 }
                               />
                             </div>
+                            <div className="field">
+                              <label>Typ akcji dla mentee</label>
+                              <select
+                                value={row.actionType}
+                                onChange={(event) =>
+                                  updateMaterialRow(index, (current) => ({
+                                    ...current,
+                                    actionType: event.target.value as MaterialItemAction,
+                                  }))
+                                }
+                              >
+                                <option value="check_only">Tylko checkbox</option>
+                                <option value="file_required">Tylko upload pliku</option>
+                                <option value="file_or_doc">Upload pliku lub Google Doc</option>
+                                <option value="check_or_file">Checkbox lub upload pliku</option>
+                              </select>
+                            </div>
+                            <div className="field">
+                              <label>Sugerowana nazwa pliku (opcjonalnie)</label>
+                              <input
+                                value={row.suggestedFilename ?? ""}
+                                onChange={(event) =>
+                                  updateMaterialRow(index, (current) => ({
+                                    ...current,
+                                    suggestedFilename: event.target.value,
+                                  }))
+                                }
+                              />
+                            </div>
+                            {row.actionType === "file_or_doc" ? (
+                              <>
+                                <div className="field">
+                                  <label>Tytuł zakładki w Essay Doc</label>
+                                  <input
+                                    value={row.docTabTitle ?? ""}
+                                    onChange={(event) =>
+                                      updateMaterialRow(index, (current) => ({
+                                        ...current,
+                                        docTabTitle: event.target.value,
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <div className="field">
+                                  <label>Tekst startowy / prompt na początku zakładki</label>
+                                  <textarea
+                                    value={row.docTabPrompt ?? ""}
+                                    onChange={(event) =>
+                                      updateMaterialRow(index, (current) => ({
+                                        ...current,
+                                        docTabPrompt: event.target.value,
+                                      }))
+                                    }
+                                  />
+                                </div>
+                              </>
+                            ) : null}
                             <div className="field">
                               <label>Link do wskazówek</label>
                               <select
@@ -3257,15 +3387,19 @@ function MentorSection({
             return null;
           }
           return {
+            actionType: row.actionType ?? "check_only",
             alternativeOptions: Array.isArray(row.alternativeOptions) ? row.alternativeOptions.filter(Boolean) : [],
             anchorAfterKey: typeof row.anchorAfterKey === "string" ? row.anchorAfterKey : lastAdminKey,
             appliesToGuideIds: Array.isArray(row.appliesToGuideIds) ? row.appliesToGuideIds.map((id: any) => String(id)) : [],
             country: row.country ?? "",
             displayKey: typeof row.displayKey === "string" && row.displayKey ? row.displayKey : createEditorRowKey("mentor"),
+            docTabPrompt: row.docTabPrompt ?? "",
+            docTabTitle: row.docTabTitle ?? "",
             guideId: row.guideId ? String(row.guideId) : "",
             level: row.level === "country" || row.level === "university" || row.level === "item" ? row.level : "item",
             ownerUserId: row.ownerUserId ?? session.user.id,
             readOnly: false,
+            suggestedFilename: row.suggestedFilename ?? "",
             task: row.task ?? "",
             university: row.university ?? "",
           } satisfies MaterialRowEditor;
@@ -4069,6 +4203,47 @@ function MentorSection({
                           />
                         </div>
                         <div className="field">
+                          <label>Typ akcji dla mentee</label>
+                          <select
+                            disabled={row.readOnly}
+                            value={row.actionType}
+                            onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, actionType: event.target.value as MaterialItemAction }))}
+                          >
+                            <option value="check_only">Tylko checkbox</option>
+                            <option value="file_required">Tylko upload pliku</option>
+                            <option value="file_or_doc">Upload pliku lub Google Doc</option>
+                            <option value="check_or_file">Checkbox lub upload pliku</option>
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label>Sugerowana nazwa pliku (opcjonalnie)</label>
+                          <input
+                            disabled={row.readOnly}
+                            value={row.suggestedFilename ?? ""}
+                            onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, suggestedFilename: event.target.value }))}
+                          />
+                        </div>
+                        {row.actionType === "file_or_doc" ? (
+                          <>
+                            <div className="field">
+                              <label>Tytuł zakładki w Essay Doc</label>
+                              <input
+                                disabled={row.readOnly}
+                                value={row.docTabTitle ?? ""}
+                                onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, docTabTitle: event.target.value }))}
+                              />
+                            </div>
+                            <div className="field">
+                              <label>Tekst startowy / prompt na początku zakładki</label>
+                              <textarea
+                                disabled={row.readOnly}
+                                value={row.docTabPrompt ?? ""}
+                                onChange={(event) => updateMentorRow(mentorIndex, (entry) => ({ ...entry, docTabPrompt: event.target.value }))}
+                              />
+                            </div>
+                          </>
+                        ) : null}
+                        <div className="field">
                           <label>Link do wskazówek</label>
                           <select
                             disabled={row.readOnly}
@@ -4165,6 +4340,7 @@ function MenteeSection({
   const [openHintGuide, setOpenHintGuide] = useState<any | null>(null);
   const [profileValues, setProfileValues] = useState<Record<string, string>>({});
   const [status, setStatus] = useState("");
+  const [materialActionKey, setMaterialActionKey] = useState<string | null>(null);
   const [meetingTurnstileToken, setMeetingTurnstileToken] = useState("");
   const [meetingTurnstileResetKey, setMeetingTurnstileResetKey] = useState(0);
   const [meetingForm, setMeetingForm] = useState({
@@ -4177,12 +4353,22 @@ function MenteeSection({
     method: "zoom_link",
     meetingUrl: "",
   });
+  type MaterialItemState = {
+    completed?: boolean;
+    completionMethod?: string | null;
+    currentFileName?: string | null;
+    currentFileUrl?: string | null;
+    googleDocTabTitle?: string | null;
+    googleDocTabUrl?: string | null;
+  };
 
   const profileFields = overview?.profileFields ?? [];
   const assignedMentors = overview?.assignedMentors ?? [];
   const availableGuideTemplates = overview?.availableGuideTemplates ?? [];
   const guideLimits = overview?.guideLimits ?? { maxActiveGuideCount: 3, maxHintGuideCount: 3 };
   const materialTemplates = overview?.materialTemplates ?? [];
+  const materialItemStates = overview?.materialItemStates ?? [];
+  const googleWorkspace = overview?.googleWorkspace ?? {};
   const hintGuides = overview?.hintGuides ?? [];
   const hintEligibleTemplateIds = (overview?.hintEligibleTemplateIds ?? []).map(String);
   const tipAccessGuides = overview?.tipAccessGuides ?? [];
@@ -4233,6 +4419,9 @@ function MenteeSection({
     ...(materialTemplates ?? []),
     ...derivedMaterialTemplates,
   ];
+  const materialItemStateMap = new Map<string, MaterialItemState>(
+    materialItemStates.map((entry: any) => [`${entry.templateId}:${entry.rowKey}`, entry]),
+  );
   const guideMaterialsMap = new Map(
     (guides ?? []).map((guide: any) => [
       guide.id,
@@ -4246,18 +4435,22 @@ function MenteeSection({
         })),
     ]),
   );
+
+  async function refreshOverview() {
+    const payload = await apiFetch<any>("/mentee/overview", undefined, token);
+    setOverview(payload);
+    setGuides(payload.guides ?? []);
+    const nextValues: Record<string, string> = {};
+    const responses = new Map<number, string>((payload.profileResponses ?? []).map((entry: any) => [entry.fieldId, String(entry.value ?? "")]));
+    for (const field of payload.profileFields ?? []) {
+      nextValues[String(field.id)] = responses.get(field.id) ?? "";
+    }
+    setProfileValues(nextValues);
+    return payload;
+  }
   useEffect(() => {
     if (section === "universities" || section === "materials" || section === "profile" || section === "meetings" || section === "mentors") {
-      void apiFetch<any>("/mentee/overview", undefined, token).then((payload) => {
-        setOverview(payload);
-        setGuides(payload.guides ?? []);
-        const nextValues: Record<string, string> = {};
-        const responses = new Map<number, string>((payload.profileResponses ?? []).map((entry: any) => [entry.fieldId, String(entry.value ?? "")]));
-        for (const field of payload.profileFields ?? []) {
-          nextValues[String(field.id)] = responses.get(field.id) ?? "";
-        }
-        setProfileValues(nextValues);
-      }).catch((error) => setStatus(error.message));
+      void refreshOverview().catch((error) => setStatus(error.message));
     }
     if (section === "mentors") {
       void apiFetch<any[]>("/public/mentors").then(setMentors).catch((error) => setStatus(error.message));
@@ -4329,8 +4522,7 @@ function MenteeSection({
           turnstileToken: meetingTurnstileToken,
         }),
       }, token);
-      const payload = await apiFetch<any>("/mentee/overview", undefined, token);
-      setOverview(payload);
+      await refreshOverview();
       setStatus("Spotkanie zostało zarezerwowane.");
       setMeetingTurnstileToken("");
       setMeetingTurnstileResetKey((current) => current + 1);
@@ -4370,9 +4562,7 @@ function MenteeSection({
     setStatus("");
     try {
       await apiFetch(`/mentee/guides/${templateId}/adopt`, { method: "POST" }, token);
-      const payload = await apiFetch<any>("/mentee/overview", undefined, token);
-      setOverview(payload);
-      setGuides(payload.guides ?? []);
+      await refreshOverview();
       setStatus("Uczelnia została dodana do Twojego panelu.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się dodać uczelni.");
@@ -4383,12 +4573,75 @@ function MenteeSection({
     setStatus("");
     try {
       await apiFetch(`/mentee/guides/${guideId}/resign`, { method: "PATCH" }, token);
-      const payload = await apiFetch<any>("/mentee/overview", undefined, token);
-      setOverview(payload);
-      setGuides(payload.guides ?? []);
+      await refreshOverview();
       setStatus("Uczelnia została usunięta z Twojego panelu.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się usunąć uczelni.");
+    }
+  }
+
+  async function toggleMaterialCheck(templateId: number, rowKey: string, completed: boolean) {
+    setMaterialActionKey(`${templateId}:${rowKey}:check`);
+    setStatus("");
+    try {
+      await apiFetch("/mentee/material-items/check", {
+        method: "POST",
+        body: JSON.stringify({
+          completed,
+          rowKey,
+          templateId,
+        }),
+      }, token);
+      await refreshOverview();
+      setStatus(completed ? "Element został oznaczony jako wykonany." : "Element został odznaczony.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać statusu elementu.");
+    } finally {
+      setMaterialActionKey(null);
+    }
+  }
+
+  async function uploadMaterialFile(templateId: number, rowKey: string, file: File) {
+    setMaterialActionKey(`${templateId}:${rowKey}:upload`);
+    setStatus("");
+    try {
+      const base64Content = await fileToBase64(file);
+      await apiFetch("/mentee/material-items/upload", {
+        method: "POST",
+        body: JSON.stringify({
+          base64Content,
+          fileName: file.name,
+          mimeType: file.type || "application/octet-stream",
+          rowKey,
+          templateId,
+        }),
+      }, token);
+      await refreshOverview();
+      setStatus("Plik został wgrany do Twojego folderu Google Drive.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się wgrać pliku.");
+    } finally {
+      setMaterialActionKey(null);
+    }
+  }
+
+  async function createMaterialDocTab(templateId: number, rowKey: string) {
+    setMaterialActionKey(`${templateId}:${rowKey}:doc`);
+    setStatus("");
+    try {
+      await apiFetch("/mentee/material-items/create-doc-tab", {
+        method: "POST",
+        body: JSON.stringify({
+          rowKey,
+          templateId,
+        }),
+      }, token);
+      await refreshOverview();
+      setStatus("Nowa zakładka została dodana do Essay Doc.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się utworzyć zakładki w Essay Doc.");
+    } finally {
+      setMaterialActionKey(null);
     }
   }
 
@@ -4848,6 +5101,20 @@ function MenteeSection({
           <div className="dashboard-card">
             <h2>Twoje Materiały</h2>
             <p className="muted">Tutaj zbierają się wszystkie materiały wymagane przez Twoje uczelnie. Dokumenty wspólne są łączone razem, a eseje i zadania pokazują, do których krajów i uczelni należą.</p>
+            {googleWorkspace?.folderUrl || googleWorkspace?.essayDocUrl ? (
+              <div className="button-row" style={{ marginTop: 16 }}>
+                {googleWorkspace?.folderUrl ? (
+                  <a className="btn btn-secondary" href={googleWorkspace.folderUrl} target="_blank" rel="noreferrer">
+                    Otwórz folder Google Drive
+                  </a>
+                ) : null}
+                {googleWorkspace?.essayDocUrl ? (
+                  <a className="btn btn-secondary" href={googleWorkspace.essayDocUrl} target="_blank" rel="noreferrer">
+                    Otwórz Essay Doc
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
             <div className="tile-grid" style={{ marginTop: 18 }}>
               {visibleMaterialTemplates.map((template: any) => (
                 <details className="tile tile-detail" key={template.id}>
@@ -4859,9 +5126,6 @@ function MenteeSection({
                   </summary>
                   <div style={{ marginTop: 12 }}>
                     <p className="muted">{template.description}</p>
-                    <div className="status">
-                      Placeholder upload box. W następnym etapie podmienimy to na Google Drive / pliki użytkownika.
-                    </div>
                     {(template.alternativeOptions ?? []).length ? (
                       <div className="list" style={{ marginTop: 12 }}>
                         {(template.alternativeOptions ?? []).map((option: string, index: number) => (
@@ -4908,9 +5172,17 @@ function MenteeSection({
                               {universityNames.length ? (
                                 <div className="small muted">{formatUniversityNamesPreview(universityNames)}</div>
                               ) : null}
+                              <div className="small muted" style={{ marginTop: 6 }}>
+                                {materialItemActionLabel((row.actionType ?? "check_only") as MaterialItemAction)}
+                              </div>
                               {Array.isArray(row.alternativeOptions) && row.alternativeOptions.length ? (
                                 <div className="small muted" style={{ marginTop: 8 }}>
                                   Alternatywnie: {row.alternativeOptions.join(" • ")}
+                                </div>
+                              ) : null}
+                              {row.suggestedFilename ? (
+                                <div className="small muted" style={{ marginTop: 8 }}>
+                                  Sugerowana nazwa pliku: {row.suggestedFilename}
                                 </div>
                               ) : null}
                               {showHints && hintGuide ? (
@@ -4924,6 +5196,80 @@ function MenteeSection({
                                   </button>
                                 </div>
                               ) : null}
+                              {(() => {
+                                const canPersistAction = Number.isFinite(Number(template.id)) && Boolean(row.displayKey);
+                                const state = materialItemStateMap.get(`${template.id}:${row.displayKey}`);
+                                const actionType = (row.actionType ?? "check_only") as MaterialItemAction;
+                                const actionPrefix = `${template.id}:${row.displayKey}`;
+                                return (
+                                  <div className="stack" style={{ marginTop: 12 }}>
+                                    {state?.currentFileUrl ? (
+                                      <div className="small muted">
+                                        Aktualny plik:{" "}
+                                        <a href={state.currentFileUrl} target="_blank" rel="noreferrer">
+                                          {state.currentFileName || "Otwórz plik"}
+                                        </a>
+                                      </div>
+                                    ) : null}
+                                    {state?.googleDocTabUrl ? (
+                                      <div className="small muted">
+                                        Zakładka eseju:{" "}
+                                        <a href={state.googleDocTabUrl} target="_blank" rel="noreferrer">
+                                          {state.googleDocTabTitle || "Otwórz zakładkę"}
+                                        </a>
+                                      </div>
+                                    ) : null}
+                                    {(actionType === "check_only" || actionType === "check_or_file") ? (
+                                      <label className="selector-option" style={{ marginTop: 6 }}>
+                                        <input
+                                          checked={Boolean(state?.completed && state?.completionMethod === "checkbox")}
+                                          disabled={!canPersistAction || materialActionKey === `${actionPrefix}:check`}
+                                          type="checkbox"
+                                          onChange={(event) => {
+                                            if (canPersistAction) {
+                                              void toggleMaterialCheck(Number(template.id), row.displayKey, event.target.checked);
+                                            }
+                                          }}
+                                        />
+                                        <span className="selector-copy">
+                                          <strong>Oznacz jako wykonane</strong>
+                                        </span>
+                                      </label>
+                                    ) : null}
+                                    {(actionType === "file_required" || actionType === "file_or_doc" || actionType === "check_or_file") ? (
+                                      <label className="btn btn-secondary" style={{ width: "fit-content", cursor: "pointer" }}>
+                                        {state?.currentFileUrl ? "Wgraj nowszy plik" : "Wgraj plik"}
+                                        <input
+                                          hidden
+                                          disabled={!canPersistAction || materialActionKey === `${actionPrefix}:upload`}
+                                          type="file"
+                                          onChange={(event) => {
+                                            const file = event.target.files?.[0];
+                                            event.currentTarget.value = "";
+                                            if (file && canPersistAction) {
+                                              void uploadMaterialFile(Number(template.id), row.displayKey, file);
+                                            }
+                                          }}
+                                        />
+                                      </label>
+                                    ) : null}
+                                    {actionType === "file_or_doc" ? (
+                                      <button
+                                        className="btn btn-secondary"
+                                        disabled={!canPersistAction || materialActionKey === `${actionPrefix}:doc`}
+                                        onClick={() => {
+                                          if (canPersistAction) {
+                                            void createMaterialDocTab(Number(template.id), row.displayKey);
+                                          }
+                                        }}
+                                        type="button"
+                                      >
+                                        {state?.googleDocTabUrl ? "Dodaj kolejną zakładkę" : "Utwórz zakładkę w Essay Doc"}
+                                      </button>
+                                    ) : null}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           );
                         })}
