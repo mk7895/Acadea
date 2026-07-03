@@ -237,94 +237,6 @@ function normalizeMaterialKey(value: string) {
     .trim();
 }
 
-function guessMaterialTemplateType(...values: Array<string | null | undefined>) {
-  const haystack = values.join(" ").toLowerCase();
-  const passportLikePatterns = [
-    "paszport",
-    "passport",
-    "transcript",
-    "swiadect",
-    "świadect",
-    "certificate",
-    "certyfikat",
-    "photo",
-    "zdjec",
-    "zdjęc",
-    "diploma",
-    "dyplom",
-    "id",
-    "dowod",
-    "dowód",
-    "birth certificate",
-    "akt urodzenia",
-  ];
-
-  return passportLikePatterns.some((pattern) => haystack.includes(pattern))
-    ? "passport_like"
-    : "essay_like";
-}
-
-function buildDerivedMaterialTemplates(guides: any[], materialTemplates: any[]) {
-  const existingTitles = new Set(
-    materialTemplates.map((template: any) => normalizeMaterialKey(String(template.title ?? ""))),
-  );
-  const derived = new Map<string, any>();
-
-  for (const guide of guides) {
-    const hasExplicitTemplates = materialTemplates.some((template: any) => templateAppliesToGuide(template, guide));
-    if (hasExplicitTemplates) {
-      continue;
-    }
-
-    for (const item of guide.items ?? []) {
-      const title = String(item.title ?? "").trim();
-      if (!title) {
-        continue;
-      }
-
-      const normalizedTitle = normalizeMaterialKey(title);
-      if (!normalizedTitle || existingTitles.has(normalizedTitle)) {
-        continue;
-      }
-
-      const entry =
-        derived.get(normalizedTitle) ??
-        {
-          id: `derived-${normalizedTitle}`,
-          title,
-          description:
-            item.description?.trim() ||
-            "Ten kafel powstał automatycznie z wymagań przypisanych do Twoich uczelni.",
-          templateType: guessMaterialTemplateType(title, item.sectionTitle, item.description),
-          appliesToGuideIds: [],
-          alternativeOptions: [],
-          structure: [],
-          guideId: null,
-          isDerived: true,
-        };
-
-      if (!entry.appliesToGuideIds.includes(guide.id)) {
-        entry.appliesToGuideIds.push(guide.id);
-      }
-
-      entry.structure.push({
-        actionType: "check_only",
-        alternativeOptions: [],
-        appliesToGuideIds: [String(guide.id)],
-        country: guide.country,
-        displayKey: createEditorRowKey("derived"),
-        guideId: "",
-        level: "item",
-        task: title,
-        university: guide.universityName,
-      });
-      derived.set(normalizedTitle, entry);
-    }
-  }
-
-  return Array.from(derived.values());
-}
-
 function getGuideTemplateId(guide: any) {
   return String(guide?.sourceGuideId ?? guide?.id ?? "");
 }
@@ -3313,7 +3225,7 @@ function AdminSection({
             <div className="list-item">
               <h3 style={{ marginTop: 0 }}>Brak rekordów</h3>
               <p className="muted" style={{ marginBottom: 0 }}>
-                W produkcyjnej bazie Render obecnie nie ma jeszcze żadnych wpisów dla kategorii <strong>{leadType}</strong>.
+                Obecnie nie ma jeszcze żadnych leadów dla kategorii <strong>{leadType}</strong>.
               </p>
             </div>
           ) : null}
@@ -4932,11 +4844,7 @@ function MenteeSection({
   const selectedMentorDay = selectedMentorDayKey
     ? mentorSlotDayIndex[selectedMentorDayKey] ?? null
     : null;
-  const derivedMaterialTemplates = buildDerivedMaterialTemplates(guides ?? [], materialTemplates ?? []);
-  const visibleMaterialTemplates = [
-    ...(materialTemplates ?? []),
-    ...derivedMaterialTemplates,
-  ];
+  const visibleMaterialTemplates = materialTemplates ?? [];
   const materialItemStateMap = new Map<string, MaterialItemState>(
     materialItemStates.map((entry: any) => [`${entry.templateId}:${entry.rowKey}`, entry]),
   );
@@ -5331,16 +5239,6 @@ function MenteeSection({
                           </details>
                         ))}
                       </div>
-                    ) : (guide.items ?? []).length ? (
-                      <div className="list">
-                        {(guide.items ?? []).map((item: any) => (
-                          <div className="list-item" key={item.id ?? `${guide.id}-${item.title}`}>
-                            <h3>{item.title}</h3>
-                            <div className="muted small">{item.sectionTitle} • {item.itemType}</div>
-                            <p className="muted">{item.description}</p>
-                          </div>
-                        ))}
-                      </div>
                     ) : (
                       <div className="status">Dla tej uczelni nie ma jeszcze przypiętych materiałów.</div>
                     )}
@@ -5472,14 +5370,6 @@ function MenteeSection({
                   ))}
                 </select>
               </div>
-              {selectedMentor ? (
-                <div className="status">
-                  Wybrany mentor: <strong>{selectedMentor.fullName}</strong>.
-                  {selectedMentor.googleCalendarConnected
-                    ? " Najpierw wybierz dzień w kalendarzu miesiąca, a potem godzinę z realnych slotów Google Calendar."
-                    : " Ten mentor nie podłączył jeszcze Google Calendar, więc poniżej zostaje ręczna prośba o spotkanie."}
-                </div>
-              ) : null}
               {selectedMentor?.googleCalendarConnected ? (
                 <div className="stack">
                   <div className="small muted">
@@ -5591,11 +5481,7 @@ function MenteeSection({
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="grid-2">
-                  <div className="status">Wybierz najpierw mentora, aby zobaczyć terminy lub ręczny formularz spotkania.</div>
-                </div>
-              )}
+              ) : null}
               {selectedMentor && !selectedMentor.googleCalendarConnected ? (
                 <div className="grid-2">
                   <div className="field">
