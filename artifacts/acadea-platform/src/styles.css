@@ -383,6 +383,25 @@ textarea {
   cursor: pointer;
 }
 
+.tile-detail > .collapsible-body,
+.nested-detail > .collapsible-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 220ms ease, opacity 220ms ease;
+}
+
+.tile-detail[open] > .collapsible-body,
+.nested-detail[open] > .collapsible-body {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.collapsible-body-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .nested-detail > summary::-webkit-details-marker {
   display: none;
 }

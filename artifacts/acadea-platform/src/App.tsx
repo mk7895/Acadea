@@ -5179,7 +5179,7 @@ function MenteeSection({
   const [meetingTurnstileResetKey, setMeetingTurnstileResetKey] = useState(0);
   const [openMaterialTemplateIds, setOpenMaterialTemplateIds] = useState<number[]>(expandedMaterialTemplateIds);
   const [openEssayTileKeys, setOpenEssayTileKeys] = useState<string[]>([]);
-  const [openEssayItemKeys, setOpenEssayItemKeys] = useState<string[]>([]);
+  const [openMaterialItemKeys, setOpenMaterialItemKeys] = useState<string[]>([]);
   const [viewerTimezone, setViewerTimezone] = useState(() => {
     const saved = getCookie(TIMEZONE_COOKIE_NAME);
     return saved && findTimezoneOption(saved) ? saved : DEFAULT_TIMEZONE;
@@ -5342,7 +5342,7 @@ function MenteeSection({
       expandedMaterialTemplateIds.length ? Array.from(new Set(expandedMaterialTemplateIds)) : [],
     );
     setOpenEssayTileKeys([]);
-    setOpenEssayItemKeys([]);
+    setOpenMaterialItemKeys([]);
   }, [expandedMaterialTemplateIds, section]);
 
   useEffect(() => {
@@ -5735,6 +5735,7 @@ function MenteeSection({
               Otwórz wskazówki
             </button>
             {(actionType === "file_required"
+              || actionType === "check_or_file"
               || (actionType === "file_or_doc" && !state?.googleDocTabUrl)) ? (
               <label className="btn btn-secondary material-file-button" style={{ cursor: "pointer" }}>
                 {getUploadButtonLabel(row, state)}
@@ -5837,13 +5838,13 @@ function MenteeSection({
           key={key}
           onToggle={(event) => {
             const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
-            setOpenEssayItemKeys((current) =>
+            setOpenMaterialItemKeys((current) =>
               nextOpen
                 ? (current.includes(collapsibleKey) ? current : [...current, collapsibleKey])
                 : current.filter((value) => value !== collapsibleKey),
             );
           }}
-          open={openEssayItemKeys.includes(collapsibleKey)}
+          open={openMaterialItemKeys.includes(collapsibleKey)}
         >
           <summary>
             <div className="material-summary-row">
@@ -5851,8 +5852,10 @@ function MenteeSection({
               <CompletionDot completed={getMaterialItemCompleted(state)} />
             </div>
           </summary>
-          <div style={{ marginTop: 12 }}>
-            {content}
+          <div className="collapsible-body">
+            <div className="collapsible-body-inner" style={{ marginTop: 12 }}>
+              {content}
+            </div>
           </div>
         </details>
       );
@@ -5962,7 +5965,7 @@ function MenteeSection({
                           : current.filter((value) => value !== tile.key),
                       );
                       if (nextOpen) {
-                        setOpenEssayItemKeys((current) => Array.from(new Set([...current, ...itemKeys])));
+                        setOpenMaterialItemKeys((current) => Array.from(new Set([...current, ...itemKeys])));
                       }
                     }}
                     open={openEssayTileKeys.includes(tile.key)}
@@ -5976,13 +5979,17 @@ function MenteeSection({
                         <ProgressCircle completed={progress.completed} total={progress.total} />
                       </div>
                     </summary>
-                    <div className="list" style={{ marginTop: 12 }}>
-                      {tile.rows.map((row: any, rowIndex: number) =>
-                        renderMaterialItemRow(template, row, `${tile.key}-row-${rowIndex}`, {
-                          showConnectedGuideCount: tile.kind === "item",
-                          collapsibleKey: `${tile.key}-item-${rowIndex}`,
-                        }),
-                      )}
+                    <div className="collapsible-body">
+                      <div className="collapsible-body-inner">
+                        <div className="list" style={{ marginTop: 12 }}>
+                          {tile.rows.map((row: any, rowIndex: number) =>
+                            renderMaterialItemRow(template, row, `${tile.key}-row-${rowIndex}`, {
+                              showConnectedGuideCount: tile.kind === "item",
+                              collapsibleKey: `${tile.key}-item-${rowIndex}`,
+                            }),
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </details>
                 );
@@ -6002,11 +6009,17 @@ function MenteeSection({
         onToggle={(event) => {
           const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
           const templateId = Number(template.id);
+          const itemKeys = (template.visibleRows ?? [])
+            .map((row: any, index: number) => (row.level === "item" ? `${template.id}-item-${index}` : null))
+            .filter(Boolean) as string[];
           setOpenMaterialTemplateIds((current) =>
             nextOpen
               ? (current.includes(templateId) ? current : [...current, templateId])
               : current.filter((value) => value !== templateId),
           );
+          if (nextOpen) {
+            setOpenMaterialItemKeys((current) => Array.from(new Set([...current, ...itemKeys])));
+          }
         }}
         open={openMaterialTemplateIds.includes(Number(template.id))}
       >
@@ -6024,52 +6037,56 @@ function MenteeSection({
             })()}
           </div>
         </summary>
-        <div style={{ marginTop: 12 }}>
-          <p className="muted">{template.description}</p>
-          {(template.alternativeOptions ?? []).length ? (
-            <div className="list" style={{ marginTop: 12 }}>
-              {(template.alternativeOptions ?? []).map((option: string, index: number) => (
-                <div className="list-item" key={`${template.id}-${index}`}>
-                  <h3>Alternatywa</h3>
-                  <p className="muted">{option}</p>
-                </div>
-              ))}
-            </div>
-          ) : null}
-          {(template.visibleRows ?? []).length ? (
-            <div className="list" style={{ marginTop: 12 }}>
-              {(template.visibleRows ?? []).map((row: any, index: number) => {
-                const applicableGuides = guides.filter((guide: any) => rowAppliesToGuide(row, guide));
-                const universityNames = uniqueStrings(applicableGuides.map((guide: any) => guide.universityName));
-                const countryNames = uniqueStrings(applicableGuides.map((guide: any) => guide.country));
-                const headline =
-                  row.level === "country"
-                    ? (row.country || countryNames[0] || "Kraj")
-                    : row.level === "university"
-                      ? (row.university || universityNames[0] || "Uczelnia")
-                      : (row.task || "Zadanie");
-                const showHints =
-                  row.guideId &&
-                  applicableGuides.some((guide: any) => hintEligibleTemplateIds.includes(getGuideTemplateId(guide)));
-                const hintGuide = row.guideId ? hintGuideMap.get(String(row.guideId)) : null;
-                if (row.level === "country") {
-                  return (
-                    <div className="material-heading material-heading-country" key={`${template.id}-row-${index}`}>
-                      <h3>{headline}</h3>
-                    </div>
-                  );
-                }
-                if (row.level === "university") {
-                  return (
-                    <div className="material-heading material-heading-university" key={`${template.id}-row-${index}`}>
-                      <h3>{headline}</h3>
-                    </div>
-                  );
-                }
-                return renderMaterialItemRow(template, row, `${template.id}-row-${index}`);
-              })}
-            </div>
-          ) : null}
+        <div className="collapsible-body">
+          <div className="collapsible-body-inner" style={{ marginTop: 12 }}>
+            <p className="muted">{template.description}</p>
+            {(template.alternativeOptions ?? []).length ? (
+              <div className="list" style={{ marginTop: 12 }}>
+                {(template.alternativeOptions ?? []).map((option: string, index: number) => (
+                  <div className="list-item" key={`${template.id}-${index}`}>
+                    <h3>Alternatywa</h3>
+                    <p className="muted">{option}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {(template.visibleRows ?? []).length ? (
+              <div className="list" style={{ marginTop: 12 }}>
+                {(template.visibleRows ?? []).map((row: any, index: number) => {
+                  const applicableGuides = guides.filter((guide: any) => rowAppliesToGuide(row, guide));
+                  const universityNames = uniqueStrings(applicableGuides.map((guide: any) => guide.universityName));
+                  const countryNames = uniqueStrings(applicableGuides.map((guide: any) => guide.country));
+                  const headline =
+                    row.level === "country"
+                      ? (row.country || countryNames[0] || "Kraj")
+                      : row.level === "university"
+                        ? (row.university || universityNames[0] || "Uczelnia")
+                        : (row.task || "Zadanie");
+                  const showHints =
+                    row.guideId &&
+                    applicableGuides.some((guide: any) => hintEligibleTemplateIds.includes(getGuideTemplateId(guide)));
+                  const hintGuide = row.guideId ? hintGuideMap.get(String(row.guideId)) : null;
+                  if (row.level === "country") {
+                    return (
+                      <div className="material-heading material-heading-country" key={`${template.id}-row-${index}`}>
+                        <h3>{headline}</h3>
+                      </div>
+                    );
+                  }
+                  if (row.level === "university") {
+                    return (
+                      <div className="material-heading material-heading-university" key={`${template.id}-row-${index}`}>
+                        <h3>{headline}</h3>
+                      </div>
+                    );
+                  }
+                  return renderMaterialItemRow(template, row, `${template.id}-row-${index}`, {
+                    collapsibleKey: `${template.id}-item-${index}`,
+                  });
+                })}
+              </div>
+            ) : null}
+          </div>
         </div>
       </details>
     );
@@ -6152,26 +6169,39 @@ function MenteeSection({
                   <summary>
                     <strong>{guide.universityName}</strong>
                   </summary>
-                  <div style={{ marginTop: 12 }}>
-                    <p className="muted">{guide.summary}</p>
-                    {guide.descriptionMarkdown ? (
-                      <div className="status" style={{ marginBottom: 12 }}>
-                        {guide.descriptionMarkdown}
+                  <div className="collapsible-body">
+                    <div className="collapsible-body-inner" style={{ marginTop: 12 }}>
+                      <p className="muted">{guide.summary}</p>
+                      {guide.descriptionMarkdown ? (
+                        <div className="status" style={{ marginBottom: 12 }}>
+                          {guide.descriptionMarkdown}
+                        </div>
+                      ) : null}
+                      <div className="button-row" style={{ marginBottom: 12 }}>
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => void resignUniversity(guide.id)}
+                          type="button"
+                        >
+                          Zrezygnuj z tej uczelni
+                        </button>
                       </div>
-                    ) : null}
-                    <div className="button-row" style={{ marginBottom: 12 }}>
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() => void resignUniversity(guide.id)}
-                        type="button"
-                      >
-                        Zrezygnuj z tej uczelni
-                      </button>
-                    </div>
-                    {guideMaterialsMap.get(guide.id)?.length ? (
-                      <div className="list">
-                        {guideMaterialsMap.get(guide.id)?.map((template: any) => (
-                          <details className="list-item nested-detail" key={`${guide.id}-${template.id}`}>
+                      {guideMaterialsMap.get(guide.id)?.length ? (
+                        <div className="list">
+                          {guideMaterialsMap.get(guide.id)?.map((template: any) => (
+                            <details
+                              className="list-item nested-detail"
+                              key={`${guide.id}-${template.id}`}
+                              onToggle={(event) => {
+                                const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
+                                const itemKeys = (template.visibleRows ?? [])
+                                  .map((row: any, index: number) => (row.level === "item" ? `${guide.id}-${template.id}-item-${index}` : null))
+                                  .filter(Boolean) as string[];
+                                if (nextOpen) {
+                                  setOpenMaterialItemKeys((current) => Array.from(new Set([...current, ...itemKeys])));
+                                }
+                              }}
+                            >
                             <summary>
                               <div className="material-summary-row">
                                 <h3>{template.title}</h3>
@@ -6181,66 +6211,90 @@ function MenteeSection({
                                 })()}
                               </div>
                             </summary>
-                            {template.description ? <p className="muted" style={{ marginTop: 10 }}>{template.description}</p> : null}
-                            {template.visibleRows?.length ? (
-                              <div className="list" style={{ marginTop: 10 }}>
-                                {template.visibleRows
-                                  .filter((row: any) => row.level === "item")
-                                  .map((row: any, index: number) => {
-                                    const applicableGuides = guides.filter((entry: any) => rowAppliesToGuide(row, entry));
-                                    const universityNames = uniqueStrings(applicableGuides.map((entry: any) => entry.universityName));
-                                    const showHints = row.guideId && hintEligibleTemplateIds.includes(getGuideTemplateId(guide));
-                                    const hintGuide = row.guideId ? hintGuideMap.get(String(row.guideId)) : null;
-                                    return (
-                                      <div className="list-item" key={`${guide.id}-${template.id}-row-${index}`}>
-                                        <div className="material-summary-row">
-                                          <h3>{row.task || "Zadanie"}</h3>
-                                          <CompletionDot
-                                            completed={getMaterialItemCompleted(
-                                              materialItemStateMap.get(`${template.id}:${row.displayKey}`),
-                                            )}
-                                          />
-                                        </div>
-                                        {universityNames.length ? (
-                                          <div className="small muted">{formatUniversityNamesPreview(universityNames)}</div>
-                                        ) : null}
-                                        <div className="button-row" style={{ marginTop: 8 }}>
-                                          <button
-                                            className="btn btn-secondary"
-                                            disabled={!showHints || !hintGuide}
-                                            onClick={() => {
-                                              if (showHints && hintGuide) {
-                                                setOpenHintGuide(hintGuide);
-                                              }
-                                            }}
-                                            type="button"
-                                          >
-                                            Pokaż wskazówkę
-                                          </button>
-                                          <button
-                                            className="btn btn-secondary"
-                                            onClick={() => onNavigate(getTemplateDestinationSection(template), Number(template.id))}
-                                            type="button"
-                                          >
-                                            {isEssayMaterialTemplate(template) ? "Pokaż w Twoje Eseje" : "Pokaż w Twoje Materiały"}
-                                          </button>
-                                        </div>
-                                        {row.alternativeOptions?.length ? (
-                                          <div className="small muted" style={{ marginTop: 6 }}>
-                                            Alternatywnie: {row.alternativeOptions.join(" • ")}
-                                          </div>
-                                        ) : null}
-                                      </div>
-                                    );
-                                  })}
+                              <div className="collapsible-body">
+                                <div className="collapsible-body-inner">
+                                  {template.description ? <p className="muted" style={{ marginTop: 10 }}>{template.description}</p> : null}
+                                  {template.visibleRows?.length ? (
+                                    <div className="list" style={{ marginTop: 10 }}>
+                                      {template.visibleRows
+                                        .filter((row: any) => row.level === "item")
+                                        .map((row: any, index: number) => {
+                                          const applicableGuides = guides.filter((entry: any) => rowAppliesToGuide(row, entry));
+                                          const universityNames = uniqueStrings(applicableGuides.map((entry: any) => entry.universityName));
+                                          const showHints = row.guideId && hintEligibleTemplateIds.includes(getGuideTemplateId(guide));
+                                          const hintGuide = row.guideId ? hintGuideMap.get(String(row.guideId)) : null;
+                                          return (
+                                            <details
+                                              className="list-item nested-detail material-row material-row-item"
+                                              key={`${guide.id}-${template.id}-row-${index}`}
+                                              onToggle={(event) => {
+                                                const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
+                                                const collapsibleKey = `${guide.id}-${template.id}-item-${index}`;
+                                                setOpenMaterialItemKeys((current) =>
+                                                  nextOpen
+                                                    ? (current.includes(collapsibleKey) ? current : [...current, collapsibleKey])
+                                                    : current.filter((value) => value !== collapsibleKey),
+                                                );
+                                              }}
+                                              open={openMaterialItemKeys.includes(`${guide.id}-${template.id}-item-${index}`)}
+                                            >
+                                              <summary>
+                                                <div className="material-summary-row">
+                                                  <h3>{row.task || "Zadanie"}</h3>
+                                                  <CompletionDot
+                                                    completed={getMaterialItemCompleted(
+                                                      materialItemStateMap.get(`${template.id}:${row.displayKey}`),
+                                                    )}
+                                                  />
+                                                </div>
+                                              </summary>
+                                              <div className="collapsible-body">
+                                                <div className="collapsible-body-inner" style={{ marginTop: 12 }}>
+                                                  {universityNames.length ? (
+                                                    <div className="small muted">{formatUniversityNamesPreview(universityNames)}</div>
+                                                  ) : null}
+                                                  <div className="button-row" style={{ marginTop: 8 }}>
+                                                    <button
+                                                      className="btn btn-secondary"
+                                                      disabled={!showHints || !hintGuide}
+                                                      onClick={() => {
+                                                        if (showHints && hintGuide) {
+                                                          setOpenHintGuide(hintGuide);
+                                                        }
+                                                      }}
+                                                      type="button"
+                                                    >
+                                                      Pokaż wskazówkę
+                                                    </button>
+                                                    <button
+                                                      className="btn btn-secondary"
+                                                      onClick={() => onNavigate(getTemplateDestinationSection(template), Number(template.id))}
+                                                      type="button"
+                                                    >
+                                                      {isEssayMaterialTemplate(template) ? "Pokaż w Twoje Eseje" : "Pokaż w Twoje Materiały"}
+                                                    </button>
+                                                  </div>
+                                                  {row.alternativeOptions?.length ? (
+                                                    <div className="small muted" style={{ marginTop: 6 }}>
+                                                      Alternatywnie: {row.alternativeOptions.join(" • ")}
+                                                    </div>
+                                                  ) : null}
+                                                </div>
+                                              </div>
+                                            </details>
+                                          );
+                                        })}
+                                    </div>
+                                  ) : null}
+                                </div>
                               </div>
-                            ) : null}
-                          </details>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="status">Dla tej uczelni nie ma jeszcze przypiętych materiałów.</div>
-                    )}
+                            </details>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="status">Dla tej uczelni nie ma jeszcze przypiętych materiałów.</div>
+                      )}
+                    </div>
                   </div>
                 </details>
               ))}
