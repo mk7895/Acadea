@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "operations": {
+    "reorderGuideSlugs": [
+      "iba-erasmus-university-rotterdam",
+      "business-administration-university-of-amsterdam",
+      "business-analytics-university-of-amsterdam",
+      "international-business-administration-tilburg-university"
+    ]
+  }
+}

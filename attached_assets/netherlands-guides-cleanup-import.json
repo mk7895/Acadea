@@ -1,0 +1,617 @@
+{
+  "version": 1,
+  "operations": {
+    "reorderGuideSlugs": [
+      "iba-erasmus-university-rotterdam",
+      "business-administration-university-of-amsterdam",
+      "business-analytics-university-of-amsterdam",
+      "international-business-administration-tilburg-university"
+    ]
+  },
+  "itemGuides": [
+    {
+      "key": "studielink",
+      "title": "Studielink",
+      "slug": "studielink",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam / Tilburg University",
+      "summary": "Wspólny pierwszy krok rejestracji w holenderskim systemie Studielink.",
+      "descriptionMarkdown": "Studielink to obowiązkowy pierwszy krok dla wszystkich tych programów.\n\nZasady wspólne:\n- zarejestruj się na dokładnie właściwą nazwę programu;\n- wpisz dane dokładnie tak jak w paszporcie;\n- używaj maila, który regularnie sprawdzasz;\n- sama rejestracja w Studielink nie kończy aplikacji: później trzeba przejść do portalu uczelni.\n\nNazwy programów w Studielink:\n- University of Amsterdam BBA: Business Administration (English track);\n- University of Amsterdam Business Analytics: Business Analytics;\n- Tilburg University IBA: B International Business Administration.\n\nNa podstawie oficjalnych stron UvA i Tilburg University.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "passport-id-netherlands",
+      "title": "Paszport / ID",
+      "slug": "passport-id-netherlands",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam / Tilburg University",
+      "summary": "Dokument tożsamości do aplikacji i późniejszego enrolmentu.",
+      "descriptionMarkdown": "Przygotuj czytelny skan paszportu albo dowodu.\n\nDobre praktyki:\n- sprawdź ważność dokumentu;\n- upewnij się, że dane są wyraźne i zgodne z danymi wpisanymi w systemach uczelni;\n- zapisuj plik jako jeden PDF lub czytelny JPG/PNG, jeśli platforma na to pozwala.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "expected-graduation-certificate",
+      "title": "Expected graduation / school statement",
+      "slug": "expected-graduation-certificate",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam / Tilburg University",
+      "summary": "Zaświadczenie ze szkoły, jeśli dyplom nie jest jeszcze wydany.",
+      "descriptionMarkdown": "Jeżeli nie masz jeszcze finalnego dyplomu, wgraj aktualne zaświadczenie ze szkoły.\n\nPowinno ono możliwie jasno potwierdzać:\n- nazwę szkoły;\n- przewidywaną datę ukończenia;\n- że jesteś obecnie uczniem/studentem kończącym etap edukacji.\n\nTilburg wprost akceptuje Statement of Educational Institution. UvA również pozwala zastąpić finalny dyplom odpowiednim statementem szkoły na etapie aplikacji.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "official-grade-lists",
+      "title": "Transkrypty / grade lists",
+      "slug": "official-grade-lists",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam / Tilburg University",
+      "summary": "Oficjalne grade lists / transcripts do oceny kwalifikacji.",
+      "descriptionMarkdown": "Wgraj oficjalne transkrypty / grade lists wydane przez szkołę.\n\nZadbaj o to, żeby dokument:\n- był oficjalny, a nie screenshotem z dziennika;\n- pokazywał ostatnie dostępne oceny;\n- w przypadku IB jasno wskazywał przedmioty i poziomy;\n- był czytelny i kompletny.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "official-translations",
+      "title": "Tłumaczenia dokumentów",
+      "slug": "official-translations",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam / Tilburg University",
+      "summary": "Kiedy i jak przygotować tłumaczenia dyplomu oraz transkryptu.",
+      "descriptionMarkdown": "Jeżeli dyplom lub transkrypt nie są po angielsku, niderlandzku, francusku ani niemiecku, przygotuj tłumaczenie przysięgłe / certified translation.\n\nTilburg wprost wymaga tłumaczenia wykonanego przez sworn translator z pieczątką i podpisem. Dla bezpieczeństwa przyjmij ten sam standard również przy dokumentach kierowanych na UvA.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "cv",
+      "title": "CV",
+      "slug": "cv",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam / Tilburg University",
+      "summary": "Krótkie, akademicko sensowne CV do aplikacji licencjackiej.",
+      "descriptionMarkdown": "Przygotuj zwięzłe CV po angielsku.\n\nRekomendacje:\n- 1 strona, maksymalnie 2 jeśli naprawdę trzeba;\n- edukacja, aktywności, osiągnięcia, projekty, wolontariat, doświadczenie;\n- tylko rzeczy, które realnie wzmacniają aplikację;\n- czytelny układ i spójne daty.\n\nTilburg wprost sugeruje CV nie dłuższe niż dwie strony.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "english-certificate",
+      "title": "English certificate",
+      "slug": "english-certificate",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam / Tilburg University",
+      "summary": "Wskazówki do wyboru i przesłania certyfikatu językowego.",
+      "descriptionMarkdown": "Sprawdź, czy masz zwolnienie z certyfikatu na podstawie rodzaju dyplomu lub języka nauczania. Jeśli nie, przygotuj wynik akceptowanego testu językowego.\n\nDobre praktyki:\n- sprawdź minimalne progi dla konkretnego programu;\n- jeśli system pozwala, najpierw wgraj termin testu, a potem wynik;\n- nie zostawiaj tego na ostatnią chwilę, bo wyniki bywają potrzebne przed oceną aplikacji.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "math-requirement",
+      "title": "Math requirement",
+      "slug": "math-requirement",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam / Tilburg University",
+      "summary": "Potwierdzenie spełnienia wymogu z matematyki.",
+      "descriptionMarkdown": "W tych programach matematyka jest istotna. Zbierz dowód, że spełniasz wymóg.\n\nMoże to być na przykład:\n- odpowiedni przedmiot matematyczny na dyplomie / transcriptach;\n- uznany egzamin zewnętrzny;\n- wskazany przez uczelnię certyfikat lub test uzupełniający.\n\nDla UvA Business Administration na stronie wymienione są m.in. OMPT-F, CCVX i wybrane certyfikaty matematyczne dla szczególnych ścieżek.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "uva-sis-application",
+      "title": "UvA SIS / My Applications",
+      "slug": "uva-sis-application",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "summary": "Jak domknąć właściwą część aplikacji w SIS po Studielink.",
+      "descriptionMarkdown": "Po rejestracji w Studielink UvA wysyła UvAnetID. Wtedy logujesz się do SIS.\n\nW SIS trzeba:\n- sprawdzić personal enrolment checklist;\n- wejść do My Applications;\n- wgrać komplet dokumentów i wysłać aplikację.\n\nKluczowa zasada z oficjalnych stron UvA: po rejestracji w Studielink masz zasadniczo 14 dni na złożenie kompletnej aplikacji w SIS. Jeśli przegapisz terminy przypomnień, rejestracja może zostać anulowana i trzeba zacząć od nowa.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam"
+      ]
+    },
+    {
+      "key": "uva-selection-test-bba",
+      "title": "UvA BBA selection test",
+      "slug": "uva-selection-test-bba",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "summary": "Selection test dla Business Administration na UvA.",
+      "descriptionMarkdown": "Business Administration na UvA (English track) jest numerus fixus.\n\nZ oficjalnej procedury wynika, że trzeba:\n- zarejestrować się na selection test przez Enrolment Checklist najpóźniej do 15 stycznia;\n- przygotować się z materiałów udostępnionych wcześniej w Canvas;\n- napisać online selection test w wyznaczonym terminie;\n- sprawdzić ranking number po zakończeniu selekcji.\n\nOferta miejsca zależy od ranking number, a po jej otrzymaniu trzeba szybko zareagować.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam"
+      ]
+    },
+    {
+      "key": "uva-business-analytics-matching",
+      "title": "UvA Matching - Business Analytics",
+      "slug": "uva-business-analytics-matching",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "summary": "UvA Matching po warunkowym przyjęciu na Business Analytics.",
+      "descriptionMarkdown": "Po warunkowym przyjęciu na Business Analytics UvA przewiduje UvA Matching.\n\nTo internetowe dopasowanie / introduction ma pomóc ocenić, czy program jest dobrym wyborem. Traktuj to jako obowiązkowy krok po conditional admission i śledź instrukcje przesyłane przez UvA.",
+      "appliesToGuideSlugs": [
+        "business-analytics-university-of-amsterdam"
+      ]
+    },
+    {
+      "key": "tilburg-osiris-application",
+      "title": "Tilburg OSIRIS Aanmeld",
+      "slug": "tilburg-osiris-application",
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "summary": "Jak przejść z Studielink do OSIRIS Aanmeld i domknąć aplikację.",
+      "descriptionMarkdown": "Po rejestracji w Studielink Tilburg wysyła dwa maile: dane do konta Tilburg University i dane do OSIRIS Aanmeld.\n\nW OSIRIS trzeba:\n- zalogować się po otrzymaniu danych;\n- wgrać komplet dokumentów;\n- pilnować statusu i ewentualnych próśb o uzupełnienia.\n\nOficjalna strona Tilburg podaje, że maile zwykle przychodzą w ciągu 24 godzin, a jeśli nie przyjdą w 48 godzin, trzeba kontaktować się z admissions.",
+      "appliesToGuideSlugs": [
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "tilburg-iba-matching",
+      "title": "Tilburg IBA AI Matching",
+      "slug": "tilburg-iba-matching",
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "summary": "Matching chatbot po conditional admission na Tilburg IBA.",
+      "descriptionMarkdown": "Po conditional admission na Tilburg IBA trzeba przejść matching przez AI-Matching Chatbot.\n\nZgodnie z oficjalną stroną:\n- w ciągu około tygodnia od conditional admission przychodzi mail z instrukcją;\n- trzeba odbyć rozmowę z chatbotem;\n- rozmowę trzeba pobrać jako PDF i wgrać z powrotem do OSIRIS;\n- to obowiązkowy etap procesu.\n\nDeadline dla matching document na stronie programu: 1 lipca dla non-EEA i 1 sierpnia dla EEA.",
+      "appliesToGuideSlugs": [
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "after-admission-uva-bba",
+      "title": "UvA BBA after admission",
+      "slug": "after-admission-uva-bba",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "summary": "Co zrobić po otrzymaniu miejsca na UvA Business Administration.",
+      "descriptionMarkdown": "Po otrzymaniu miejsca na Business Administration trzeba działać szybko.\n\nNajważniejsze kroki:\n- zaakceptować miejsce w terminie 14 dni;\n- domknąć kolejne formalności uczelni;\n- dopilnować płatności czesnego przed startem programu.\n\nOficjalna strona UvA wskazuje, że niezaakceptowanie miejsca w terminie powoduje jego utratę.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam"
+      ]
+    },
+    {
+      "key": "after-admission-uva-ba",
+      "title": "UvA Business Analytics after admission",
+      "slug": "after-admission-uva-ba",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "summary": "Co zrobić po conditional admission na Business Analytics.",
+      "descriptionMarkdown": "Po conditional admission na Business Analytics trzeba potwierdzić participation w SIS.\n\nUvA podkreśla, że:\n- potwierdzenie warto zrobić szybko;\n- potwierdzenie nie jest wiążące w sensie ostatecznej rezygnacji ze wszystkich innych opcji;\n- po tym etapie trzeba jeszcze domknąć dalsze formalności i opłatę czesnego przed startem programu.",
+      "appliesToGuideSlugs": [
+        "business-analytics-university-of-amsterdam"
+      ]
+    },
+    {
+      "key": "after-admission-tilburg-iba",
+      "title": "Tilburg IBA after admission",
+      "slug": "after-admission-tilburg-iba",
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "summary": "Warunki i formalności po admission na Tilburg IBA.",
+      "descriptionMarkdown": "Po admission na Tilburg IBA trzeba dopilnować warunków z admission letter oraz dalszego enrolmentu.\n\nZ oficjalnej strony Tilburg wynika, że po przyjęciu warto pilnować timeline dotyczącego:\n- completing your enrollment;\n- paying tuition fees;\n- ewentualnych certified copies dokumentów;\n- practical matters przed startem studiów.\n\nCzytaj dokładnie conditional admission letter i Welcome page.",
+      "appliesToGuideSlugs": [
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "after-admission-payment",
+      "title": "Final enrolment and tuition fee",
+      "slug": "after-admission-payment",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam / Tilburg University",
+      "summary": "Końcowa płatność i domknięcie enrolmentu przed startem programu.",
+      "descriptionMarkdown": "Niezależnie od programu, nie kończ na samym admission.\n\nPrzed startem studiów dopilnuj:\n- opłaty czesnego w wymaganym terminie;\n- wszystkich checklist i warunków wskazanych przez uczelnię;\n- ewentualnych dokumentów końcowych / certified copies.\n\nDla obu uczelni to etap, który warto monitorować osobno już po uzyskaniu admission.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ]
+    }
+  ],
+  "materialTemplates": [
+    {
+      "title": "Paszport",
+      "targetTemplateTitle": "Paszport",
+      "mergeMode": "replace",
+      "templateType": "passport_like",
+      "description": "Wspólny dokument tożsamości dla holenderskich programów.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ],
+      "rows": [
+        {
+          "level": "item",
+          "task": "Paszport",
+          "actionType": "file_required",
+          "suggestedFilename": "passport.pdf",
+          "guideKey": "passport-id-netherlands",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam",
+            "business-analytics-university-of-amsterdam",
+            "international-business-administration-tilburg-university"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Certificate of expected graduation",
+      "targetTemplateTitle": "Certificate of expected graduation",
+      "mergeMode": "replace",
+      "templateType": "passport_like",
+      "description": "Zaświadczenie ze szkoły, gdy finalny dyplom nie jest jeszcze dostępny.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ],
+      "rows": [
+        {
+          "level": "item",
+          "task": "Certificate of expected graduation",
+          "actionType": "file_required",
+          "suggestedFilename": "expected-graduation-certificate.pdf",
+          "guideKey": "expected-graduation-certificate",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam",
+            "business-analytics-university-of-amsterdam",
+            "international-business-administration-tilburg-university"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "CV",
+      "targetTemplateTitle": "CV",
+      "mergeMode": "replace",
+      "templateType": "passport_like",
+      "description": "CV wymagane przy holenderskich aplikacjach biznesowych.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ],
+      "rows": [
+        {
+          "level": "item",
+          "task": "CV",
+          "actionType": "file_or_doc",
+          "suggestedFilename": "cv.pdf",
+          "docTabTitle": "CV",
+          "docTabPrompt": "Przygotuj zwięzłe CV po angielsku do aplikacji licencjackiej. Sekcje mogą obejmować: Education, Activities, Achievements, Projects, Work / Volunteering, Skills. Uwzględnij tylko informacje realnie wzmacniające aplikację.",
+          "guideKey": "cv",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam",
+            "business-analytics-university-of-amsterdam",
+            "international-business-administration-tilburg-university"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Transkrypty / świadectwa ze szkoły średniej",
+      "targetTemplateTitle": "Transkrypty / świadectwa ze szkoły średniej",
+      "mergeMode": "replace",
+      "templateType": "passport_like",
+      "description": "Oficjalne grade lists i ewentualne tłumaczenia.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ],
+      "rows": [
+        {
+          "level": "item",
+          "task": "Transkrypty / świadectwa ze szkoły średniej",
+          "actionType": "file_required",
+          "suggestedFilename": "high-school-transcripts.pdf",
+          "guideKey": "official-grade-lists",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam",
+            "business-analytics-university-of-amsterdam",
+            "international-business-administration-tilburg-university"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Tłumaczenie dyplomu i/lub transkryptu, jeśli dokumenty nie są po angielsku, niderlandzku, niemiecku lub francusku",
+          "actionType": "file_required",
+          "suggestedFilename": "translated-transcript-or-diploma.pdf",
+          "guideKey": "official-translations",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam",
+            "business-analytics-university-of-amsterdam",
+            "international-business-administration-tilburg-university"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Studielink",
+      "targetTemplateTitle": "Studielink / SIS",
+      "mergeMode": "replace",
+      "templateType": "passport_like",
+      "description": "Wspólny pierwszy krok rejestracji w Studielink dla wszystkich trzech programów.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ],
+      "rows": [
+        {
+          "level": "item",
+          "task": "Rejestracja w Studielink na Business Administration (English track)",
+          "actionType": "check_only",
+          "guideKey": "studielink",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Rejestracja w Studielink na Business Analytics",
+          "actionType": "check_only",
+          "guideKey": "studielink",
+          "appliesToGuideSlugs": [
+            "business-analytics-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Rejestracja w Studielink na B International Business Administration",
+          "actionType": "check_only",
+          "guideKey": "studielink",
+          "appliesToGuideSlugs": [
+            "international-business-administration-tilburg-university"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "SIS",
+      "templateType": "passport_like",
+      "description": "Portal aplikacyjny UvA po rejestracji w Studielink.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam"
+      ],
+      "rows": [
+        {
+          "level": "item",
+          "task": "Sprawdzenie personal enrolment checklist w SIS",
+          "actionType": "check_only",
+          "guideKey": "uva-sis-application",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam",
+            "business-analytics-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Złożenie kompletnej aplikacji w SIS My Applications w ciągu 14 dni od rejestracji w Studielink",
+          "actionType": "check_only",
+          "guideKey": "uva-sis-application",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam",
+            "business-analytics-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Opłata aplikacyjna UvA",
+          "actionType": "check_only",
+          "guideKey": "uva-sis-application",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam",
+            "business-analytics-university-of-amsterdam"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Selection test",
+      "targetTemplateTitle": "Selection test",
+      "mergeMode": "replace",
+      "templateType": "passport_like",
+      "description": "Selection test tylko dla UvA Business Administration.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam"
+      ],
+      "rows": [
+        {
+          "level": "item",
+          "task": "Rejestracja na selection test w Enrolment Checklist do 15 stycznia",
+          "actionType": "check_only",
+          "guideKey": "uva-selection-test-bba",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Przygotowanie z materiałów na Canvas do selection test",
+          "actionType": "check_only",
+          "guideKey": "uva-selection-test-bba",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Udział w online selection test",
+          "actionType": "check_only",
+          "guideKey": "uva-selection-test-bba",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Sprawdzenie ranking number 15 kwietnia",
+          "actionType": "check_only",
+          "guideKey": "uva-selection-test-bba",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "OSIRIS Aanmeld",
+      "targetTemplateTitle": "Studielink / Tilburg application portal",
+      "mergeMode": "replace",
+      "templateType": "passport_like",
+      "description": "Portal aplikacyjny Tilburg po Studielink.",
+      "appliesToGuideSlugs": [
+        "international-business-administration-tilburg-university"
+      ],
+      "rows": [
+        {
+          "level": "item",
+          "task": "Odbiór danych do kont Tilburg University i OSIRIS po rejestracji w Studielink",
+          "actionType": "check_only",
+          "guideKey": "tilburg-osiris-application",
+          "appliesToGuideSlugs": [
+            "international-business-administration-tilburg-university"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Złożenie kompletnej aplikacji w OSIRIS Aanmeld",
+          "actionType": "check_only",
+          "guideKey": "tilburg-osiris-application",
+          "appliesToGuideSlugs": [
+            "international-business-administration-tilburg-university"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Sprawdzenie statusu aplikacji i uzupełnienie braków w OSIRIS",
+          "actionType": "check_only",
+          "guideKey": "tilburg-osiris-application",
+          "appliesToGuideSlugs": [
+            "international-business-administration-tilburg-university"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Matching po warunkowym przyjęciu",
+      "templateType": "passport_like",
+      "description": "Etapy matchingowe po conditional admission tam, gdzie uczelnia ich wymaga.",
+      "appliesToGuideSlugs": [
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ],
+      "rows": [
+        {
+          "level": "item",
+          "task": "Udział w UvA Matching",
+          "actionType": "check_only",
+          "guideKey": "uva-business-analytics-matching",
+          "appliesToGuideSlugs": [
+            "business-analytics-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Rozmowa z AI-Matching Chatbot i upload PDF do OSIRIS",
+          "actionType": "file_required",
+          "suggestedFilename": "tilburg-ai-matching-chatbot.pdf",
+          "guideKey": "tilburg-iba-matching",
+          "appliesToGuideSlugs": [
+            "international-business-administration-tilburg-university"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Enrollment after admission",
+      "targetTemplateTitle": "Enrollment after admission",
+      "mergeMode": "replace",
+      "templateType": "passport_like",
+      "description": "Kroki po admission: akceptacja miejsca, finalny enrolment, czesne i formalności końcowe.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ],
+      "rows": [
+        {
+          "level": "item",
+          "task": "Akceptacja miejsca w Studielink w ciągu 14 dni od otrzymania oferty",
+          "actionType": "check_only",
+          "guideKey": "after-admission-uva-bba",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Potwierdzenie udziału w SIS po warunkowym przyjęciu",
+          "actionType": "check_only",
+          "guideKey": "after-admission-uva-ba",
+          "appliesToGuideSlugs": [
+            "business-analytics-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Przesłanie certified copies dokumentów wymaganych do enrollmentu",
+          "actionType": "file_required",
+          "suggestedFilename": "certified-copies-for-enrolment.pdf",
+          "guideKey": "after-admission-tilburg-iba",
+          "appliesToGuideSlugs": [
+            "international-business-administration-tilburg-university"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Uzupełnienie warunków z listu warunkowego i śledzenie Welcome page",
+          "actionType": "check_only",
+          "guideKey": "after-admission-tilburg-iba",
+          "appliesToGuideSlugs": [
+            "international-business-administration-tilburg-university"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Opłacenie czesnego i domknięcie enrolmentu przed startem programu",
+          "actionType": "check_only",
+          "guideKey": "after-admission-payment",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam",
+            "business-analytics-university-of-amsterdam",
+            "international-business-administration-tilburg-university"
+          ]
+        }
+      ]
+    }
+  ]
+}

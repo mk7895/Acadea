@@ -88,6 +88,7 @@ import {
 
 const router = Router();
 const PLATFORM_TERMS_VERSION = "2026-06-29";
+type PlatformGuideRecord = typeof platformGuidesTable.$inferSelect;
 
 const loginSchema = z.object({
   email: z.string().trim().email(),
@@ -335,11 +336,53 @@ const guideImportMaterialTemplateSchema = z.object({
   rows: z.array(guideImportMaterialRowSchema).default([]),
 });
 
+const guideImportGuideMoveSchema = z.object({
+  slug: z.string().trim().min(1),
+  insertAfterGuideSlug: z.string().trim().min(1).optional(),
+  insertBeforeGuideSlug: z.string().trim().min(1).optional(),
+});
+
+const guideImportOperationsSchema = z.object({
+  deleteGuideSlugs: z.array(z.string().trim().min(1)).optional(),
+  deleteItemGuideSlugs: z.array(z.string().trim().min(1)).optional(),
+  deleteMaterialTemplateTitles: z.array(z.string().trim().min(1)).optional(),
+  reorderGuideSlugs: z.array(z.string().trim().min(1)).optional(),
+  moveGuides: z.array(guideImportGuideMoveSchema).optional(),
+});
+
 const guideImportBlueprintSchema = z.object({
   version: z.literal(1),
-  guide: guideImportGuideSchema,
+  guide: guideImportGuideSchema.optional(),
   itemGuides: z.array(guideImportItemGuideSchema).optional(),
-  materialTemplates: z.array(guideImportMaterialTemplateSchema).min(1),
+  materialTemplates: z.array(guideImportMaterialTemplateSchema).optional(),
+  operations: guideImportOperationsSchema.optional(),
+}).superRefine((value, ctx) => {
+  const hasGuide = Boolean(value.guide);
+  const hasItemGuides = Boolean(value.itemGuides?.length);
+  const hasMaterialTemplates = Boolean(value.materialTemplates?.length);
+  const hasOperations = Boolean(
+    value.operations?.deleteGuideSlugs?.length
+    || value.operations?.deleteItemGuideSlugs?.length
+    || value.operations?.deleteMaterialTemplateTitles?.length
+    || value.operations?.reorderGuideSlugs?.length
+    || value.operations?.moveGuides?.length,
+  );
+
+  if (!hasGuide && !hasItemGuides && !hasMaterialTemplates && !hasOperations) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Blueprint must contain at least one of: guide, itemGuides, materialTemplates, or operations.",
+      path: [],
+    });
+  }
+
+  if ((hasItemGuides || hasMaterialTemplates) && !hasGuide && !hasOperations) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "When itemGuides or materialTemplates are provided without operations, guide is required.",
+      path: ["guide"],
+    });
+  }
 });
 
 const MAX_MATERIAL_UPLOAD_BYTES = 15 * 1024 * 1024;
@@ -1037,17 +1080,7 @@ async function resequenceTopLevelGuideSortOrders(
 
 async function applyGuidePlacement(
   db: Awaited<typeof import("@workspace/db")>["db"],
-  guides: Array<{
-    country: string;
-    driveFolderUrl: string | null;
-    guideType: string;
-    id: number;
-    slug: string;
-    sortOrder: number;
-    sourceGuideId: number | null;
-    title: string;
-    universityName: string;
-  }>,
+  guides: PlatformGuideRecord[],
   targetGuideId: number,
   placement?: {
     insertAfterGuideSlug?: string;
@@ -1105,6 +1138,57 @@ async function applyGuidePlacement(
   }));
 }
 
+async function applyGuideReorder(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+  guides: PlatformGuideRecord[],
+  orderedSlugs: string[],
+) {
+  const normalizedSlugOrder = orderedSlugs
+    .map((slug) => normalizeSlug(slug))
+    .filter(Boolean);
+  if (!normalizedSlugOrder.length) {
+    return guides;
+  }
+
+  const topLevelGuides = guides.filter((guide) =>
+    !guide.sourceGuideId
+    && !isItemGuideRecord({ driveFolderUrl: guide.driveFolderUrl, guideType: guide.guideType }),
+  );
+  const topLevelBySlug = new Map(
+    topLevelGuides.map((guide) => [normalizeSlug(guide.slug), guide] as const),
+  );
+  const orderedSpecifiedGuides = normalizedSlugOrder
+    .map((slug) => topLevelBySlug.get(slug) ?? null)
+    .filter((guide): guide is (typeof topLevelGuides)[number] => Boolean(guide));
+  if (!orderedSpecifiedGuides.length) {
+    return guides;
+  }
+
+  const specifiedIds = new Set(orderedSpecifiedGuides.map((guide) => guide.id));
+  const remainingGuides = topLevelGuides
+    .filter((guide) => !specifiedIds.has(guide.id))
+    .sort(compareGuideSortOrder);
+  const nextOrder = [...orderedSpecifiedGuides, ...remainingGuides];
+
+  for (const [index, guide] of nextOrder.entries()) {
+    if (guide.sortOrder !== index) {
+      await db
+        .update(platformGuidesTable)
+        .set({
+          sortOrder: index,
+          updatedAt: new Date(),
+        })
+        .where(eq(platformGuidesTable.id, guide.id));
+    }
+  }
+
+  const nextSortOrderById = new Map(nextOrder.map((guide, index) => [guide.id, index]));
+  return guides.map((guide) => ({
+    ...guide,
+    sortOrder: nextSortOrderById.get(guide.id) ?? guide.sortOrder,
+  }));
+}
+
 function getNextGuideSortOrder(
   guides: Array<{
     driveFolderUrl: string | null;
@@ -1128,8 +1212,70 @@ async function importGuideBlueprint(
   ownerUserId: number,
   blueprint: z.infer<typeof guideImportBlueprintSchema>,
 ) {
-  const existingGuides = await db.select().from(platformGuidesTable);
+  let existingGuides = await db.select().from(platformGuidesTable);
   let existingTemplates = await db.select().from(platformMaterialTemplatesTable);
+
+  if (blueprint.operations?.deleteGuideSlugs?.length) {
+    const normalizedDeleteSlugs = blueprint.operations.deleteGuideSlugs.map((slug) => normalizeSlug(slug));
+    const guideIdsToDelete = existingGuides
+      .filter((guide) => normalizedDeleteSlugs.includes(normalizeSlug(guide.slug)))
+      .map((guide) => guide.id);
+    if (guideIdsToDelete.length) {
+      await hardDeleteGuidesAndReferences(db, guideIdsToDelete);
+      existingGuides = await db.select().from(platformGuidesTable);
+      existingTemplates = await db.select().from(platformMaterialTemplatesTable);
+    }
+  }
+
+  if (blueprint.operations?.deleteItemGuideSlugs?.length) {
+    const normalizedDeleteSlugs = blueprint.operations.deleteItemGuideSlugs.map((slug) => normalizeSlug(slug));
+    const guideIdsToDelete = existingGuides
+      .filter((guide) =>
+        normalizedDeleteSlugs.includes(normalizeSlug(guide.slug))
+        && isItemGuideRecord({
+          driveFolderUrl: guide.driveFolderUrl,
+          guideType: guide.guideType,
+        }),
+      )
+      .map((guide) => guide.id);
+    if (guideIdsToDelete.length) {
+      await hardDeleteGuidesAndReferences(db, guideIdsToDelete);
+      existingGuides = await db.select().from(platformGuidesTable);
+      existingTemplates = await db.select().from(platformMaterialTemplatesTable);
+    }
+  }
+
+  if (blueprint.operations?.deleteMaterialTemplateTitles?.length) {
+    const normalizedTitles = new Set(
+      blueprint.operations.deleteMaterialTemplateTitles
+        .map((title) => title.trim())
+        .filter(Boolean),
+    );
+    const templateIdsToDelete = existingTemplates
+      .filter((template) => normalizedTitles.has(template.title))
+      .map((template) => template.id);
+    if (templateIdsToDelete.length) {
+      await db.delete(platformMaterialTemplatesTable).where(inArray(platformMaterialTemplatesTable.id, templateIdsToDelete));
+      existingTemplates = await db.select().from(platformMaterialTemplatesTable);
+    }
+  }
+
+  if (blueprint.operations?.reorderGuideSlugs?.length) {
+    existingGuides = await applyGuideReorder(db, existingGuides, blueprint.operations.reorderGuideSlugs);
+  }
+
+  if (blueprint.operations?.moveGuides?.length) {
+    for (const move of blueprint.operations.moveGuides) {
+      const targetGuide = existingGuides.find((guide) => normalizeSlug(guide.slug) === normalizeSlug(move.slug));
+      if (!targetGuide) {
+        continue;
+      }
+      existingGuides = await applyGuidePlacement(db, existingGuides, targetGuide.id, {
+        insertAfterGuideSlug: move.insertAfterGuideSlug,
+        insertBeforeGuideSlug: move.insertBeforeGuideSlug,
+      });
+    }
+  }
 
   const upsertGuide = async (
     payload: {
@@ -1199,39 +1345,47 @@ async function importGuideBlueprint(
     return created;
   };
 
-  const mainGuide = await upsertGuide({
-    country: blueprint.guide.country,
-    descriptionMarkdown: blueprint.guide.descriptionMarkdown ?? "",
-    driveFolderUrl: null,
-    estimatedReadMin: blueprint.guide.estimatedReadMin ?? 12,
-    guideType: blueprint.guide.guideType ?? "admin_template",
-    isVisibleToUnapprovedUsers: blueprint.guide.isVisibleToUnapprovedUsers ?? true,
-    items: normalizeImportedGuideItems(blueprint.guide.items),
-    slug: blueprint.guide.slug,
-    sortOrder: getNextGuideSortOrder(existingGuides),
-    status: blueprint.guide.status ?? "published",
-    summary: blueprint.guide.summary ?? "",
-    title: blueprint.guide.title,
-    universityName: blueprint.guide.universityName,
-  });
+  let mainGuide: Awaited<ReturnType<typeof upsertGuide>> | null = null;
+  let refreshedGuides = existingGuides;
+  if (blueprint.guide) {
+    mainGuide = await upsertGuide({
+      country: blueprint.guide.country,
+      descriptionMarkdown: blueprint.guide.descriptionMarkdown ?? "",
+      driveFolderUrl: null,
+      estimatedReadMin: blueprint.guide.estimatedReadMin ?? 12,
+      guideType: blueprint.guide.guideType ?? "admin_template",
+      isVisibleToUnapprovedUsers: blueprint.guide.isVisibleToUnapprovedUsers ?? true,
+      items: normalizeImportedGuideItems(blueprint.guide.items),
+      slug: blueprint.guide.slug,
+      sortOrder: getNextGuideSortOrder(existingGuides),
+      status: blueprint.guide.status ?? "published",
+      summary: blueprint.guide.summary ?? "",
+      title: blueprint.guide.title,
+      universityName: blueprint.guide.universityName,
+    });
 
-  const refreshedGuides = await applyGuidePlacement(
-    db,
-    await db.select().from(platformGuidesTable),
-    mainGuide.id,
-    {
-      insertAfterGuideSlug: blueprint.guide.insertAfterGuideSlug,
-      insertBeforeGuideSlug: blueprint.guide.insertBeforeGuideSlug,
-    },
-  );
-  const guideIdBySlug = new Map<string, number>([[mainGuide.slug, mainGuide.id]]);
+    refreshedGuides = await applyGuidePlacement(
+      db,
+      await db.select().from(platformGuidesTable),
+      mainGuide.id,
+      {
+        insertAfterGuideSlug: blueprint.guide.insertAfterGuideSlug,
+        insertBeforeGuideSlug: blueprint.guide.insertBeforeGuideSlug,
+      },
+    );
+  }
+  const fallbackGuideId = mainGuide?.id ?? 0;
+  const guideIdBySlug = new Map<string, number>(refreshedGuides.map((guide) => [guide.slug, guide.id]));
   const itemGuideIdByKey = new Map<string, number>();
 
   for (const itemGuide of blueprint.itemGuides ?? []) {
+    if (!fallbackGuideId && !(itemGuide.appliesToGuideSlugs?.length)) {
+      throw new Error("Item guides imported without a main guide must explicitly set appliesToGuideSlugs.");
+    }
     const appliesToGuideIds = resolveGuideIdsFromSlugs(
       itemGuide.appliesToGuideSlugs,
       guideIdBySlug,
-      mainGuide.id,
+      fallbackGuideId,
     );
     const upserted = await upsertGuide({
       country: itemGuide.country,
@@ -1251,17 +1405,24 @@ async function importGuideBlueprint(
     itemGuideIdByKey.set(itemGuide.key, upserted.id);
   }
 
-  for (const template of blueprint.materialTemplates) {
+  for (const template of blueprint.materialTemplates ?? []) {
+    if (!fallbackGuideId && !(template.appliesToGuideSlugs?.length)) {
+      throw new Error(`Material template "${template.title}" imported without a main guide must explicitly set appliesToGuideSlugs.`);
+    }
     const appliesToGuideIds = resolveGuideIdsFromSlugs(
       template.appliesToGuideSlugs,
       guideIdBySlug,
-      mainGuide.id,
+      fallbackGuideId,
     );
     const resolvedGuideId = template.guideKey ? itemGuideIdByKey.get(template.guideKey) ?? null : null;
     const importedRows = template.rows.map((row) => ({
       actionType: row.actionType ?? "check_only",
       alternativeOptions: row.alternativeOptions ?? [],
-      appliesToGuideIds: resolveGuideIdsFromSlugs(row.appliesToGuideSlugs, guideIdBySlug, mainGuide.id),
+      appliesToGuideIds: resolveGuideIdsFromSlugs(
+        row.appliesToGuideSlugs,
+        guideIdBySlug,
+        appliesToGuideIds[0] ?? fallbackGuideId,
+      ),
       country: row.country ?? "",
       docTabPrompt: row.docTabPrompt ?? "",
       docTabTitle: row.docTabTitle ?? "",
@@ -1345,15 +1506,15 @@ async function importGuideBlueprint(
   }
 
   return {
-    importedGuideSlug: mainGuide.slug,
-    importedGuideTitle: mainGuide.title,
+    importedGuideSlug: mainGuide?.slug ?? null,
+    importedGuideTitle: mainGuide?.title ?? "Operations completed",
   };
 }
 
 function getGuideBlueprintAssistantSchema() {
   return {
     type: "object",
-    required: ["version", "guide", "materialTemplates"],
+    required: ["version"],
     properties: {
       version: { const: 1 },
       guide: {
@@ -1378,6 +1539,44 @@ function getGuideBlueprintAssistantSchema() {
             type: "string",
             description:
               "Optional alternative to insertAfterGuideSlug when the guide should appear before an existing guide. Use only one of the two placement fields.",
+          },
+        },
+      },
+      operations: {
+        type: "object",
+        properties: {
+          deleteGuideSlugs: {
+            type: "array",
+            description: "Optional. Delete existing guides by slug. Cascading live copies and stale material references will be cleaned up.",
+            items: { type: "string" },
+          },
+          deleteItemGuideSlugs: {
+            type: "array",
+            description: "Optional. Delete existing item-guide hint records by slug. Any material-row references to those hint guides will be cleaned automatically.",
+            items: { type: "string" },
+          },
+          deleteMaterialTemplateTitles: {
+            type: "array",
+            description: "Optional. Delete existing material tiles by exact title.",
+            items: { type: "string" },
+          },
+          reorderGuideSlugs: {
+            type: "array",
+            description: "Optional. Put these top-level guide slugs in the given order. Any remaining top-level guides stay after them.",
+            items: { type: "string" },
+          },
+          moveGuides: {
+            type: "array",
+            description: "Optional. Move specific existing guides before or after another guide without recreating them.",
+            items: {
+              type: "object",
+              required: ["slug"],
+              properties: {
+                slug: { type: "string" },
+                insertAfterGuideSlug: { type: "string" },
+                insertBeforeGuideSlug: { type: "string" },
+              },
+            },
           },
         },
       },
@@ -3272,6 +3471,18 @@ router.get(
           insertAfterGuideSlug: "<OPTIONAL_EXISTING_GUIDE_SLUG>",
           insertBeforeGuideSlug: "<OPTIONAL_EXISTING_GUIDE_SLUG>",
         },
+        maintenanceOperations: {
+          deleteGuideSlugs: ["<OPTIONAL_EXISTING_GUIDE_SLUG>"],
+          deleteItemGuideSlugs: ["<OPTIONAL_EXISTING_ITEM_GUIDE_SLUG>"],
+          deleteMaterialTemplateTitles: ["<OPTIONAL_EXISTING_TILE_TITLE>"],
+          reorderGuideSlugs: ["<OPTIONAL_EXISTING_GUIDE_SLUG_1>", "<OPTIONAL_EXISTING_GUIDE_SLUG_2>"],
+          moveGuides: [
+            {
+              slug: "<OPTIONAL_EXISTING_GUIDE_SLUG>",
+              insertAfterGuideSlug: "<OPTIONAL_EXISTING_GUIDE_SLUG>",
+            },
+          ],
+        },
       },
       existingTiles: templates.map((template) => ({
         guideId: template.guideId,
@@ -3315,10 +3526,20 @@ router.get(
 
     const promptTemplate = [
       "Return only valid JSON for ACADEA guide import.",
+      "Use ChatGPT JSON/code output mode only. Do not answer in plain text prose.",
+      "Paste the answer into the JSON/code response window, not into the normal chat text field.",
+      "Use only standard ASCII JSON quotes (\") and standard JSON syntax. Never use typographic quotes.",
+      "Do not prepend or append any explanation, markdown prose, bullets, or code-fence labels outside the JSON body itself.",
       "Use the current DB context provided below.",
       "Before sending this prompt to ChatGPT, first fill the scaffold placeholders in the context: country, universityName, optional programName, and optional desired placement relative to existing guide slugs.",
+      "If you only want to maintain existing guides (for example delete, reorder, or move them), you may omit guide/materialTemplates and use operations only.",
       "If the new guide belongs between existing universities/programmes, express that using guide.insertAfterGuideSlug or guide.insertBeforeGuideSlug.",
       "If both placement fields are empty, ChatGPT may choose a sensible default position, but when order matters you should fill one of them manually.",
+      "Use operations.deleteGuideSlugs to remove existing guides by slug.",
+      "Use operations.deleteItemGuideSlugs to remove existing hint/item-guide records by slug.",
+      "Use operations.deleteMaterialTemplateTitles to remove whole existing material tiles by exact title.",
+      "Use operations.reorderGuideSlugs to define a top-level guide order.",
+      "Use operations.moveGuides when a specific existing guide should be moved before or after another existing guide.",
       "If the guide should extend an existing shell tile such as Paszport or Eseje, set materialTemplates[].targetTemplateTitle exactly to that title and set mergeMode to append.",
       "When targeting an existing tile, targetTemplateTitle must match the existing tile title exactly, including Polish diacritics, punctuation, spaces, and casing.",
       "Only create a brand-new tile when there is a clear product reason not to use an existing shell tile.",
@@ -3339,6 +3560,7 @@ router.get(
       "Do not create new generic country/university shell rows by default. Reuse existing shell tiles and scope new rows explicitly to the target guide slug unless a truly generic reusable row is intended.",
       "Do not transliterate Polish labels into ASCII when referencing existing titles or tasks from the DB context. Copy them exactly as shown in the context JSON.",
       "Use only one of guide.insertAfterGuideSlug or guide.insertBeforeGuideSlug. If one is not used, omit it instead of sending an empty string.",
+      "If operations are used without creating a new guide, keep rows and item guides explicitly scoped by slugs whenever needed.",
       "Preserve current tile structure conventions and existing guide slugs where appropriate.",
       "",
       `Current context:\n${JSON.stringify(context, null, 2)}`,
