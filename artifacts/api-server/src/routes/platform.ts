@@ -147,6 +147,7 @@ const mentorProfileSchema = z.object({
   whatsappNumber: z.string().trim().optional().default(""),
   bookingWindowDays: z.number().int().min(1).max(180).optional().default(30),
   minimumNoticeHours: z.number().int().min(0).max(24 * 7).optional().default(24),
+  rescheduleNoticeHours: z.number().int().min(0).max(24 * 7).optional().default(24),
 });
 
 const adminMentorDriveSchema = z.object({
@@ -177,6 +178,7 @@ const mentorAvailabilityPayloadSchema = z.object({
   overrides: z.array(availabilityOverrideSchema).default([]),
   bookingWindowDays: z.number().int().min(1).max(180).default(30),
   minimumNoticeHours: z.number().int().min(0).max(24 * 7).default(24),
+  rescheduleNoticeHours: z.number().int().min(0).max(24 * 7).default(24),
 });
 
 const mentorUniversitySchema = z.object({
@@ -449,6 +451,20 @@ const meetingUpdateSchema = z.object({
   cancellationReason: z.string().trim().optional(),
 });
 
+const meetingCancelSchema = z.object({
+  reason: z.string().trim().max(500).optional().default(""),
+});
+
+const meetingOccurredSchema = z.object({
+  occurred: z.boolean(),
+});
+
+const meetingRescheduleSchema = z.object({
+  startsAt: z.string().datetime(),
+  endsAt: z.string().datetime(),
+  timezone: z.string().trim().min(1),
+});
+
 type AuthenticatedRequest = Request & {
   platformUser?: {
     avatarUrl: string | null;
@@ -602,6 +618,7 @@ function serializeMentorProfile(
         meetingLink?: string | null;
         meetingMethod?: string | null;
         minimumNoticeHours?: number | null;
+        rescheduleNoticeHours?: number | null;
         timezone?: string | null;
         updatedAt?: Date | null;
         userId?: number;
@@ -638,8 +655,74 @@ function serializeMentorProfile(
     meetingLink: profile.meetingLink ?? "",
     meetingMethod: profile.meetingMethod ?? "zoom_link",
     minimumNoticeHours: profile.minimumNoticeHours ?? 24,
+    rescheduleNoticeHours: profile.rescheduleNoticeHours ?? 24,
     timezone: profile.timezone ?? "Europe/Warsaw",
     whatsappNumber: profile.whatsappNumber ?? "",
+  };
+}
+
+function getMeetingContactValue(input: {
+  generatedGoogleMeetUrl?: string | null;
+  meetingLink?: string | null;
+  meetingMethod?: string | null;
+  whatsappNumber?: string | null;
+}) {
+  if (input.meetingMethod === "whatsapp") {
+    return input.whatsappNumber?.trim() || "";
+  }
+  if (input.meetingMethod === "google_meet" && input.generatedGoogleMeetUrl) {
+    return input.generatedGoogleMeetUrl;
+  }
+  return input.meetingLink?.trim() || input.generatedGoogleMeetUrl || "";
+}
+
+function getMeetingMinutesBeforeStart(startsAt: Date, now = new Date()) {
+  return Math.max(0, Math.floor((startsAt.getTime() - now.getTime()) / 60000));
+}
+
+function meetingHasStarted(meeting: { startsAt: Date }, now = new Date()) {
+  return now.getTime() >= meeting.startsAt.getTime();
+}
+
+function meetingHasEnded(meeting: { endsAt: Date }, now = new Date()) {
+  return now.getTime() >= meeting.endsAt.getTime();
+}
+
+function getMeetingSuspiciousState(meeting: {
+  mentorOccurred?: boolean | null;
+  menteeOccurred?: boolean | null;
+}) {
+  return typeof meeting.mentorOccurred === "boolean"
+    && typeof meeting.menteeOccurred === "boolean"
+    && meeting.mentorOccurred !== meeting.menteeOccurred;
+}
+
+function serializeMeetingRecord(
+  meeting: typeof platformMeetingsTable.$inferSelect,
+  options?: { now?: Date },
+) {
+  const now = options?.now ?? new Date();
+  const cancelled = meeting.status === "cancelled";
+  const ended = meetingHasEnded(meeting, now);
+  const started = meetingHasStarted(meeting, now);
+  const suspicious = getMeetingSuspiciousState(meeting);
+  return {
+    ...meeting,
+    canCancel: !cancelled && !started,
+    canMarkOccurred: !cancelled && ended,
+    createdAt: meeting.createdAt.toISOString(),
+    endsAt: meeting.endsAt.toISOString(),
+    isSuspicious: suspicious,
+    meetingContactValue: meeting.meetingContactValue || meeting.meetingUrl || "",
+    meetingStartsInMinutes: getMeetingMinutesBeforeStart(meeting.startsAt, now),
+    startsAt: meeting.startsAt.toISOString(),
+    updatedAt: meeting.updatedAt.toISOString(),
+    cancelledAt: meeting.cancelledAt?.toISOString() ?? null,
+    menteeOccurredAt: meeting.menteeOccurredAt?.toISOString() ?? null,
+    mentorOccurredAt: meeting.mentorOccurredAt?.toISOString() ?? null,
+    rescheduledAt: meeting.rescheduledAt?.toISOString() ?? null,
+    rescheduledFromEndsAt: meeting.rescheduledFromEndsAt?.toISOString() ?? null,
+    rescheduledFromStartsAt: meeting.rescheduledFromStartsAt?.toISOString() ?? null,
   };
 }
 
@@ -2261,6 +2344,39 @@ async function cancelMentorCalendarEvent(input: {
   }
 }
 
+async function updateMentorCalendarEvent(input: {
+  accessToken: string;
+  calendarId: string;
+  description?: string;
+  eventId: string;
+  summary?: string;
+  timeZone: string;
+  endsAt: Date;
+  startsAt: Date;
+}) {
+  const response = await googleApiRequestWithAccessToken(
+    input.accessToken,
+    `/calendar/v3/calendars/${encodeURIComponent(
+      input.calendarId,
+    )}/events/${encodeURIComponent(input.eventId)}?sendUpdates=all`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        description: input.description,
+        end: { dateTime: input.endsAt.toISOString(), timeZone: input.timeZone },
+        start: { dateTime: input.startsAt.toISOString(), timeZone: input.timeZone },
+        summary: input.summary,
+      }),
+    },
+  );
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `Failed to update mentor calendar event with status ${response.status}: ${body.slice(0, 300)}`,
+    );
+  }
+}
+
 router.get("/platform/bootstrap/status", async (_req, res) => {
   const { db } = await import("@workspace/db");
   const [admin] = await db
@@ -3020,6 +3136,7 @@ router.put(
         meetingMethod: parsed.data.meetingMethod,
         meetingLink: parsed.data.meetingLink || null,
         whatsappNumber: parsed.data.whatsappNumber || null,
+        rescheduleNoticeHours: parsed.data.rescheduleNoticeHours,
         googleDriveFolderUrl: existingProfile?.googleDriveFolderUrl ?? null,
       })
       .onConflictDoUpdate({
@@ -3031,6 +3148,7 @@ router.put(
           meetingMethod: parsed.data.meetingMethod,
           meetingLink: parsed.data.meetingLink || null,
           whatsappNumber: parsed.data.whatsappNumber || null,
+          rescheduleNoticeHours: parsed.data.rescheduleNoticeHours,
           googleDriveFolderUrl: existingProfile?.googleDriveFolderUrl ?? null,
           updatedAt: new Date(),
         },
@@ -3129,6 +3247,7 @@ router.put(
         userId: req.platformUser!.id,
         bookingWindowDays: parsed.data.bookingWindowDays,
         minimumNoticeHours: parsed.data.minimumNoticeHours,
+        rescheduleNoticeHours: parsed.data.rescheduleNoticeHours,
         availabilityOverrides: normalizeAvailabilityOverrides(parsed.data.overrides),
       })
       .onConflictDoUpdate({
@@ -3136,6 +3255,7 @@ router.put(
         set: {
           bookingWindowDays: parsed.data.bookingWindowDays,
           minimumNoticeHours: parsed.data.minimumNoticeHours,
+          rescheduleNoticeHours: parsed.data.rescheduleNoticeHours,
           availabilityOverrides: normalizeAvailabilityOverrides(parsed.data.overrides),
           updatedAt: new Date(),
         },
@@ -3562,20 +3682,22 @@ router.get(
   requirePlatformRole("mentor"),
   async (req: AuthenticatedRequest, res) => {
     const { db } = await import("@workspace/db");
+    const mentees = await db
+      .select({
+        fullName: platformUsersTable.fullName,
+        id: platformUsersTable.id,
+      })
+      .from(platformUsersTable);
+    const menteeMap = new Map(mentees.map((entry) => [entry.id, entry.fullName]));
     const meetings = await db
       .select()
       .from(platformMeetingsTable)
       .where(eq(platformMeetingsTable.mentorUserId, req.platformUser!.id))
       .orderBy(desc(platformMeetingsTable.startsAt));
-    return res.json(
-      meetings.map((meeting) => ({
-        ...meeting,
-        startsAt: meeting.startsAt.toISOString(),
-        endsAt: meeting.endsAt.toISOString(),
-        createdAt: meeting.createdAt.toISOString(),
-        updatedAt: meeting.updatedAt.toISOString(),
-      })),
-    );
+    return res.json(meetings.map((meeting) => ({
+      ...serializeMeetingRecord(meeting),
+      menteeName: menteeMap.get(meeting.menteeUserId) ?? "",
+    })));
   },
 );
 
@@ -3650,6 +3772,125 @@ router.patch(
       createdAt: meeting.createdAt.toISOString(),
       updatedAt: meeting.updatedAt.toISOString(),
     });
+  },
+);
+
+router.patch(
+  "/platform/mentor/meetings/:id/cancel",
+  requirePlatformAuth,
+  requirePlatformRole("mentor"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = meetingCancelSchema.safeParse(req.body);
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid meeting id." : parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [existingMeeting] = await db
+      .select()
+      .from(platformMeetingsTable)
+      .where(
+        and(
+          eq(platformMeetingsTable.id, id),
+          eq(platformMeetingsTable.mentorUserId, req.platformUser!.id),
+        ),
+      )
+      .limit(1);
+    if (!existingMeeting) {
+      return res.status(404).json({ error: "Nie znaleziono spotkania." });
+    }
+    if (meetingHasStarted(existingMeeting)) {
+      return res.status(400).json({ error: "Nie można anulować spotkania po jego rozpoczęciu." });
+    }
+
+    const cancelledAt = new Date();
+    const [meeting] = await db
+      .update(platformMeetingsTable)
+      .set({
+        cancellationReason: parsed.data.reason || null,
+        cancelledAt,
+        cancelledByRole: "mentor",
+        cancelledByUserId: req.platformUser!.id,
+        cancelledMinutesBeforeStart: getMeetingMinutesBeforeStart(existingMeeting.startsAt, cancelledAt),
+        status: "cancelled",
+        updatedAt: cancelledAt,
+      })
+      .where(and(eq(platformMeetingsTable.id, id), eq(platformMeetingsTable.mentorUserId, req.platformUser!.id)))
+      .returning();
+
+    if (meeting?.externalCalendarEventId) {
+      try {
+        const connection = await getMentorCalendarConnection(db, req.platformUser!.id);
+        const mentorGoogle = await getMentorCalendarAccessToken(db, connection, meeting.mentorUserId);
+        if (mentorGoogle?.externalEmail) {
+          await cancelMentorCalendarEvent({
+            accessToken: mentorGoogle.accessToken,
+            calendarId: mentorGoogle.externalEmail,
+            eventId: meeting.externalCalendarEventId,
+          });
+        }
+      } catch (err) {
+        logger.warn({ err, meetingId: id }, "mentor calendar cancellation sync failed");
+      }
+    }
+
+    return res.json(serializeMeetingRecord(meeting));
+  },
+);
+
+router.patch(
+  "/platform/mentor/meetings/:id/occurred",
+  requirePlatformAuth,
+  requirePlatformRole("mentor"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = meetingOccurredSchema.safeParse(req.body);
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid meeting id." : parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [existingMeeting] = await db
+      .select()
+      .from(platformMeetingsTable)
+      .where(
+        and(
+          eq(platformMeetingsTable.id, id),
+          eq(platformMeetingsTable.mentorUserId, req.platformUser!.id),
+        ),
+      )
+      .limit(1);
+    if (!existingMeeting) {
+      return res.status(404).json({ error: "Nie znaleziono spotkania." });
+    }
+    if (existingMeeting.status === "cancelled") {
+      return res.status(400).json({ error: "Anulowanego spotkania nie można tak oznaczyć." });
+    }
+    if (!meetingHasEnded(existingMeeting)) {
+      return res.status(400).json({ error: "To oznaczenie jest dostępne dopiero po zakończeniu spotkania." });
+    }
+
+    const now = new Date();
+    const mentorOccurred = parsed.data.occurred;
+    const menteeOccurred = existingMeeting.menteeOccurred;
+    const nextStatus =
+      typeof menteeOccurred === "boolean"
+        ? mentorOccurred === menteeOccurred
+          ? mentorOccurred ? "completed" : "no_show"
+          : existingMeeting.status
+        : existingMeeting.status;
+
+    const [meeting] = await db
+      .update(platformMeetingsTable)
+      .set({
+        mentorOccurred,
+        mentorOccurredAt: now,
+        status: nextStatus,
+        updatedAt: now,
+      })
+      .where(and(eq(platformMeetingsTable.id, id), eq(platformMeetingsTable.mentorUserId, req.platformUser!.id)))
+      .returning();
+
+    return res.json(serializeMeetingRecord(meeting));
   },
 );
 
@@ -3803,6 +4044,7 @@ router.get(
         meetingMethod: mentorProfilesTable.meetingMethod,
         meetingLink: mentorProfilesTable.meetingLink,
         minimumNoticeHours: mentorProfilesTable.minimumNoticeHours,
+        rescheduleNoticeHours: mentorProfilesTable.rescheduleNoticeHours,
         whatsappNumber: mentorProfilesTable.whatsappNumber,
       })
       .from(platformMentorAssignmentsTable)
@@ -4027,15 +4269,20 @@ router.get(
           mentorConnectionMap.get(mentor.mentorId)?.status === "connected",
         googleCalendarEmail:
           mentorConnectionMap.get(mentor.mentorId)?.externalEmail ?? null,
+        rescheduleNoticeHours: mentor.rescheduleNoticeHours ?? 24,
       })),
       assignedGuideAccess,
       profileFields,
       profileResponses,
-      meetings: meetings.map((meeting) => ({
-        ...meeting,
-        startsAt: meeting.startsAt.toISOString(),
-        endsAt: meeting.endsAt.toISOString(),
-      })),
+      meetings: meetings.map((meeting) => {
+        const mentor = assignedMentors.find((entry: any) => entry.mentorId === meeting.mentorUserId);
+        return {
+          ...serializeMeetingRecord(meeting),
+          mentorName: mentor?.fullName ?? "",
+          mentorRescheduleNoticeHours: Number(mentor?.rescheduleNoticeHours ?? 24),
+          mentorTimezone: mentor?.timezone ?? "Europe/Warsaw",
+        };
+      }),
       guides: await shapeGuideList(db, uniqueGuides),
       assignedGuideTemplates: await shapeGuideList(db, assignedGuideTemplates),
       availableGuideTemplates: await shapeGuideList(db, availableGuideTemplates),
@@ -4916,6 +5163,12 @@ router.post(
       meetingMethod: mentorProfile.meetingMethod,
       whatsappNumber: mentorProfile.whatsappNumber,
     });
+    const resolvedMeetingContactValue = getMeetingContactValue({
+      generatedGoogleMeetUrl: generatedMeetUrl,
+      meetingLink: mentorProfile.meetingLink,
+      meetingMethod: mentorProfile.meetingMethod,
+      whatsappNumber: mentorProfile.whatsappNumber,
+    });
 
     const [meeting] = await db
       .insert(platformMeetingsTable)
@@ -4929,6 +5182,7 @@ router.post(
         timezone: mentorProfile.timezone,
         method: mentorProfile.meetingMethod,
         meetingUrl: resolvedMeetingUrl,
+        meetingContactValue: resolvedMeetingContactValue || null,
         externalCalendarEventId: eventData.id,
       })
       .returning();
@@ -4983,13 +5237,7 @@ router.post(
       }
     }
 
-    return res.status(201).json({
-      ...meeting,
-      startsAt: meeting.startsAt.toISOString(),
-      endsAt: meeting.endsAt.toISOString(),
-      createdAt: meeting.createdAt.toISOString(),
-      updatedAt: meeting.updatedAt.toISOString(),
-    });
+    return res.status(201).json(serializeMeetingRecord(meeting));
   },
 );
 
@@ -5156,9 +5404,10 @@ router.patch(
   requirePlatformAuth,
   requirePlatformRole("mentee"),
   async (req: AuthenticatedRequest, res) => {
+    const parsed = meetingCancelSchema.safeParse(req.body);
     const id = Number(req.params.id);
-    if (!Number.isFinite(id)) {
-      return res.status(400).json({ error: "Invalid meeting id." });
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid meeting id." : parsed.error.message });
     }
     const { db } = await import("@workspace/db");
     const [existingMeeting] = await db
@@ -5174,12 +5423,20 @@ router.patch(
     if (!existingMeeting) {
       return res.status(404).json({ error: "Nie znaleziono spotkania." });
     }
+    if (meetingHasStarted(existingMeeting)) {
+      return res.status(400).json({ error: "Nie można anulować spotkania po jego rozpoczęciu." });
+    }
+    const cancelledAt = new Date();
     const [meeting] = await db
       .update(platformMeetingsTable)
       .set({
+        cancelledAt,
+        cancelledByRole: "mentee",
+        cancelledByUserId: req.platformUser!.id,
+        cancelledMinutesBeforeStart: getMeetingMinutesBeforeStart(existingMeeting.startsAt, cancelledAt),
         status: "cancelled",
-        cancellationReason: typeof req.body?.reason === "string" ? req.body.reason.trim() : null,
-        updatedAt: new Date(),
+        cancellationReason: parsed.data.reason || null,
+        updatedAt: cancelledAt,
       })
       .where(and(eq(platformMeetingsTable.id, id), eq(platformMeetingsTable.menteeUserId, req.platformUser!.id)))
       .returning();
@@ -5210,13 +5467,289 @@ router.patch(
       }
     }
 
-    return res.json({
-      ...meeting,
-      startsAt: meeting.startsAt.toISOString(),
-      endsAt: meeting.endsAt.toISOString(),
-      createdAt: meeting.createdAt.toISOString(),
-      updatedAt: meeting.updatedAt.toISOString(),
+    return res.json(serializeMeetingRecord(meeting));
+  },
+);
+
+router.patch(
+  "/platform/mentee/meetings/:id/reschedule",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = meetingRescheduleSchema.safeParse(req.body);
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid meeting id." : parsed.error.message });
+    }
+    const startsAt = new Date(parsed.data.startsAt);
+    const endsAt = new Date(parsed.data.endsAt);
+    if (!meetingWindowIsValid(startsAt, endsAt)) {
+      return res.status(400).json({ error: "Spotkanie musi trwać przynajmniej 15 minut." });
+    }
+    const { db } = await import("@workspace/db");
+    const [existingMeeting] = await db
+      .select()
+      .from(platformMeetingsTable)
+      .where(
+        and(
+          eq(platformMeetingsTable.id, id),
+          eq(platformMeetingsTable.menteeUserId, req.platformUser!.id),
+        ),
+      )
+      .limit(1);
+    if (!existingMeeting) {
+      return res.status(404).json({ error: "Nie znaleziono spotkania." });
+    }
+    if (existingMeeting.status === "cancelled") {
+      return res.status(400).json({ error: "Anulowanego spotkania nie można już przełożyć." });
+    }
+    if (meetingHasStarted(existingMeeting)) {
+      return res.status(400).json({ error: "Nie można przełożyć spotkania po jego rozpoczęciu." });
+    }
+    if ((existingMeeting.rescheduleCount ?? 0) >= 1) {
+      return res.status(400).json({ error: "To spotkanie zostało już raz przełożone." });
+    }
+
+    const [mentorProfile] = await db
+      .select()
+      .from(mentorProfilesTable)
+      .where(eq(mentorProfilesTable.userId, existingMeeting.mentorUserId))
+      .limit(1);
+    const rescheduleNoticeHours = mentorProfile?.rescheduleNoticeHours ?? 24;
+    if (!meetingOutsideLeadWindow(existingMeeting.startsAt, rescheduleNoticeHours)) {
+      return res.status(400).json({
+        error: `To spotkanie można przełożyć najpóźniej ${rescheduleNoticeHours} godzin przed jego startem.`,
+      });
+    }
+    const minimumNoticeHours = mentorProfile?.minimumNoticeHours ?? DEFAULT_MENTOR_MINIMUM_NOTICE_HOURS;
+    if (!meetingOutsideLeadWindow(startsAt, minimumNoticeHours)) {
+      return res.status(400).json({
+        error: `Nowy termin musi być co najmniej ${minimumNoticeHours} godzin od teraz.`,
+      });
+    }
+
+    const availabilityRules = await db
+      .select()
+      .from(mentorAvailabilityRulesTable)
+      .where(eq(mentorAvailabilityRulesTable.mentorUserId, existingMeeting.mentorUserId))
+      .orderBy(
+        asc(mentorAvailabilityRulesTable.weekday),
+        asc(mentorAvailabilityRulesTable.startTime),
+      );
+    const availabilityOverrides = normalizeAvailabilityOverrides(mentorProfile?.availabilityOverrides);
+    const connection = await getMentorCalendarConnection(db, existingMeeting.mentorUserId);
+    const mentorGoogle = await getMentorCalendarAccessToken(db, connection, existingMeeting.mentorUserId);
+
+    if (!mentorGoogle?.externalEmail) {
+      return res.status(400).json({ error: "Wybrany mentor nie ma jeszcze podłączonego Google Calendar." });
+    }
+
+    const now = new Date();
+    const to = new Date(
+      now.getTime()
+      + (mentorProfile?.bookingWindowDays ?? DEFAULT_MENTOR_BOOKING_WINDOW_DAYS) * 24 * 60 * 60 * 1000,
+    );
+    const busyResponse = await googleApiRequestWithAccessToken(
+      mentorGoogle.accessToken,
+      "/calendar/v3/freeBusy",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          timeMin: now.toISOString(),
+          timeMax: to.toISOString(),
+          timeZone: mentorProfile?.timezone ?? "Europe/Warsaw",
+          items: [{ id: mentorGoogle.externalEmail }],
+        }),
+      },
+    );
+    const busyPayload = (await busyResponse.json()) as {
+      calendars?: Record<string, { busy: BusyWindow[] }>;
+      error?: { message?: string };
+    };
+    if (!busyResponse.ok) {
+      return res.status(502).json({
+        error: busyPayload.error?.message || "Nie udało się sprawdzić dostępności mentora.",
+      });
+    }
+
+    const availableSlots = buildMentorSlotsFromRules({
+      availabilityOverrides,
+      availabilityRules,
+      busy: busyPayload.calendars?.[mentorGoogle.externalEmail]?.busy ?? [],
+      bookingWindowDays: mentorProfile?.bookingWindowDays ?? DEFAULT_MENTOR_BOOKING_WINDOW_DAYS,
+      minimumNoticeHours,
+      now,
+      timeZone: mentorProfile?.timezone ?? "Europe/Warsaw",
     });
+    const requestedSlot = availableSlots.find(
+      (slot) => slot.start === startsAt.toISOString() && slot.end === endsAt.toISOString(),
+    );
+    if (!requestedSlot) {
+      return res.status(409).json({
+        error: "Ten termin nie jest już dostępny. Odśwież listę slotów i wybierz inny.",
+      });
+    }
+
+    try {
+      if (existingMeeting.externalCalendarEventId) {
+        await updateMentorCalendarEvent({
+          accessToken: mentorGoogle.accessToken,
+          calendarId: mentorGoogle.externalEmail,
+          description: existingMeeting.description,
+          endsAt,
+          eventId: existingMeeting.externalCalendarEventId,
+          startsAt,
+          summary: existingMeeting.title,
+          timeZone: mentorProfile?.timezone ?? "Europe/Warsaw",
+        });
+      }
+    } catch (err) {
+      logger.warn({ err, meetingId: id }, "mentee meeting reschedule calendar sync failed");
+      return res.status(502).json({ error: "Nie udało się zaktualizować wydarzenia w kalendarzu mentora." });
+    }
+
+    const rescheduledAt = new Date();
+    const [meeting] = await db
+      .update(platformMeetingsTable)
+      .set({
+        endsAt,
+        menteeOccurred: null,
+        menteeOccurredAt: null,
+        mentorOccurred: null,
+        mentorOccurredAt: null,
+        rescheduleCount: (existingMeeting.rescheduleCount ?? 0) + 1,
+        rescheduledAt,
+        rescheduledByRole: "mentee",
+        rescheduledByUserId: req.platformUser!.id,
+        rescheduledFromEndsAt: existingMeeting.endsAt,
+        rescheduledFromStartsAt: existingMeeting.startsAt,
+        rescheduledMinutesBeforeStart: getMeetingMinutesBeforeStart(existingMeeting.startsAt, rescheduledAt),
+        startsAt,
+        status: "scheduled",
+        timezone: mentorProfile?.timezone ?? parsed.data.timezone,
+        updatedAt: rescheduledAt,
+      })
+      .where(and(eq(platformMeetingsTable.id, id), eq(platformMeetingsTable.menteeUserId, req.platformUser!.id)))
+      .returning();
+
+    return res.json(serializeMeetingRecord(meeting));
+  },
+);
+
+router.patch(
+  "/platform/mentee/meetings/:id/occurred",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = meetingOccurredSchema.safeParse(req.body);
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid meeting id." : parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [existingMeeting] = await db
+      .select()
+      .from(platformMeetingsTable)
+      .where(
+        and(
+          eq(platformMeetingsTable.id, id),
+          eq(platformMeetingsTable.menteeUserId, req.platformUser!.id),
+        ),
+      )
+      .limit(1);
+    if (!existingMeeting) {
+      return res.status(404).json({ error: "Nie znaleziono spotkania." });
+    }
+    if (existingMeeting.status === "cancelled") {
+      return res.status(400).json({ error: "Anulowanego spotkania nie można tak oznaczyć." });
+    }
+    if (!meetingHasEnded(existingMeeting)) {
+      return res.status(400).json({ error: "To oznaczenie jest dostępne dopiero po zakończeniu spotkania." });
+    }
+
+    const now = new Date();
+    const menteeOccurred = parsed.data.occurred;
+    const mentorOccurred = existingMeeting.mentorOccurred;
+    const nextStatus =
+      typeof mentorOccurred === "boolean"
+        ? mentorOccurred === menteeOccurred
+          ? menteeOccurred ? "completed" : "no_show"
+          : existingMeeting.status
+        : existingMeeting.status;
+    const [meeting] = await db
+      .update(platformMeetingsTable)
+      .set({
+        menteeOccurred,
+        menteeOccurredAt: now,
+        status: nextStatus,
+        updatedAt: now,
+      })
+      .where(and(eq(platformMeetingsTable.id, id), eq(platformMeetingsTable.menteeUserId, req.platformUser!.id)))
+      .returning();
+
+    return res.json(serializeMeetingRecord(meeting));
+  },
+);
+
+router.get(
+  "/platform/admin/meetings",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (_req, res) => {
+    const { db } = await import("@workspace/db");
+    const users = await db
+      .select({
+        fullName: platformUsersTable.fullName,
+        id: platformUsersTable.id,
+      })
+      .from(platformUsersTable);
+    const userMap = new Map(users.map((entry) => [entry.id, entry.fullName]));
+    const meetings = await db.select().from(platformMeetingsTable).orderBy(desc(platformMeetingsTable.startsAt));
+    return res.json(
+      meetings.map((meeting) => ({
+        ...serializeMeetingRecord(meeting),
+        menteeName: userMap.get(meeting.menteeUserId) ?? "",
+        mentorName: userMap.get(meeting.mentorUserId) ?? "",
+      })),
+    );
+  },
+);
+
+router.delete(
+  "/platform/admin/meetings/:id",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: "Invalid meeting id." });
+    }
+    const { db } = await import("@workspace/db");
+    const [meeting] = await db
+      .select()
+      .from(platformMeetingsTable)
+      .where(eq(platformMeetingsTable.id, id))
+      .limit(1);
+    if (!meeting) {
+      return res.status(404).json({ error: "Nie znaleziono spotkania." });
+    }
+    if (meeting.externalCalendarEventId) {
+      try {
+        const connection = await getMentorCalendarConnection(db, meeting.mentorUserId);
+        const mentorGoogle = await getMentorCalendarAccessToken(db, connection, meeting.mentorUserId);
+        if (mentorGoogle?.externalEmail) {
+          await cancelMentorCalendarEvent({
+            accessToken: mentorGoogle.accessToken,
+            calendarId: mentorGoogle.externalEmail,
+            eventId: meeting.externalCalendarEventId,
+          });
+        }
+      } catch (err) {
+        logger.warn({ err, meetingId: id }, "admin meeting delete calendar sync failed");
+      }
+    }
+    await db.delete(platformMeetingsTable).where(eq(platformMeetingsTable.id, id));
+    return res.status(204).end();
   },
 );
 

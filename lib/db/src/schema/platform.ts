@@ -116,6 +116,7 @@ export const mentorProfilesTable = pgTable(
     whatsappNumber: text("whatsapp_number"),
     bookingWindowDays: integer("booking_window_days").notNull().default(30),
     minimumNoticeHours: integer("minimum_notice_hours").notNull().default(24),
+    rescheduleNoticeHours: integer("reschedule_notice_hours").notNull().default(24),
     availabilityOverrides: jsonb("availability_overrides")
       .$type<
         Array<{
@@ -384,10 +385,30 @@ export const platformMeetingsTable = pgTable("platform_meetings", {
   status: text("status").notNull().default("scheduled"),
   method: text("method").notNull().default("zoom_link"),
   meetingUrl: text("meeting_url"),
+  meetingContactValue: text("meeting_contact_value"),
   externalCalendarEventId: text("external_calendar_event_id"),
   actualDurationMinutes: integer("actual_duration_minutes"),
   mentorNotes: text("mentor_notes"),
   cancellationReason: text("cancellation_reason"),
+  cancelledAt: timestamp("cancelled_at"),
+  cancelledByRole: text("cancelled_by_role"),
+  cancelledByUserId: integer("cancelled_by_user_id").references(() => platformUsersTable.id, {
+    onDelete: "set null",
+  }),
+  cancelledMinutesBeforeStart: integer("cancelled_minutes_before_start"),
+  rescheduledAt: timestamp("rescheduled_at"),
+  rescheduledByRole: text("rescheduled_by_role"),
+  rescheduledByUserId: integer("rescheduled_by_user_id").references(() => platformUsersTable.id, {
+    onDelete: "set null",
+  }),
+  rescheduledMinutesBeforeStart: integer("rescheduled_minutes_before_start"),
+  rescheduledFromStartsAt: timestamp("rescheduled_from_starts_at"),
+  rescheduledFromEndsAt: timestamp("rescheduled_from_ends_at"),
+  rescheduleCount: integer("reschedule_count").notNull().default(0),
+  mentorOccurred: boolean("mentor_occurred"),
+  mentorOccurredAt: timestamp("mentor_occurred_at"),
+  menteeOccurred: boolean("mentee_occurred"),
+  menteeOccurredAt: timestamp("mentee_occurred_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

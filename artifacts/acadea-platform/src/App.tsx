@@ -247,6 +247,66 @@ function CompletionDot({ completed }: { completed: boolean }) {
   );
 }
 
+type PlatformMeetingStatus =
+  | "scheduled"
+  | "cancelled"
+  | "completed"
+  | "no_show"
+  | "rescheduled";
+
+function formatMeetingStatusLabel(status: PlatformMeetingStatus | string) {
+  switch (status) {
+    case "scheduled":
+      return "Zaplanowane";
+    case "cancelled":
+      return "Anulowane";
+    case "completed":
+      return "Odbyte";
+    case "no_show":
+      return "Nie odbyło się";
+    case "rescheduled":
+      return "Przełożone";
+    default:
+      return status;
+  }
+}
+
+function formatMeetingDateRange(meeting: { endsAt: string; startsAt: string }, timeZone = "Europe/Warsaw") {
+  const startsAt = new Date(meeting.startsAt);
+  const endsAt = new Date(meeting.endsAt);
+  const startDateLabel = startsAt.toLocaleDateString("pl-PL", {
+    day: "numeric",
+    month: "long",
+    timeZone,
+    weekday: "long",
+    year: "numeric",
+  });
+  const startTimeLabel = startsAt.toLocaleTimeString("pl-PL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone,
+  });
+  const endTimeLabel = endsAt.toLocaleTimeString("pl-PL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone,
+  });
+  return `${startDateLabel}, ${startTimeLabel} - ${endTimeLabel}`;
+}
+
+function getMeetingCategory(meeting: any) {
+  if (meeting.isSuspicious) {
+    return "suspicious";
+  }
+  if (meeting.status === "cancelled") {
+    return "cancelled";
+  }
+  if (new Date(meeting.endsAt).getTime() < Date.now()) {
+    return "past";
+  }
+  return "upcoming";
+}
+
 function getMaterialItemCompleted(state: {
   completed?: boolean;
   completionMethod?: string | null;
@@ -1068,6 +1128,7 @@ function Dashboard({
         ["profile-designer", "Projektant Twoich Danych"],
         ["materials-designer", "Projektant Kafli Materiałów"],
         ["item-guides", "Wskazówki do Elementów"],
+        ["meetings", "Spotkania"],
         ["leads", "Leady"],
       ];
     }
@@ -1198,6 +1259,8 @@ function AdminSection({
   const [guides, setGuides] = useState<any[]>([]);
   const [profileFields, setProfileFields] = useState<any[]>([]);
   const [materialTemplates, setMaterialTemplates] = useState<any[]>([]);
+  const [adminMeetings, setAdminMeetings] = useState<any[]>([]);
+  const [adminMeetingFilter, setAdminMeetingFilter] = useState<"all" | "upcoming" | "past" | "cancelled" | "suspicious">("all");
   const [leadType, setLeadType] = useState<LeadKind>("contact");
   const [leads, setLeads] = useState<any[]>([]);
   const [leadCounts, setLeadCounts] = useState<Record<LeadKind, number>>({
@@ -1209,6 +1272,7 @@ function AdminSection({
   });
   const [status, setStatus] = useState("");
   const [leadDeletingId, setLeadDeletingId] = useState<number | null>(null);
+  const [meetingDeletingId, setMeetingDeletingId] = useState<number | null>(null);
   const [userActionId, setUserActionId] = useState<number | null>(null);
   const [guideActionId, setGuideActionId] = useState<number | null>(null);
   const [designerActionId, setDesignerActionId] = useState<number | null>(null);
@@ -1453,6 +1517,11 @@ function AdminSection({
     setMasterTemplateDoc(masterDocPayload);
   }
 
+  async function refreshAdminMeetings() {
+    const payload = await apiFetch<any[]>("/admin/meetings", undefined, token);
+    setAdminMeetings(payload);
+  }
+
   async function refreshMasterTemplateDoc() {
     setMasterTemplateDocLoading(true);
     try {
@@ -1676,6 +1745,9 @@ function AdminSection({
     }
     if (section === "leads") {
       void refreshLeadState(leadType).catch((error) => setStatus(error.message));
+    }
+    if (section === "meetings") {
+      void refreshAdminMeetings().catch((error) => setStatus(error.message));
     }
   }, [leadType, section, token]);
 
@@ -2010,9 +2082,29 @@ function AdminSection({
     );
   }
 
+  async function deleteAdminMeeting(meetingId: number) {
+    setMeetingDeletingId(meetingId);
+    setStatus("");
+    try {
+      await apiFetch(`/admin/meetings/${meetingId}`, { method: "DELETE" }, token);
+      await refreshAdminMeetings();
+      setStatus("Spotkanie zostało całkowicie usunięte z systemu.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się usunąć spotkania.");
+    } finally {
+      setMeetingDeletingId(null);
+    }
+  }
+
   const mentorProfileMap = new Map(mentorProfiles.map((profile) => [profile.userId, profile]));
   const menteeProfileMap = new Map(menteeProfiles.map((profile) => [profile.userId, profile]));
   const tipAccessMap = new Map(tipAccessByMentee.map((entry) => [entry.menteeUserId, entry]));
+  const filteredAdminMeetings = adminMeetings.filter((meeting) => {
+    if (adminMeetingFilter === "all") {
+      return true;
+    }
+    return getMeetingCategory(meeting) === adminMeetingFilter;
+  });
 
   return (
     <>
@@ -3319,6 +3411,80 @@ function AdminSection({
           </div>
         </div>
       ) : null}
+      {section === "meetings" ? (
+        <div className="dashboard-card">
+          <h2>Wszystkie spotkania</h2>
+          <p className="muted">Tutaj widzisz wszystkie spotkania w systemie. Usunięcie z tego miejsca kasuje rekord całkowicie z bazy.</p>
+          <div className="button-row" style={{ marginTop: 16 }}>
+            {([
+              ["all", "Wszystkie"],
+              ["upcoming", "Nadchodzące"],
+              ["past", "Po czasie"],
+              ["cancelled", "Anulowane"],
+              ["suspicious", "Podejrzane"],
+            ] as const).map(([value, label]) => (
+              <button
+                className={adminMeetingFilter === value ? "btn btn-primary" : "btn btn-secondary"}
+                key={value}
+                onClick={() => setAdminMeetingFilter(value)}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="list" style={{ marginTop: 18 }}>
+            {filteredAdminMeetings.map((meeting) => (
+              <div className="list-item" key={meeting.id}>
+                <header>
+                  <div>
+                    <h3>{meeting.title}</h3>
+                    <div className="muted small">
+                      Mentor: {meeting.mentorName || "brak"} • Mentee: {meeting.menteeName || "brak"}
+                    </div>
+                    <div className="muted small">
+                      {formatMeetingDateRange(meeting, meeting.timezone || "Europe/Warsaw")}
+                    </div>
+                  </div>
+                  <span className="badge">{formatMeetingStatusLabel(meeting.status)}</span>
+                </header>
+                {meeting.description ? <p className="muted">{meeting.description}</p> : null}
+                <div className="button-row" style={{ marginTop: 12 }}>
+                  {meeting.meetingUrl ? (
+                    <a className="btn btn-secondary" href={meeting.meetingUrl} target="_blank" rel="noreferrer">
+                      Otwórz spotkanie
+                    </a>
+                  ) : null}
+                  <button
+                    className="btn btn-secondary"
+                    disabled={meetingDeletingId === meeting.id}
+                    onClick={() => void deleteAdminMeeting(meeting.id)}
+                    type="button"
+                  >
+                    Usuń z bazy
+                  </button>
+                </div>
+                {meeting.meetingContactValue ? (
+                  <div className="small muted" style={{ marginTop: 8, wordBreak: "break-all" }}>
+                    {meeting.meetingContactValue}
+                  </div>
+                ) : null}
+                {meeting.status === "cancelled" ? (
+                  <div className="small muted" style={{ marginTop: 8 }}>
+                    Anulował: {meeting.cancelledByRole || "nieznany"} • {meeting.cancelledMinutesBeforeStart ?? 0} min przed startem
+                  </div>
+                ) : null}
+                {meeting.isSuspicious ? (
+                  <div className="status" style={{ marginTop: 12 }}>
+                    Rozbieżność: mentor i mentee inaczej oznaczyli, czy spotkanie się odbyło.
+                  </div>
+                ) : null}
+              </div>
+            ))}
+            {!filteredAdminMeetings.length ? <div className="status">Brak spotkań w tej kategorii.</div> : null}
+          </div>
+        </div>
+      ) : null}
       {section === "leads" ? (
         <div className="dashboard-card">
           <h2>Leady i formularze</h2>
@@ -3401,6 +3567,7 @@ function MentorSection({
     meetingLink: "",
     meetingMethod: "zoom_link",
     minimumNoticeHours: 24,
+    rescheduleNoticeHours: 24,
     timezone: "Europe/Warsaw",
     whatsappNumber: "",
     ...(session.mentorProfile ?? {}),
@@ -3432,6 +3599,8 @@ function MentorSection({
   const [mentorItemGuides, setMentorItemGuides] = useState<any[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [status, setStatus] = useState("");
+  const [meetingActionId, setMeetingActionId] = useState<string | null>(null);
+  const [mentorMeetingFilter, setMentorMeetingFilter] = useState<"upcoming" | "past" | "cancelled" | "suspicious">("upcoming");
   const [editingUniversityId, setEditingUniversityId] = useState<number | null>(null);
   const [universityForm, setUniversityForm] = useState({ country: "", universityName: "", programName: "", summary: "" });
   const [guideForm, setGuideForm] = useState({
@@ -3520,6 +3689,7 @@ function MentorSection({
       meetingLink: "",
       meetingMethod: "zoom_link",
       minimumNoticeHours: 24,
+      rescheduleNoticeHours: 24,
       timezone: "Europe/Warsaw",
       whatsappNumber: "",
       ...(payload.profile ?? {}),
@@ -3530,6 +3700,11 @@ function MentorSection({
       payload.availability?.length ? payload.availability : current,
     );
     setGoogleConnections(payload.googleConnections ?? []);
+  }
+
+  async function refreshMentorMeetings() {
+    const payload = await apiFetch<any[]>("/mentor/meetings", undefined, token);
+    setMeetings(payload);
   }
 
   const calendarConnection = googleConnections.find(
@@ -3564,6 +3739,7 @@ function MentorSection({
       },
     [availabilityOverrides, selectedOverrideDate],
   );
+  const filteredMentorMeetings = meetings.filter((meeting) => getMeetingCategory(meeting) === mentorMeetingFilter);
 
   useEffect(() => {
     if (section === "profile" || section === "availability") {
@@ -3585,7 +3761,7 @@ function MentorSection({
       ]).catch((error) => setStatus(error.message));
     }
     if (section === "meetings") {
-      void apiFetch<any[]>("/mentor/meetings", undefined, token).then(setMeetings).catch((error) => setStatus(error.message));
+      void refreshMentorMeetings().catch((error) => setStatus(error.message));
     }
   }, [section, token]);
 
@@ -3649,6 +3825,7 @@ function MentorSection({
           overrides: availabilityOverrides,
           bookingWindowDays: Number(profile.bookingWindowDays ?? 30),
           minimumNoticeHours: Number(profile.minimumNoticeHours ?? 24),
+          rescheduleNoticeHours: Number(profile.rescheduleNoticeHours ?? 24),
         }),
       }, token);
       setStatus("Dostępność została zapisana.");
@@ -3741,6 +3918,40 @@ function MentorSection({
           ? error.message
           : "Nie udało się odłączyć Google Calendar.",
       );
+    }
+  }
+
+  async function cancelMentorMeeting(meetingId: number) {
+    setMeetingActionId(`${meetingId}:cancel`);
+    setStatus("");
+    try {
+      await apiFetch(`/mentor/meetings/${meetingId}/cancel`, {
+        method: "PATCH",
+        body: JSON.stringify({ reason: "" }),
+      }, token);
+      await refreshMentorMeetings();
+      setStatus("Spotkanie zostało anulowane.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się anulować spotkania.");
+    } finally {
+      setMeetingActionId(null);
+    }
+  }
+
+  async function markMentorMeetingOccurred(meetingId: number, occurred: boolean) {
+    setMeetingActionId(`${meetingId}:occurred:${occurred ? "yes" : "no"}`);
+    setStatus("");
+    try {
+      await apiFetch(`/mentor/meetings/${meetingId}/occurred`, {
+        method: "PATCH",
+        body: JSON.stringify({ occurred }),
+      }, token);
+      await refreshMentorMeetings();
+      setStatus(occurred ? "Oznaczono, że spotkanie się odbyło." : "Oznaczono, że spotkanie się nie odbyło.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać statusu spotkania.");
+    } finally {
+      setMeetingActionId(null);
     }
   }
 
@@ -4161,6 +4372,24 @@ function MentorSection({
                 ))}
               </select>
             </div>
+          </div>
+          <div className="field" style={{ marginTop: 18 }}>
+            <label>Jak późno mentee może przełożyć spotkanie</label>
+            <select
+              value={String(profile.rescheduleNoticeHours ?? 24)}
+              onChange={(event) =>
+                setProfile((current: any) => ({
+                  ...current,
+                  rescheduleNoticeHours: Number(event.target.value),
+                }))
+              }
+            >
+              {MINIMUM_NOTICE_HOUR_OPTIONS.map((value) => (
+                <option key={`reschedule-${value}`} value={value}>
+                  {value < 24 ? `${value} h` : value % 24 === 0 ? `${value / 24} dni` : `${value} h`}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="list" style={{ marginTop: 18 }}>
@@ -4819,28 +5048,96 @@ function MentorSection({
       {section === "meetings" ? (
         <div className="dashboard-card">
           <h2>Spotkania mentora</h2>
-          <p className="muted">Domyślny czas spotkania to 30 minut, ale przy każdym wpisie możesz potem zanotować faktyczny czas trwania i status.</p>
+          <p className="muted">Tutaj widzisz nadchodzące, odbyte, anulowane i podejrzane spotkania wraz z pełnym linkiem do wejścia.</p>
+          <div className="button-row" style={{ marginTop: 16 }}>
+            {([
+              ["upcoming", "Nadchodzące"],
+              ["past", "Po czasie"],
+              ["cancelled", "Anulowane"],
+              ["suspicious", "Podejrzane"],
+            ] as const).map(([value, label]) => (
+              <button
+                className={mentorMeetingFilter === value ? "btn btn-primary" : "btn btn-secondary"}
+                key={value}
+                onClick={() => setMentorMeetingFilter(value)}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <div className="list" style={{ marginTop: 18 }}>
-            {meetings.map((meeting) => (
+            {filteredMentorMeetings.map((meeting) => (
               <div className="list-item" key={meeting.id}>
                 <header>
                   <div>
                     <h3>{meeting.title}</h3>
-                    <div className="muted small">{new Date(meeting.startsAt).toLocaleString("pl-PL")}</div>
+                    <div className="muted small">{meeting.menteeName ? `Mentee: ${meeting.menteeName}` : null}</div>
+                    <div className="muted small">{formatMeetingDateRange(meeting, meeting.timezone || "Europe/Warsaw")}</div>
                   </div>
-                  <span className="badge">{meeting.status}</span>
+                  <span className="badge">{formatMeetingStatusLabel(meeting.status)}</span>
                 </header>
-                <p className="muted">{meeting.description}</p>
-                {meeting.meetingUrl ? (
-                  <div className="small muted" style={{ marginTop: 8 }}>
-                    Link / metoda:{" "}
-                    <a href={meeting.meetingUrl} target="_blank" rel="noreferrer">
-                      {meeting.meetingUrl}
+                {meeting.description ? <p className="muted">{meeting.description}</p> : null}
+                <div className="button-row" style={{ marginTop: 12 }}>
+                  {meeting.meetingUrl ? (
+                    <a className="btn btn-secondary" href={meeting.meetingUrl} target="_blank" rel="noreferrer">
+                      Otwórz spotkanie
                     </a>
+                  ) : null}
+                  {meeting.canCancel ? (
+                    <button
+                      className="btn btn-secondary"
+                      disabled={meetingActionId === `${meeting.id}:cancel`}
+                      onClick={() => void cancelMentorMeeting(meeting.id)}
+                      type="button"
+                    >
+                      Anuluj spotkanie
+                    </button>
+                  ) : null}
+                </div>
+                {meeting.meetingContactValue ? (
+                  <div className="small muted" style={{ marginTop: 8, wordBreak: "break-all" }}>
+                    {meeting.meetingContactValue}
+                  </div>
+                ) : null}
+                {meeting.status === "cancelled" ? (
+                  <div className="small muted" style={{ marginTop: 8 }}>
+                    Anulował: {meeting.cancelledByRole || "nieznany"} • {meeting.cancelledMinutesBeforeStart ?? 0} min przed startem
+                  </div>
+                ) : null}
+                {meeting.rescheduleCount ? (
+                  <div className="small muted" style={{ marginTop: 8 }}>
+                    Przełożone {meeting.rescheduleCount} raz • poprzedni termin: {meeting.rescheduledFromStartsAt ? formatMeetingDateRange({ startsAt: meeting.rescheduledFromStartsAt, endsAt: meeting.rescheduledFromEndsAt || meeting.rescheduledFromStartsAt }, meeting.timezone || "Europe/Warsaw") : "brak"}
+                  </div>
+                ) : null}
+                {meeting.canMarkOccurred ? (
+                  <div className="button-row" style={{ marginTop: 12 }}>
+                    <button
+                      className="btn btn-secondary"
+                      disabled={meetingActionId === `${meeting.id}:occurred:yes`}
+                      onClick={() => void markMentorMeetingOccurred(meeting.id, true)}
+                      type="button"
+                    >
+                      Spotkanie się odbyło
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      disabled={meetingActionId === `${meeting.id}:occurred:no`}
+                      onClick={() => void markMentorMeetingOccurred(meeting.id, false)}
+                      type="button"
+                    >
+                      Spotkanie się nie odbyło
+                    </button>
+                  </div>
+                ) : null}
+                {meeting.isSuspicious ? (
+                  <div className="status" style={{ marginTop: 12 }}>
+                    Rozbieżność: mentor i mentee inaczej oznaczyli, czy spotkanie się odbyło.
                   </div>
                 ) : null}
               </div>
             ))}
+            {!filteredMentorMeetings.length ? <div className="status">Brak spotkań w tej kategorii.</div> : null}
           </div>
         </div>
       ) : null}
@@ -4876,6 +5173,8 @@ function MenteeSection({
   const [profileValues, setProfileValues] = useState<Record<string, string>>({});
   const [status, setStatus] = useState("");
   const [materialActionKey, setMaterialActionKey] = useState<string | null>(null);
+  const [meetingActionKey, setMeetingActionKey] = useState<string | null>(null);
+  const [meetingFilter, setMeetingFilter] = useState<"upcoming" | "past" | "cancelled" | "suspicious">("upcoming");
   const [meetingTurnstileToken, setMeetingTurnstileToken] = useState("");
   const [meetingTurnstileResetKey, setMeetingTurnstileResetKey] = useState(0);
   const [openMaterialTemplateIds, setOpenMaterialTemplateIds] = useState<number[]>(expandedMaterialTemplateIds);
@@ -4885,6 +5184,16 @@ function MenteeSection({
     const saved = getCookie(TIMEZONE_COOKIE_NAME);
     return saved && findTimezoneOption(saved) ? saved : DEFAULT_TIMEZONE;
   });
+  const [rescheduleMeetingId, setRescheduleMeetingId] = useState<number | null>(null);
+  const [rescheduleMonth, setRescheduleMonth] = useState(
+    formatMonthKey(new Date(), Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Warsaw"),
+  );
+  const [rescheduleSlots, setRescheduleSlots] = useState<Array<{ end: string; start: string }>>([]);
+  const [rescheduleSlotsTimezone, setRescheduleSlotsTimezone] = useState("Europe/Warsaw");
+  const [rescheduleSlotsConnectionReady, setRescheduleSlotsConnectionReady] = useState(true);
+  const [rescheduleSlotsLoading, setRescheduleSlotsLoading] = useState(false);
+  const [selectedRescheduleDayKey, setSelectedRescheduleDayKey] = useState<string | null>(null);
+  const [rescheduleDraft, setRescheduleDraft] = useState({ startsAt: "", endsAt: "", timezone: DEFAULT_TIMEZONE });
   const [meetingForm, setMeetingForm] = useState({
     mentorUserId: "",
     title: "Spotkanie mentoringowe",
@@ -4927,6 +5236,10 @@ function MenteeSection({
   const selectedMentor = assignedMentors.find(
     (mentor: any) => String(mentor.mentorId) === String(meetingForm.mentorUserId),
   );
+  const rescheduleMeeting = (overview?.meetings ?? []).find((meeting: any) => meeting.id === rescheduleMeetingId) ?? null;
+  const rescheduleMentor = rescheduleMeeting
+    ? assignedMentors.find((mentor: any) => mentor.mentorId === rescheduleMeeting.mentorUserId) ?? null
+    : null;
   const selectedMentorMaxMonth = selectedMentor
     ? formatMonthKey(
         new Date(
@@ -4954,6 +5267,25 @@ function MenteeSection({
   const selectedMentorDay = selectedMentorDayKey
     ? mentorSlotDayIndex[selectedMentorDayKey] ?? null
     : null;
+  const rescheduleSlotDayIndex = useMemo(
+    () => buildSlotDayIndex(rescheduleSlots, viewerTimezone),
+    [rescheduleSlots, viewerTimezone],
+  );
+  const rescheduleSlotCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.values(rescheduleSlotDayIndex).map((entry) => [entry.dateKey, entry.slots.length]),
+      ),
+    [rescheduleSlotDayIndex],
+  );
+  const rescheduleMonthCells = useMemo(
+    () => buildMonthCalendar(rescheduleMonth, viewerTimezone, rescheduleSlotCounts),
+    [rescheduleMonth, rescheduleSlotCounts, viewerTimezone],
+  );
+  const selectedRescheduleDay = selectedRescheduleDayKey
+    ? rescheduleSlotDayIndex[selectedRescheduleDayKey] ?? null
+    : null;
+  const filteredMenteeMeetings = (overview?.meetings ?? []).filter((meeting: any) => getMeetingCategory(meeting) === meetingFilter);
   const visibleMaterialTemplates = (materialTemplates ?? [])
     .map((template: any) => {
       const visibleRows = Array.isArray(template.structure)
@@ -5061,6 +5393,35 @@ function MenteeSection({
   }, [assignedMentors, meetingForm.mentorUserId, mentorSlotsMonth, section, token]);
 
   useEffect(() => {
+    if (section !== "meetings" || !rescheduleMeeting || !rescheduleMentor) {
+      return;
+    }
+    if (!rescheduleMentor.googleCalendarConnected) {
+      setRescheduleSlots([]);
+      setRescheduleSlotsConnectionReady(false);
+      setRescheduleSlotsTimezone(rescheduleMentor.timezone || "Europe/Warsaw");
+      return;
+    }
+    setRescheduleSlotsLoading(true);
+    void apiFetch<{
+      connectionReady: boolean;
+      slots: Array<{ end: string; start: string }>;
+      timezone: string;
+    }>(
+      `/mentee/mentor-slots?mentorUserId=${encodeURIComponent(rescheduleMeeting.mentorUserId)}&month=${encodeURIComponent(rescheduleMonth)}`,
+      undefined,
+      token,
+    )
+      .then((payload) => {
+        setRescheduleSlots(payload.slots ?? []);
+        setRescheduleSlotsConnectionReady(payload.connectionReady !== false);
+        setRescheduleSlotsTimezone(payload.timezone || rescheduleMentor.timezone || "Europe/Warsaw");
+      })
+      .catch((error) => setStatus(error.message))
+      .finally(() => setRescheduleSlotsLoading(false));
+  }, [rescheduleMeeting, rescheduleMentor, rescheduleMonth, section, token]);
+
+  useEffect(() => {
     setSelectedMentorDayKey(null);
     setMeetingForm((current) => ({
       ...current,
@@ -5069,6 +5430,16 @@ function MenteeSection({
       timezone: viewerTimezone,
     }));
   }, [meetingForm.mentorUserId, mentorSlotsMonth, viewerTimezone]);
+
+  useEffect(() => {
+    if (!rescheduleMeetingId) {
+      setSelectedRescheduleDayKey(null);
+      setRescheduleDraft({ startsAt: "", endsAt: "", timezone: viewerTimezone });
+      return;
+    }
+    setSelectedRescheduleDayKey(null);
+    setRescheduleDraft({ startsAt: "", endsAt: "", timezone: viewerTimezone });
+  }, [rescheduleMeetingId, rescheduleMonth, viewerTimezone]);
 
   async function requestMeeting(event: React.FormEvent) {
     event.preventDefault();
@@ -5102,6 +5473,66 @@ function MenteeSection({
       setMeetingTurnstileToken("");
       setMeetingTurnstileResetKey((current) => current + 1);
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać spotkania.");
+    }
+  }
+
+  async function cancelMenteeMeeting(meetingId: number) {
+    setMeetingActionKey(`${meetingId}:cancel`);
+    setStatus("");
+    try {
+      await apiFetch(`/mentee/meetings/${meetingId}/cancel`, {
+        method: "PATCH",
+        body: JSON.stringify({ reason: "" }),
+      }, token);
+      await refreshOverview();
+      setStatus("Spotkanie zostało anulowane.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się anulować spotkania.");
+    } finally {
+      setMeetingActionKey(null);
+    }
+  }
+
+  async function saveMeetingReschedule(meetingId: number) {
+    if (!rescheduleDraft.startsAt || !rescheduleDraft.endsAt) {
+      setStatus("Wybierz nowy termin spotkania.");
+      return;
+    }
+    setMeetingActionKey(`${meetingId}:reschedule`);
+    setStatus("");
+    try {
+      await apiFetch(`/mentee/meetings/${meetingId}/reschedule`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          ...rescheduleDraft,
+          endsAt: new Date(rescheduleDraft.endsAt).toISOString(),
+          startsAt: new Date(rescheduleDraft.startsAt).toISOString(),
+        }),
+      }, token);
+      await refreshOverview();
+      setRescheduleMeetingId(null);
+      setStatus("Spotkanie zostało przełożone.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się przełożyć spotkania.");
+    } finally {
+      setMeetingActionKey(null);
+    }
+  }
+
+  async function markMenteeMeetingOccurred(meetingId: number, occurred: boolean) {
+    setMeetingActionKey(`${meetingId}:occurred:${occurred ? "yes" : "no"}`);
+    setStatus("");
+    try {
+      await apiFetch(`/mentee/meetings/${meetingId}/occurred`, {
+        method: "PATCH",
+        body: JSON.stringify({ occurred }),
+      }, token);
+      await refreshOverview();
+      setStatus(occurred ? "Oznaczono, że spotkanie się odbyło." : "Oznaczono, że spotkanie się nie odbyło.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać statusu spotkania.");
+    } finally {
+      setMeetingActionKey(null);
     }
   }
 
@@ -6086,27 +6517,196 @@ function MenteeSection({
       {section === "meetings" && overview ? (
         <div className="dashboard-card">
           <h2>Twoje spotkania</h2>
+          <div className="button-row" style={{ marginTop: 16 }}>
+            {([
+              ["upcoming", "Nadchodzące"],
+              ["past", "Po czasie"],
+              ["cancelled", "Anulowane"],
+              ["suspicious", "Podejrzane"],
+            ] as const).map(([value, label]) => (
+              <button
+                className={meetingFilter === value ? "btn btn-primary" : "btn btn-secondary"}
+                key={value}
+                onClick={() => {
+                  setMeetingFilter(value);
+                  setRescheduleMeetingId(null);
+                }}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <div className="list">
-            {(overview.meetings ?? []).map((meeting: any) => (
+            {filteredMenteeMeetings.map((meeting: any) => (
               <div className="list-item" key={meeting.id}>
                 <header>
                   <div>
                     <h3>{meeting.title}</h3>
-                    <div className="muted small">{new Date(meeting.startsAt).toLocaleString("pl-PL")}</div>
+                    <div className="muted small">{meeting.mentorName ? `Mentor: ${meeting.mentorName}` : null}</div>
+                    <div className="muted small">{formatMeetingDateRange(meeting, meeting.timezone || "Europe/Warsaw")}</div>
                   </div>
-                  <span className="badge">{meeting.status}</span>
+                  <span className="badge">{formatMeetingStatusLabel(meeting.status)}</span>
                 </header>
-                <p className="muted">{meeting.description}</p>
-                {meeting.meetingUrl ? (
-                  <div className="small muted" style={{ marginTop: 8 }}>
-                    Link / metoda:{" "}
-                    <a href={meeting.meetingUrl} target="_blank" rel="noreferrer">
-                      {meeting.meetingUrl}
+                {meeting.description ? <p className="muted">{meeting.description}</p> : null}
+                <div className="button-row" style={{ marginTop: 12 }}>
+                  {meeting.meetingUrl ? (
+                    <a className="btn btn-secondary" href={meeting.meetingUrl} target="_blank" rel="noreferrer">
+                      Otwórz spotkanie
                     </a>
+                  ) : null}
+                  {meeting.canCancel ? (
+                    <button
+                      className="btn btn-secondary"
+                      disabled={meetingActionKey === `${meeting.id}:cancel`}
+                      onClick={() => void cancelMenteeMeeting(meeting.id)}
+                      type="button"
+                    >
+                      Anuluj spotkanie
+                    </button>
+                  ) : null}
+                  {meeting.canCancel && (meeting.rescheduleCount ?? 0) < 1 ? (
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        setRescheduleMeetingId((current) => (current === meeting.id ? null : meeting.id));
+                        setRescheduleMonth(formatMonthKey(new Date(), viewerTimezone));
+                      }}
+                      type="button"
+                    >
+                      Przełóż spotkanie
+                    </button>
+                  ) : null}
+                </div>
+                {meeting.meetingContactValue ? (
+                  <div className="small muted" style={{ marginTop: 8, wordBreak: "break-all" }}>
+                    {meeting.meetingContactValue}
+                  </div>
+                ) : null}
+                {meeting.status === "cancelled" ? (
+                  <div className="small muted" style={{ marginTop: 8 }}>
+                    Anulował: {meeting.cancelledByRole || "nieznany"} • {meeting.cancelledMinutesBeforeStart ?? 0} min przed startem
+                  </div>
+                ) : null}
+                {meeting.rescheduleCount ? (
+                  <div className="small muted" style={{ marginTop: 8 }}>
+                    Spotkanie zostało przełożone {meeting.rescheduleCount} raz.
+                  </div>
+                ) : null}
+                {meeting.id === rescheduleMeetingId ? (
+                  <div className="stack" style={{ marginTop: 16 }}>
+                    {rescheduleMentor?.googleCalendarConnected ? (
+                      <>
+                        {rescheduleSlotsLoading ? (
+                          <div className="status">Ładujemy nowe terminy mentora…</div>
+                        ) : !rescheduleSlotsConnectionReady ? (
+                          <div className="status">Mentor nie ma obecnie gotowych slotów do automatycznego przełożenia.</div>
+                        ) : (
+                          <>
+                            <div className="button-row" style={{ justifyContent: "space-between" }}>
+                              <button className="btn btn-secondary" onClick={() => setRescheduleMonth((current) => shiftMonthKey(current, -1))} type="button">
+                                Poprzedni miesiąc
+                              </button>
+                              <strong style={{ textTransform: "capitalize" }}>{formatMonthHeading(rescheduleMonth, viewerTimezone)}</strong>
+                              <button className="btn btn-secondary" onClick={() => setRescheduleMonth((current) => shiftMonthKey(current, 1))} type="button">
+                                Następny miesiąc
+                              </button>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 8 }}>
+                              {["nd", "pn", "wt", "śr", "czw", "pt", "sob"].map((label) => (
+                                <div className="small muted" key={label} style={{ textAlign: "center" }}>{label}</div>
+                              ))}
+                              {rescheduleMonthCells.map((cell) =>
+                                cell.kind === "empty" ? (
+                                  <div key={cell.key} />
+                                ) : (
+                                  <button
+                                    className={selectedRescheduleDayKey === cell.dateKey ? "btn btn-primary" : "btn btn-secondary"}
+                                    disabled={cell.availableCount === 0}
+                                    key={cell.key}
+                                    onClick={() => setSelectedRescheduleDayKey(cell.dateKey)}
+                                    type="button"
+                                  >
+                                    {cell.dayNumber}
+                                  </button>
+                                ),
+                              )}
+                            </div>
+                            {selectedRescheduleDay ? (
+                              <div className="button-row">
+                                {selectedRescheduleDay.slots.map((slot) => {
+                                  const isSelected = rescheduleDraft.startsAt === slot.start && rescheduleDraft.endsAt === slot.end;
+                                  return (
+                                    <button
+                                      className={isSelected ? "btn btn-primary" : "btn btn-secondary"}
+                                      key={slot.start}
+                                      onClick={() => setRescheduleDraft({ endsAt: slot.end, startsAt: slot.start, timezone: viewerTimezone })}
+                                      type="button"
+                                    >
+                                      {slot.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <div className="grid-2">
+                        <div className="field">
+                          <label>Nowy start</label>
+                          <input type="datetime-local" value={rescheduleDraft.startsAt} onChange={(event) => setRescheduleDraft((current) => ({ ...current, startsAt: event.target.value }))} />
+                        </div>
+                        <div className="field">
+                          <label>Nowy koniec</label>
+                          <input type="datetime-local" value={rescheduleDraft.endsAt} onChange={(event) => setRescheduleDraft((current) => ({ ...current, endsAt: event.target.value }))} />
+                        </div>
+                      </div>
+                    )}
+                    <div className="button-row">
+                      <button
+                        className="btn btn-primary"
+                        disabled={meetingActionKey === `${meeting.id}:reschedule`}
+                        onClick={() => void saveMeetingReschedule(meeting.id)}
+                        type="button"
+                      >
+                        Zapisz nowy termin
+                      </button>
+                      <button className="btn btn-secondary" onClick={() => setRescheduleMeetingId(null)} type="button">
+                        Anuluj zmianę
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                {meeting.canMarkOccurred ? (
+                  <div className="button-row" style={{ marginTop: 12 }}>
+                    <button
+                      className="btn btn-secondary"
+                      disabled={meetingActionKey === `${meeting.id}:occurred:yes`}
+                      onClick={() => void markMenteeMeetingOccurred(meeting.id, true)}
+                      type="button"
+                    >
+                      Spotkanie się odbyło
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      disabled={meetingActionKey === `${meeting.id}:occurred:no`}
+                      onClick={() => void markMenteeMeetingOccurred(meeting.id, false)}
+                      type="button"
+                    >
+                      Spotkanie się nie odbyło
+                    </button>
+                  </div>
+                ) : null}
+                {meeting.isSuspicious ? (
+                  <div className="status" style={{ marginTop: 12 }}>
+                    Rozbieżność: Ty i mentor inaczej oznaczyliście, czy spotkanie się odbyło.
                   </div>
                 ) : null}
               </div>
             ))}
+            {!filteredMenteeMeetings.length ? <div className="status">Brak spotkań w tej kategorii.</div> : null}
           </div>
         </div>
       ) : null}
