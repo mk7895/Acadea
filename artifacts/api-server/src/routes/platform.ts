@@ -3548,6 +3548,8 @@ router.get(
       "When appending into an existing shell tile, reuse the exact existing item row label whenever the requirement is conceptually the same item. Do not create a second identical row just to attach a new university/programme.",
       "For example, if extending existing shell rows such as Paszport, CV, Certificate of expected graduation, Certyfikat językowy, Potwierdzenie wymogu z matematyki, or Transkrypty / świadectwa ze szkoły średniej, keep rows[].task exactly equal to the existing visible task label.",
       "Only create a brand-new row inside an existing tile when it is a genuinely additional requirement, not the same requirement for another guide.",
+      "When using mergeMode=replace on an existing shared tile, do not accidentally narrow its appliesToGuideSlugs or row appliesToGuideSlugs. Preserve every currently attached guide/programme unless the user explicitly asked to remove one.",
+      "If an existing shared tile currently serves Erasmus, UvA, Tilburg, or another already-present guide, a replacement JSON must keep that coverage unless the task explicitly says to detach it.",
       "Use file_or_doc for tasks that may either be uploaded as a file or written inside Essay Doc.",
       "Use docTabTitle and docTabPrompt whenever actionType is file_or_doc.",
       "Whenever actionType is file_required, check_or_file, or file_or_doc, provide rows[].suggestedFilename unless there is a strong product reason not to.",
