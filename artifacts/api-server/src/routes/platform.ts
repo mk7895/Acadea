@@ -1377,7 +1377,7 @@ function getGuideBlueprintAssistantSchema() {
           insertBeforeGuideSlug: {
             type: "string",
             description:
-              "Optional alternative to insertAfterGuideSlug when the guide should appear before an existing guide.",
+              "Optional alternative to insertAfterGuideSlug when the guide should appear before an existing guide. Use only one of the two placement fields.",
           },
         },
       },
@@ -1394,13 +1394,13 @@ function getGuideBlueprintAssistantSchema() {
             targetTemplateTitle: {
               type: "string",
               description:
-                "Optional. If set, import will target an existing tile with this exact title instead of creating a new one.",
+                "Optional. If set, import will target an existing tile with this exact title instead of creating a new one. Match the DB title exactly, including Polish diacritics.",
             },
             mergeMode: {
               type: "string",
               enum: ["replace", "append"],
               description:
-                "append = add rows into existing tile; replace = overwrite matched tile/import target.",
+                "append = extend existing tile or merge into matching rows when possible; replace = overwrite matched tile/import target. Do not invent mergeMode=create.",
             },
             rows: {
               type: "array",
@@ -1415,13 +1415,21 @@ function getGuideBlueprintAssistantSchema() {
                   },
                   country: { type: "string" },
                   university: { type: "string" },
-                  task: { type: "string" },
+                  task: {
+                    type: "string",
+                    description:
+                      "When extending an existing shell row, keep this exactly equal to the existing visible row label instead of renaming it.",
+                  },
                   insertAfterTask: { type: "string" },
                   actionType: {
                     type: "string",
                     enum: ["check_only", "file_required", "file_or_doc", "check_or_file"],
                   },
-                  suggestedFilename: { type: "string" },
+                  suggestedFilename: {
+                    type: "string",
+                    description:
+                      "Strongly recommended whenever actionType is file_required, check_or_file, or file_or_doc. Use a stable upload-ready filename such as cv.pdf or passport.pdf.",
+                  },
                   docTabTitle: { type: "string" },
                   docTabPrompt: { type: "string" },
                   sourceDocumentId: { type: "string" },
@@ -3312,16 +3320,25 @@ router.get(
       "If the new guide belongs between existing universities/programmes, express that using guide.insertAfterGuideSlug or guide.insertBeforeGuideSlug.",
       "If both placement fields are empty, ChatGPT may choose a sensible default position, but when order matters you should fill one of them manually.",
       "If the guide should extend an existing shell tile such as Paszport or Eseje, set materialTemplates[].targetTemplateTitle exactly to that title and set mergeMode to append.",
+      "When targeting an existing tile, targetTemplateTitle must match the existing tile title exactly, including Polish diacritics, punctuation, spaces, and casing.",
       "Only create a brand-new tile when there is a clear product reason not to use an existing shell tile.",
+      "For a brand-new tile, omit targetTemplateTitle and give the tile its own title. Do not invent mergeMode=create.",
       "Interpret legacy empty arrays carefully: in existing rows, [] usually means legacy / not explicitly row-scoped, not necessarily 'apply this to every future guide'. For newly added rows, prefer explicit appliesToGuideSlugs.",
+      "When appending into an existing shell tile, reuse the exact existing item row label whenever the requirement is conceptually the same item. Do not create a second identical row just to attach a new university/programme.",
+      "For example, if extending existing shell rows such as Paszport, CV, Certificate of expected graduation, Certyfikat językowy, Potwierdzenie wymogu z matematyki, or Transkrypty / świadectwa ze szkoły średniej, keep rows[].task exactly equal to the existing visible task label.",
+      "Only create a brand-new row inside an existing tile when it is a genuinely additional requirement, not the same requirement for another guide.",
       "Use file_or_doc for tasks that may either be uploaded as a file or written inside Essay Doc.",
       "Use docTabTitle and docTabPrompt whenever actionType is file_or_doc.",
+      "Whenever actionType is file_required, check_or_file, or file_or_doc, provide rows[].suggestedFilename unless there is a strong product reason not to.",
+      "Suggested filenames should usually end with an appropriate extension such as .pdf, .jpg, or .png and should be concise, stable, and upload-ready.",
       "If a row should be inserted between existing rows in a tile, set rows[].insertAfterTask to the exact visible task label after which the new row should land.",
       "By default leave rows[].sourceDocumentId and rows[].sourceTabId empty and use plain docTabPrompt.",
       "Only set rows[].sourceDocumentId and rows[].sourceTabId when the admin explicitly wants to switch a row to use a master Google Docs template tab.",
       "Use guide.programName when relevant, especially for universities that have multiple distinct programmes.",
       "If a programmeName is provided, keep guide.universityName as the institution name only, and reflect the programme in guide.title and in relevant university/item labels where helpful.",
       "Do not create new generic country/university shell rows by default. Reuse existing shell tiles and scope new rows explicitly to the target guide slug unless a truly generic reusable row is intended.",
+      "Do not transliterate Polish labels into ASCII when referencing existing titles or tasks from the DB context. Copy them exactly as shown in the context JSON.",
+      "Use only one of guide.insertAfterGuideSlug or guide.insertBeforeGuideSlug. If one is not used, omit it instead of sending an empty string.",
       "Preserve current tile structure conventions and existing guide slugs where appropriate.",
       "",
       `Current context:\n${JSON.stringify(context, null, 2)}`,

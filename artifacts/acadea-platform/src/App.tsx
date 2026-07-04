@@ -1956,6 +1956,18 @@ function AdminSection({
     }
   }
 
+  async function copyGuideBlueprintPrompt() {
+    if (!assistantBundle) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(assistantBundle.promptTemplate);
+      setStatus("Skopiowano cały prompt do schowka.");
+    } catch {
+      setStatus("Nie udało się skopiować promptu do schowka.");
+    }
+  }
+
   async function saveItemGuide(event: React.FormEvent) {
     event.preventDefault();
     setStatus("");
@@ -2854,7 +2866,12 @@ function AdminSection({
             {assistantBundle ? (
               <div className="stack" style={{ marginBottom: 24 }}>
                 <div className="field">
-                  <label>Prompt dla ChatGPT</label>
+                  <div className="button-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                    <label style={{ marginBottom: 0 }}>Prompt dla ChatGPT</label>
+                    <button className="btn btn-secondary" onClick={() => void copyGuideBlueprintPrompt()} type="button">
+                      Kopiuj cały prompt
+                    </button>
+                  </div>
                   <textarea readOnly rows={10} value={assistantBundle.promptTemplate} />
                 </div>
                 <div className="field">
