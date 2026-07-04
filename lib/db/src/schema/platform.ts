@@ -278,6 +278,7 @@ export const platformGuidesTable = pgTable("platform_guides", {
   slug: text("slug").notNull(),
   country: text("country").notNull(),
   universityName: text("university_name").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
   summary: text("summary").notNull().default(""),
   descriptionMarkdown: text("description_markdown").notNull().default(""),
   estimatedReadMin: integer("estimated_read_min").notNull().default(5),

@@ -190,7 +190,7 @@ const mentorUniversitySchema = z.object({
 
 const guideItemSchema = z.object({
   id: z.number().int().positive().optional(),
-  sortOrder: z.number().int().min(0).default(0),
+  sortOrder: z.number().int().min(0).optional(),
   sectionTitle: z.string().trim().min(1).default("Checklist"),
   title: z.string().trim().min(1),
   description: z.string().trim().optional().default(""),
@@ -210,6 +210,7 @@ const guideSchema = z.object({
   slug: z.string().trim().min(1),
   country: z.string().trim().min(1),
   universityName: z.string().trim().min(1),
+  sortOrder: z.number().int().min(0).default(0),
   summary: z.string().trim().optional().default(""),
   descriptionMarkdown: z.string().trim().optional().default(""),
   estimatedReadMin: z.number().int().min(1).max(240).default(5),
@@ -287,6 +288,9 @@ const guideImportGuideSchema = z.object({
   slug: z.string().trim().min(1),
   country: z.string().trim().min(1),
   universityName: z.string().trim().min(1),
+  programName: z.string().trim().optional(),
+  insertAfterGuideSlug: z.string().trim().min(1).optional(),
+  insertBeforeGuideSlug: z.string().trim().min(1).optional(),
   summary: z.string().trim().optional(),
   descriptionMarkdown: z.string().trim().optional(),
   estimatedReadMin: z.number().int().min(1).optional(),
@@ -882,6 +886,162 @@ function resolveGuideIdsFromSlugs(
   return ids.length ? ids : [fallbackGuideId];
 }
 
+function compareGuideSortOrder(
+  a: {
+    country?: string | null;
+    id: number;
+    sortOrder?: number | null;
+    title?: string | null;
+    universityName?: string | null;
+  },
+  b: {
+    country?: string | null;
+    id: number;
+    sortOrder?: number | null;
+    title?: string | null;
+    universityName?: string | null;
+  },
+) {
+  return (
+    Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0)
+    || String(a.country ?? "").localeCompare(String(b.country ?? ""), "pl")
+    || String(a.universityName ?? "").localeCompare(String(b.universityName ?? ""), "pl")
+    || String(a.title ?? "").localeCompare(String(b.title ?? ""), "pl")
+    || a.id - b.id
+  );
+}
+
+async function resequenceTopLevelGuideSortOrders(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+  guides: Array<{
+    country: string;
+    driveFolderUrl: string | null;
+    guideType: string;
+    id: number;
+    sortOrder: number;
+    sourceGuideId: number | null;
+    title: string;
+    universityName: string;
+  }>,
+) {
+  const ordered = guides
+    .filter((guide) =>
+      !guide.sourceGuideId
+      && !isItemGuideRecord({ driveFolderUrl: guide.driveFolderUrl, guideType: guide.guideType }),
+    )
+    .sort(compareGuideSortOrder)
+    .map((guide, index) => ({
+      ...guide,
+      nextSortOrder: index,
+    }));
+
+  for (const guide of ordered) {
+    if (guide.sortOrder !== guide.nextSortOrder) {
+      await db
+        .update(platformGuidesTable)
+        .set({
+          sortOrder: guide.nextSortOrder,
+          updatedAt: new Date(),
+        })
+        .where(eq(platformGuidesTable.id, guide.id));
+    }
+  }
+
+  const nextSortOrderById = new Map(ordered.map((guide) => [guide.id, guide.nextSortOrder]));
+  return guides.map((guide) => ({
+    ...guide,
+    sortOrder: nextSortOrderById.get(guide.id) ?? guide.sortOrder,
+  }));
+}
+
+async function applyGuidePlacement(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+  guides: Array<{
+    country: string;
+    driveFolderUrl: string | null;
+    guideType: string;
+    id: number;
+    slug: string;
+    sortOrder: number;
+    sourceGuideId: number | null;
+    title: string;
+    universityName: string;
+  }>,
+  targetGuideId: number,
+  placement?: {
+    insertAfterGuideSlug?: string;
+    insertBeforeGuideSlug?: string;
+  },
+) {
+  const topLevelGuides = guides.filter((guide) =>
+    !guide.sourceGuideId
+    && !isItemGuideRecord({ driveFolderUrl: guide.driveFolderUrl, guideType: guide.guideType }),
+  );
+  const targetGuide = topLevelGuides.find((guide) => guide.id === targetGuideId);
+  if (!targetGuide) {
+    return guides;
+  }
+
+  const orderedWithoutTarget = topLevelGuides
+    .filter((guide) => guide.id !== targetGuideId)
+    .sort(compareGuideSortOrder);
+
+  let insertIndex = orderedWithoutTarget.length;
+  if (placement?.insertBeforeGuideSlug?.trim()) {
+    const beforeSlug = normalizeSlug(placement.insertBeforeGuideSlug);
+    const beforeIndex = orderedWithoutTarget.findIndex((guide) => normalizeSlug(guide.slug) === beforeSlug);
+    if (beforeIndex >= 0) {
+      insertIndex = beforeIndex;
+    }
+  } else if (placement?.insertAfterGuideSlug?.trim()) {
+    const afterSlug = normalizeSlug(placement.insertAfterGuideSlug);
+    const afterIndex = orderedWithoutTarget.findIndex((guide) => normalizeSlug(guide.slug) === afterSlug);
+    if (afterIndex >= 0) {
+      insertIndex = afterIndex + 1;
+    }
+  } else {
+    insertIndex = Math.min(Math.max(Number(targetGuide.sortOrder ?? orderedWithoutTarget.length), 0), orderedWithoutTarget.length);
+  }
+
+  orderedWithoutTarget.splice(insertIndex, 0, targetGuide);
+
+  for (const [index, guide] of orderedWithoutTarget.entries()) {
+    if (guide.sortOrder !== index) {
+      await db
+        .update(platformGuidesTable)
+        .set({
+          sortOrder: index,
+          updatedAt: new Date(),
+        })
+        .where(eq(platformGuidesTable.id, guide.id));
+    }
+  }
+
+  const nextSortOrderById = new Map(orderedWithoutTarget.map((guide, index) => [guide.id, index]));
+  return guides.map((guide) => ({
+    ...guide,
+    sortOrder: nextSortOrderById.get(guide.id) ?? guide.sortOrder,
+  }));
+}
+
+function getNextGuideSortOrder(
+  guides: Array<{
+    driveFolderUrl: string | null;
+    guideType: string;
+    sortOrder: number;
+    sourceGuideId: number | null;
+  }>,
+) {
+  const topLevelSortOrders = guides
+    .filter((guide) =>
+      !guide.sourceGuideId
+      && !isItemGuideRecord({ driveFolderUrl: guide.driveFolderUrl, guideType: guide.guideType }),
+    )
+    .map((guide) => Number(guide.sortOrder ?? 0))
+    .filter((value) => Number.isFinite(value));
+  return topLevelSortOrders.length ? Math.max(...topLevelSortOrders) + 1 : 0;
+}
+
 async function importGuideBlueprint(
   db: Awaited<typeof import("@workspace/db")>["db"],
   ownerUserId: number,
@@ -898,6 +1058,7 @@ async function importGuideBlueprint(
       estimatedReadMin: number;
       guideType: "admin_template" | "mentor_blueprint";
       isVisibleToUnapprovedUsers: boolean;
+      sortOrder?: number;
       items: ReturnType<typeof normalizeImportedGuideItems>;
       slug: string;
       status: "draft" | "published" | "archived";
@@ -918,6 +1079,7 @@ async function importGuideBlueprint(
           slug: normalizeSlug(payload.slug),
           country: payload.country,
           universityName: payload.universityName,
+          sortOrder: typeof payload.sortOrder === "number" ? payload.sortOrder : existing.sortOrder,
           summary: payload.summary,
           descriptionMarkdown: payload.descriptionMarkdown,
           estimatedReadMin: payload.estimatedReadMin,
@@ -941,6 +1103,7 @@ async function importGuideBlueprint(
         slug: normalizeSlug(payload.slug),
         country: payload.country,
         universityName: payload.universityName,
+        sortOrder: typeof payload.sortOrder === "number" ? payload.sortOrder : getNextGuideSortOrder(existingGuides),
         summary: payload.summary,
         descriptionMarkdown: payload.descriptionMarkdown,
         estimatedReadMin: payload.estimatedReadMin,
@@ -964,13 +1127,22 @@ async function importGuideBlueprint(
     isVisibleToUnapprovedUsers: blueprint.guide.isVisibleToUnapprovedUsers ?? true,
     items: normalizeImportedGuideItems(blueprint.guide.items),
     slug: blueprint.guide.slug,
+    sortOrder: getNextGuideSortOrder(existingGuides),
     status: blueprint.guide.status ?? "published",
     summary: blueprint.guide.summary ?? "",
     title: blueprint.guide.title,
     universityName: blueprint.guide.universityName,
   });
 
-  const refreshedGuides = await db.select().from(platformGuidesTable);
+  const refreshedGuides = await applyGuidePlacement(
+    db,
+    await db.select().from(platformGuidesTable),
+    mainGuide.id,
+    {
+      insertAfterGuideSlug: blueprint.guide.insertAfterGuideSlug,
+      insertBeforeGuideSlug: blueprint.guide.insertBeforeGuideSlug,
+    },
+  );
   const guideIdBySlug = new Map<string, number>([[mainGuide.slug, mainGuide.id]]);
   const itemGuideIdByKey = new Map<string, number>();
 
@@ -1106,6 +1278,27 @@ function getGuideBlueprintAssistantSchema() {
       guide: {
         type: "object",
         required: ["title", "slug", "country", "universityName"],
+        properties: {
+          title: { type: "string" },
+          slug: { type: "string" },
+          country: { type: "string" },
+          universityName: { type: "string" },
+          programName: {
+            type: "string",
+            description:
+              "Optional. Use when the guide is for a specific programme such as International Business, BBA, IBA, etc.",
+          },
+          insertAfterGuideSlug: {
+            type: "string",
+            description:
+              "Optional. Preferred way to express where this new guide should land relative to existing guide cards.",
+          },
+          insertBeforeGuideSlug: {
+            type: "string",
+            description:
+              "Optional alternative to insertAfterGuideSlug when the guide should appear before an existing guide.",
+          },
+        },
       },
       itemGuides: {
         type: "array",
@@ -1159,6 +1352,8 @@ function getGuideBlueprintAssistantSchema() {
                   },
                   appliesToGuideSlugs: {
                     type: "array",
+                    description:
+                      "Prefer setting this explicitly for newly added rows. Empty array in old rows often means legacy / not explicitly scoped, so do not copy that pattern unless you intentionally want a generic reusable shell row.",
                     items: { type: "string" },
                   },
                 },
@@ -1680,6 +1875,7 @@ async function shapeGuideList(
     menteeUserId: number | null;
     ownerUserId: number | null;
     slug: string;
+    sortOrder: number;
     sourceGuideId: number | null;
     status: string;
     summary: string;
@@ -1730,6 +1926,7 @@ async function shapeGuideList(
       isItemGuide: isItemGuideRecord(guide),
       itemGuideAppliesToGuideIds: appliesToGuideIds,
       items: itemMap.get(guide.id) ?? [],
+      sortOrder: guide.sortOrder,
       createdAt: guide.createdAt.toISOString(),
       updatedAt: guide.updatedAt.toISOString(),
     };
@@ -2753,7 +2950,12 @@ router.get("/platform/public/guides", async (_req, res) => {
         ),
       ),
     )
-    .orderBy(asc(platformGuidesTable.country), asc(platformGuidesTable.universityName));
+    .orderBy(
+      asc(platformGuidesTable.sortOrder),
+      asc(platformGuidesTable.country),
+      asc(platformGuidesTable.universityName),
+      asc(platformGuidesTable.title),
+    );
   const visibleGuides = guides.filter((guide) => !isItemGuideRecord(guide));
 
   return res.json(
@@ -2954,7 +3156,15 @@ router.get(
   requirePlatformRole("admin"),
   async (_req, res) => {
     const { db } = await import("@workspace/db");
-    const guides = await db.select().from(platformGuidesTable).orderBy(asc(platformGuidesTable.title));
+    const guides = await db
+      .select()
+      .from(platformGuidesTable)
+      .orderBy(
+        asc(platformGuidesTable.sortOrder),
+        asc(platformGuidesTable.country),
+        asc(platformGuidesTable.universityName),
+        asc(platformGuidesTable.title),
+      );
     const templates = await db
       .select()
       .from(platformMaterialTemplatesTable)
@@ -2965,6 +3175,15 @@ router.get(
 
     const context = {
       adminMasterTemplateDoc: masterDoc,
+      inputScaffold: {
+        country: "<FILL_COUNTRY>",
+        universityName: "<FILL_UNIVERSITY_NAME>",
+        programName: "<OPTIONAL_PROGRAMME_NAME>",
+        desiredPlacement: {
+          insertAfterGuideSlug: "<OPTIONAL_EXISTING_GUIDE_SLUG>",
+          insertBeforeGuideSlug: "<OPTIONAL_EXISTING_GUIDE_SLUG>",
+        },
+      },
       existingTiles: templates.map((template) => ({
         guideId: template.guideId,
         id: template.id,
@@ -2980,11 +3199,13 @@ router.get(
       })),
       guideTemplates: guides
         .filter((guide) => !guide.sourceGuideId && !isItemGuideRecord({ driveFolderUrl: guide.driveFolderUrl, guideType: guide.guideType }))
-        .map((guide) => ({
+        .map((guide, index) => ({
           country: guide.country,
+          currentPosition: index + 1,
           guideType: guide.guideType,
           id: guide.id,
           slug: guide.slug,
+          sortOrder: guide.sortOrder,
           title: guide.title,
           universityName: guide.universityName,
         })),
@@ -3006,13 +3227,20 @@ router.get(
     const promptTemplate = [
       "Return only valid JSON for ACADEA guide import.",
       "Use the current DB context provided below.",
+      "Before sending this prompt to ChatGPT, first fill the scaffold placeholders in the context: country, universityName, optional programName, and optional desired placement relative to existing guide slugs.",
+      "If the new guide belongs between existing universities/programmes, express that using guide.insertAfterGuideSlug or guide.insertBeforeGuideSlug.",
+      "If both placement fields are empty, ChatGPT may choose a sensible default position, but when order matters you should fill one of them manually.",
       "If the guide should extend an existing shell tile such as Paszport or Eseje, set materialTemplates[].targetTemplateTitle exactly to that title and set mergeMode to append.",
       "Only create a brand-new tile when there is a clear product reason not to use an existing shell tile.",
+      "Interpret legacy empty arrays carefully: in existing rows, [] usually means legacy / not explicitly row-scoped, not necessarily 'apply this to every future guide'. For newly added rows, prefer explicit appliesToGuideSlugs.",
       "Use file_or_doc for tasks that may either be uploaded as a file or written inside Essay Doc.",
       "Use docTabTitle and docTabPrompt whenever actionType is file_or_doc.",
       "If a row should be inserted between existing rows in a tile, set rows[].insertAfterTask to the exact visible task label after which the new row should land.",
       "By default leave rows[].sourceDocumentId and rows[].sourceTabId empty and use plain docTabPrompt.",
       "Only set rows[].sourceDocumentId and rows[].sourceTabId when the admin explicitly wants to switch a row to use a master Google Docs template tab.",
+      "Use guide.programName when relevant, especially for universities that have multiple distinct programmes.",
+      "If a programmeName is provided, keep guide.universityName as the institution name only, and reflect the programme in guide.title and in relevant university/item labels where helpful.",
+      "Do not create new generic country/university shell rows by default. Reuse existing shell tiles and scope new rows explicitly to the target guide slug unless a truly generic reusable row is intended.",
       "Preserve current tile structure conventions and existing guide slugs where appropriate.",
       "",
       `Current context:\n${JSON.stringify(context, null, 2)}`,
@@ -3350,7 +3578,12 @@ router.get(
       .select()
       .from(platformGuidesTable)
       .where(eq(platformGuidesTable.ownerUserId, req.platformUser!.id))
-      .orderBy(desc(platformGuidesTable.updatedAt), asc(platformGuidesTable.title));
+      .orderBy(
+        asc(platformGuidesTable.sortOrder),
+        asc(platformGuidesTable.country),
+        asc(platformGuidesTable.universityName),
+        asc(platformGuidesTable.title),
+      );
 
     return res.json(await shapeGuideList(db, guides));
   },
@@ -3366,7 +3599,12 @@ router.get(
       .select()
       .from(platformGuidesTable)
       .where(eq(platformGuidesTable.guideType, "admin_template"))
-      .orderBy(asc(platformGuidesTable.country), asc(platformGuidesTable.universityName));
+      .orderBy(
+        asc(platformGuidesTable.sortOrder),
+        asc(platformGuidesTable.country),
+        asc(platformGuidesTable.universityName),
+        asc(platformGuidesTable.title),
+      );
     const shaped = await shapeGuideList(db, guides.filter((guide) => !isItemGuideRecord(guide)));
     const deduped = new Map<string, (typeof shaped)[number]>();
     for (const guide of shaped) {
@@ -3394,7 +3632,12 @@ router.get(
           eq(platformGuidesTable.guideType, "mentor_blueprint"),
         ),
       )
-      .orderBy(desc(platformGuidesTable.updatedAt));
+      .orderBy(
+        asc(platformGuidesTable.sortOrder),
+        asc(platformGuidesTable.country),
+        asc(platformGuidesTable.universityName),
+        asc(platformGuidesTable.title),
+      );
     const templates = await db
       .select()
       .from(platformMaterialTemplatesTable)
@@ -3412,7 +3655,12 @@ router.get(
           ),
         ),
       )
-      .orderBy(asc(platformGuidesTable.title));
+      .orderBy(
+        asc(platformGuidesTable.sortOrder),
+        asc(platformGuidesTable.country),
+        asc(platformGuidesTable.universityName),
+        asc(platformGuidesTable.title),
+      );
     const itemGuides = rawItemGuides.filter((guide) => isItemGuideRecord(guide));
 
     return res.json({
@@ -3441,7 +3689,12 @@ router.get(
           ),
         ),
       )
-      .orderBy(asc(platformGuidesTable.title), asc(platformGuidesTable.country), asc(platformGuidesTable.universityName));
+      .orderBy(
+        asc(platformGuidesTable.sortOrder),
+        asc(platformGuidesTable.country),
+        asc(platformGuidesTable.universityName),
+        asc(platformGuidesTable.title),
+      );
 
     const itemGuides = rawItemGuides.filter((guide) => isItemGuideRecord(guide));
     return res.json(await shapeGuideList(db, itemGuides));
@@ -3584,6 +3837,7 @@ router.post(
     }
 
     const { db } = await import("@workspace/db");
+    const allGuides = await db.select().from(platformGuidesTable);
     const [guide] = await db
       .insert(platformGuidesTable)
       .values({
@@ -3593,6 +3847,7 @@ router.post(
         slug: normalizeSlug(parsed.data.slug),
         country: parsed.data.country,
         universityName: parsed.data.universityName,
+        sortOrder: parsed.data.sortOrder ?? getNextGuideSortOrder(allGuides),
         summary: parsed.data.summary,
         descriptionMarkdown: parsed.data.descriptionMarkdown,
         estimatedReadMin: parsed.data.estimatedReadMin,
@@ -3622,6 +3877,11 @@ router.put(
     }
 
     const { db } = await import("@workspace/db");
+    const [existingGuide] = await db
+      .select({ sortOrder: platformGuidesTable.sortOrder })
+      .from(platformGuidesTable)
+      .where(and(eq(platformGuidesTable.id, id), eq(platformGuidesTable.ownerUserId, req.platformUser!.id)))
+      .limit(1);
     const [guide] = await db
       .update(platformGuidesTable)
       .set({
@@ -3631,6 +3891,7 @@ router.put(
         slug: normalizeSlug(parsed.data.slug),
         country: parsed.data.country,
         universityName: parsed.data.universityName,
+        sortOrder: parsed.data.sortOrder ?? existingGuide?.sortOrder ?? 0,
         summary: parsed.data.summary,
         descriptionMarkdown: parsed.data.descriptionMarkdown,
         estimatedReadMin: parsed.data.estimatedReadMin,
@@ -4086,7 +4347,12 @@ router.get(
           eq(platformGuidesTable.status, "published"),
         ),
       )
-      .orderBy(desc(platformGuidesTable.updatedAt));
+      .orderBy(
+        asc(platformGuidesTable.sortOrder),
+        asc(platformGuidesTable.country),
+        asc(platformGuidesTable.universityName),
+        asc(platformGuidesTable.title),
+      );
     const uniqueGuides = guides.filter((guide, index, array) => {
       const sourceId = guide.sourceGuideId ?? guide.id;
       return array.findIndex((entry) => (entry.sourceGuideId ?? entry.id) === sourceId) === index;
@@ -4102,7 +4368,12 @@ router.get(
           .select()
           .from(platformGuidesTable)
           .where(inArray(platformGuidesTable.id, assignedGuideIds))
-          .orderBy(desc(platformGuidesTable.updatedAt))
+          .orderBy(
+            asc(platformGuidesTable.sortOrder),
+            asc(platformGuidesTable.country),
+            asc(platformGuidesTable.universityName),
+            asc(platformGuidesTable.title),
+          )
       : [];
     const publishedAdminTemplates = profile?.adminApproved
       ? await db
@@ -4114,7 +4385,12 @@ router.get(
               eq(platformGuidesTable.status, "published"),
             ),
           )
-          .orderBy(asc(platformGuidesTable.country), asc(platformGuidesTable.universityName))
+          .orderBy(
+            asc(platformGuidesTable.sortOrder),
+            asc(platformGuidesTable.country),
+            asc(platformGuidesTable.universityName),
+            asc(platformGuidesTable.title),
+          )
       : [];
     const visibleAdminTemplates = publishedAdminTemplates.filter((guide) => !isItemGuideRecord(guide));
     const profileFields = await db
@@ -4194,7 +4470,12 @@ router.get(
               eq(platformGuidesTable.status, "published"),
             ),
           )
-          .orderBy(asc(platformGuidesTable.title))
+          .orderBy(
+            asc(platformGuidesTable.sortOrder),
+            asc(platformGuidesTable.country),
+            asc(platformGuidesTable.universityName),
+            asc(platformGuidesTable.title),
+          )
       : [];
     const publishedLiveGuides = await db
       .select({
@@ -4210,14 +4491,24 @@ router.get(
           inArray(platformGuidesTable.guideType, ["self_service_live", "mentor_live"]),
         ),
       )
-      .orderBy(asc(platformGuidesTable.createdAt));
+      .orderBy(
+        asc(platformGuidesTable.sortOrder),
+        asc(platformGuidesTable.country),
+        asc(platformGuidesTable.universityName),
+        asc(platformGuidesTable.title),
+      );
     const hintEligibleTemplateIds = getEligibleHintTemplateIdsForGuides(publishedLiveGuides, guideLimits);
     const tipAccessGuides = hintEligibleTemplateIds.length
       ? await db
           .select()
           .from(platformGuidesTable)
           .where(inArray(platformGuidesTable.id, hintEligibleTemplateIds))
-          .orderBy(asc(platformGuidesTable.country), asc(platformGuidesTable.universityName))
+          .orderBy(
+            asc(platformGuidesTable.sortOrder),
+            asc(platformGuidesTable.country),
+            asc(platformGuidesTable.universityName),
+            asc(platformGuidesTable.title),
+          )
       : [];
     const materialTemplateIds = normalizedVisibleMaterials
       .map((template) => Number(template.id))
@@ -5325,6 +5616,7 @@ router.post(
         slug: `${sourceGuide.slug}-${req.platformUser!.id}`,
         country: sourceGuide.country,
         universityName: sourceGuide.universityName,
+        sortOrder: sourceGuide.sortOrder,
         summary: sourceGuide.summary,
         descriptionMarkdown: sourceGuide.descriptionMarkdown,
         estimatedReadMin: sourceGuide.estimatedReadMin,
@@ -5811,7 +6103,12 @@ router.get(
           inArray(platformGuidesTable.guideType, ["self_service_live", "mentor_live"]),
         ),
       )
-      .orderBy(asc(platformGuidesTable.createdAt));
+      .orderBy(
+        asc(platformGuidesTable.sortOrder),
+        asc(platformGuidesTable.country),
+        asc(platformGuidesTable.universityName),
+        asc(platformGuidesTable.title),
+      );
 
     const guideById = new Map(
       (
@@ -6261,7 +6558,15 @@ router.get(
   requirePlatformRole("admin"),
   async (_req, res) => {
     const { db } = await import("@workspace/db");
-    const guides = await db.select().from(platformGuidesTable).orderBy(desc(platformGuidesTable.updatedAt));
+    const guides = await db
+      .select()
+      .from(platformGuidesTable)
+      .orderBy(
+        asc(platformGuidesTable.sortOrder),
+        asc(platformGuidesTable.country),
+        asc(platformGuidesTable.universityName),
+        asc(platformGuidesTable.title),
+      );
     return res.json(await shapeGuideList(db, guides));
   },
 );
@@ -6276,6 +6581,7 @@ router.post(
       return res.status(422).json({ error: parsed.error.message });
     }
     const { db } = await import("@workspace/db");
+    const allGuides = await db.select().from(platformGuidesTable);
     const [guide] = await db
       .insert(platformGuidesTable)
       .values({
@@ -6285,6 +6591,7 @@ router.post(
         slug: normalizeSlug(parsed.data.slug),
         country: parsed.data.country,
         universityName: parsed.data.universityName,
+        sortOrder: parsed.data.sortOrder ?? getNextGuideSortOrder(allGuides),
         summary: parsed.data.summary,
         descriptionMarkdown: parsed.data.descriptionMarkdown,
         estimatedReadMin: parsed.data.estimatedReadMin,
@@ -6312,6 +6619,11 @@ router.put(
       return res.status(422).json({ error: parsed.success ? "Invalid guide id." : parsed.error.message });
     }
     const { db } = await import("@workspace/db");
+    const [existingGuide] = await db
+      .select({ sortOrder: platformGuidesTable.sortOrder })
+      .from(platformGuidesTable)
+      .where(eq(platformGuidesTable.id, id))
+      .limit(1);
     const [guide] = await db
       .update(platformGuidesTable)
       .set({
@@ -6321,6 +6633,7 @@ router.put(
         slug: normalizeSlug(parsed.data.slug),
         country: parsed.data.country,
         universityName: parsed.data.universityName,
+        sortOrder: parsed.data.sortOrder ?? existingGuide?.sortOrder ?? 0,
         summary: parsed.data.summary,
         descriptionMarkdown: parsed.data.descriptionMarkdown,
         estimatedReadMin: parsed.data.estimatedReadMin,
@@ -6405,6 +6718,7 @@ router.post(
         slug: `${sourceGuide.slug}-${parsed.data.menteeUserId}-${Date.now()}`,
         country: sourceGuide.country,
         universityName: sourceGuide.universityName,
+        sortOrder: sourceGuide.sortOrder,
         summary: sourceGuide.summary,
         descriptionMarkdown: sourceGuide.descriptionMarkdown,
         estimatedReadMin: sourceGuide.estimatedReadMin,
