@@ -838,9 +838,90 @@ function mergeImportedRowsIntoExistingStructure(
 ) {
   const mergedRows = normalizeMaterialStructureRows(existingRows);
 
+  const normalizeMatchToken = (value: string) => value.trim().toLowerCase();
+  const areCompatibleScopedValues = (existingValue: string, importedValue: string) => {
+    const normalizedExisting = normalizeMatchToken(existingValue);
+    const normalizedImported = normalizeMatchToken(importedValue);
+    return (
+      !normalizedExisting ||
+      !normalizedImported ||
+      normalizedExisting === normalizedImported
+    );
+  };
+
+  const findMatchingRowIndex = (
+    importedRow: (typeof mergedRows)[number],
+  ) => {
+    const importedTask = normalizeMatchToken(importedRow.task);
+    const importedCountry = normalizeMatchToken(importedRow.country);
+    const importedUniversity = normalizeMatchToken(importedRow.university);
+
+    return mergedRows.findIndex((existingRow) => {
+      if (existingRow.level !== importedRow.level) {
+        return false;
+      }
+      if (existingRow.actionType !== importedRow.actionType) {
+        return false;
+      }
+
+      if (importedRow.level === "item") {
+        if (normalizeMatchToken(existingRow.task) !== importedTask) {
+          return false;
+        }
+        if (
+          importedRow.guideId &&
+          existingRow.guideId &&
+          Number(existingRow.guideId) !== Number(importedRow.guideId)
+        ) {
+          return false;
+        }
+        return (
+          areCompatibleScopedValues(existingRow.country, importedRow.country) &&
+          areCompatibleScopedValues(existingRow.university, importedRow.university)
+        );
+      }
+
+      if (importedRow.level === "country") {
+        return normalizeMatchToken(existingRow.country) === importedCountry;
+      }
+
+      return normalizeMatchToken(existingRow.university) === importedUniversity;
+    });
+  };
+
   for (const importedRow of importedRows) {
     const [normalizedImportedRow] = normalizeMaterialStructureRows([importedRow]);
     if (!normalizedImportedRow) {
+      continue;
+    }
+
+    const matchingRowIndex = findMatchingRowIndex(normalizedImportedRow);
+    if (matchingRowIndex >= 0) {
+      const existingRow = mergedRows[matchingRowIndex];
+      mergedRows[matchingRowIndex] = normalizeMaterialStructureRow(
+        {
+          ...existingRow,
+          alternativeOptions: Array.from(
+            new Set([
+              ...(Array.isArray(existingRow.alternativeOptions) ? existingRow.alternativeOptions : []),
+              ...normalizedImportedRow.alternativeOptions,
+            ]),
+          ),
+          appliesToGuideIds: Array.from(
+            new Set([
+              ...(Array.isArray(existingRow.appliesToGuideIds) ? existingRow.appliesToGuideIds : []),
+              ...normalizedImportedRow.appliesToGuideIds,
+            ]),
+          ),
+          docTabPrompt: existingRow.docTabPrompt || normalizedImportedRow.docTabPrompt,
+          docTabTitle: existingRow.docTabTitle || normalizedImportedRow.docTabTitle,
+          guideId: existingRow.guideId ?? normalizedImportedRow.guideId,
+          sourceDocumentId: existingRow.sourceDocumentId || normalizedImportedRow.sourceDocumentId,
+          sourceTabId: existingRow.sourceTabId || normalizedImportedRow.sourceTabId,
+          suggestedFilename: existingRow.suggestedFilename || normalizedImportedRow.suggestedFilename,
+        },
+        matchingRowIndex,
+      );
       continue;
     }
 
