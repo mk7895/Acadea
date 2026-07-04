@@ -189,13 +189,122 @@ function getMaterialActionStatusMessage(actionKey: string | null) {
 }
 
 function FloatingStatus({ message }: { message: string }) {
-  if (!message) {
+  const [dismissedMessage, setDismissedMessage] = useState("");
+
+  useEffect(() => {
+    if (message && message !== dismissedMessage) {
+      setDismissedMessage("");
+    }
+  }, [dismissedMessage, message]);
+
+  if (!message || dismissedMessage === message) {
     return null;
   }
 
   return (
     <div className="floating-status" role="status" aria-live="polite">
-      {message}
+      <div className="floating-status-body">{message}</div>
+      <button
+        aria-label="Ukryj komunikat"
+        className="floating-status-close"
+        onClick={() => setDismissedMessage(message)}
+        type="button"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+function ProgressCircle({
+  completed,
+  label,
+  total,
+}: {
+  completed: number;
+  label?: string;
+  total: number;
+}) {
+  return (
+    <div aria-label={label ?? `${completed}/${total}`} className="progress-circle">
+      <span>{completed}/{total}</span>
+    </div>
+  );
+}
+
+function CompletionDot({ completed }: { completed: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={completed ? "completion-dot completion-dot-done" : "completion-dot"}
+    >
+      {completed ? "✓" : ""}
+    </span>
+  );
+}
+
+function getMaterialItemCompleted(state: {
+  completed?: boolean;
+  completionMethod?: string | null;
+  currentFileUrl?: string | null;
+} | null | undefined) {
+  if (!state) {
+    return false;
+  }
+  if (state.currentFileUrl) {
+    return true;
+  }
+  return Boolean(state.completed);
+}
+
+function countCompletedRows(rows: any[], templateId: number, materialItemStateMap: Map<string, any>) {
+  const itemRows = rows.filter((row: any) => row.level === "item" && row.displayKey);
+  const completed = itemRows.filter((row: any) =>
+    getMaterialItemCompleted(materialItemStateMap.get(`${templateId}:${row.displayKey}`)),
+  ).length;
+  return {
+    completed,
+    total: itemRows.length,
+  };
+}
+
+function getSuggestedOrCurrentFileLabel(row: any, state: any) {
+  if (state?.currentFileName) {
+    return state.currentFileName;
+  }
+  const suggested = typeof row?.suggestedFilename === "string" ? row.suggestedFilename.trim() : "";
+  return suggested || "Otwórz plik";
+}
+
+function getUploadButtonLabel(row: any, state: any) {
+  if (state?.currentFileUrl) {
+    return "Zastąp plik";
+  }
+  const suggested = typeof row?.suggestedFilename === "string" ? row.suggestedFilename.trim() : "";
+  return suggested ? `Wgraj ${suggested}` : "Wgraj plik";
+}
+
+function getCompletionToggleLabel(state: any) {
+  return getMaterialItemCompleted(state) ? "Oznaczone jako wykonane" : "Oznacz jako wykonane";
+}
+
+function getTemplateCompletionForGuide(template: any, guide: any, stateMap: Map<string, any>) {
+  const rows = (template.visibleRows ?? []).filter((row: any) => row.level === "item" && rowAppliesToGuide(row, guide));
+  return countCompletedRows(rows, Number(template.id), stateMap);
+}
+
+function getTemplateCompletion(template: any, stateMap: Map<string, any>) {
+  return countCompletedRows(template.visibleRows ?? [], Number(template.id), stateMap);
+}
+
+function renderSuggestedFilename(row: any) {
+  const suggested = typeof row?.suggestedFilename === "string" ? row.suggestedFilename.trim() : "";
+  if (!suggested) {
+    return null;
+  }
+  return (
+    <div className="small muted">
+      Sugerowana nazwa pliku: {suggested}
     </div>
   );
 }
@@ -5173,9 +5282,17 @@ function MenteeSection({
         open={openMaterialTemplateIds.includes(Number(template.id))}
       >
         <summary>
-          <strong>{template.title}</strong>
-          <div className="small muted">
-            {guides.filter((guide: any) => templateAppliesToGuide(template, guide)).length} uczelni powiązanych
+          <div className="material-summary-row">
+            <div>
+              <strong>{template.title}</strong>
+              <div className="small muted">
+                {guides.filter((guide: any) => templateAppliesToGuide(template, guide)).length} uczelni powiązanych
+              </div>
+            </div>
+            {(() => {
+              const progress = getTemplateCompletion(template, materialItemStateMap);
+              return <ProgressCircle completed={progress.completed} total={progress.total} />;
+            })()}
           </div>
         </summary>
         <div style={{ marginTop: 12 }}>
@@ -5222,7 +5339,10 @@ function MenteeSection({
                 }
                 return (
                   <div className="list-item material-row material-row-item" key={`${template.id}-row-${index}`}>
-                    <h3>{headline}</h3>
+                    <div className="material-summary-row">
+                      <h3>{headline}</h3>
+                      <CompletionDot completed={getMaterialItemCompleted(materialItemStateMap.get(`${template.id}:${row.displayKey}`))} />
+                    </div>
                     {universityNames.length ? (
                       <div className="small muted">{formatUniversityNamesPreview(universityNames)}</div>
                     ) : null}
@@ -5247,9 +5367,11 @@ function MenteeSection({
                             >
                               Otwórz wskazówki
                             </button>
-                            {(actionType === "file_required" || actionType === "file_or_doc" || actionType === "check_or_file") ? (
+                            {(actionType === "file_required"
+                              || actionType === "check_or_file"
+                              || (actionType === "file_or_doc" && !state?.googleDocTabUrl)) ? (
                               <label className="btn btn-secondary material-file-button" style={{ cursor: "pointer" }}>
-                                {state?.currentFileUrl ? "Zastąp plik" : "Wgraj plik"}
+                                {getUploadButtonLabel(row, state)}
                                 <input
                                   hidden
                                   disabled={!canPersistAction || materialActionKey === `${actionPrefix}:upload`}
@@ -5268,7 +5390,7 @@ function MenteeSection({
                           {state?.currentFileUrl ? (
                             <div className="button-row material-actions-row">
                               <a className="btn btn-secondary" href={state.currentFileUrl} target="_blank" rel="noreferrer">
-                                {state.currentFileName || "Otwórz plik"}
+                                {getSuggestedOrCurrentFileLabel(row, state)}
                               </a>
                               <button
                                 className="btn btn-secondary"
@@ -5284,6 +5406,7 @@ function MenteeSection({
                               </button>
                             </div>
                           ) : null}
+                          {renderSuggestedFilename(row)}
                           {state?.googleDocTabUrl ? (
                             <div className="button-row material-actions-row">
                               <a className="btn btn-secondary" href={state.googleDocTabUrl} target="_blank" rel="noreferrer">
@@ -5317,9 +5440,11 @@ function MenteeSection({
                               Utwórz zakładkę w Essay Doc
                             </button>
                           ) : null}
-                          {(actionType === "check_only" || actionType === "check_or_file") ? (
+                          {(actionType === "check_only"
+                            || (actionType === "check_or_file" && !state?.currentFileUrl)
+                            || (actionType === "file_or_doc" && Boolean(state?.googleDocTabUrl))) ? (
                             <button
-                              className={`btn ${state?.completed && state?.completionMethod === "checkbox" ? "btn-primary" : "btn-secondary"}`}
+                              className="btn btn-secondary"
                               disabled={!canPersistAction || materialActionKey === `${actionPrefix}:check`}
                               onClick={() => {
                                 if (canPersistAction) {
@@ -5332,9 +5457,7 @@ function MenteeSection({
                               }}
                               type="button"
                             >
-                              {state?.completed && state?.completionMethod === "checkbox"
-                                ? "Oznaczone jako wykonane"
-                                : "Oznacz jako wykonane"}
+                              {getCompletionToggleLabel(state)}
                             </button>
                           ) : null}
                         </div>
@@ -5442,7 +5565,13 @@ function MenteeSection({
                         {guideMaterialsMap.get(guide.id)?.map((template: any) => (
                           <details className="list-item nested-detail" key={`${guide.id}-${template.id}`}>
                             <summary>
-                              <h3>{template.title}</h3>
+                              <div className="material-summary-row">
+                                <h3>{template.title}</h3>
+                                {(() => {
+                                  const progress = getTemplateCompletionForGuide(template, guide, materialItemStateMap);
+                                  return <ProgressCircle completed={progress.completed} total={progress.total} />;
+                                })()}
+                              </div>
                             </summary>
                             {template.description ? <p className="muted" style={{ marginTop: 10 }}>{template.description}</p> : null}
                             {template.visibleRows?.length ? (
@@ -5456,7 +5585,14 @@ function MenteeSection({
                                     const hintGuide = row.guideId ? hintGuideMap.get(String(row.guideId)) : null;
                                     return (
                                       <div className="list-item" key={`${guide.id}-${template.id}-row-${index}`}>
-                                        <h3>{row.task || "Zadanie"}</h3>
+                                        <div className="material-summary-row">
+                                          <h3>{row.task || "Zadanie"}</h3>
+                                          <CompletionDot
+                                            completed={getMaterialItemCompleted(
+                                              materialItemStateMap.get(`${template.id}:${row.displayKey}`),
+                                            )}
+                                          />
+                                        </div>
                                         {universityNames.length ? (
                                           <div className="small muted">{formatUniversityNamesPreview(universityNames)}</div>
                                         ) : null}

@@ -338,6 +338,14 @@ const guideImportBlueprintSchema = z.object({
 
 const MAX_MATERIAL_UPLOAD_BYTES = 15 * 1024 * 1024;
 
+function getPreferredMaterialFileName(suggestedFilename: string | null | undefined, originalFileName: string) {
+  const suggested = typeof suggestedFilename === "string" ? suggestedFilename.trim() : "";
+  if (suggested) {
+    return suggested;
+  }
+  return originalFileName;
+}
+
 function normalizePlatformSlug(value: string) {
   return value
     .normalize("NFD")
@@ -4112,6 +4120,8 @@ router.post(
       return res.status(400).json({ error: "Ten element nie pozwala na upload pliku." });
     }
 
+    const effectiveFileName = getPreferredMaterialFileName(row.suggestedFilename, parsed.data.fileName);
+
     const workspace = await ensureMenteeWorkspace(db, req.platformUser!.id);
     if (!workspace.folderId) {
       return res.status(500).json({ error: "Brak folderu Google Drive dla mentee." });
@@ -4134,7 +4144,7 @@ router.post(
       return res.status(413).json({ error: "Plik jest zbyt duży. Maksymalny rozmiar uploadu to 15 MB." });
     }
     const uploaded = await uploadFileToDrive({
-      fileName: parsed.data.fileName,
+      fileName: effectiveFileName,
       mimeType: parsed.data.mimeType,
       parentId: workspace.folderId,
       data: buffer,
@@ -4145,7 +4155,7 @@ router.post(
         ownerUserId: req.platformUser!.id,
         mimeType: parsed.data.mimeType,
         objectKey: uploaded.id,
-        originalFilename: parsed.data.fileName,
+        originalFilename: effectiveFileName,
         publicUrl: uploaded.url,
         sizeBytes: buffer.byteLength,
       })
@@ -4291,8 +4301,8 @@ router.post(
       menteeUserId: req.platformUser!.id,
       rowKey: parsed.data.rowKey,
       values: {
-        completed: true,
-        completionMethod: "google_doc_tab",
+        completed: false,
+        completionMethod: null,
         googleDocTabId: docTab.tabId,
         googleDocTabTitle: docTab.title,
         googleDocTabUrl: docTab.tabUrl,
