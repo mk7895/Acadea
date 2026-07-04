@@ -225,9 +225,13 @@ function ProgressCircle({
   label?: string;
   total: number;
 }) {
+  const isComplete = total > 0 && completed >= total;
   return (
-    <div aria-label={label ?? `${completed}/${total}`} className="progress-circle">
-      <span>{completed}/{total}</span>
+    <div
+      aria-label={label ?? `${completed}/${total}`}
+      className={isComplete ? "progress-circle progress-circle-done" : "progress-circle"}
+    >
+      <span>{isComplete ? "✓" : `${completed}/${total}`}</span>
     </div>
   );
 }
@@ -295,18 +299,6 @@ function getTemplateCompletionForGuide(template: any, guide: any, stateMap: Map<
 
 function getTemplateCompletion(template: any, stateMap: Map<string, any>) {
   return countCompletedRows(template.visibleRows ?? [], Number(template.id), stateMap);
-}
-
-function renderSuggestedFilename(row: any) {
-  const suggested = typeof row?.suggestedFilename === "string" ? row.suggestedFilename.trim() : "";
-  if (!suggested) {
-    return null;
-  }
-  return (
-    <div className="small muted">
-      Sugerowana nazwa pliku: {suggested}
-    </div>
-  );
 }
 
 function TimezoneSelect({
@@ -5265,6 +5257,235 @@ function MenteeSection({
     return isEssayMaterialTemplate(template) ? "essays" : "materials";
   }
 
+  function renderMaterialItemRow(template: any, row: any, key: string) {
+    const applicableGuides = guides.filter((guide: any) => rowAppliesToGuide(row, guide));
+    const universityNames = uniqueStrings(applicableGuides.map((guide: any) => guide.universityName));
+    const headline = row.task || "Zadanie";
+    const showHints =
+      row.guideId &&
+      applicableGuides.some((guide: any) => hintEligibleTemplateIds.includes(getGuideTemplateId(guide)));
+    const hintGuide = row.guideId ? hintGuideMap.get(String(row.guideId)) : null;
+    const canPersistAction = Number.isFinite(Number(template.id)) && Boolean(row.displayKey);
+    const state = materialItemStateMap.get(`${template.id}:${row.displayKey}`);
+    const actionType = (row.actionType ?? "check_only") as MaterialItemAction;
+    const actionPrefix = `${template.id}:${row.displayKey}`;
+    const hasHintAccess = Boolean(showHints && hintGuide);
+
+    return (
+      <div className="list-item material-row material-row-item" key={key}>
+        <div className="material-summary-row">
+          <h3>{headline}</h3>
+          <CompletionDot completed={getMaterialItemCompleted(state)} />
+        </div>
+        {universityNames.length ? (
+          <div className="small muted">{formatUniversityNamesPreview(universityNames)}</div>
+        ) : null}
+        <div className="stack material-actions" style={{ marginTop: 12 }}>
+          <div className="button-row material-actions-row">
+            <button
+              className="btn btn-secondary"
+              disabled={!hasHintAccess}
+              onClick={() => {
+                if (hasHintAccess && hintGuide) {
+                  setOpenHintGuide(hintGuide);
+                }
+              }}
+              type="button"
+            >
+              Otwórz wskazówki
+            </button>
+            {(actionType === "file_required"
+              || (actionType === "file_or_doc" && !state?.googleDocTabUrl)) ? (
+              <label className="btn btn-secondary material-file-button" style={{ cursor: "pointer" }}>
+                {getUploadButtonLabel(row, state)}
+                <input
+                  hidden
+                  disabled={!canPersistAction || materialActionKey === `${actionPrefix}:upload`}
+                  type="file"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.currentTarget.value = "";
+                    if (file && canPersistAction) {
+                      void uploadMaterialFile(Number(template.id), row.displayKey, file);
+                    }
+                  }}
+                />
+              </label>
+            ) : null}
+          </div>
+          {state?.currentFileUrl ? (
+            <div className="button-row material-actions-row">
+              <a className="btn btn-secondary" href={state.currentFileUrl} target="_blank" rel="noreferrer">
+                {getSuggestedOrCurrentFileLabel(row, state)}
+              </a>
+              <button
+                className="btn btn-secondary"
+                disabled={!canPersistAction || materialActionKey === `${actionPrefix}:remove-file`}
+                onClick={() => {
+                  if (canPersistAction) {
+                    void removeMaterialFile(Number(template.id), row.displayKey);
+                  }
+                }}
+                type="button"
+              >
+                Usuń plik
+              </button>
+            </div>
+          ) : null}
+          {state?.googleDocTabUrl ? (
+            <div className="button-row material-actions-row">
+              <a className="btn btn-secondary" href={state.googleDocTabUrl} target="_blank" rel="noreferrer">
+                {state.googleDocTabTitle || "Otwórz zakładkę"}
+              </a>
+              <button
+                className="btn btn-secondary"
+                disabled={!canPersistAction || materialActionKey === `${actionPrefix}:remove-doc`}
+                onClick={() => {
+                  if (canPersistAction) {
+                    void removeMaterialDocTab(Number(template.id), row.displayKey);
+                  }
+                }}
+                type="button"
+              >
+                Usuń zakładkę
+              </button>
+            </div>
+          ) : null}
+          {actionType === "file_or_doc" && !state?.googleDocTabUrl ? (
+            <button
+              className="btn btn-secondary"
+              disabled={!canPersistAction || materialActionKey === `${actionPrefix}:doc`}
+              onClick={() => {
+                if (canPersistAction) {
+                  void createMaterialDocTab(Number(template.id), row.displayKey);
+                }
+              }}
+              type="button"
+            >
+              Utwórz zakładkę w Essay Doc
+            </button>
+          ) : null}
+          {(actionType === "check_only"
+            || (actionType === "check_or_file" && !state?.currentFileUrl)
+            || (actionType === "file_or_doc" && Boolean(state?.googleDocTabUrl))) ? (
+            <button
+              className="btn btn-secondary"
+              disabled={!canPersistAction || materialActionKey === `${actionPrefix}:check`}
+              onClick={() => {
+                if (canPersistAction) {
+                  void toggleMaterialCheck(
+                    Number(template.id),
+                    row.displayKey,
+                    !(state?.completed && state?.completionMethod === "checkbox"),
+                  );
+                }
+              }}
+              type="button"
+            >
+              {getCompletionToggleLabel(state)}
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  function renderEssayTemplateTile(template: any) {
+    const sections: Array<{
+      country: string;
+      tiles: Array<{ key: string; title: string; rows: any[]; subtitle: string }>;
+    }> = [];
+    const ensureSection = (country: string) => {
+      const normalizedCountry = country || "Inne";
+      let section = sections.find((entry) => entry.country === normalizedCountry);
+      if (!section) {
+        section = { country: normalizedCountry, tiles: [] };
+        sections.push(section);
+      }
+      return section;
+    };
+
+    let currentCountry = "";
+    let currentUniversityTile: { key: string; title: string; rows: any[]; subtitle: string } | null = null;
+
+    (template.visibleRows ?? []).forEach((row: any, index: number) => {
+      const applicableGuides = guides.filter((guide: any) => rowAppliesToGuide(row, guide));
+      const universityNames = uniqueStrings(applicableGuides.map((guide: any) => guide.universityName));
+      const countryNames = uniqueStrings(applicableGuides.map((guide: any) => guide.country));
+
+      if (row.level === "country") {
+        currentCountry = row.country || countryNames[0] || "Inne";
+        currentUniversityTile = null;
+        ensureSection(currentCountry);
+        return;
+      }
+
+      if (row.level === "university") {
+        const title = row.university || universityNames[0] || "Uczelnia";
+        const section = ensureSection(currentCountry || countryNames[0] || "Inne");
+        currentUniversityTile = {
+          key: `${template.id}-essay-university-${index}`,
+          title,
+          rows: [],
+          subtitle: "1 uczelnia powiązana",
+        };
+        section.tiles.push(currentUniversityTile);
+        return;
+      }
+
+      if (row.level !== "item") {
+        return;
+      }
+
+      if (currentUniversityTile) {
+        currentUniversityTile.rows.push(row);
+        return;
+      }
+
+      const section = ensureSection(currentCountry || row.country || countryNames[0] || "Inne");
+      section.tiles.push({
+        key: `${template.id}-essay-item-${index}`,
+        title: row.task || "Zadanie",
+        rows: [row],
+        subtitle: `${universityNames.length || 1} ${universityNames.length === 1 ? "uczelnia powiązana" : "uczelni powiązanych"}`,
+      });
+    });
+
+    return (
+      <div className="stack" key={`essay-template-${template.id}`} style={{ marginTop: 18 }}>
+        {template.description ? <p className="muted">{template.description}</p> : null}
+        {sections.map((section) => (
+          <div className="essay-country-section" key={`${template.id}-${section.country}`}>
+            <div className="material-heading material-heading-country">
+              <h3>{section.country}</h3>
+            </div>
+            <div className="tile-grid tile-grid-two" style={{ marginTop: 12 }}>
+              {section.tiles.map((tile) => {
+                const progress = countCompletedRows(tile.rows, Number(template.id), materialItemStateMap);
+                return (
+                  <div className="tile" key={tile.key}>
+                    <div className="material-summary-row">
+                      <div>
+                        <strong>{tile.title}</strong>
+                        <div className="small muted">{tile.subtitle}</div>
+                      </div>
+                      <ProgressCircle completed={progress.completed} total={progress.total} />
+                    </div>
+                    <div className="list" style={{ marginTop: 12 }}>
+                      {tile.rows.map((row: any, rowIndex: number) =>
+                        renderMaterialItemRow(template, row, `${tile.key}-row-${rowIndex}`),
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   function renderMaterialTemplateTile(template: any) {
     return (
       <details
@@ -5337,134 +5558,7 @@ function MenteeSection({
                     </div>
                   );
                 }
-                return (
-                  <div className="list-item material-row material-row-item" key={`${template.id}-row-${index}`}>
-                    <div className="material-summary-row">
-                      <h3>{headline}</h3>
-                      <CompletionDot completed={getMaterialItemCompleted(materialItemStateMap.get(`${template.id}:${row.displayKey}`))} />
-                    </div>
-                    {universityNames.length ? (
-                      <div className="small muted">{formatUniversityNamesPreview(universityNames)}</div>
-                    ) : null}
-                    {(() => {
-                      const canPersistAction = Number.isFinite(Number(template.id)) && Boolean(row.displayKey);
-                      const state = materialItemStateMap.get(`${template.id}:${row.displayKey}`);
-                      const actionType = (row.actionType ?? "check_only") as MaterialItemAction;
-                      const actionPrefix = `${template.id}:${row.displayKey}`;
-                      const hasHintAccess = Boolean(showHints && hintGuide);
-                      return (
-                        <div className="stack material-actions" style={{ marginTop: 12 }}>
-                          <div className="button-row material-actions-row">
-                            <button
-                              className="btn btn-secondary"
-                              disabled={!hasHintAccess}
-                              onClick={() => {
-                                if (hasHintAccess && hintGuide) {
-                                  setOpenHintGuide(hintGuide);
-                                }
-                              }}
-                              type="button"
-                            >
-                              Otwórz wskazówki
-                            </button>
-                            {(actionType === "file_required"
-                              || actionType === "check_or_file"
-                              || (actionType === "file_or_doc" && !state?.googleDocTabUrl)) ? (
-                              <label className="btn btn-secondary material-file-button" style={{ cursor: "pointer" }}>
-                                {getUploadButtonLabel(row, state)}
-                                <input
-                                  hidden
-                                  disabled={!canPersistAction || materialActionKey === `${actionPrefix}:upload`}
-                                  type="file"
-                                  onChange={(event) => {
-                                    const file = event.target.files?.[0];
-                                    event.currentTarget.value = "";
-                                    if (file && canPersistAction) {
-                                      void uploadMaterialFile(Number(template.id), row.displayKey, file);
-                                    }
-                                  }}
-                                />
-                              </label>
-                            ) : null}
-                          </div>
-                          {state?.currentFileUrl ? (
-                            <div className="button-row material-actions-row">
-                              <a className="btn btn-secondary" href={state.currentFileUrl} target="_blank" rel="noreferrer">
-                                {getSuggestedOrCurrentFileLabel(row, state)}
-                              </a>
-                              <button
-                                className="btn btn-secondary"
-                                disabled={!canPersistAction || materialActionKey === `${actionPrefix}:remove-file`}
-                                onClick={() => {
-                                  if (canPersistAction) {
-                                    void removeMaterialFile(Number(template.id), row.displayKey);
-                                  }
-                                }}
-                                type="button"
-                              >
-                                Usuń plik
-                              </button>
-                            </div>
-                          ) : null}
-                          {renderSuggestedFilename(row)}
-                          {state?.googleDocTabUrl ? (
-                            <div className="button-row material-actions-row">
-                              <a className="btn btn-secondary" href={state.googleDocTabUrl} target="_blank" rel="noreferrer">
-                                {state.googleDocTabTitle || "Otwórz zakładkę"}
-                              </a>
-                              <button
-                                className="btn btn-secondary"
-                                disabled={!canPersistAction || materialActionKey === `${actionPrefix}:remove-doc`}
-                                onClick={() => {
-                                  if (canPersistAction) {
-                                    void removeMaterialDocTab(Number(template.id), row.displayKey);
-                                  }
-                                }}
-                                type="button"
-                              >
-                                Usuń zakładkę
-                              </button>
-                            </div>
-                          ) : null}
-                          {actionType === "file_or_doc" && !state?.googleDocTabUrl ? (
-                            <button
-                              className="btn btn-secondary"
-                              disabled={!canPersistAction || materialActionKey === `${actionPrefix}:doc`}
-                              onClick={() => {
-                                if (canPersistAction) {
-                                  void createMaterialDocTab(Number(template.id), row.displayKey);
-                                }
-                              }}
-                              type="button"
-                            >
-                              Utwórz zakładkę w Essay Doc
-                            </button>
-                          ) : null}
-                          {(actionType === "check_only"
-                            || (actionType === "check_or_file" && !state?.currentFileUrl)
-                            || (actionType === "file_or_doc" && Boolean(state?.googleDocTabUrl))) ? (
-                            <button
-                              className="btn btn-secondary"
-                              disabled={!canPersistAction || materialActionKey === `${actionPrefix}:check`}
-                              onClick={() => {
-                                if (canPersistAction) {
-                                  void toggleMaterialCheck(
-                                    Number(template.id),
-                                    row.displayKey,
-                                    !(state?.completed && state?.completionMethod === "checkbox"),
-                                  );
-                                }
-                              }}
-                              type="button"
-                            >
-                              {getCompletionToggleLabel(state)}
-                            </button>
-                          ) : null}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                );
+                return renderMaterialItemRow(template, row, `${template.id}-row-${index}`);
               })}
             </div>
           ) : null}
@@ -5499,9 +5593,15 @@ function MenteeSection({
             </div>
           ) : null}
           {templates.length ? (
-            <div className="tile-grid tile-grid-two" style={{ marginTop: 18 }}>
-              {templates.map((template: any) => renderMaterialTemplateTile(template))}
-            </div>
+            heading === "Twoje Eseje" ? (
+              <div className="stack">
+                {templates.map((template: any) => renderEssayTemplateTile(template))}
+              </div>
+            ) : (
+              <div className="tile-grid tile-grid-two" style={{ marginTop: 18 }}>
+                {templates.map((template: any) => renderMaterialTemplateTile(template))}
+              </div>
+            )
           ) : (
             <div className="status" style={{ marginTop: 18 }}>{emptyMessage}</div>
           )}

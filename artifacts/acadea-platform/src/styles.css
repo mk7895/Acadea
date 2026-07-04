@@ -238,8 +238,8 @@ textarea {
 }
 
 .progress-circle {
-  min-width: 48px;
-  height: 48px;
+  min-width: 52px;
+  height: 52px;
   border-radius: 999px;
   border: 1.5px solid #cfe0d2;
   display: inline-flex;
@@ -247,9 +247,15 @@ textarea {
   justify-content: center;
   background: #fff;
   color: #14532d;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   flex-shrink: 0;
+}
+
+.progress-circle-done {
+  background: #14532d;
+  border-color: #14532d;
+  color: #fff;
 }
 
 .completion-dot {

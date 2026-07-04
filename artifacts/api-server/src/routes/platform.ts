@@ -346,6 +346,26 @@ function getPreferredMaterialFileName(suggestedFilename: string | null | undefin
   return originalFileName;
 }
 
+async function getMaterialItemState(
+  db: any,
+  templateId: number,
+  menteeUserId: number,
+  rowKey: string,
+) {
+  const [state] = await db
+    .select()
+    .from(platformMaterialItemStatesTable)
+    .where(
+      and(
+        eq(platformMaterialItemStatesTable.templateId, templateId),
+        eq(platformMaterialItemStatesTable.menteeUserId, menteeUserId),
+        eq(platformMaterialItemStatesTable.rowKey, rowKey),
+      ),
+    )
+    .limit(1);
+  return state ?? null;
+}
+
 function normalizePlatformSlug(value: string) {
   return value
     .normalize("NFD")
@@ -4065,7 +4085,18 @@ router.post(
     if (!row || row.level !== "item") {
       return res.status(404).json({ error: "Nie znaleziono wskazanego elementu." });
     }
-    if (!["check_only", "check_or_file"].includes(String(row.actionType))) {
+    const existingState = await getMaterialItemState(
+      db,
+      parsed.data.templateId,
+      req.platformUser!.id,
+      parsed.data.rowKey,
+    );
+    const actionType = String(row.actionType);
+    const canCheckOnly =
+      actionType === "check_only"
+      || actionType === "check_or_file"
+      || (actionType === "file_or_doc" && Boolean(existingState?.googleDocTabId));
+    if (!canCheckOnly) {
       return res.status(400).json({ error: "Tego elementu nie można oznaczyć tylko checkboxem." });
     }
 
