@@ -143,6 +143,10 @@ function materialTemplateTypeLabel(value: string) {
   }
 }
 
+function isEssayMaterialTemplate(template: any) {
+  return template?.templateType === "essay_like";
+}
+
 function materialItemActionLabel(value: MaterialItemAction) {
   switch (value) {
     case "check_only":
@@ -982,6 +986,7 @@ function Dashboard({
       ["mentors", "Mentorzy"],
       ["meetings", "Twoje Spotkania"],
       ["profile", "Twoje Dane"],
+      ["essays", "Twoje Eseje"],
       ["materials", "Twoje Materiały"],
     ];
   }, [session.user.role]);
@@ -1012,7 +1017,10 @@ function Dashboard({
               <button
                 key={value}
                 className={section === value ? "active" : ""}
-                onClick={() => setSection(value)}
+                onClick={() => {
+                  setExpandedMaterialTemplateIds([]);
+                  setSection(value);
+                }}
                 type="button"
               >
                 {label}
@@ -1024,11 +1032,9 @@ function Dashboard({
               expandedMaterialTemplateIds={expandedMaterialTemplateIds}
               onNavigateMentee={(nextSection, nextTemplateId) => {
                 setSection(nextSection);
-                if (typeof nextTemplateId === "number") {
-                  setExpandedMaterialTemplateIds((current) =>
-                    current.includes(nextTemplateId) ? current : [...current, nextTemplateId],
-                  );
-                }
+                setExpandedMaterialTemplateIds(
+                  typeof nextTemplateId === "number" ? [nextTemplateId] : [],
+                );
               }}
               section={section}
               session={session}
@@ -1176,15 +1182,7 @@ function AdminSection({
     templateType: "passport_like",
     guideId: "",
     appliesToGuideIds: [] as string[],
-    rows: [
-      {
-        ...createEmptyMaterialRow(),
-        appliesToGuideIds: [],
-        country: "Polska",
-        task: "Personal statement",
-        university: "University College London",
-      },
-    ] as MaterialRowEditor[],
+    rows: [createEmptyMaterialRow()] as MaterialRowEditor[],
     isActive: true,
   });
 
@@ -1450,14 +1448,7 @@ function AdminSection({
       templateType: "passport_like",
       guideId: "",
       appliesToGuideIds: [],
-      rows: [
-        {
-          ...createEmptyMaterialRow(),
-          country: "Polska",
-          task: "Personal statement",
-          university: "University College London",
-        },
-      ],
+      rows: [createEmptyMaterialRow()],
       isActive: true,
     });
   }
@@ -2698,6 +2689,23 @@ function AdminSection({
                   </select>
                 </div>
               </div>
+              <label className="checkbox-card">
+                <input
+                  checked={materialForm.templateType === "essay_like"}
+                  type="checkbox"
+                  onChange={(event) =>
+                    setMaterialForm((current) => ({
+                      ...current,
+                      templateType: event.target.checked ? "essay_like" : "passport_like",
+                    }))
+                  }
+                />
+                <span>
+                  Ten kafel jest esejowy.
+                  <br />
+                  Pokaż go w zakładce <strong>Twoje Eseje</strong> zamiast w <strong>Twoje Materiały</strong>.
+                </span>
+              </label>
               <div className="field">
                 <label>Opis</label>
                 <textarea value={materialForm.description} onChange={(event) => setMaterialForm((current) => ({ ...current, description: event.target.value }))} />
@@ -4874,6 +4882,8 @@ function MenteeSection({
         })),
     ]),
   );
+  const visibleEssayTemplates = visibleMaterialTemplates.filter((template: any) => isEssayMaterialTemplate(template));
+  const visibleDocumentTemplates = visibleMaterialTemplates.filter((template: any) => !isEssayMaterialTemplate(template));
 
   async function refreshOverview() {
     const payload = await apiFetch<any>("/mentee/overview", undefined, token);
@@ -4894,22 +4904,19 @@ function MenteeSection({
   }, [canUsePreferencesCookies, viewerTimezone]);
 
   useEffect(() => {
-    if (!expandedMaterialTemplateIds.length) {
-      return;
-    }
-    setOpenMaterialTemplateIds((current) =>
-      Array.from(new Set([...current, ...expandedMaterialTemplateIds])),
+    setOpenMaterialTemplateIds(
+      expandedMaterialTemplateIds.length ? Array.from(new Set(expandedMaterialTemplateIds)) : [],
     );
-  }, [expandedMaterialTemplateIds]);
+  }, [expandedMaterialTemplateIds, section]);
 
   useEffect(() => {
-    if (section === "universities" || section === "materials" || section === "profile" || section === "meetings" || section === "mentors") {
+    if (section === "universities" || section === "materials" || section === "essays" || section === "profile" || section === "meetings" || section === "mentors") {
       void refreshOverview().catch((error) => setStatus(error.message));
     }
     if (section === "mentors") {
       void apiFetch<any[]>("/public/mentors").then(setMentors).catch((error) => setStatus(error.message));
     }
-    if (section === "universities" || section === "materials") {
+    if (section === "universities" || section === "materials" || section === "essays") {
       void apiFetch<any[]>("/public/guides").then(setPublicGuides).catch((error) => setStatus(error.message));
     }
   }, [section, token]);
@@ -5145,6 +5152,241 @@ function MenteeSection({
     }
   }
 
+  function getTemplateDestinationSection(template: any) {
+    return isEssayMaterialTemplate(template) ? "essays" : "materials";
+  }
+
+  function renderMaterialTemplateTile(template: any) {
+    return (
+      <details
+        className="tile tile-detail"
+        key={template.id}
+        onToggle={(event) => {
+          const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
+          const templateId = Number(template.id);
+          setOpenMaterialTemplateIds((current) =>
+            nextOpen
+              ? (current.includes(templateId) ? current : [...current, templateId])
+              : current.filter((value) => value !== templateId),
+          );
+        }}
+        open={openMaterialTemplateIds.includes(Number(template.id))}
+      >
+        <summary>
+          <strong>{template.title}</strong>
+          <div className="small muted">
+            {guides.filter((guide: any) => templateAppliesToGuide(template, guide)).length} uczelni powiązanych
+          </div>
+        </summary>
+        <div style={{ marginTop: 12 }}>
+          <p className="muted">{template.description}</p>
+          {(template.alternativeOptions ?? []).length ? (
+            <div className="list" style={{ marginTop: 12 }}>
+              {(template.alternativeOptions ?? []).map((option: string, index: number) => (
+                <div className="list-item" key={`${template.id}-${index}`}>
+                  <h3>Alternatywa</h3>
+                  <p className="muted">{option}</p>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {(template.visibleRows ?? []).length ? (
+            <div className="list" style={{ marginTop: 12 }}>
+              {(template.visibleRows ?? []).map((row: any, index: number) => {
+                const applicableGuides = guides.filter((guide: any) => rowAppliesToGuide(row, guide));
+                const universityNames = uniqueStrings(applicableGuides.map((guide: any) => guide.universityName));
+                const countryNames = uniqueStrings(applicableGuides.map((guide: any) => guide.country));
+                const headline =
+                  row.level === "country"
+                    ? (row.country || countryNames[0] || "Kraj")
+                    : row.level === "university"
+                      ? (row.university || universityNames[0] || "Uczelnia")
+                      : (row.task || "Zadanie");
+                const showHints =
+                  row.guideId &&
+                  applicableGuides.some((guide: any) => hintEligibleTemplateIds.includes(getGuideTemplateId(guide)));
+                const hintGuide = row.guideId ? hintGuideMap.get(String(row.guideId)) : null;
+                if (row.level === "country") {
+                  return (
+                    <div className="material-heading material-heading-country" key={`${template.id}-row-${index}`}>
+                      <h3>{headline}</h3>
+                    </div>
+                  );
+                }
+                if (row.level === "university") {
+                  return (
+                    <div className="material-heading material-heading-university" key={`${template.id}-row-${index}`}>
+                      <h3>{headline}</h3>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="list-item material-row material-row-item" key={`${template.id}-row-${index}`}>
+                    <h3>{headline}</h3>
+                    {universityNames.length ? (
+                      <div className="small muted">{formatUniversityNamesPreview(universityNames)}</div>
+                    ) : null}
+                    {(() => {
+                      const canPersistAction = Number.isFinite(Number(template.id)) && Boolean(row.displayKey);
+                      const state = materialItemStateMap.get(`${template.id}:${row.displayKey}`);
+                      const actionType = (row.actionType ?? "check_only") as MaterialItemAction;
+                      const actionPrefix = `${template.id}:${row.displayKey}`;
+                      const hasHintAccess = Boolean(showHints && hintGuide);
+                      return (
+                        <div className="stack material-actions" style={{ marginTop: 12 }}>
+                          <div className="button-row material-actions-row">
+                            <button
+                              className="btn btn-secondary"
+                              disabled={!hasHintAccess}
+                              onClick={() => {
+                                if (hasHintAccess && hintGuide) {
+                                  setOpenHintGuide(hintGuide);
+                                }
+                              }}
+                              type="button"
+                            >
+                              Otwórz wskazówki
+                            </button>
+                            {(actionType === "file_required" || actionType === "file_or_doc" || actionType === "check_or_file") ? (
+                              <label className="btn btn-secondary material-file-button" style={{ cursor: "pointer" }}>
+                                {state?.currentFileUrl ? "Zastąp plik" : "Wgraj plik"}
+                                <input
+                                  hidden
+                                  disabled={!canPersistAction || materialActionKey === `${actionPrefix}:upload`}
+                                  type="file"
+                                  onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    event.currentTarget.value = "";
+                                    if (file && canPersistAction) {
+                                      void uploadMaterialFile(Number(template.id), row.displayKey, file);
+                                    }
+                                  }}
+                                />
+                              </label>
+                            ) : null}
+                          </div>
+                          {state?.currentFileUrl ? (
+                            <div className="button-row material-actions-row">
+                              <a className="btn btn-secondary" href={state.currentFileUrl} target="_blank" rel="noreferrer">
+                                {state.currentFileName || "Otwórz plik"}
+                              </a>
+                              <button
+                                className="btn btn-secondary"
+                                disabled={!canPersistAction || materialActionKey === `${actionPrefix}:remove-file`}
+                                onClick={() => {
+                                  if (canPersistAction) {
+                                    void removeMaterialFile(Number(template.id), row.displayKey);
+                                  }
+                                }}
+                                type="button"
+                              >
+                                Usuń plik
+                              </button>
+                            </div>
+                          ) : null}
+                          {state?.googleDocTabUrl ? (
+                            <div className="button-row material-actions-row">
+                              <a className="btn btn-secondary" href={state.googleDocTabUrl} target="_blank" rel="noreferrer">
+                                {state.googleDocTabTitle || "Otwórz zakładkę"}
+                              </a>
+                              <button
+                                className="btn btn-secondary"
+                                disabled={!canPersistAction || materialActionKey === `${actionPrefix}:remove-doc`}
+                                onClick={() => {
+                                  if (canPersistAction) {
+                                    void removeMaterialDocTab(Number(template.id), row.displayKey);
+                                  }
+                                }}
+                                type="button"
+                              >
+                                Usuń zakładkę
+                              </button>
+                            </div>
+                          ) : null}
+                          {actionType === "file_or_doc" && !state?.googleDocTabUrl ? (
+                            <button
+                              className="btn btn-secondary"
+                              disabled={!canPersistAction || materialActionKey === `${actionPrefix}:doc`}
+                              onClick={() => {
+                                if (canPersistAction) {
+                                  void createMaterialDocTab(Number(template.id), row.displayKey);
+                                }
+                              }}
+                              type="button"
+                            >
+                              Utwórz zakładkę w Essay Doc
+                            </button>
+                          ) : null}
+                          {(actionType === "check_only" || actionType === "check_or_file") ? (
+                            <button
+                              className={`btn ${state?.completed && state?.completionMethod === "checkbox" ? "btn-primary" : "btn-secondary"}`}
+                              disabled={!canPersistAction || materialActionKey === `${actionPrefix}:check`}
+                              onClick={() => {
+                                if (canPersistAction) {
+                                  void toggleMaterialCheck(
+                                    Number(template.id),
+                                    row.displayKey,
+                                    !(state?.completed && state?.completionMethod === "checkbox"),
+                                  );
+                                }
+                              }}
+                              type="button"
+                            >
+                              {state?.completed && state?.completionMethod === "checkbox"
+                                ? "Oznaczone jako wykonane"
+                                : "Oznacz jako wykonane"}
+                            </button>
+                          ) : null}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+      </details>
+    );
+  }
+
+  function renderMaterialSectionCard(
+    heading: string,
+    intro: string,
+    templates: any[],
+    emptyMessage: string,
+  ) {
+    return (
+      <div className="stack">
+        <div className="dashboard-card">
+          <h2>{heading}</h2>
+          <p className="muted">{intro}</p>
+          {googleWorkspace?.folderUrl || googleWorkspace?.essayDocUrl ? (
+            <div className="button-row" style={{ marginTop: 16 }}>
+              {googleWorkspace?.folderUrl ? (
+                <a className="btn btn-secondary" href={googleWorkspace.folderUrl} target="_blank" rel="noreferrer">
+                  Otwórz folder Google Drive
+                </a>
+              ) : null}
+              {googleWorkspace?.essayDocUrl ? (
+                <a className="btn btn-secondary" href={googleWorkspace.essayDocUrl} target="_blank" rel="noreferrer">
+                  Otwórz Essay Doc
+                </a>
+              ) : null}
+            </div>
+          ) : null}
+          {templates.length ? (
+            <div className="tile-grid tile-grid-two" style={{ marginTop: 18 }}>
+              {templates.map((template: any) => renderMaterialTemplateTile(template))}
+            </div>
+          ) : (
+            <div className="status" style={{ marginTop: 18 }}>{emptyMessage}</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <FloatingStatus message={status || getMaterialActionStatusMessage(materialActionKey)} />
@@ -5233,10 +5475,10 @@ function MenteeSection({
                                           </button>
                                           <button
                                             className="btn btn-secondary"
-                                            onClick={() => onNavigate("materials", Number(template.id))}
+                                            onClick={() => onNavigate(getTemplateDestinationSection(template), Number(template.id))}
                                             type="button"
                                           >
-                                            Pokaż materiały
+                                            {isEssayMaterialTemplate(template) ? "Pokaż w Twoje Eseje" : "Pokaż w Twoje Materiały"}
                                           </button>
                                         </div>
                                         {row.alternativeOptions?.length ? (
@@ -5591,235 +5833,22 @@ function MenteeSection({
           </form>
         </div>
       ) : null}
-      {section === "materials" && overview ? (
-        <div className="stack">
-          <div className="dashboard-card">
-            <h2>Twoje Materiały</h2>
-            <p className="muted">Tutaj zbierają się wszystkie materiały wymagane przez Twoje uczelnie. Dokumenty wspólne są łączone razem, a eseje i zadania pokazują, do których krajów i uczelni należą.</p>
-            {googleWorkspace?.folderUrl || googleWorkspace?.essayDocUrl ? (
-              <div className="button-row" style={{ marginTop: 16 }}>
-                {googleWorkspace?.folderUrl ? (
-                  <a className="btn btn-secondary" href={googleWorkspace.folderUrl} target="_blank" rel="noreferrer">
-                    Otwórz folder Google Drive
-                  </a>
-                ) : null}
-                {googleWorkspace?.essayDocUrl ? (
-                  <a className="btn btn-secondary" href={googleWorkspace.essayDocUrl} target="_blank" rel="noreferrer">
-                    Otwórz Essay Doc
-                  </a>
-                ) : null}
-              </div>
-            ) : null}
-            <div className="tile-grid tile-grid-two" style={{ marginTop: 18 }}>
-              {visibleMaterialTemplates.map((template: any) => (
-                <details
-                  className="tile tile-detail"
-                  key={template.id}
-                  onToggle={(event) => {
-                    const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
-                    const templateId = Number(template.id);
-                    setOpenMaterialTemplateIds((current) =>
-                      nextOpen
-                        ? (current.includes(templateId) ? current : [...current, templateId])
-                        : current.filter((value) => value !== templateId),
-                    );
-                    if (nextOpen) {
-                      onNavigate("materials", templateId);
-                    }
-                  }}
-                  open={openMaterialTemplateIds.includes(Number(template.id))}
-                >
-                  <summary>
-                    <strong>{template.title}</strong>
-                    <div className="small muted">
-                      {guides.filter((guide: any) => templateAppliesToGuide(template, guide)).length} uczelni powiązanych
-                    </div>
-                  </summary>
-                  <div style={{ marginTop: 12 }}>
-                    <p className="muted">{template.description}</p>
-                    {(template.alternativeOptions ?? []).length ? (
-                      <div className="list" style={{ marginTop: 12 }}>
-                        {(template.alternativeOptions ?? []).map((option: string, index: number) => (
-                          <div className="list-item" key={`${template.id}-${index}`}>
-                            <h3>Alternatywa</h3>
-                            <p className="muted">{option}</p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                    {(template.visibleRows ?? []).length ? (
-                      <div className="list" style={{ marginTop: 12 }}>
-                        {(template.visibleRows ?? []).map((row: any, index: number) => {
-                          const applicableGuides = guides.filter((guide: any) => rowAppliesToGuide(row, guide));
-                          const universityNames = uniqueStrings(applicableGuides.map((guide: any) => guide.universityName));
-                          const countryNames = uniqueStrings(applicableGuides.map((guide: any) => guide.country));
-                          const headline =
-                            row.level === "country"
-                              ? (row.country || countryNames[0] || "Kraj")
-                              : row.level === "university"
-                                ? (row.university || universityNames[0] || "Uczelnia")
-                                : (row.task || "Zadanie");
-                          const showHints =
-                            row.guideId &&
-                            applicableGuides.some((guide: any) => hintEligibleTemplateIds.includes(getGuideTemplateId(guide)));
-                          const hintGuide = row.guideId ? hintGuideMap.get(String(row.guideId)) : null;
-                          if (row.level === "country") {
-                            return (
-                              <div className="material-heading material-heading-country" key={`${template.id}-row-${index}`}>
-                                <h3>{headline}</h3>
-                              </div>
-                            );
-                          }
-                          if (row.level === "university") {
-                            return (
-                              <div className="material-heading material-heading-university" key={`${template.id}-row-${index}`}>
-                                <h3>{headline}</h3>
-                              </div>
-                            );
-                          }
-                          return (
-                            <div className="list-item material-row material-row-item" key={`${template.id}-row-${index}`}>
-                              <h3>{headline}</h3>
-                              {universityNames.length ? (
-                                <div className="small muted">{formatUniversityNamesPreview(universityNames)}</div>
-                              ) : null}
-                              {(() => {
-                                const canPersistAction = Number.isFinite(Number(template.id)) && Boolean(row.displayKey);
-                                const state = materialItemStateMap.get(`${template.id}:${row.displayKey}`);
-                                const actionType = (row.actionType ?? "check_only") as MaterialItemAction;
-                                const actionPrefix = `${template.id}:${row.displayKey}`;
-                                const hasHintAccess = Boolean(showHints && hintGuide);
-                                return (
-                                  <div className="stack material-actions" style={{ marginTop: 12 }}>
-                                    <div className="button-row material-actions-row">
-                                      <button
-                                        className="btn btn-secondary"
-                                        disabled={!hasHintAccess}
-                                        onClick={() => {
-                                          if (hasHintAccess && hintGuide) {
-                                            setOpenHintGuide(hintGuide);
-                                          }
-                                        }}
-                                        type="button"
-                                      >
-                                        Otwórz wskazówki
-                                      </button>
-                                      {(actionType === "file_required" || actionType === "file_or_doc" || actionType === "check_or_file") ? (
-                                        <label className="btn btn-secondary material-file-button" style={{ cursor: "pointer" }}>
-                                          {state?.currentFileUrl ? "Zastąp plik" : "Wgraj plik"}
-                                          <input
-                                            hidden
-                                            disabled={!canPersistAction || materialActionKey === `${actionPrefix}:upload`}
-                                            type="file"
-                                            onChange={(event) => {
-                                              const file = event.target.files?.[0];
-                                              event.currentTarget.value = "";
-                                              if (file && canPersistAction) {
-                                                void uploadMaterialFile(Number(template.id), row.displayKey, file);
-                                              }
-                                            }}
-                                          />
-                                        </label>
-                                      ) : null}
-                                    </div>
-                                    {state?.currentFileUrl ? (
-                                      <div className="button-row material-actions-row">
-                                        <a className="btn btn-secondary" href={state.currentFileUrl} target="_blank" rel="noreferrer">
-                                          {state.currentFileName || "Otwórz plik"}
-                                        </a>
-                                        <button
-                                          className="btn btn-secondary"
-                                          disabled={!canPersistAction || materialActionKey === `${actionPrefix}:remove-file`}
-                                          onClick={() => {
-                                            if (canPersistAction) {
-                                              void removeMaterialFile(Number(template.id), row.displayKey);
-                                            }
-                                          }}
-                                          type="button"
-                                        >
-                                          Usuń plik
-                                        </button>
-                                      </div>
-                                    ) : null}
-                                    {state?.googleDocTabUrl ? (
-                                      <div className="button-row material-actions-row">
-                                        <a className="btn btn-secondary" href={state.googleDocTabUrl} target="_blank" rel="noreferrer">
-                                          {state.googleDocTabTitle || "Otwórz zakładkę"}
-                                        </a>
-                                        <button
-                                          className="btn btn-secondary"
-                                          disabled={!canPersistAction || materialActionKey === `${actionPrefix}:remove-doc`}
-                                          onClick={() => {
-                                            if (canPersistAction) {
-                                              void removeMaterialDocTab(Number(template.id), row.displayKey);
-                                            }
-                                          }}
-                                          type="button"
-                                        >
-                                          Usuń zakładkę
-                                        </button>
-                                      </div>
-                                    ) : null}
-                                    {actionType === "file_or_doc" && !state?.googleDocTabUrl ? (
-                                      <button
-                                        className="btn btn-secondary"
-                                        disabled={!canPersistAction || materialActionKey === `${actionPrefix}:doc`}
-                                        onClick={() => {
-                                          if (canPersistAction) {
-                                            void createMaterialDocTab(Number(template.id), row.displayKey);
-                                          }
-                                        }}
-                                        type="button"
-                                      >
-                                        Utwórz zakładkę w Essay Doc
-                                      </button>
-                                    ) : null}
-                                    {(actionType === "check_only" || actionType === "check_or_file") ? (
-                                      <button
-                                        className={`btn ${state?.completed && state?.completionMethod === "checkbox" ? "btn-primary" : "btn-secondary"}`}
-                                        disabled={!canPersistAction || materialActionKey === `${actionPrefix}:check`}
-                                        onClick={() => {
-                                          if (canPersistAction) {
-                                            void toggleMaterialCheck(
-                                              Number(template.id),
-                                              row.displayKey,
-                                              !(state?.completed && state?.completionMethod === "checkbox"),
-                                            );
-                                          }
-                                        }}
-                                        type="button"
-                                      >
-                                        {state?.completed && state?.completionMethod === "checkbox"
-                                          ? "Oznaczone jako wykonane"
-                                          : "Oznacz jako wykonane"}
-                                      </button>
-                                    ) : null}
-                                  </div>
-                                );
-                              })()}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-                    {template.guideId ? (
-                      <details className="small" style={{ marginTop: 12 }}>
-                        <summary>Otwórz wskazówki do tego materiału</summary>
-                        <div className="muted" style={{ marginTop: 8 }}>
-                          Ten materiał ma podpięte dodatkowe wskazówki. Docelowo to będzie popup z pełną treścią.
-                        </div>
-                      </details>
-                    ) : null}
-                  </div>
-                </details>
-              ))}
-            </div>
-            {!visibleMaterialTemplates.length ? (
-              <div className="status">Nie ma jeszcze żadnych materiałów przypisanych do Twoich uczelni.</div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
+      {section === "essays" && overview
+        ? renderMaterialSectionCard(
+            "Twoje Eseje",
+            "Tutaj zbierają się wszystkie eseje i zadania pisemne powiązane z Twoimi uczelniami. Nadal możesz otwierać wskazówki, wgrywać pliki i tworzyć zakładki w Essay Doc.",
+            visibleEssayTemplates,
+            "Nie masz jeszcze żadnych aktywnych esejów.",
+          )
+        : null}
+      {section === "materials" && overview
+        ? renderMaterialSectionCard(
+            "Twoje Materiały",
+            "Tutaj zbierają się wszystkie dokumenty i pozostałe materiały wymagane przez Twoje uczelnie. Eseje zostały przeniesione do osobnej zakładki Twoje Eseje.",
+            visibleDocumentTemplates,
+            "Nie ma jeszcze żadnych materiałów przypisanych do Twoich uczelni.",
+          )
+        : null}
       {openHintGuide ? (
         <div className="modal-backdrop" onClick={() => setOpenHintGuide(null)} role="presentation">
           <div className="modal-card" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
