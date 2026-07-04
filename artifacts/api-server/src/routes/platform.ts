@@ -3704,14 +3704,7 @@ router.get(
         asc(platformGuidesTable.title),
       );
     const shaped = await shapeGuideList(db, guides.filter((guide) => !isItemGuideRecord(guide)));
-    const deduped = new Map<string, (typeof shaped)[number]>();
-    for (const guide of shaped) {
-      const key = `${normalizeSlug(guide.country)}::${normalizeSlug(guide.universityName)}`;
-      if (!deduped.has(key)) {
-        deduped.set(key, guide);
-      }
-    }
-    return res.json(Array.from(deduped.values()));
+    return res.json(shaped);
   },
 );
 

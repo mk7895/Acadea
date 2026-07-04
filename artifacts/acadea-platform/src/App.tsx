@@ -438,6 +438,28 @@ function formatUniversityNamesPreview(values: Array<string | null | undefined>, 
   return remaining > 0 ? `${visible.join(" • ")} +${remaining}` : visible.join(" • ");
 }
 
+function formatGuidePrimaryLabel(guide: any) {
+  const title = String(guide?.title ?? "").trim();
+  const universityName = String(guide?.universityName ?? "").trim();
+  return title || universityName || "Uczelnia";
+}
+
+function formatGuideSecondaryLabel(guide: any) {
+  const title = String(guide?.title ?? "").trim();
+  const universityName = String(guide?.universityName ?? "").trim();
+  const country = String(guide?.country ?? "").trim();
+  if (title && universityName && title !== universityName) {
+    return [country, universityName].filter(Boolean).join(" • ");
+  }
+  return country;
+}
+
+function formatGuideSelectorLabel(guide: any) {
+  const primary = formatGuidePrimaryLabel(guide);
+  const secondary = formatGuideSecondaryLabel(guide);
+  return secondary ? `${primary} • ${secondary}` : primary;
+}
+
 function formatSlotDayLabel(value: string, timezone: string) {
   return new Date(value).toLocaleDateString("pl-PL", {
     weekday: "long",
@@ -623,34 +645,25 @@ function formatGuideScopeLabel(guide: any, allUniversityGuides: any[]) {
       })();
 
   if (!appliesToIds.length) {
-    return "Brak przypisanych uczelni";
+    return "Brak przypisanych przewodników";
   }
 
   const matchedGuides = allUniversityGuides.filter((entry) => appliesToIds.includes(String(entry.id)));
   if (!matchedGuides.length) {
-    return "Brak przypisanych uczelni";
+    return "Brak przypisanych przewodników";
   }
   if (matchedGuides.length === 1) {
-    return "1 uczelnia";
+    return "1 przewodnik";
   }
   const mod10 = matchedGuides.length % 10;
   const mod100 = matchedGuides.length % 100;
-  const noun = mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14) ? "uczelnie" : "uczelni";
+  const noun = mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14) ? "przewodniki" : "przewodników";
   return `${matchedGuides.length} ${noun}`;
 }
 
 function countMaterialTemplateUniversityUsage(template: any, universityGuides: any[]) {
-  const validGuideMap = new Map(
-    universityGuides.map((guide) => [String(guide.id), `${guide.country}|||${guide.universityName}`]),
-  );
-  return Array.from(
-    new Set(
-      (template?.appliesToGuideIds ?? [])
-        .map((value: any) => String(value))
-        .map((value: string) => validGuideMap.get(value) ?? null)
-        .filter((value: string | null): value is string => Boolean(value)),
-    ),
-  ).length;
+  const validGuideIds = new Set(universityGuides.map((guide) => String(guide.id)));
+  return uniqueStrings((template?.appliesToGuideIds ?? []).map((value: any) => (validGuideIds.has(String(value)) ? String(value) : ""))).length;
 }
 
 function normalizePlatformSlug(value: string) {
@@ -2307,7 +2320,7 @@ function AdminSection({
                         <p className="muted">Akceptacja mentee: <strong>{menteeApproved ? "tak" : "nie"}</strong>.</p>
                         <div className="grid-2" style={{ marginTop: 12 }}>
                           <div className="field">
-                            <label>Limit aktywnych uczelni</label>
+                            <label>Limit aktywnych programów / przewodników</label>
                             <input
                               min={1}
                               type="number"
@@ -2351,8 +2364,8 @@ function AdminSection({
                                 <div className="list-item" key={`tip-access-${user.id}-${guide.id}`}>
                                   <header>
                                     <div>
-                                      <h3>{guide.universityName}</h3>
-                                      <div className="muted small">{guide.country} • {guide.universityName}</div>
+                                      <h3>{formatGuidePrimaryLabel(guide)}</h3>
+                                      <div className="muted small">{formatGuideSecondaryLabel(guide)}</div>
                                     </div>
                                     <button
                                       className="btn btn-secondary"
@@ -2378,7 +2391,7 @@ function AdminSection({
                                               }),
                                             }, token);
                                           },
-                                          "Dostęp do wskazówek został usunięty dla tej uczelni.",
+                                          "Dostęp do wskazówek został usunięty dla tego programu / przewodnika.",
                                         )
                                       }
                                       type="button"
@@ -2390,7 +2403,7 @@ function AdminSection({
                               ))}
                             </div>
                           ) : (
-                            <div className="small muted">Ten mentee nie ma obecnie aktywnego dostępu do wskazówek żadnej uczelni.</div>
+                            <div className="small muted">Ten mentee nie ma obecnie aktywnego dostępu do wskazówek żadnego programu / przewodnika.</div>
                           )}
                         </div>
                       </>
@@ -2664,7 +2677,7 @@ function AdminSection({
                       <div>
                         <h3>{guide.title}</h3>
                         <div className="muted small">
-                          {guide.country} • {guide.universityName}
+                          {formatGuideSecondaryLabel(guide)}
                         </div>
                       </div>
                       <span className="badge">
@@ -2931,7 +2944,7 @@ function AdminSection({
                 </select>
               </div>
               <div className="field">
-                <label>Do których uczelni ten kafel się stosuje</label>
+                <label>Do których programów / przewodników ten kafel się stosuje</label>
                 <div className="list">
                   {materialGuideTemplates.map((guide) => {
                     const checked = materialForm.appliesToGuideIds.includes(String(guide.id));
@@ -2950,8 +2963,8 @@ function AdminSection({
                           }
                         />
                                 <span className="selector-copy">
-                                  <strong>{guide.universityName}</strong>
-                                  <span className="small muted" style={{ display: "block" }}>{guide.country}</span>
+                                  <strong>{formatGuidePrimaryLabel(guide)}</strong>
+                                  <span className="small muted" style={{ display: "block" }}>{formatGuideSecondaryLabel(guide)}</span>
                                 </span>
                               </label>
                             );
@@ -2980,7 +2993,7 @@ function AdminSection({
                           </div>
                         </header>
                         <div className="field">
-                          <label>Do których uczelni ten wiersz jest wymagany</label>
+                          <label>Do których programów / przewodników ten wiersz jest wymagany</label>
                           <div className="list">
                             {rowGuideChoices.map((guide) => {
                               const checked = row.appliesToGuideIds.includes(String(guide.id));
@@ -2999,8 +3012,8 @@ function AdminSection({
                                     }
                                   />
                                   <span className="selector-copy">
-                                    <strong>{guide.universityName}</strong>
-                                    <span className="small muted" style={{ display: "block" }}>{guide.country}</span>
+                                    <strong>{formatGuidePrimaryLabel(guide)}</strong>
+                                    <span className="small muted" style={{ display: "block" }}>{formatGuideSecondaryLabel(guide)}</span>
                                   </span>
                                 </label>
                               );
@@ -3284,7 +3297,7 @@ function AdminSection({
                     <div>
                       <h3>{template.title}</h3>
                       <div className="muted small">
-                        {materialTemplateTypeLabel(template.templateType)} • {countMaterialTemplateUniversityUsage(template, materialGuideTemplates)} powiązań uczelni
+                        {materialTemplateTypeLabel(template.templateType)} • {countMaterialTemplateUniversityUsage(template, materialGuideTemplates)} powiązań przewodników
                       </div>
                     </div>
                     <span className="badge">{template.isActive ? "active" : "inactive"}</span>
@@ -3328,7 +3341,7 @@ function AdminSection({
             <p className="muted">Tutaj tworzysz osobne treści pomocnicze, które potem można podpiąć do konkretnego wiersza w kaflu materiałów.</p>
             <form className="stack" onSubmit={saveItemGuide}>
               <div className="field">
-                <label>Do których uczelni te wskazówki mają się odnosić</label>
+                <label>Do których programów / przewodników te wskazówki mają się odnosić</label>
                 <div className="selector-grid">
                   {materialGuideTemplates.map((guide) => {
                     const checked = itemGuideForm.appliesToGuideIds.includes(String(guide.id));
@@ -3347,8 +3360,8 @@ function AdminSection({
                           type="checkbox"
                         />
                         <div className="selector-copy">
-                          <strong>{guide.universityName}</strong>
-                          <span className="small muted">{guide.country}</span>
+                          <strong>{formatGuidePrimaryLabel(guide)}</strong>
+                          <span className="small muted">{formatGuideSecondaryLabel(guide)}</span>
                         </div>
                       </label>
                     );
@@ -3630,16 +3643,7 @@ function MentorSection({
   });
   const [mentorMaterialEditorId, setMentorMaterialEditorId] = useState<string>("");
   const [mentorMaterialRows, setMentorMaterialRows] = useState<MaterialRowEditor[]>([]);
-  const dedupedSourceGuides = useMemo(() => {
-    const map = new Map<string, any>();
-    for (const guide of sourceGuides) {
-      const key = `${normalizePlatformSlug(guide.country ?? "")}::${normalizePlatformSlug(guide.universityName ?? "")}`;
-      if (!map.has(key)) {
-        map.set(key, guide);
-      }
-    }
-    return Array.from(map.values());
-  }, [sourceGuides]);
+  const dedupedSourceGuides = useMemo(() => sourceGuides, [sourceGuides]);
   const selectedMentorMaterialTemplate = useMemo(
     () => mentorMaterialTemplates.find((template) => String(template.id) === mentorMaterialEditorId) ?? null,
     [mentorMaterialEditorId, mentorMaterialTemplates],
@@ -4764,7 +4768,7 @@ function MentorSection({
                   <option value="">Wybierz istniejącą uczelnię</option>
                   {dedupedSourceGuides.map((guide) => (
                       <option key={guide.id} value={String(guide.id)}>
-                        {guide.universityName} • {guide.country}
+                        {formatGuideSecondaryLabel(guide)}
                       </option>
                     ))}
                 </select>
@@ -4799,7 +4803,7 @@ function MentorSection({
                     <div>
                       <h3>{guide.title}</h3>
                       <div className="muted small">
-                        {guide.country} • {guide.universityName}
+                        {formatGuideSelectorLabel(guide)}
                       </div>
                     </div>
                     <span className="badge">
@@ -5715,7 +5719,7 @@ function MenteeSection({
     options?: { showConnectedGuideCount?: boolean; collapsibleKey?: string },
   ) {
     const applicableGuides = guides.filter((guide: any) => rowAppliesToGuide(row, guide));
-    const universityNames = uniqueStrings(applicableGuides.map((guide: any) => guide.universityName));
+    const universityNames = uniqueStrings(applicableGuides.map((guide: any) => formatGuidePrimaryLabel(guide)));
     const headline = row.task || "Zadanie";
     const showHints =
       row.guideId &&
@@ -5731,7 +5735,7 @@ function MenteeSection({
       <>
         {options?.showConnectedGuideCount ? (
           <div className="small muted">
-            {universityNames.length || 1} {(universityNames.length || 1) === 1 ? "uczelnia powiązana" : "uczelni powiązanych"}
+            {universityNames.length || 1} {(universityNames.length || 1) === 1 ? "przewodnik powiązany" : "przewodniki powiązane"}
           </div>
         ) : null}
         {universityNames.length ? (
@@ -5915,7 +5919,7 @@ function MenteeSection({
 
     (template.visibleRows ?? []).forEach((row: any, index: number) => {
       const applicableGuides = guides.filter((guide: any) => rowAppliesToGuide(row, guide));
-      const universityNames = uniqueStrings(applicableGuides.map((guide: any) => guide.universityName));
+      const universityNames = uniqueStrings(applicableGuides.map((guide: any) => formatGuidePrimaryLabel(guide)));
       const countryNames = uniqueStrings(applicableGuides.map((guide: any) => guide.country));
 
       if (row.level === "country") {
@@ -5953,7 +5957,7 @@ function MenteeSection({
         key: `${template.id}-essay-item-${index}`,
         title: row.task || "Zadanie",
         rows: [row],
-        subtitle: `${universityNames.length || 1} ${universityNames.length === 1 ? "uczelnia powiązana" : "uczelni powiązanych"}`,
+        subtitle: `${universityNames.length || 1} ${universityNames.length === 1 ? "przewodnik powiązany" : "przewodniki powiązane"}`,
         kind: "item",
       });
     });
@@ -6045,7 +6049,7 @@ function MenteeSection({
             <div>
               <strong>{template.title}</strong>
               <div className="small muted">
-                {guides.filter((guide: any) => templateAppliesToGuide(template, guide)).length} uczelni powiązanych
+                {guides.filter((guide: any) => templateAppliesToGuide(template, guide)).length} powiązanych przewodników
               </div>
             </div>
             {(() => {
@@ -6071,7 +6075,7 @@ function MenteeSection({
               <div className="list" style={{ marginTop: 12 }}>
                 {(template.visibleRows ?? []).map((row: any, index: number) => {
                   const applicableGuides = guides.filter((guide: any) => rowAppliesToGuide(row, guide));
-                  const universityNames = uniqueStrings(applicableGuides.map((guide: any) => guide.universityName));
+                  const universityNames = uniqueStrings(applicableGuides.map((guide: any) => formatGuidePrimaryLabel(guide)));
                   const countryNames = uniqueStrings(applicableGuides.map((guide: any) => guide.country));
                   const headline =
                     row.level === "country"
@@ -6160,8 +6164,8 @@ function MenteeSection({
           <div className="dashboard-card">
             <h2>Dostęp do wskazówek</h2>
             <p className="muted">
-              Możesz mieć jednocześnie do <strong>{guideLimits.maxActiveGuideCount}</strong> aktywnych uczelni.
-              Wskazówki są aktywne maksymalnie dla <strong>{guideLimits.maxHintGuideCount}</strong> uczelni.
+              Możesz mieć jednocześnie do <strong>{guideLimits.maxActiveGuideCount}</strong> aktywnych programów / przewodników.
+              Wskazówki są aktywne maksymalnie dla <strong>{guideLimits.maxHintGuideCount}</strong> programów / przewodników.
             </p>
             {tipAccessGuides.length ? (
               <div className="list" style={{ marginTop: 16 }}>
@@ -6173,7 +6177,7 @@ function MenteeSection({
               </div>
             ) : (
               <div className="small muted" style={{ marginTop: 12 }}>
-                Obecnie nie masz aktywnego dostępu do wskazówek żadnej uczelni.
+                Obecnie nie masz aktywnego dostępu do wskazówek żadnego programu / przewodnika.
               </div>
             )}
           </div>
@@ -6184,7 +6188,7 @@ function MenteeSection({
               {guides.map((guide: any) => (
                 <details className="tile tile-detail" key={guide.id}>
                   <summary>
-                    <strong>{guide.universityName}</strong>
+                    <strong>{formatGuidePrimaryLabel(guide)}</strong>
                   </summary>
                   <div className="collapsible-body">
                     <div className="collapsible-body-inner" style={{ marginTop: 12 }}>
@@ -6237,7 +6241,7 @@ function MenteeSection({
                                         .filter((row: any) => row.level === "item")
                                         .map((row: any, index: number) => {
                                           const applicableGuides = guides.filter((entry: any) => rowAppliesToGuide(row, entry));
-                                          const universityNames = uniqueStrings(applicableGuides.map((entry: any) => entry.universityName));
+                                          const universityNames = uniqueStrings(applicableGuides.map((entry: any) => formatGuidePrimaryLabel(entry)));
                                           const showHints = row.guideId && hintEligibleTemplateIds.includes(getGuideTemplateId(guide));
                                           const hintGuide = row.guideId ? hintGuideMap.get(String(row.guideId)) : null;
                                           return (
@@ -6325,7 +6329,7 @@ function MenteeSection({
               <div className="tile-grid tile-grid-two" style={{ marginTop: 18 }}>
                 {availableGuideTemplates.map((guide: any) => (
                   <div className="tile" key={`available-${guide.id}`}>
-                    <strong>{guide.universityName}</strong>
+                    <strong>{formatGuidePrimaryLabel(guide)}</strong>
                     <p className="muted" style={{ marginTop: 12 }}>{guide.summary}</p>
                     <div className="button-row" style={{ marginTop: 14 }}>
                       <button
@@ -6350,7 +6354,7 @@ function MenteeSection({
                   <div className="list-item" key={guide.id}>
                     <h3>{guide.title}</h3>
                     <div className="muted small">
-                      {guide.country} • {guide.universityName}
+                      {formatGuideSecondaryLabel(guide)}
                     </div>
                     <p className="muted">{guide.summary}</p>
                   </div>
