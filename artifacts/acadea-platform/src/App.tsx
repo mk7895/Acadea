@@ -284,8 +284,7 @@ function getUploadButtonLabel(row: any, state: any) {
   if (state?.currentFileUrl) {
     return "Zastąp plik";
   }
-  const suggested = typeof row?.suggestedFilename === "string" ? row.suggestedFilename.trim() : "";
-  return suggested ? `Wgraj ${suggested}` : "Wgraj plik";
+  return "Wgraj plik";
 }
 
 function getCompletionToggleLabel(state: any) {
@@ -4880,6 +4879,8 @@ function MenteeSection({
   const [meetingTurnstileToken, setMeetingTurnstileToken] = useState("");
   const [meetingTurnstileResetKey, setMeetingTurnstileResetKey] = useState(0);
   const [openMaterialTemplateIds, setOpenMaterialTemplateIds] = useState<number[]>(expandedMaterialTemplateIds);
+  const [openEssayTileKeys, setOpenEssayTileKeys] = useState<string[]>([]);
+  const [openEssayItemKeys, setOpenEssayItemKeys] = useState<string[]>([]);
   const [viewerTimezone, setViewerTimezone] = useState(() => {
     const saved = getCookie(TIMEZONE_COOKIE_NAME);
     return saved && findTimezoneOption(saved) ? saved : DEFAULT_TIMEZONE;
@@ -5008,6 +5009,8 @@ function MenteeSection({
     setOpenMaterialTemplateIds(
       expandedMaterialTemplateIds.length ? Array.from(new Set(expandedMaterialTemplateIds)) : [],
     );
+    setOpenEssayTileKeys([]);
+    setOpenEssayItemKeys([]);
   }, [expandedMaterialTemplateIds, section]);
 
   useEffect(() => {
@@ -5257,7 +5260,12 @@ function MenteeSection({
     return isEssayMaterialTemplate(template) ? "essays" : "materials";
   }
 
-  function renderMaterialItemRow(template: any, row: any, key: string) {
+  function renderMaterialItemRow(
+    template: any,
+    row: any,
+    key: string,
+    options?: { showConnectedGuideCount?: boolean; collapsibleKey?: string },
+  ) {
     const applicableGuides = guides.filter((guide: any) => rowAppliesToGuide(row, guide));
     const universityNames = uniqueStrings(applicableGuides.map((guide: any) => guide.universityName));
     const headline = row.task || "Zadanie";
@@ -5271,12 +5279,13 @@ function MenteeSection({
     const actionPrefix = `${template.id}:${row.displayKey}`;
     const hasHintAccess = Boolean(showHints && hintGuide);
 
-    return (
-      <div className="list-item material-row material-row-item" key={key}>
-        <div className="material-summary-row">
-          <h3>{headline}</h3>
-          <CompletionDot completed={getMaterialItemCompleted(state)} />
-        </div>
+    const content = (
+      <>
+        {options?.showConnectedGuideCount ? (
+          <div className="small muted">
+            {universityNames.length || 1} {(universityNames.length || 1) === 1 ? "uczelnia powiązana" : "uczelni powiązanych"}
+          </div>
+        ) : null}
         {universityNames.length ? (
           <div className="small muted">{formatUniversityNamesPreview(universityNames)}</div>
         ) : null}
@@ -5386,6 +5395,45 @@ function MenteeSection({
             </button>
           ) : null}
         </div>
+      </>
+    );
+
+    if (options?.collapsibleKey) {
+      const collapsibleKey = options.collapsibleKey;
+      return (
+        <details
+          className="list-item nested-detail material-row material-row-item"
+          key={key}
+          onToggle={(event) => {
+            const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
+            setOpenEssayItemKeys((current) =>
+              nextOpen
+                ? (current.includes(collapsibleKey) ? current : [...current, collapsibleKey])
+                : current.filter((value) => value !== collapsibleKey),
+            );
+          }}
+          open={openEssayItemKeys.includes(collapsibleKey)}
+        >
+          <summary>
+            <div className="material-summary-row">
+              <h3>{headline}</h3>
+              <CompletionDot completed={getMaterialItemCompleted(state)} />
+            </div>
+          </summary>
+          <div style={{ marginTop: 12 }}>
+            {content}
+          </div>
+        </details>
+      );
+    }
+
+    return (
+      <div className="list-item material-row material-row-item" key={key}>
+        <div className="material-summary-row">
+          <h3>{headline}</h3>
+          <CompletionDot completed={getMaterialItemCompleted(state)} />
+        </div>
+        {content}
       </div>
     );
   }
@@ -5393,7 +5441,7 @@ function MenteeSection({
   function renderEssayTemplateTile(template: any) {
     const sections: Array<{
       country: string;
-      tiles: Array<{ key: string; title: string; rows: any[]; subtitle: string }>;
+      tiles: Array<{ key: string; title: string; rows: any[]; subtitle: string; kind: "university" | "item" }>;
     }> = [];
     const ensureSection = (country: string) => {
       const normalizedCountry = country || "Inne";
@@ -5406,7 +5454,13 @@ function MenteeSection({
     };
 
     let currentCountry = "";
-    let currentUniversityTile: { key: string; title: string; rows: any[]; subtitle: string } | null = null;
+    let currentUniversityTile: {
+      key: string;
+      title: string;
+      rows: any[];
+      subtitle: string;
+      kind: "university" | "item";
+    } | null = null;
 
     (template.visibleRows ?? []).forEach((row: any, index: number) => {
       const applicableGuides = guides.filter((guide: any) => rowAppliesToGuide(row, guide));
@@ -5427,7 +5481,8 @@ function MenteeSection({
           key: `${template.id}-essay-university-${index}`,
           title,
           rows: [],
-          subtitle: "1 uczelnia powiązana",
+          subtitle: "",
+          kind: "university",
         };
         section.tiles.push(currentUniversityTile);
         return;
@@ -5448,6 +5503,7 @@ function MenteeSection({
         title: row.task || "Zadanie",
         rows: [row],
         subtitle: `${universityNames.length || 1} ${universityNames.length === 1 ? "uczelnia powiązana" : "uczelni powiązanych"}`,
+        kind: "item",
       });
     });
 
@@ -5462,21 +5518,42 @@ function MenteeSection({
             <div className="tile-grid tile-grid-two" style={{ marginTop: 12 }}>
               {section.tiles.map((tile) => {
                 const progress = countCompletedRows(tile.rows, Number(template.id), materialItemStateMap);
+                const itemKeys = tile.rows.map((_: any, rowIndex: number) => `${tile.key}-item-${rowIndex}`);
                 return (
-                  <div className="tile" key={tile.key}>
-                    <div className="material-summary-row">
-                      <div>
-                        <strong>{tile.title}</strong>
-                        <div className="small muted">{tile.subtitle}</div>
+                  <details
+                    className="tile tile-detail"
+                    key={tile.key}
+                    onToggle={(event) => {
+                      const nextOpen = (event.currentTarget as HTMLDetailsElement).open;
+                      setOpenEssayTileKeys((current) =>
+                        nextOpen
+                          ? (current.includes(tile.key) ? current : [...current, tile.key])
+                          : current.filter((value) => value !== tile.key),
+                      );
+                      if (nextOpen) {
+                        setOpenEssayItemKeys((current) => Array.from(new Set([...current, ...itemKeys])));
+                      }
+                    }}
+                    open={openEssayTileKeys.includes(tile.key)}
+                  >
+                    <summary>
+                      <div className="material-summary-row">
+                        <div>
+                          <strong>{tile.title}</strong>
+                          {tile.subtitle ? <div className="small muted">{tile.subtitle}</div> : null}
+                        </div>
+                        <ProgressCircle completed={progress.completed} total={progress.total} />
                       </div>
-                      <ProgressCircle completed={progress.completed} total={progress.total} />
-                    </div>
+                    </summary>
                     <div className="list" style={{ marginTop: 12 }}>
                       {tile.rows.map((row: any, rowIndex: number) =>
-                        renderMaterialItemRow(template, row, `${tile.key}-row-${rowIndex}`),
+                        renderMaterialItemRow(template, row, `${tile.key}-row-${rowIndex}`, {
+                          showConnectedGuideCount: tile.kind === "item",
+                          collapsibleKey: `${tile.key}-item-${rowIndex}`,
+                        }),
                       )}
                     </div>
-                  </div>
+                  </details>
                 );
               })}
             </div>
