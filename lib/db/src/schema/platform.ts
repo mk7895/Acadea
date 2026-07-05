@@ -35,6 +35,7 @@ export const PLATFORM_GUIDE_TYPES = [
   "self_service_live",
 ] as const;
 export const PLATFORM_GUIDE_STATUSES = ["draft", "published", "archived"] as const;
+export const PLATFORM_GUIDE_OFFER_STATUSES = ["none", "conditional", "final"] as const;
 export const PLATFORM_CHECKLIST_ITEM_TYPES = [
   "document_template",
   "file_link",
@@ -45,7 +46,7 @@ export const PLATFORM_CHECKLIST_ITEM_TYPES = [
 export const PLATFORM_GOOGLE_CONNECTION_TYPES = ["calendar", "drive"] as const;
 export const PLATFORM_CONNECTION_STATUSES = ["disconnected", "pending", "connected"] as const;
 export const PLATFORM_PROFILE_FIELD_TYPES = ["text", "textarea", "date"] as const;
-export const PLATFORM_MATERIAL_TEMPLATE_TYPES = ["passport_like", "essay_like"] as const;
+export const PLATFORM_MATERIAL_TEMPLATE_TYPES = ["passport_like", "essay_like", "offer_like"] as const;
 
 export const platformUsersTable = pgTable(
   "platform_users",
@@ -282,6 +283,8 @@ export const platformGuidesTable = pgTable("platform_guides", {
   summary: text("summary").notNull().default(""),
   descriptionMarkdown: text("description_markdown").notNull().default(""),
   estimatedReadMin: integer("estimated_read_min").notNull().default(5),
+  offerStatus: text("offer_status").notNull().default("none"),
+  offerMarkedAt: timestamp("offer_marked_at"),
   ownerUserId: integer("owner_user_id").references(() => platformUsersTable.id, {
     onDelete: "set null",
   }),

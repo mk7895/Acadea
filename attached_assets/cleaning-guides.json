@@ -9,16 +9,170 @@
     ],
     "deleteMaterialTemplateTitles": [
       "Studielink",
+      "Studielink / SIS",
+      "Studielink / Tilburg application portal",
       "OLAF",
       "SIS",
-      "OSIRIS Aanmeld"
+      "OSIRIS Aanmeld",
+      "Enrollment after admission",
+      "Zcentralizowane Portale Aplikacyjne",
+      "Portale Uczelni",
+      "Matching po warunkowym przyjeciu",
+      "Matching po warunkowym przyjęciu",
+      "Matching po warunkowej ofercie",
+      "Akceptacja oferty i waiting list",
+      "Akceptacja oferty w Studielink",
+      "Portale po ofercie",
+      "Dokumenty po ofercie",
+      "Czesne i depozyt"
     ]
   },
+  "itemGuides": [
+    {
+      "key": "studielink",
+      "title": "Studielink",
+      "slug": "studielink",
+      "country": "Holandia",
+      "universityName": "Programy w Holandii",
+      "summary": "Centralny portal rejestracyjny dla programow licencjackich w Holandii.",
+      "descriptionMarkdown": "Studielink to pierwszy krok formalny. Najpierw zakladasz konto, potwierdzasz dane osobowe, a nastepnie wybierasz konkretny program. Sam wpis w Studielink zwykle nie konczy aplikacji: po rejestracji trzeba przejsc do portalu danej uczelni.",
+      "appliesToGuideSlugs": [
+        "iba-erasmus-university-rotterdam",
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "rsm-olaf-application",
+      "title": "RSM IBA OLAF",
+      "slug": "rsm-olaf-application",
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "summary": "Po Studielink aplikacja na IBA przechodzi do EUR Admissions Portal i OLAF.",
+      "descriptionMarkdown": "Dla IBA w Rotterdam School of Management po rejestracji w Studielink trzeba przejsc do EUR Admissions Portal / OLAF, oplacic application fee i wyslac kompletna aplikacje przed deadlinem RSM.",
+      "appliesToGuideSlugs": [
+        "iba-erasmus-university-rotterdam"
+      ]
+    },
+    {
+      "key": "uva-sis-application",
+      "title": "UvA SIS / My Applications",
+      "slug": "uva-sis-application",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "summary": "Po Studielink UvA prowadzi dalsze kroki przez UvAnetID i SIS My Applications.",
+      "descriptionMarkdown": "Po rejestracji w Studielink kandydat otrzymuje UvAnetID. Z tym loginem sprawdza personal enrolment checklist w SIS i wysyla kompletna aplikacje przez SIS My Applications.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam"
+      ]
+    },
+    {
+      "key": "tilburg-osiris-application",
+      "title": "Tilburg OSIRIS Aanmeld",
+      "slug": "tilburg-osiris-application",
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "summary": "Po Studielink Tilburg przenosi aplikacje do OSIRIS Aanmeld.",
+      "descriptionMarkdown": "Po rejestracji w Studielink Tilburg University wysyla dane do logowania do OSIRIS Aanmeld. Tam trzeba zlozyc kompletna aplikacje i monitorowac status wniosku.",
+      "appliesToGuideSlugs": [
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "uva-business-analytics-matching",
+      "title": "UvA Matching - Business Analytics",
+      "slug": "uva-business-analytics-matching",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "summary": "Business Analytics wymaga UvA Matching po warunkowym przyjeciu.",
+      "descriptionMarkdown": "UvA Matching to obowiazkowy krok dopasowania do programu. Kandydat przechodzi przez materialy wprowadzajace i wykonuje wymagane zadania w terminie wybranej rundy matchingowej.",
+      "appliesToGuideSlugs": [
+        "business-analytics-university-of-amsterdam"
+      ]
+    },
+    {
+      "key": "tilburg-iba-matching",
+      "title": "Tilburg IBA AI Matching",
+      "slug": "tilburg-iba-matching",
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "summary": "IBA w Tilburgu wymaga AI Matching i wgrania PDF do OSIRIS.",
+      "descriptionMarkdown": "Po warunkowej ofercie dla Tilburg IBA kandydat przechodzi AI Matching Chatbot i wgrywa wymagany PDF do OSIRIS zgodnie z instrukcja uczelni.",
+      "appliesToGuideSlugs": [
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "rsm-iba-after-admission",
+      "title": "RSM IBA after admission",
+      "slug": "rsm-iba-after-admission",
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "summary": "Kroki po otrzymaniu oferty na IBA w Erasmus University Rotterdam.",
+      "descriptionMarkdown": "Po otrzymaniu oferty kandydat powinien podjac decyzje w Studielink i wykonac dalsze kroki administracyjne zgodnie z instrukcja EUR.",
+      "appliesToGuideSlugs": [
+        "iba-erasmus-university-rotterdam"
+      ]
+    },
+    {
+      "key": "after-admission-uva-bba",
+      "title": "UvA BBA after admission",
+      "slug": "after-admission-uva-bba",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "summary": "Kroki po otrzymaniu oferty na Business Administration.",
+      "descriptionMarkdown": "Po decyzji o przyjeciu kandydat potwierdza miejsce i wykonuje dalsze kroki w systemach UvA zgodnie z instrukcja programu.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam"
+      ]
+    },
+    {
+      "key": "after-admission-uva-ba",
+      "title": "UvA Business Analytics after admission",
+      "slug": "after-admission-uva-ba",
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "summary": "Kroki po otrzymaniu oferty na Business Analytics.",
+      "descriptionMarkdown": "Po warunkowym przyjeciu kandydat wykonuje wymagane potwierdzenia w SIS i przechodzi przez kolejne kroki administracyjne UvA.",
+      "appliesToGuideSlugs": [
+        "business-analytics-university-of-amsterdam"
+      ]
+    },
+    {
+      "key": "after-admission-tilburg-iba",
+      "title": "Tilburg IBA after admission",
+      "slug": "after-admission-tilburg-iba",
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "summary": "Dokumenty i dalsze formalnosci po ofercie na Tilburg IBA.",
+      "descriptionMarkdown": "Po ofercie kandydat dosyla dokumenty wskazane przez Tilburg University i finalizuje kolejne kroki enrolmentowe.",
+      "appliesToGuideSlugs": [
+        "international-business-administration-tilburg-university"
+      ]
+    },
+    {
+      "key": "after-admission-payment",
+      "title": "Final enrolment and tuition fee",
+      "slug": "after-admission-payment",
+      "country": "Holandia",
+      "universityName": "Programy w Holandii",
+      "summary": "Oplaty i finalne potwierdzenie miejsca po otrzymaniu oferty.",
+      "descriptionMarkdown": "Po otrzymaniu oferty trzeba dopilnowac platnosci wskazanych przez uczelnie i domknac koncowe kroki enrolmentowe we wlasciwym terminie.",
+      "appliesToGuideSlugs": [
+        "iba-erasmus-university-rotterdam",
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam",
+        "international-business-administration-tilburg-university"
+      ]
+    }
+  ],
   "materialTemplates": [
     {
       "title": "Zcentralizowane Portale Aplikacyjne",
       "templateType": "passport_like",
-      "description": "Wspólne portale aplikacyjne używane centralnie, takie jak Studielink. Najpierw zadania wspólne dla kraju, a potem kroki specyficzne dla uczelni i programu.",
+      "description": "Centralne portale aplikacyjne wspolne dla wielu programow. Najpierw krok krajowy, potem konkretna rejestracja dla programu.",
       "appliesToGuideSlugs": [
         "iba-erasmus-university-rotterdam",
         "business-administration-university-of-amsterdam",
@@ -39,7 +193,7 @@
         },
         {
           "level": "item",
-          "task": "Założenie konta w Studielink i potwierdzenie danych osobowych",
+          "task": "Zalozenie konta w Studielink i potwierdzenie danych osobowych",
           "actionType": "check_only",
           "guideKey": "studielink",
           "appliesToGuideSlugs": [
@@ -122,7 +276,7 @@
     {
       "title": "Portale Uczelni",
       "templateType": "passport_like",
-      "description": "Portale uczelniane po przejściu przez Studielink, pogrupowane według kraju, uczelni i programu.",
+      "description": "Portale uczelniane, ktore przejmuja dalsza czesc aplikacji po centralnym portalu krajowym.",
       "appliesToGuideSlugs": [
         "iba-erasmus-university-rotterdam",
         "business-administration-university-of-amsterdam",
@@ -151,7 +305,7 @@
         },
         {
           "level": "item",
-          "task": "Odbiór danych ERNA i linku do OLAF po rejestracji w Studielink",
+          "task": "Odbior danych do EUR Admissions Portal i linku do OLAF po rejestracji w Studielink",
           "actionType": "check_only",
           "guideKey": "rsm-olaf-application",
           "appliesToGuideSlugs": [
@@ -160,7 +314,7 @@
         },
         {
           "level": "item",
-          "task": "Opłata application fee EUR 100",
+          "task": "Oplata application fee EUR 100 w EUR Admissions Portal",
           "actionType": "check_only",
           "guideKey": "rsm-olaf-application",
           "appliesToGuideSlugs": [
@@ -169,7 +323,7 @@
         },
         {
           "level": "item",
-          "task": "Wgranie dokumentów i wysłanie kompletnego OLAF do 31 stycznia",
+          "task": "Wgranie wymaganych dokumentow i wyslanie kompletnej aplikacji w OLAF do 31 stycznia",
           "actionType": "check_only",
           "guideKey": "rsm-olaf-application",
           "appliesToGuideSlugs": [
@@ -178,16 +332,7 @@
         },
         {
           "level": "item",
-          "task": "Odpowiedź na 3 pytania motywacyjne po angielsku w OLAF",
-          "actionType": "check_only",
-          "guideKey": "rsm-olaf-application",
-          "appliesToGuideSlugs": [
-            "iba-erasmus-university-rotterdam"
-          ]
-        },
-        {
-          "level": "item",
-          "task": "Sprawdzenie rank number 15 kwietnia",
+          "task": "Sprawdzenie rank number po publikacji wynikow selection procedure",
           "actionType": "check_only",
           "guideKey": "rsm-olaf-application",
           "appliesToGuideSlugs": [
@@ -204,6 +349,15 @@
         },
         {
           "level": "item",
+          "task": "Odbior UvAnetID po rejestracji w Studielink",
+          "actionType": "check_only",
+          "guideKey": "uva-sis-application",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
           "task": "Sprawdzenie personal enrolment checklist w SIS",
           "actionType": "check_only",
           "guideKey": "uva-sis-application",
@@ -213,16 +367,7 @@
         },
         {
           "level": "item",
-          "task": "Złożenie kompletnej aplikacji w SIS My Applications w ciągu 14 dni od rejestracji w Studielink",
-          "actionType": "check_only",
-          "guideKey": "uva-sis-application",
-          "appliesToGuideSlugs": [
-            "business-administration-university-of-amsterdam"
-          ]
-        },
-        {
-          "level": "item",
-          "task": "Opłata aplikacyjna UvA",
+          "task": "Zlozenie kompletnej aplikacji w SIS My Applications przed deadlinem",
           "actionType": "check_only",
           "guideKey": "uva-sis-application",
           "appliesToGuideSlugs": [
@@ -239,6 +384,15 @@
         },
         {
           "level": "item",
+          "task": "Odbior UvAnetID po rejestracji w Studielink",
+          "actionType": "check_only",
+          "guideKey": "uva-sis-application",
+          "appliesToGuideSlugs": [
+            "business-analytics-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
           "task": "Sprawdzenie personal enrolment checklist w SIS",
           "actionType": "check_only",
           "guideKey": "uva-sis-application",
@@ -248,16 +402,7 @@
         },
         {
           "level": "item",
-          "task": "Złożenie kompletnej aplikacji w SIS My Applications w ciągu 14 dni od rejestracji w Studielink",
-          "actionType": "check_only",
-          "guideKey": "uva-sis-application",
-          "appliesToGuideSlugs": [
-            "business-analytics-university-of-amsterdam"
-          ]
-        },
-        {
-          "level": "item",
-          "task": "Opłata aplikacyjna UvA",
+          "task": "Zlozenie kompletnej aplikacji w SIS My Applications przed deadlinem",
           "actionType": "check_only",
           "guideKey": "uva-sis-application",
           "appliesToGuideSlugs": [
@@ -274,7 +419,7 @@
         },
         {
           "level": "item",
-          "task": "Odbiór danych do kont Tilburg University i OSIRIS po rejestracji w Studielink",
+          "task": "Odbior danych do kont Tilburg University i OSIRIS po rejestracji w Studielink",
           "actionType": "check_only",
           "guideKey": "tilburg-osiris-application",
           "appliesToGuideSlugs": [
@@ -283,7 +428,7 @@
         },
         {
           "level": "item",
-          "task": "Złożenie kompletnej aplikacji w OSIRIS Aanmeld",
+          "task": "Zlozenie kompletnej aplikacji w OSIRIS Aanmeld",
           "actionType": "check_only",
           "guideKey": "tilburg-osiris-application",
           "appliesToGuideSlugs": [
@@ -292,7 +437,7 @@
         },
         {
           "level": "item",
-          "task": "Sprawdzenie statusu aplikacji i uzupełnienie braków w OSIRIS",
+          "task": "Sprawdzenie statusu aplikacji w OSIRIS Aanmeld",
           "actionType": "check_only",
           "guideKey": "tilburg-osiris-application",
           "appliesToGuideSlugs": [
@@ -302,11 +447,9 @@
       ]
     },
     {
-      "title": "Matching po warunkowym przyjęciu",
-      "targetTemplateTitle": "Matching po warunkowym przyjęciu",
-      "mergeMode": "replace",
-      "templateType": "passport_like",
-      "description": "Kroki matchingowe po conditional admission, pogrupowane według kraju, uczelni i programu.",
+      "title": "Matching po warunkowej ofercie",
+      "templateType": "offer_like",
+      "description": "Kroki matchingowe pojawiajace sie dopiero po warunkowej ofercie tam, gdzie uczelnia ich wymaga.",
       "appliesToGuideSlugs": [
         "business-analytics-university-of-amsterdam",
         "international-business-administration-tilburg-university"
@@ -331,7 +474,7 @@
         },
         {
           "level": "item",
-          "task": "Udział w UvA Matching",
+          "task": "Udzial w UvA Matching",
           "actionType": "check_only",
           "guideKey": "uva-business-analytics-matching",
           "appliesToGuideSlugs": [
@@ -359,11 +502,153 @@
       ]
     },
     {
-      "title": "Enrollment after admission",
-      "targetTemplateTitle": "Enrollment after admission",
-      "mergeMode": "replace",
-      "templateType": "passport_like",
-      "description": "Kroki po admission, pogrupowane według kraju, uczelni i programu, plus wspólne domknięcie enrolmentu.",
+      "title": "Akceptacja oferty w Studielink",
+      "templateType": "offer_like",
+      "description": "Potwierdzenie miejsca w centralnym systemie po otrzymaniu oferty.",
+      "appliesToGuideSlugs": [
+        "iba-erasmus-university-rotterdam",
+        "business-administration-university-of-amsterdam"
+      ],
+      "rows": [
+        {
+          "level": "country",
+          "country": "Holandia",
+          "actionType": "check_only",
+          "appliesToGuideSlugs": [
+            "iba-erasmus-university-rotterdam",
+            "business-administration-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "university",
+          "university": "Erasmus University Rotterdam - IBA RSM",
+          "actionType": "check_only",
+          "appliesToGuideSlugs": [
+            "iba-erasmus-university-rotterdam"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Akceptacja lub odrzucenie oferty w Studielink w ciagu 14 dni",
+          "actionType": "check_only",
+          "guideKey": "rsm-iba-after-admission",
+          "appliesToGuideSlugs": [
+            "iba-erasmus-university-rotterdam"
+          ]
+        },
+        {
+          "level": "university",
+          "university": "University of Amsterdam - Business Administration",
+          "actionType": "check_only",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Akceptacja miejsca w Studielink w ciagu 14 dni od otrzymania oferty",
+          "actionType": "check_only",
+          "guideKey": "after-admission-uva-bba",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Portale po ofercie",
+      "templateType": "offer_like",
+      "description": "Kroki wykonywane po warunkowej ofercie juz wewnatrz uczelnianych portali.",
+      "appliesToGuideSlugs": [
+        "business-administration-university-of-amsterdam",
+        "business-analytics-university-of-amsterdam"
+      ],
+      "rows": [
+        {
+          "level": "country",
+          "country": "Holandia",
+          "actionType": "check_only",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam",
+            "business-analytics-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "university",
+          "university": "University of Amsterdam - Business Administration",
+          "actionType": "check_only",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Potwierdzenie udzialu w SIS po warunkowym przyjeciu",
+          "actionType": "check_only",
+          "guideKey": "after-admission-uva-bba",
+          "appliesToGuideSlugs": [
+            "business-administration-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "university",
+          "university": "University of Amsterdam - Business Analytics",
+          "actionType": "check_only",
+          "appliesToGuideSlugs": [
+            "business-analytics-university-of-amsterdam"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Potwierdzenie udzialu w SIS po warunkowym przyjeciu",
+          "actionType": "check_only",
+          "guideKey": "after-admission-uva-ba",
+          "appliesToGuideSlugs": [
+            "business-analytics-university-of-amsterdam"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Dokumenty po ofercie",
+      "templateType": "offer_like",
+      "description": "Dokumenty wymagane dopiero po warunkowej lub finalnej ofercie.",
+      "appliesToGuideSlugs": [
+        "international-business-administration-tilburg-university"
+      ],
+      "rows": [
+        {
+          "level": "country",
+          "country": "Holandia",
+          "actionType": "check_only",
+          "appliesToGuideSlugs": [
+            "international-business-administration-tilburg-university"
+          ]
+        },
+        {
+          "level": "university",
+          "university": "Tilburg University - International Business Administration",
+          "actionType": "check_only",
+          "appliesToGuideSlugs": [
+            "international-business-administration-tilburg-university"
+          ]
+        },
+        {
+          "level": "item",
+          "task": "Przeslanie certified copies dokumentow wymaganych do enrollmentu",
+          "actionType": "file_required",
+          "suggestedFilename": "certified-copies-for-enrolment.pdf",
+          "guideKey": "after-admission-tilburg-iba",
+          "appliesToGuideSlugs": [
+            "international-business-administration-tilburg-university"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Czesne i depozyt",
+      "templateType": "offer_like",
+      "description": "Platnosci i koncowe domkniecie miejsca po otrzymaniu oferty, rozpisane per program.",
       "appliesToGuideSlugs": [
         "iba-erasmus-university-rotterdam",
         "business-administration-university-of-amsterdam",
@@ -392,18 +677,9 @@
         },
         {
           "level": "item",
-          "task": "Akceptacja lub odrzucenie oferty w Studielink w ciągu 14 dni",
+          "task": "Oplacenie czesnego zgodnie z instrukcja EUR po potwierdzeniu miejsca",
           "actionType": "check_only",
-          "guideKey": "rsm-iba-after-admission",
-          "appliesToGuideSlugs": [
-            "iba-erasmus-university-rotterdam"
-          ]
-        },
-        {
-          "level": "item",
-          "task": "Pozostanie zarejestrowanym w Studielink, jeśli chcesz zostać na waiting liście",
-          "actionType": "check_only",
-          "guideKey": "rsm-iba-after-admission",
+          "guideKey": "after-admission-payment",
           "appliesToGuideSlugs": [
             "iba-erasmus-university-rotterdam"
           ]
@@ -418,9 +694,9 @@
         },
         {
           "level": "item",
-          "task": "Akceptacja miejsca w Studielink w ciągu 14 dni od otrzymania oferty",
+          "task": "Oplacenie czesnego po finalnym przyjeciu",
           "actionType": "check_only",
-          "guideKey": "after-admission-uva-bba",
+          "guideKey": "after-admission-payment",
           "appliesToGuideSlugs": [
             "business-administration-university-of-amsterdam"
           ]
@@ -435,9 +711,9 @@
         },
         {
           "level": "item",
-          "task": "Potwierdzenie udziału w SIS po warunkowym przyjęciu",
+          "task": "Oplacenie czesnego po finalnym przyjeciu",
           "actionType": "check_only",
-          "guideKey": "after-admission-uva-ba",
+          "guideKey": "after-admission-payment",
           "appliesToGuideSlugs": [
             "business-analytics-university-of-amsterdam"
           ]
@@ -452,32 +728,10 @@
         },
         {
           "level": "item",
-          "task": "Przesłanie certified copies dokumentów wymaganych do enrollmentu",
-          "actionType": "file_required",
-          "suggestedFilename": "certified-copies-for-enrolment.pdf",
-          "guideKey": "after-admission-tilburg-iba",
-          "appliesToGuideSlugs": [
-            "international-business-administration-tilburg-university"
-          ]
-        },
-        {
-          "level": "item",
-          "task": "Uzupełnienie warunków z listu warunkowego i śledzenie Welcome page",
-          "actionType": "check_only",
-          "guideKey": "after-admission-tilburg-iba",
-          "appliesToGuideSlugs": [
-            "international-business-administration-tilburg-university"
-          ]
-        },
-        {
-          "level": "item",
-          "task": "Opłacenie czesnego i domknięcie enrolmentu przed startem programu",
+          "task": "Oplacenie czesnego lub wymaganego depozytu zgodnie z instrukcja Tilburg University",
           "actionType": "check_only",
           "guideKey": "after-admission-payment",
           "appliesToGuideSlugs": [
-            "iba-erasmus-university-rotterdam",
-            "business-administration-university-of-amsterdam",
-            "business-analytics-university-of-amsterdam",
             "international-business-administration-tilburg-university"
           ]
         }

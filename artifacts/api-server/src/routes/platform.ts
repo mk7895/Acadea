@@ -1,5 +1,5 @@
 import { Router, type NextFunction, type Request, type Response } from "express";
-import { and, asc, desc, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   bookingLeadsTable,
@@ -88,6 +88,7 @@ import {
 
 const router = Router();
 const PLATFORM_TERMS_VERSION = "2026-06-29";
+const PLATFORM_GUIDE_OFFER_STATUSES = ["none", "conditional", "final"] as const;
 type PlatformGuideRecord = typeof platformGuidesTable.$inferSelect;
 
 const loginSchema = z.object({
@@ -510,6 +511,10 @@ const meetingRescheduleSchema = z.object({
   startsAt: z.string().datetime(),
   endsAt: z.string().datetime(),
   timezone: z.string().trim().min(1),
+});
+
+const guideOfferStatusSchema = z.object({
+  offerStatus: z.enum(PLATFORM_GUIDE_OFFER_STATUSES),
 });
 
 type AuthenticatedRequest = Request & {
@@ -2161,6 +2166,8 @@ async function shapeGuideList(
     id: number;
     isVisibleToUnapprovedUsers: boolean;
     menteeUserId: number | null;
+    offerMarkedAt?: Date | null;
+    offerStatus?: string | null;
     ownerUserId: number | null;
     slug: string;
     sortOrder: number;
@@ -2214,6 +2221,8 @@ async function shapeGuideList(
       isItemGuide: isItemGuideRecord(guide),
       itemGuideAppliesToGuideIds: appliesToGuideIds,
       items: itemMap.get(guide.id) ?? [],
+      offerMarkedAt: guide.offerMarkedAt?.toISOString() ?? null,
+      offerStatus: guide.offerStatus ?? "none",
       sortOrder: guide.sortOrder,
       createdAt: guide.createdAt.toISOString(),
       updatedAt: guide.updatedAt.toISOString(),
@@ -3555,7 +3564,13 @@ router.get(
       "If multiple programmes at the same university need separate tasks, represent them as separate university rows whose labels include the programme name, for example 'University of Amsterdam - Business Administration' and 'University of Amsterdam - Business Analytics'.",
       "Use a shared tile such as 'Zcentralizowane Portale Aplikacyjne' for national portals like Studielink or Common App, with common country-level tasks first and then programme-specific university rows below.",
       "Use a shared tile such as 'Portale Uczelni' for institution-specific portals like OLAF, SIS, or OSIRIS when several universities/programmes are being maintained together.",
+      "Once a multi-program tile introduces country and university rows, do not leave trailing generic item rows at the end of the tile. Every later item must either belong to an explicit university/programme row or be a clearly shared country-level step placed before the university-specific blocks.",
       "When a tile has only one programme-specific item group, country/university rows are optional; when a tile mixes multiple programmes or universities, country and university rows should normally be present.",
+      "Do not add checklist rows that merely say to paste, submit, or re-enter essays already tracked in essay tiles. Essays should stay in their own essay workflow unless there is a genuinely separate portal-only action and even then the task wording must be precise.",
+      "Avoid vague catch-all tasks such as 'follow the welcome page', 'complete remaining conditions', or similar generic placeholders. Every task row should describe a concrete user action.",
+      "Use templateType='offer_like' for tasks that happen only after receiving a conditional or final offer. These tiles belong in the 'Twoje Oferty' tab, not in regular materials.",
+      "Do not put waiting-list-only actions into an offer tile unless the user explicitly wants to track waiting-list paths. The default offer tiles should focus on concrete next steps after receiving a conditional or final offer.",
+      "Post-offer tasks should be split into concrete tiles when useful, for example acceptance / waiting list, additional post-offer documents, tuition or deposit, and similar clearly scoped follow-up actions.",
       "Use file_or_doc for tasks that may either be uploaded as a file or written inside Essay Doc.",
       "Use docTabTitle and docTabPrompt whenever actionType is file_or_doc.",
       "Whenever actionType is file_required, check_or_file, or file_or_doc, provide rows[].suggestedFilename unless there is a strong product reason not to.",
@@ -6009,6 +6024,56 @@ router.patch(
     }
     await hardDeleteGuidesAndReferences(db, [guide.id]);
     return res.status(204).end();
+  },
+);
+
+router.patch(
+  "/platform/mentee/guides/:id/offer-status",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = guideOfferStatusSchema.safeParse(req.body);
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid guide id." : parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [existingGuide] = await db
+      .select()
+      .from(platformGuidesTable)
+      .where(
+        and(
+          eq(platformGuidesTable.id, id),
+          eq(platformGuidesTable.menteeUserId, req.platformUser!.id),
+          inArray(platformGuidesTable.guideType, ["self_service_live", "mentor_live"]),
+          eq(platformGuidesTable.status, "published"),
+        ),
+      )
+      .limit(1);
+    if (!existingGuide) {
+      return res.status(404).json({ error: "Nie znaleziono programu do aktualizacji statusu oferty." });
+    }
+
+    const nextStatus = parsed.data.offerStatus;
+    const nextMarkedAt = nextStatus === "none" ? null : new Date();
+    await db.execute(
+      sql`
+        update ${platformGuidesTable}
+        set
+          offer_status = ${nextStatus},
+          offer_marked_at = ${nextMarkedAt},
+          updated_at = ${new Date()}
+        where ${platformGuidesTable.id} = ${existingGuide.id}
+      `,
+    );
+    const [guide] = await db
+      .select()
+      .from(platformGuidesTable)
+      .where(eq(platformGuidesTable.id, existingGuide.id))
+      .limit(1);
+
+    const [shaped] = await shapeGuideList(db, [guide]);
+    return res.json(shaped);
   },
 );
 

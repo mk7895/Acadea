@@ -138,6 +138,8 @@ function materialTemplateTypeLabel(value: string) {
       return "Wspólne dokumenty";
     case "essay_like":
       return "Eseje i zadania";
+    case "offer_like":
+      return "Po ofercie";
     default:
       return value;
   }
@@ -145,6 +147,10 @@ function materialTemplateTypeLabel(value: string) {
 
 function isEssayMaterialTemplate(template: any) {
   return template?.templateType === "essay_like";
+}
+
+function isOfferMaterialTemplate(template: any) {
+  return template?.templateType === "offer_like";
 }
 
 function materialItemActionLabel(value: MaterialItemAction) {
@@ -458,6 +464,21 @@ function formatGuideSelectorLabel(guide: any) {
   const primary = formatGuidePrimaryLabel(guide);
   const secondary = formatGuideSecondaryLabel(guide);
   return secondary ? `${primary} • ${secondary}` : primary;
+}
+
+function guideHasOffer(guide: any) {
+  return guide?.offerStatus === "conditional" || guide?.offerStatus === "final";
+}
+
+function offerStatusLabel(value: string) {
+  switch (value) {
+    case "conditional":
+      return "Oferta warunkowa";
+    case "final":
+      return "Oferta finalna";
+    default:
+      return "Brak oferty";
+  }
 }
 
 function formatSlotDayLabel(value: string, timezone: string) {
@@ -1160,6 +1181,7 @@ function Dashboard({
       ["mentors", "Mentorzy"],
       ["meetings", "Twoje Spotkania"],
       ["profile", "Twoje Dane"],
+      ["offers", "Twoje Oferty"],
       ["essays", "Twoje Eseje"],
       ["materials", "Twoje Materiały"],
     ];
@@ -2908,6 +2930,7 @@ function AdminSection({
                   <select value={materialForm.templateType} onChange={(event) => setMaterialForm((current) => ({ ...current, templateType: event.target.value }))}>
                     <option value="passport_like">Wspólne dokumenty</option>
                     <option value="essay_like">Eseje i zadania</option>
+                    <option value="offer_like">Po ofercie</option>
                   </select>
                 </div>
               </div>
@@ -2926,6 +2949,23 @@ function AdminSection({
                   Ten kafel jest esejowy.
                   <br />
                   Pokaż go w zakładce <strong>Twoje Eseje</strong> zamiast w <strong>Twoje Materiały</strong>.
+                </span>
+              </label>
+              <label className="checkbox-card">
+                <input
+                  checked={materialForm.templateType === "offer_like"}
+                  type="checkbox"
+                  onChange={(event) =>
+                    setMaterialForm((current) => ({
+                      ...current,
+                      templateType: event.target.checked ? "offer_like" : "passport_like",
+                    }))
+                  }
+                />
+                <span>
+                  Ten kafel dotyczy działań po otrzymaniu oferty.
+                  <br />
+                  Pokaż go w zakładce <strong>Twoje Oferty</strong> zamiast w <strong>Twoje Materiały</strong>.
                 </span>
               </label>
               <div className="field">
@@ -5330,15 +5370,29 @@ function MenteeSection({
     (guides ?? []).map((guide: any) => [
       guide.id,
       visibleMaterialTemplates
-        .filter((template: any) => templateAppliesToGuide(template, guide))
+        .filter((template: any) =>
+          templateAppliesToGuide(template, guide) && (!isOfferMaterialTemplate(template) || guideHasOffer(guide)),
+        )
         .map((template: any) => ({
           ...template,
           visibleRows: (template.visibleRows ?? []).filter((row: any) => rowAppliesToGuide(row, guide)),
         })),
     ]),
   );
+  const offeredGuides = (guides ?? []).filter((guide: any) => guideHasOffer(guide));
   const visibleEssayTemplates = visibleMaterialTemplates.filter((template: any) => isEssayMaterialTemplate(template));
-  const visibleDocumentTemplates = visibleMaterialTemplates.filter((template: any) => !isEssayMaterialTemplate(template));
+  const visibleOfferTemplates = visibleMaterialTemplates
+    .filter((template: any) => isOfferMaterialTemplate(template))
+    .map((template: any) => ({
+      ...template,
+      visibleRows: (template.visibleRows ?? []).filter((row: any) =>
+        offeredGuides.some((guide: any) => rowAppliesToGuide(row, guide)),
+      ),
+    }))
+    .filter((template: any) => (template.visibleRows ?? []).some((row: any) => row.level === "item"));
+  const visibleDocumentTemplates = visibleMaterialTemplates.filter(
+    (template: any) => !isEssayMaterialTemplate(template) && !isOfferMaterialTemplate(template),
+  );
 
   async function refreshOverview() {
     const payload = await apiFetch<any>("/mentee/overview", undefined, token);
@@ -5367,13 +5421,13 @@ function MenteeSection({
   }, [expandedMaterialTemplateIds, section]);
 
   useEffect(() => {
-    if (section === "universities" || section === "materials" || section === "essays" || section === "profile" || section === "meetings" || section === "mentors") {
+    if (section === "universities" || section === "materials" || section === "offers" || section === "essays" || section === "profile" || section === "meetings" || section === "mentors") {
       void refreshOverview().catch((error) => setStatus(error.message));
     }
     if (section === "mentors") {
       void apiFetch<any[]>("/public/mentors").then(setMentors).catch((error) => setStatus(error.message));
     }
-    if (section === "universities" || section === "materials" || section === "essays") {
+    if (section === "universities" || section === "materials" || section === "offers" || section === "essays") {
       void apiFetch<any[]>("/public/guides").then(setPublicGuides).catch((error) => setStatus(error.message));
     }
   }, [section, token]);
@@ -5598,6 +5652,29 @@ function MenteeSection({
     }
   }
 
+  async function updateGuideOfferStatus(guideId: number, offerStatus: "none" | "conditional" | "final") {
+    setMaterialActionKey(`guide:${guideId}:offer:${offerStatus}`);
+    setStatus("");
+    try {
+      await apiFetch(`/mentee/guides/${guideId}/offer-status`, {
+        method: "PATCH",
+        body: JSON.stringify({ offerStatus }),
+      }, token);
+      await refreshOverview();
+      setStatus(
+        offerStatus === "none"
+          ? "Status oferty został wyczyszczony."
+          : offerStatus === "conditional"
+            ? "Zapisano, że masz ofertę warunkową."
+            : "Zapisano, że masz ofertę finalną.",
+      );
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać statusu oferty.");
+    } finally {
+      setMaterialActionKey(null);
+    }
+  }
+
   async function toggleMaterialCheck(templateId: number, rowKey: string, completed: boolean) {
     setMaterialActionKey(`${templateId}:${rowKey}:check`);
     setStatus("");
@@ -5709,7 +5786,13 @@ function MenteeSection({
   }
 
   function getTemplateDestinationSection(template: any) {
-    return isEssayMaterialTemplate(template) ? "essays" : "materials";
+    if (isEssayMaterialTemplate(template)) {
+      return "essays";
+    }
+    if (isOfferMaterialTemplate(template)) {
+      return "offers";
+    }
+    return "materials";
   }
 
   function renderMaterialItemRow(
@@ -6023,6 +6106,9 @@ function MenteeSection({
   }
 
   function renderMaterialTemplateTile(template: any) {
+    const connectedGuides = guides.filter((guide: any) =>
+      templateAppliesToGuide(template, guide) && (!isOfferMaterialTemplate(template) || guideHasOffer(guide)),
+    );
     return (
       <details
         className="tile tile-detail"
@@ -6049,7 +6135,7 @@ function MenteeSection({
             <div>
               <strong>{template.title}</strong>
               <div className="small muted">
-                {guides.filter((guide: any) => templateAppliesToGuide(template, guide)).length} powiązanych przewodników
+                {connectedGuides.length} powiązanych przewodników
               </div>
             </div>
             {(() => {
@@ -6152,6 +6238,54 @@ function MenteeSection({
             <div className="status" style={{ marginTop: 18 }}>{emptyMessage}</div>
           )}
         </div>
+      </div>
+    );
+  }
+
+  function renderOfferStatusPicker() {
+    return (
+      <div className="list" style={{ marginTop: 18 }}>
+        {guides.map((guide: any) => {
+          const currentStatus = String(guide.offerStatus ?? "none");
+          const actionPrefix = `guide:${guide.id}:offer:`;
+          return (
+            <div className="list-item" key={`offer-guide-${guide.id}`}>
+              <header>
+                <div>
+                  <h3>{formatGuidePrimaryLabel(guide)}</h3>
+                  <div className="muted small">{formatGuideSecondaryLabel(guide)}</div>
+                </div>
+                <span className="badge">{offerStatusLabel(currentStatus)}</span>
+              </header>
+              <div className="button-row" style={{ marginTop: 12 }}>
+                <button
+                  className={currentStatus === "none" ? "btn btn-primary" : "btn btn-secondary"}
+                  disabled={materialActionKey === `${actionPrefix}none`}
+                  onClick={() => void updateGuideOfferStatus(guide.id, "none")}
+                  type="button"
+                >
+                  Brak oferty
+                </button>
+                <button
+                  className={currentStatus === "conditional" ? "btn btn-primary" : "btn btn-secondary"}
+                  disabled={materialActionKey === `${actionPrefix}conditional`}
+                  onClick={() => void updateGuideOfferStatus(guide.id, "conditional")}
+                  type="button"
+                >
+                  Oferta warunkowa
+                </button>
+                <button
+                  className={currentStatus === "final" ? "btn btn-primary" : "btn btn-secondary"}
+                  disabled={materialActionKey === `${actionPrefix}final`}
+                  onClick={() => void updateGuideOfferStatus(guide.id, "final")}
+                  type="button"
+                >
+                  Oferta finalna
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -6292,7 +6426,11 @@ function MenteeSection({
                                                       onClick={() => onNavigate(getTemplateDestinationSection(template), Number(template.id))}
                                                       type="button"
                                                     >
-                                                      {isEssayMaterialTemplate(template) ? "Pokaż w Twoje Eseje" : "Pokaż w Twoje Materiały"}
+                                                      {isEssayMaterialTemplate(template)
+                                                        ? "Pokaż w Twoje Eseje"
+                                                        : isOfferMaterialTemplate(template)
+                                                          ? "Pokaż w Twoje Oferty"
+                                                          : "Pokaż w Twoje Materiały"}
                                                     </button>
                                                   </div>
                                                   {row.alternativeOptions?.length ? (
@@ -6819,6 +6957,52 @@ function MenteeSection({
             ))}
             <button className="btn btn-primary">Zapisz Twoje Dane</button>
           </form>
+        </div>
+      ) : null}
+      {section === "offers" && overview ? (
+        <div className="stack">
+          <div className="dashboard-card">
+            <h2>Twoje Oferty</h2>
+            <p className="muted">
+              Najpierw zaznacz, z których programów masz już ofertę warunkową albo finalną. Dopiero wtedy poniżej pokażą się dalsze kroki po ofercie.
+            </p>
+            {guides.length ? (
+              renderOfferStatusPicker()
+            ) : (
+              <div className="status" style={{ marginTop: 18 }}>
+                Nie masz jeszcze żadnych aktywnych programów w panelu.
+              </div>
+            )}
+          </div>
+          <div className="dashboard-card">
+            <h2>Kroki Po Ofercie</h2>
+            <p className="muted">
+              Tutaj zbierają się zadania, które wykonujesz dopiero po otrzymaniu oferty warunkowej albo finalnej: akceptacja miejsca, dokumenty po ofercie, opłaty, enrollment i podobne formalności.
+            </p>
+            {googleWorkspace?.folderUrl || googleWorkspace?.essayDocUrl ? (
+              <div className="button-row" style={{ marginTop: 16 }}>
+                {googleWorkspace?.folderUrl ? (
+                  <a className="btn btn-secondary" href={googleWorkspace.folderUrl} target="_blank" rel="noreferrer">
+                    Otwórz folder Google Drive
+                  </a>
+                ) : null}
+                {googleWorkspace?.essayDocUrl ? (
+                  <a className="btn btn-secondary" href={googleWorkspace.essayDocUrl} target="_blank" rel="noreferrer">
+                    Otwórz Essay Doc
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
+            {visibleOfferTemplates.length ? (
+              <div className="tile-grid tile-grid-two" style={{ marginTop: 18 }}>
+                {visibleOfferTemplates.map((template: any) => renderMaterialTemplateTile(template))}
+              </div>
+            ) : (
+              <div className="status" style={{ marginTop: 18 }}>
+                Zaznacz najpierw ofertę przy konkretnym programie, aby zobaczyć dalsze kroki po ofercie.
+              </div>
+            )}
+          </div>
         </div>
       ) : null}
       {section === "essays" && overview
