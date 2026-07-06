@@ -1525,6 +1525,17 @@ async function importGuideBlueprint(
         })
         .where(eq(platformGuidesTable.id, existing.id))
         .returning();
+
+      if (!updated.sourceGuideId) {
+        await db
+          .update(platformGuidesTable)
+          .set({
+            emailSenderDomains: payload.emailSenderDomains ?? [],
+            updatedAt: new Date(),
+          })
+          .where(eq(platformGuidesTable.sourceGuideId, updated.id));
+      }
+
       await upsertGuideItems(db, updated.id, payload.items);
       return updated;
     }
@@ -2430,6 +2441,7 @@ async function shapeGuideList(
     ? await db
         .select({
           descriptionMarkdown: platformGuidesTable.descriptionMarkdown,
+          emailSenderDomains: platformGuidesTable.emailSenderDomains,
           id: platformGuidesTable.id,
           summary: platformGuidesTable.summary,
         })
@@ -2450,7 +2462,14 @@ async function shapeGuideList(
 
     return {
       ...guide,
-      emailSenderDomains: Array.isArray(guide.emailSenderDomains) ? guide.emailSenderDomains.filter(Boolean) : [],
+      emailSenderDomains:
+        guide.guideType === "self_service_live" && guide.sourceGuideId
+          ? (
+              Array.isArray(guide.emailSenderDomains) && guide.emailSenderDomains.length
+                ? guide.emailSenderDomains
+                : sourceGuideMap.get(guide.sourceGuideId)?.emailSenderDomains
+            )?.filter(Boolean) ?? []
+          : Array.isArray(guide.emailSenderDomains) ? guide.emailSenderDomains.filter(Boolean) : [],
       summary:
         guide.guideType === "self_service_live" && guide.sourceGuideId
           ? sourceGuideMap.get(guide.sourceGuideId)?.summary ?? guide.summary
@@ -4543,6 +4562,16 @@ router.put(
       return res.status(404).json({ error: "Nie znaleziono przewodnika." });
     }
 
+    if (!guide.sourceGuideId) {
+      await db
+        .update(platformGuidesTable)
+        .set({
+          emailSenderDomains: parsed.data.emailSenderDomains,
+          updatedAt: new Date(),
+        })
+        .where(eq(platformGuidesTable.sourceGuideId, guide.id));
+    }
+
     await upsertGuideItems(db, guide.id, parsed.data.items);
     const [shaped] = await shapeGuideList(db, [guide]);
     return res.json(shaped);
@@ -6336,6 +6365,7 @@ router.post(
         sortOrder: sourceGuide.sortOrder,
         summary: sourceGuide.summary,
         descriptionMarkdown: sourceGuide.descriptionMarkdown,
+        emailSenderDomains: Array.isArray(sourceGuide.emailSenderDomains) ? sourceGuide.emailSenderDomains : [],
         estimatedReadMin: sourceGuide.estimatedReadMin,
         ownerUserId: req.platformUser!.id,
         menteeUserId: req.platformUser!.id,
@@ -7264,7 +7294,9 @@ router.post(
 
     const activeGuides = await db
       .select({
+        id: platformGuidesTable.id,
         emailSenderDomains: platformGuidesTable.emailSenderDomains,
+        sourceGuideId: platformGuidesTable.sourceGuideId,
       })
       .from(platformGuidesTable)
       .where(
@@ -7273,10 +7305,33 @@ router.post(
           eq(platformGuidesTable.status, "published"),
         ),
       );
+    const sourceGuideIds = Array.from(
+      new Set(
+        activeGuides
+          .map((guide) => guide.sourceGuideId)
+          .filter((value): value is number => typeof value === "number" && Number.isFinite(value)),
+      ),
+    );
+    const sourceGuides = sourceGuideIds.length
+      ? await db
+          .select({
+            emailSenderDomains: platformGuidesTable.emailSenderDomains,
+            id: platformGuidesTable.id,
+          })
+          .from(platformGuidesTable)
+          .where(inArray(platformGuidesTable.id, sourceGuideIds))
+      : [];
+    const sourceGuideMap = new Map(
+      sourceGuides.map((guide) => [guide.id, Array.isArray(guide.emailSenderDomains) ? guide.emailSenderDomains : []]),
+    );
     const senderDomains = Array.from(
       new Set(
         activeGuides.flatMap((guide) =>
-          (Array.isArray(guide.emailSenderDomains) ? guide.emailSenderDomains : [])
+          (
+            Array.isArray(guide.emailSenderDomains) && guide.emailSenderDomains.length
+              ? guide.emailSenderDomains
+              : (typeof guide.sourceGuideId === "number" ? sourceGuideMap.get(guide.sourceGuideId) : []) ?? []
+          )
             .map((value) => value.trim().toLowerCase().replace(/^@/, ""))
             .filter(Boolean),
         ),
@@ -8036,6 +8091,17 @@ router.put(
     if (!guide) {
       return res.status(404).json({ error: "Nie znaleziono przewodnika." });
     }
+
+    if (!guide.sourceGuideId) {
+      await db
+        .update(platformGuidesTable)
+        .set({
+          emailSenderDomains: parsed.data.emailSenderDomains,
+          updatedAt: new Date(),
+        })
+        .where(eq(platformGuidesTable.sourceGuideId, guide.id));
+    }
+
     await upsertGuideItems(db, guide.id, parsed.data.items);
     const [shaped] = await shapeGuideList(db, [guide]);
     return res.json(shaped);
