@@ -554,6 +554,12 @@ export const platformPopupConfigsTable = pgTable(
     primaryCtaLabel: text("primary_cta_label").notNull().default("Kup sugerowany pakiet"),
     secondaryCtaLabel: text("secondary_cta_label").notNull().default("Zobacz pakiety"),
     recommendedProductIds: jsonb("recommended_product_ids").$type<number[]>().notNull().default(sql`'[]'::jsonb`),
+    contextType: text("context_type").notNull().default("generic"),
+    contextData: jsonb("context_data").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+    displayConditions: jsonb("display_conditions")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -562,6 +568,21 @@ export const platformPopupConfigsTable = pgTable(
     keyUnique: uniqueIndex("platform_popup_configs_key_unique").on(table.key),
   }),
 );
+
+export const platformEmailClassifierRulesTable = pgTable("platform_email_classifier_rules", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  pattern: text("pattern").notNull(),
+  matchField: text("match_field").notNull().default("subject_and_snippet"),
+  classification: text("classification").notNull().default("info_only"),
+  actionRequired: boolean("action_required").notNull().default(false),
+  actionSummary: text("action_summary").notNull().default(""),
+  requiresManualReview: boolean("requires_manual_review").notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
 export const platformCartItemsTable = pgTable(
   "platform_cart_items",

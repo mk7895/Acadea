@@ -26,6 +26,7 @@ import {
   platformProfileFieldsTable,
   platformProfileResponsesTable,
   platformCartItemsTable,
+  platformEmailClassifierRulesTable,
   platformUniversityEmailsTable,
   platformUsersTable,
   scholarshipApplicationsTable,
@@ -513,6 +514,9 @@ const popupConfigSchema = z.object({
   primaryCtaLabel: z.string().trim().min(1).default("Kup sugerowany pakiet"),
   secondaryCtaLabel: z.string().trim().min(1).default("Zobacz pakiety"),
   recommendedProductIds: z.array(z.number().int().positive()).default([]),
+  contextType: z.string().trim().min(1).default("generic"),
+  contextData: z.record(z.string(), z.unknown()).default({}),
+  displayConditions: z.record(z.string(), z.unknown()).default({}),
   isActive: z.boolean().default(true),
 });
 
@@ -525,10 +529,31 @@ const popupConfigImportSchema = z.object({
       primaryCtaLabel: z.string().trim().min(1).default("Kup sugerowany pakiet"),
       secondaryCtaLabel: z.string().trim().min(1).default("Zobacz pakiety"),
       recommendedProductIds: z.array(z.number().int().positive()).default([]),
+      contextType: z.string().trim().min(1).default("generic"),
+      contextData: z.record(z.string(), z.unknown()).default({}),
+      displayConditions: z.record(z.string(), z.unknown()).default({}),
       isActive: z.boolean().default(true),
     }),
   ).default([]),
 }).transform((value) => value.popups);
+
+const emailClassifierRuleSchema = z.object({
+  name: z.string().trim().min(1),
+  pattern: z.string().trim().min(1),
+  matchField: z.enum(["subject", "snippet", "from_email", "subject_and_snippet"]).default("subject_and_snippet"),
+  classification: z.string().trim().min(1).default("info_only"),
+  actionRequired: z.boolean().default(false),
+  actionSummary: z.string().trim().default(""),
+  requiresManualReview: z.boolean().default(false),
+  sortOrder: z.number().int().min(0).default(0),
+  isActive: z.boolean().default(true),
+});
+
+const emailClassifierRuleImportSchema = z.object({
+  rules: z.array(emailClassifierRuleSchema.extend({
+    id: z.number().int().positive().optional(),
+  })).default([]),
+}).transform((value) => value.rules);
 
 const cartItemSchema = z.object({
   productId: z.number().int().positive(),
@@ -723,7 +748,47 @@ function classifyUniversityEmail(input: {
   fromEmail: string;
   snippet: string;
   subject: string;
-}) {
+}, rules?: Array<{
+  actionRequired: boolean;
+  actionSummary: string;
+  classification: string;
+  isActive?: boolean | null;
+  matchField: string;
+  pattern: string;
+  requiresManualReview: boolean;
+}>) {
+  for (const rule of (rules ?? []).filter((entry) => entry.isActive !== false)) {
+    let haystack = "";
+    switch (rule.matchField) {
+      case "subject":
+        haystack = input.subject;
+        break;
+      case "snippet":
+        haystack = input.snippet;
+        break;
+      case "from_email":
+        haystack = input.fromEmail;
+        break;
+      default:
+        haystack = `${input.subject}\n${input.snippet}`;
+        break;
+    }
+
+    try {
+      const matcher = new RegExp(rule.pattern, "i");
+      if (matcher.test(haystack)) {
+        return {
+          actionRequired: rule.actionRequired,
+          actionSummary: rule.actionSummary,
+          classification: rule.classification,
+          requiresManualReview: rule.requiresManualReview,
+        };
+      }
+    } catch {
+      continue;
+    }
+  }
+
   const text = `${input.subject}\n${input.snippet}`.toLowerCase();
   if (/newsletter|news update|campaign/i.test(text)) {
     return { actionRequired: false, actionSummary: "To wygląda na newsletter lub ogólną aktualizację.", classification: "newsletter", requiresManualReview: false };
@@ -747,6 +812,13 @@ function classifyUniversityEmail(input: {
     return { actionRequired: true, actionSummary: "To wygląda na przypomnienie o ważnym terminie lub kolejnym etapie.", classification: "reminder", requiresManualReview: false };
   }
   return { actionRequired: false, actionSummary: "Nie wykryto oczywistego działania. W razie wątpliwości sprawdź pełną treść wiadomości.", classification: "info_only", requiresManualReview: true };
+}
+
+function normalizePopupConditions(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return value as Record<string, unknown>;
 }
 
 async function applyPurchasedProductsToMentee(
@@ -2515,6 +2587,9 @@ async function getPopupConfigMap(
     const existing = popupRows.find((row) => row.key === key);
     popupMap.set(key, {
       body: existing?.body ?? getDefaultPopupConfig(key).body,
+      contextData: normalizePopupConditions(existing?.contextData),
+      contextType: existing?.contextType ?? "generic",
+      displayConditions: normalizePopupConditions(existing?.displayConditions),
       isActive: existing?.isActive ?? true,
       key,
       primaryCtaLabel: existing?.primaryCtaLabel ?? getDefaultPopupConfig(key).primaryCtaLabel,
@@ -2530,6 +2605,9 @@ async function getPopupConfigMap(
     if (!popupMap.has(row.key)) {
       popupMap.set(row.key, {
         body: row.body ?? "",
+        contextData: normalizePopupConditions(row.contextData),
+        contextType: row.contextType ?? "generic",
+        displayConditions: normalizePopupConditions(row.displayConditions),
         isActive: row.isActive ?? true,
         key: row.key,
         primaryCtaLabel: row.primaryCtaLabel ?? "Kup sugerowany pakiet",
@@ -4087,6 +4165,8 @@ router.get(
       "Use a shared tile such as 'Portale Uczelni' for institution-specific portals like OLAF, SIS, or OSIRIS when several universities/programmes are being maintained together.",
       "Use the tile title 'Egzaminy wstępne do uczelni' for programme-specific entrance or selection exams when several programmes are being maintained together.",
       "If 'Potwierdzenie wymogu z matematyki' serves more than one programme, restructure it with visible country rows and university/programme rows instead of one flat shared item.",
+      "Remember that guide access and hint access are separate product concepts in the platform. A programme may exist in 'Twoje Uczelnie' even when hint access for that programme is still locked.",
+      "Rows linked to hint/item-guides should stay scoped to the exact programme guides that own those hints so that 'Twoje Wskazówki' can show the correct accessible and locked programmes.",
       "Once a multi-program tile introduces country and university rows, do not leave trailing generic item rows at the end of the tile. Every later item must either belong to an explicit university/programme row or be a clearly shared country-level step placed before the university-specific blocks.",
       "When a tile has only one programme-specific item group, country/university rows are optional; when a tile mixes multiple programmes or universities, country and university rows should normally be present.",
       "Do not add checklist rows that merely say to paste, submit, or re-enter essays already tracked in essay tiles. Essays should stay in their own essay workflow unless there is a genuinely separate portal-only action and even then the task wording must be precise.",
@@ -4097,6 +4177,7 @@ router.get(
       "Post-offer tasks should be split into concrete tiles when useful, for example acceptance / waiting list, additional post-offer documents, tuition or deposit, and similar clearly scoped follow-up actions.",
       "Use guide.emailSenderDomains whenever the university sends important mail from known domains or subdomains. Put one clean domain per entry, for example ['uva.nl', 'eur.nl', 'tilburguniversity.edu'].",
       "When maintaining an existing guide, preserve or intentionally update guide.emailSenderDomains instead of dropping them accidentally.",
+      "When storing sender domains, prefer normalized domains without a leading '@' unless the existing DB context already intentionally stores both variants.",
       "Use file_or_doc for tasks that may either be uploaded as a file or written inside Essay Doc.",
       "Use docTabTitle and docTabPrompt whenever actionType is file_or_doc.",
       "Whenever actionType is file_required, check_or_file, or file_or_doc, provide rows[].suggestedFilename unless there is a strong product reason not to.",
@@ -7312,6 +7393,125 @@ router.get(
   },
 );
 
+router.get(
+  "/platform/admin/email-classifier-rules",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (_req, res) => {
+    const { db } = await import("@workspace/db");
+    const rows = await db
+      .select()
+      .from(platformEmailClassifierRulesTable)
+      .orderBy(asc(platformEmailClassifierRulesTable.sortOrder), asc(platformEmailClassifierRulesTable.id));
+    return res.json(
+      rows.map((row) => ({
+        ...row,
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+      })),
+    );
+  },
+);
+
+router.post(
+  "/platform/admin/email-classifier-rules",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const parsed = emailClassifierRuleSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [row] = await db.insert(platformEmailClassifierRulesTable).values(parsed.data).returning();
+    return res.json({
+      ...row,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    });
+  },
+);
+
+router.put(
+  "/platform/admin/email-classifier-rules/:id",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = emailClassifierRuleSchema.safeParse(req.body);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid rule id." : parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [row] = await db
+      .update(platformEmailClassifierRulesTable)
+      .set({
+        ...parsed.data,
+        updatedAt: new Date(),
+      })
+      .where(eq(platformEmailClassifierRulesTable.id, id))
+      .returning();
+    if (!row) {
+      return res.status(404).json({ error: "Nie znaleziono reguły interpretera." });
+    }
+    return res.json({
+      ...row,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    });
+  },
+);
+
+router.delete(
+  "/platform/admin/email-classifier-rules/:id",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: "Invalid rule id." });
+    }
+    const { db } = await import("@workspace/db");
+    await db.delete(platformEmailClassifierRulesTable).where(eq(platformEmailClassifierRulesTable.id, id));
+    return res.status(204).end();
+  },
+);
+
+router.post(
+  "/platform/admin/email-classifier-rules/import",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const parsed = emailClassifierRuleImportSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const rows = [];
+    for (const rule of parsed.data) {
+      const { id, ...payload } = rule;
+      const [saved] = id
+        ? await db
+            .update(platformEmailClassifierRulesTable)
+            .set({
+              ...payload,
+              updatedAt: new Date(),
+            })
+            .where(eq(platformEmailClassifierRulesTable.id, id))
+            .returning()
+        : await db.insert(platformEmailClassifierRulesTable).values(payload).returning();
+      if (saved) {
+        rows.push({
+          ...saved,
+          createdAt: saved.createdAt.toISOString(),
+          updatedAt: saved.updatedAt.toISOString(),
+        });
+      }
+    }
+    return res.json({ imported: rows.length, rows });
+  },
+);
+
 router.put(
   "/platform/admin/popup-configs/:key",
   requirePlatformAuth,
@@ -7729,6 +7929,11 @@ router.post(
     }
 
     const accessToken = await getGoogleAccessTokenForRefreshToken(metadata.refreshToken);
+    const classifierRules = await db
+      .select()
+      .from(platformEmailClassifierRulesTable)
+      .where(eq(platformEmailClassifierRulesTable.isActive, true))
+      .orderBy(asc(platformEmailClassifierRulesTable.sortOrder), asc(platformEmailClassifierRulesTable.id));
     const listResponse = await googleApiRequestWithAccessToken(
       accessToken,
       "/gmail/v1/users/me/messages?maxResults=40&q=newer_than:120d",
@@ -7765,7 +7970,7 @@ router.post(
         fromEmail,
         snippet: payload.snippet ?? "",
         subject,
-      });
+      }, classifierRules);
       await db
         .insert(platformUniversityEmailsTable)
         .values({

@@ -1202,6 +1202,7 @@ function Dashboard({
         ["item-guides", "Wskazówki do Elementów"],
         ["products", "Produkty i Pakiety"],
         ["purchase-popups", "Popupy Zakupowe"],
+        ["email-interpreter", "Interpreter Maili"],
         ["meetings", "Spotkania"],
         ["leads", "Leady"],
       ];
@@ -1217,6 +1218,7 @@ function Dashboard({
       ["universities", "Twoje Uczelnie"],
       ["packages", pendingCartCount ? `Pakiety (${pendingCartCount})` : "Pakiety"],
       ["emails", "Twoje Maile od Uczelni"],
+      ["tips", "Twoje Wskazówki"],
       ["profile", "Twoje Dane"],
       ["materials", "Twoje Materiały"],
       ["essays", "Twoje Eseje"],
@@ -1267,9 +1269,11 @@ function Dashboard({
             >
               {mobileMenuOpen ? "×" : "☰"}
             </button>
-            <button className="btn btn-primary" onClick={() => void onLogout()}>
-              Wyloguj
-            </button>
+            {!mobileViewport ? (
+              <button className="btn btn-primary" onClick={() => void onLogout()}>
+                Wyloguj
+              </button>
+            ) : null}
           </div>
         </div>
         {mobileMenuOpen ? (
@@ -1282,6 +1286,21 @@ function Dashboard({
                 </button>
               </div>
               <div className="mobile-nav-links">
+                <div className="mobile-nav-actions">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setCartDrawerOpen(true);
+                      setMobileMenuOpen(false);
+                    }}
+                    type="button"
+                  >
+                    Koszyk ({pendingCartCount})
+                  </button>
+                  <button className="btn btn-primary" onClick={() => void onLogout()} type="button">
+                    Wyloguj
+                  </button>
+                </div>
                 {menu.map(([value, label]) => (
                   <button
                     key={`mobile-${value}`}
@@ -1505,6 +1524,9 @@ function AdminSection({
   });
   const [popupDrafts, setPopupDrafts] = useState<Record<string, {
     body: string;
+    contextData: string;
+    contextType: string;
+    displayConditions: string;
     isActive: boolean;
     primaryCtaLabel: string;
     recommendedProductIds: string[];
@@ -1512,6 +1534,34 @@ function AdminSection({
     title: string;
   }>>({});
   const [popupImportJson, setPopupImportJson] = useState("");
+  const [popupCreatorForm, setPopupCreatorForm] = useState({
+    actionType: "after_material_upload",
+    body: "",
+    conditionType: "none",
+    guideId: "",
+    isActive: true,
+    materialRowKey: "",
+    mentorUserId: "",
+    primaryCtaLabel: "Kup sugerowany pakiet",
+    recommendedProductIds: [] as string[],
+    secondaryCtaLabel: "Zobacz pakiety",
+    templateId: "",
+    title: "",
+  });
+  const [emailClassifierRules, setEmailClassifierRules] = useState<any[]>([]);
+  const [emailRuleEditorId, setEmailRuleEditorId] = useState<string>("new");
+  const [emailRuleImportJson, setEmailRuleImportJson] = useState("");
+  const [emailRuleForm, setEmailRuleForm] = useState({
+    actionRequired: false,
+    actionSummary: "",
+    classification: "info_only",
+    isActive: true,
+    matchField: "subject_and_snippet",
+    name: "",
+    pattern: "",
+    requiresManualReview: false,
+    sortOrder: 0,
+  });
   const [itemGuideForm, setItemGuideForm] = useState({
     appliesToGuideIds: [] as string[],
     title: "",
@@ -1702,18 +1752,23 @@ function AdminSection({
   }
 
   async function refreshCommerceDesigner() {
-    const [productsPayload, popupPayload] = await Promise.all([
+    const [productsPayload, popupPayload, emailRulePayload] = await Promise.all([
       apiFetch<any[]>("/admin/products", undefined, token),
       apiFetch<any[]>("/admin/popup-configs", undefined, token),
+      apiFetch<any[]>("/admin/email-classifier-rules", undefined, token),
     ]);
     setProducts(productsPayload);
     setPopupConfigs(popupPayload);
+    setEmailClassifierRules(emailRulePayload);
     setPopupDrafts(
       Object.fromEntries(
         (popupPayload ?? []).map((popup: any) => [
           popup.key,
           {
             body: popup.body ?? "",
+            contextData: JSON.stringify(popup.contextData ?? {}, null, 2),
+            contextType: popup.contextType ?? "generic",
+            displayConditions: JSON.stringify(popup.displayConditions ?? {}, null, 2),
             isActive: Boolean(popup.isActive),
             primaryCtaLabel: popup.primaryCtaLabel ?? "Kup sugerowany pakiet",
             recommendedProductIds: Array.isArray(popup.recommendedProductIds)
@@ -2374,10 +2429,17 @@ function AdminSection({
       await apiFetch(`/admin/popup-configs/${key}`, {
         method: "PUT",
         body: JSON.stringify({
-          ...draft,
+          body: draft.body,
+          contextData: draft.contextData.trim() ? JSON.parse(draft.contextData) : {},
+          contextType: draft.contextType,
+          displayConditions: draft.displayConditions.trim() ? JSON.parse(draft.displayConditions) : {},
+          isActive: draft.isActive,
+          primaryCtaLabel: draft.primaryCtaLabel,
           recommendedProductIds: draft.recommendedProductIds
             .map((value) => Number(value))
             .filter((value) => Number.isFinite(value) && value > 0),
+          secondaryCtaLabel: draft.secondaryCtaLabel,
+          title: draft.title,
         }),
       }, token);
       await refreshCommerceDesigner();
@@ -2399,6 +2461,159 @@ function AdminSection({
       setStatus("Popupy zostały zaimportowane.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zaimportować popupów.");
+    }
+  }
+
+  function buildPopupKeyFromCreator() {
+    if (popupCreatorForm.actionType === "mentor_locked") {
+      return popupCreatorForm.mentorUserId
+        ? `context:mentor_locked:mentor:${popupCreatorForm.mentorUserId}`
+        : "mentor_locked";
+    }
+    if (popupCreatorForm.actionType === "after_guide_add") {
+      return popupCreatorForm.guideId
+        ? `context:after_guide_add:guide:${popupCreatorForm.guideId}`
+        : "context:after_guide_add:any";
+    }
+    if (popupCreatorForm.actionType === "after_hint_add") {
+      return popupCreatorForm.guideId
+        ? `context:after_hint_add:guide:${popupCreatorForm.guideId}`
+        : "context:after_hint_add:any";
+    }
+    const templateId = popupCreatorForm.templateId || "any";
+    if (popupCreatorForm.materialRowKey) {
+      return `context:${popupCreatorForm.actionType}:template:${templateId}:row:${popupCreatorForm.materialRowKey}`;
+    }
+    return templateId === "any"
+      ? `context:${popupCreatorForm.actionType}:any`
+      : `context:${popupCreatorForm.actionType}:template:${templateId}`;
+  }
+
+  async function createPopupFromBuilder() {
+    setStatus("");
+    try {
+      const key = buildPopupKeyFromCreator();
+      const displayConditions =
+        popupCreatorForm.conditionType === "none"
+          ? {}
+          : popupCreatorForm.conditionType === "hint_limit_reached"
+            ? { requiresHintLimitReached: true }
+            : popupCreatorForm.conditionType === "guide_limit_reached"
+              ? { requiresGuideLimitReached: true }
+              : popupCreatorForm.conditionType === "email_locked"
+                ? { requiresEmailInboxDisabled: true }
+                : popupCreatorForm.conditionType === "mentor_locked"
+                  ? { requiresMentorUnassigned: true }
+                  : {};
+      const contextData: Record<string, unknown> = {};
+      if (popupCreatorForm.templateId) {
+        contextData.templateId = Number(popupCreatorForm.templateId);
+      }
+      if (popupCreatorForm.materialRowKey) {
+        contextData.rowKey = popupCreatorForm.materialRowKey;
+      }
+      if (popupCreatorForm.guideId) {
+        contextData.guideId = Number(popupCreatorForm.guideId);
+      }
+      if (popupCreatorForm.mentorUserId) {
+        contextData.mentorUserId = Number(popupCreatorForm.mentorUserId);
+      }
+      await apiFetch(`/admin/popup-configs/${encodeURIComponent(key)}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          body: popupCreatorForm.body,
+          contextData,
+          contextType: popupCreatorForm.actionType,
+          displayConditions,
+          isActive: popupCreatorForm.isActive,
+          primaryCtaLabel: popupCreatorForm.primaryCtaLabel,
+          recommendedProductIds: popupCreatorForm.recommendedProductIds.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0),
+          secondaryCtaLabel: popupCreatorForm.secondaryCtaLabel,
+          title: popupCreatorForm.title,
+        }),
+      }, token);
+      await refreshCommerceDesigner();
+      setStatus("Nowy popup został utworzony.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się utworzyć popupu.");
+    }
+  }
+
+  function resetEmailRuleForm() {
+    setEmailRuleEditorId("new");
+    setEmailRuleForm({
+      actionRequired: false,
+      actionSummary: "",
+      classification: "info_only",
+      isActive: true,
+      matchField: "subject_and_snippet",
+      name: "",
+      pattern: "",
+      requiresManualReview: false,
+      sortOrder: 0,
+    });
+  }
+
+  function loadEmailRuleIntoEditor(rule: any) {
+    setEmailRuleEditorId(String(rule.id));
+    setEmailRuleForm({
+      actionRequired: Boolean(rule.actionRequired),
+      actionSummary: rule.actionSummary ?? "",
+      classification: rule.classification ?? "info_only",
+      isActive: Boolean(rule.isActive),
+      matchField: rule.matchField ?? "subject_and_snippet",
+      name: rule.name ?? "",
+      pattern: rule.pattern ?? "",
+      requiresManualReview: Boolean(rule.requiresManualReview),
+      sortOrder: Number(rule.sortOrder ?? 0),
+    });
+  }
+
+  async function saveEmailClassifierRule(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus("");
+    try {
+      const endpoint = emailRuleEditorId === "new"
+        ? "/admin/email-classifier-rules"
+        : `/admin/email-classifier-rules/${emailRuleEditorId}`;
+      await apiFetch(endpoint, {
+        method: emailRuleEditorId === "new" ? "POST" : "PUT",
+        body: JSON.stringify(emailRuleForm),
+      }, token);
+      await refreshCommerceDesigner();
+      resetEmailRuleForm();
+      setStatus("Reguła interpretera maili została zapisana.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać reguły interpretera.");
+    }
+  }
+
+  async function deleteEmailClassifierRule(ruleId: number) {
+    setStatus("");
+    try {
+      await apiFetch(`/admin/email-classifier-rules/${ruleId}`, { method: "DELETE" }, token);
+      await refreshCommerceDesigner();
+      if (emailRuleEditorId === String(ruleId)) {
+        resetEmailRuleForm();
+      }
+      setStatus("Reguła interpretera maili została usunięta.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się usunąć reguły interpretera.");
+    }
+  }
+
+  async function importEmailClassifierRules() {
+    setStatus("");
+    try {
+      const parsed = JSON.parse(emailRuleImportJson);
+      await apiFetch("/admin/email-classifier-rules/import", {
+        method: "POST",
+        body: JSON.stringify(parsed),
+      }, token);
+      await refreshCommerceDesigner();
+      setStatus("Reguły interpretera maili zostały zaimportowane.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zaimportować reguł interpretera.");
     }
   }
 
@@ -4039,7 +4254,130 @@ function AdminSection({
       {section === "purchase-popups" ? (
         <div className="dashboard-card">
           <h2>Popupy Zakupowe</h2>
-          <p className="muted">Tutaj podłączasz popupy do produktów, możesz edytować istniejące, tworzyć własne klucze kontekstowe oraz importować wiele popupów naraz przez JSON.</p>
+          <p className="muted">Tutaj podłączasz popupy do produktów, możesz budować je ręcznie na bazie kafli, itemów, programów i mentorów, a także importować wiele popupów naraz przez JSON.</p>
+          <div className="dashboard-card" style={{ marginTop: 18 }}>
+            <h3 style={{ marginTop: 0 }}>Nowy popup z kreatora</h3>
+            <div className="stack">
+              <div className="grid-2">
+                <div className="field">
+                  <label>Typ akcji</label>
+                  <select value={popupCreatorForm.actionType} onChange={(event) => setPopupCreatorForm((current) => ({ ...current, actionType: event.target.value }))}>
+                    <option value="after_material_upload">Po uploadzie pliku</option>
+                    <option value="after_material_check">Po oznaczeniu jako wykonane</option>
+                    <option value="after_doc_tab_create">Po utworzeniu zakładki Essay Doc</option>
+                    <option value="after_guide_add">Po dodaniu programu</option>
+                    <option value="after_hint_add">Po dodaniu wskazówek</option>
+                    <option value="mentor_locked">Kliknięcie Dodaj mentora</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Warunek niewyświetlania / wyświetlania</label>
+                  <select value={popupCreatorForm.conditionType} onChange={(event) => setPopupCreatorForm((current) => ({ ...current, conditionType: event.target.value }))}>
+                    <option value="none">Brak dodatkowego warunku</option>
+                    <option value="guide_limit_reached">Pokaż tylko przy wyczerpanym limicie programów</option>
+                    <option value="hint_limit_reached">Pokaż tylko przy wyczerpanym limicie wskazówek</option>
+                    <option value="email_locked">Pokaż tylko bez dostępu do maili uczelni</option>
+                    <option value="mentor_locked">Pokaż tylko bez dostępu do mentora</option>
+                  </select>
+                </div>
+              </div>
+              {["after_material_upload", "after_material_check", "after_doc_tab_create"].includes(popupCreatorForm.actionType) ? (
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Kafelek materiałów</label>
+                    <select value={popupCreatorForm.templateId} onChange={(event) => setPopupCreatorForm((current) => ({ ...current, templateId: event.target.value, materialRowKey: "" }))}>
+                      <option value="">Dowolny kafelek</option>
+                      {materialTemplates.map((template: any) => (
+                        <option key={`popup-template-${template.id}`} value={String(template.id)}>{template.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Item w kafelku</label>
+                    <select value={popupCreatorForm.materialRowKey} onChange={(event) => setPopupCreatorForm((current) => ({ ...current, materialRowKey: event.target.value }))}>
+                      <option value="">Dowolny item</option>
+                      {((materialTemplates.find((template: any) => String(template.id) === popupCreatorForm.templateId)?.structure ?? []) as any[])
+                        .filter((row: any) => row.level === "item" && row.displayKey)
+                        .map((row: any) => (
+                          <option key={`popup-row-${row.displayKey}`} value={row.displayKey}>{row.task || row.displayKey}</option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+              ) : null}
+              {["after_guide_add", "after_hint_add"].includes(popupCreatorForm.actionType) ? (
+                <div className="field">
+                  <label>Program</label>
+                  <select value={popupCreatorForm.guideId} onChange={(event) => setPopupCreatorForm((current) => ({ ...current, guideId: event.target.value }))}>
+                    <option value="">Dowolny program</option>
+                    {editableGuideTemplates.map((guide: any) => (
+                      <option key={`popup-guide-${guide.id}`} value={String(guide.id)}>{guide.title}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+              {popupCreatorForm.actionType === "mentor_locked" ? (
+                <div className="field">
+                  <label>Mentor</label>
+                  <select value={popupCreatorForm.mentorUserId} onChange={(event) => setPopupCreatorForm((current) => ({ ...current, mentorUserId: event.target.value }))}>
+                    <option value="">Domyślny popup dla mentorów</option>
+                    {mentorUsers.map((mentor) => (
+                      <option key={`popup-mentor-${mentor.id}`} value={String(mentor.id)}>{mentor.fullName}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+              <div className="field">
+                <label>Tytuł</label>
+                <input value={popupCreatorForm.title} onChange={(event) => setPopupCreatorForm((current) => ({ ...current, title: event.target.value }))} />
+              </div>
+              <div className="field">
+                <label>Treść</label>
+                <textarea value={popupCreatorForm.body} onChange={(event) => setPopupCreatorForm((current) => ({ ...current, body: event.target.value }))} />
+              </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label>Główny przycisk</label>
+                  <input value={popupCreatorForm.primaryCtaLabel} onChange={(event) => setPopupCreatorForm((current) => ({ ...current, primaryCtaLabel: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>Drugi przycisk</label>
+                  <input value={popupCreatorForm.secondaryCtaLabel} onChange={(event) => setPopupCreatorForm((current) => ({ ...current, secondaryCtaLabel: event.target.value }))} />
+                </div>
+              </div>
+              <div className="field">
+                <label>Produkty sugerowane</label>
+                <div className="selector-grid">
+                  {products.map((product) => {
+                    const checked = popupCreatorForm.recommendedProductIds.includes(String(product.id));
+                    return (
+                      <label className="selector-option" key={`popup-builder-${product.id}`}>
+                        <input
+                          checked={checked}
+                          type="checkbox"
+                          onChange={() =>
+                            setPopupCreatorForm((current) => ({
+                              ...current,
+                              recommendedProductIds: checked
+                                ? current.recommendedProductIds.filter((id) => id !== String(product.id))
+                                : [...current.recommendedProductIds, String(product.id)],
+                            }))
+                          }
+                        />
+                        <div className="selector-copy">
+                          <strong>{product.title}</strong>
+                          <span className="small muted">{product.productType}</span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="button-row">
+                <button className="btn btn-primary" onClick={() => void createPopupFromBuilder()} type="button">Utwórz popup</button>
+              </div>
+            </div>
+          </div>
           <div className="stack" style={{ marginTop: 18, marginBottom: 18 }}>
             <div className="field">
               <label>Import popupów z JSON</label>
@@ -4077,6 +4415,19 @@ function AdminSection({
                     <span className="badge">{draft.isActive ? "active" : "inactive"}</span>
                   </header>
                   <div className="stack" style={{ marginTop: 12 }}>
+                    <div className="grid-2">
+                      <div className="field">
+                        <label>Typ kontekstu</label>
+                        <input value={draft.contextType} onChange={(event) => setPopupDrafts((current) => ({ ...current, [popup.key]: { ...draft, contextType: event.target.value } }))} />
+                      </div>
+                      <div className="field">
+                        <label>Aktywny</label>
+                        <select value={String(draft.isActive)} onChange={(event) => setPopupDrafts((current) => ({ ...current, [popup.key]: { ...draft, isActive: event.target.value === "true" } }))}>
+                          <option value="true">tak</option>
+                          <option value="false">nie</option>
+                        </select>
+                      </div>
+                    </div>
                     <div className="field">
                       <label>Tytuł</label>
                       <input value={draft.title} onChange={(event) => setPopupDrafts((current) => ({ ...current, [popup.key]: { ...draft, title: event.target.value } }))} />
@@ -4127,11 +4478,12 @@ function AdminSection({
                       </div>
                     </div>
                     <div className="field">
-                      <label>Aktywny</label>
-                      <select value={String(draft.isActive)} onChange={(event) => setPopupDrafts((current) => ({ ...current, [popup.key]: { ...draft, isActive: event.target.value === "true" } }))}>
-                        <option value="true">tak</option>
-                        <option value="false">nie</option>
-                      </select>
+                      <label>Dane kontekstu (JSON)</label>
+                      <textarea value={draft.contextData} onChange={(event) => setPopupDrafts((current) => ({ ...current, [popup.key]: { ...draft, contextData: event.target.value } }))} />
+                    </div>
+                    <div className="field">
+                      <label>Warunki wyświetlenia (JSON)</label>
+                      <textarea value={draft.displayConditions} onChange={(event) => setPopupDrafts((current) => ({ ...current, [popup.key]: { ...draft, displayConditions: event.target.value } }))} />
                     </div>
                     <div className="button-row">
                       <button className="btn btn-primary" onClick={() => void savePopupConfig(popup.key)} type="button">Zapisz popup</button>
@@ -4140,6 +4492,105 @@ function AdminSection({
                 </div>
               );
             })}
+          </div>
+        </div>
+      ) : null}
+      {section === "email-interpreter" ? (
+        <div className="split">
+          <div className="dashboard-card panel-scroll">
+            <h2>Interpreter Maili</h2>
+            <p className="muted">Tutaj edytujesz reguły NLP / regex używane do klasyfikowania maili z uczelni. Reguły są sprawdzane od góry według sortOrder.</p>
+            <form className="stack" onSubmit={saveEmailClassifierRule}>
+              <div className="grid-2">
+                <div className="field">
+                  <label>Nazwa reguły</label>
+                  <input value={emailRuleForm.name} onChange={(event) => setEmailRuleForm((current) => ({ ...current, name: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>Sort order</label>
+                  <input min={0} type="number" value={emailRuleForm.sortOrder} onChange={(event) => setEmailRuleForm((current) => ({ ...current, sortOrder: Number(event.target.value) }))} />
+                </div>
+              </div>
+              <div className="field">
+                <label>Pattern regex</label>
+                <textarea value={emailRuleForm.pattern} onChange={(event) => setEmailRuleForm((current) => ({ ...current, pattern: event.target.value }))} />
+              </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label>Pole dopasowania</label>
+                  <select value={emailRuleForm.matchField} onChange={(event) => setEmailRuleForm((current) => ({ ...current, matchField: event.target.value }))}>
+                    <option value="subject_and_snippet">Temat + snippet</option>
+                    <option value="subject">Temat</option>
+                    <option value="snippet">Snippet</option>
+                    <option value="from_email">Adres nadawcy</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Klasyfikacja</label>
+                  <input value={emailRuleForm.classification} onChange={(event) => setEmailRuleForm((current) => ({ ...current, classification: event.target.value }))} />
+                </div>
+              </div>
+              <div className="field">
+                <label>Podsumowanie dla mentee</label>
+                <textarea value={emailRuleForm.actionSummary} onChange={(event) => setEmailRuleForm((current) => ({ ...current, actionSummary: event.target.value }))} />
+              </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label>Wymaga działania</label>
+                  <select value={String(emailRuleForm.actionRequired)} onChange={(event) => setEmailRuleForm((current) => ({ ...current, actionRequired: event.target.value === "true" }))}>
+                    <option value="false">nie</option>
+                    <option value="true">tak</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Wymaga manual review</label>
+                  <select value={String(emailRuleForm.requiresManualReview)} onChange={(event) => setEmailRuleForm((current) => ({ ...current, requiresManualReview: event.target.value === "true" }))}>
+                    <option value="false">nie</option>
+                    <option value="true">tak</option>
+                  </select>
+                </div>
+              </div>
+              <div className="field">
+                <label>Aktywna</label>
+                <select value={String(emailRuleForm.isActive)} onChange={(event) => setEmailRuleForm((current) => ({ ...current, isActive: event.target.value === "true" }))}>
+                  <option value="true">tak</option>
+                  <option value="false">nie</option>
+                </select>
+              </div>
+              <div className="button-row">
+                <button className="btn btn-primary">{emailRuleEditorId === "new" ? "Dodaj regułę" : "Zapisz regułę"}</button>
+                <button className="btn btn-secondary" onClick={resetEmailRuleForm} type="button">Nowa reguła</button>
+              </div>
+            </form>
+            <div className="field" style={{ marginTop: 18 }}>
+              <label>Import reguł z JSON</label>
+              <textarea value={emailRuleImportJson} onChange={(event) => setEmailRuleImportJson(event.target.value)} placeholder='{"rules":[{"name":"Portal access","pattern":"osiris|sis|olaf","matchField":"subject_and_snippet","classification":"portal_access","actionRequired":true,"actionSummary":"Wiadomość wygląda na dostęp do portalu.","requiresManualReview":false,"sortOrder":10,"isActive":true}]}' />
+            </div>
+            <div className="button-row" style={{ marginTop: 12 }}>
+              <button className="btn btn-primary" onClick={() => void importEmailClassifierRules()} type="button">Importuj reguły</button>
+            </div>
+          </div>
+          <div className="dashboard-card panel-scroll">
+            <h2>Istniejące reguły</h2>
+            <div className="list">
+              {emailClassifierRules.map((rule) => (
+                <div className="list-item" key={rule.id}>
+                  <header>
+                    <div>
+                      <h3>{rule.name}</h3>
+                      <div className="muted small">{rule.classification} • {rule.matchField} • sort {rule.sortOrder}</div>
+                    </div>
+                    <span className="badge">{rule.isActive ? "active" : "inactive"}</span>
+                  </header>
+                  <div className="small muted">{rule.pattern}</div>
+                  <p className="muted">{rule.actionSummary}</p>
+                  <div className="button-row">
+                    <button className="btn btn-secondary" onClick={() => loadEmailRuleIntoEditor(rule)} type="button">Edytuj</button>
+                    <button className="btn btn-secondary" onClick={() => void deleteEmailClassifierRule(rule.id)} type="button">Usuń</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       ) : null}
@@ -6171,6 +6622,34 @@ function MenteeSection({
     hasHintAccess: hintAccessSourceIds.has(Number(guide.sourceGuideId ?? guide.id)),
     sourceId: Number(guide.sourceGuideId ?? guide.id),
   }));
+  const tipProgramCards = (guides ?? []).map((guide: any) => {
+    const sourceId = Number(guide.sourceGuideId ?? guide.id);
+    const hasHintAccess = hintAccessSourceIds.has(sourceId);
+    const items = visibleMaterialTemplates.flatMap((template: any) =>
+      (template.visibleRows ?? [])
+        .filter((row: any) =>
+          row.level === "item" &&
+          row.guideId &&
+          hintGuideMap.has(String(row.guideId)) &&
+          rowAppliesToGuide(row, guide),
+        )
+        .map((row: any) => ({
+          hintGuide: hintGuideMap.get(String(row.guideId)),
+          key: `${guide.id}:${template.id}:${row.displayKey}`,
+          task: row.task,
+          templateTitle: template.title,
+        })),
+    );
+    return {
+      guide,
+      hasHintAccess,
+      items,
+      lockedItemCount: hasHintAccess ? 0 : items.length,
+      sourceId,
+    };
+  });
+  const accessibleTipProgramCards = tipProgramCards.filter((entry: any) => entry.hasHintAccess && entry.items.length);
+  const lockedTipProgramCards = tipProgramCards.filter((entry: any) => !entry.hasHintAccess);
   const cartCount = cartItems.reduce((sum: number, item: any) => sum + Number(item.quantity ?? 0), 0);
 
   useEffect(() => {
@@ -6189,10 +6668,24 @@ function MenteeSection({
     });
   }
 
+  function popupConditionsSatisfied(popupConfig: any) {
+    const conditions = popupConfig?.displayConditions ?? {};
+    if (conditions.requiresGuideLimitReached && canAddAnotherGuide()) {
+      return false;
+    }
+    if (conditions.requiresHintLimitReached && canAddAnotherHintGuide()) {
+      return false;
+    }
+    if (conditions.requiresEmailInboxDisabled && guideLimits.emailInboxEnabled) {
+      return false;
+    }
+    return true;
+  }
+
   function maybeOpenContextualPopup(keys: string[]) {
-    const match = keys.find((key) => Boolean(purchasePopups[key]?.isActive));
+    const match = keys.find((key) => Boolean(purchasePopups[key]?.isActive) && popupConditionsSatisfied(purchasePopups[key]));
     if (!match) {
-      return;
+      return false;
     }
     openPurchaseShell(
       purchasePopups[match]?.title ?? "Rozszerzenie dostępu",
@@ -6200,6 +6693,7 @@ function MenteeSection({
       purchasePopups[match]?.primaryCtaLabel ?? "Kup sugerowany pakiet",
       match,
     );
+    return true;
   }
 
   function canAddAnotherGuide() {
@@ -7458,11 +7952,26 @@ function MenteeSection({
                   >
                     <strong>{formatGuidePrimaryLabel(guide)}</strong>
                     <div className="small muted" style={{ marginTop: 6 }}>{formatGuideSecondaryLabel(guide)}</div>
-                    {!hasHintAccess ? (
-                      <div className="small muted hint-access-note" style={{ marginTop: 12 }}>
-                        Brak dostępu do wskazówek
-                      </div>
-                    ) : null}
+                    <div className="guide-access-card-actions">
+                      {hasHintAccess ? (
+                        <button className="btn btn-secondary btn-compact" onClick={() => onNavigate("tips")} type="button">
+                          Wyświetl wskazówki
+                        </button>
+                      ) : (
+                        <>
+                          <div className="small muted hint-access-note">
+                            Brak dostępu do wskazówek
+                          </div>
+                          <button
+                            className="btn btn-secondary btn-compact"
+                            onClick={() => void enableHintAccess(Number(guide.sourceGuideId ?? guide.id))}
+                            type="button"
+                          >
+                            Dodaj wskazówki
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -7578,14 +8087,20 @@ function MenteeSection({
                     <div className="button-row">
                       <button
                         className="btn btn-secondary"
-                        onClick={() =>
-                          openPurchaseShell(
-                            "Ten mentor wymaga odrębnego dostępu",
-                            "Aby umawiać spotkania z tym mentorem, dodaj odpowiedni pakiet lub dostęp mentorski w zakładce Pakiety.",
-                            "Kup dostęp do mentora",
+                        onClick={() => {
+                          const opened = maybeOpenContextualPopup([
+                            `context:mentor_locked:mentor:${mentor.id}`,
                             "mentor_locked",
-                          )
-                        }
+                          ]);
+                          if (!opened) {
+                            openPurchaseShell(
+                              "Ten mentor wymaga odrębnego dostępu",
+                              "Aby umawiać spotkania z tym mentorem, dodaj odpowiedni pakiet lub dostęp mentorski w zakładce Pakiety.",
+                              "Kup dostęp do mentora",
+                              "mentor_locked",
+                            );
+                          }
+                        }}
                         type="button"
                       >
                         Dodaj mentora
@@ -8164,6 +8679,85 @@ function MenteeSection({
           )}
         </div>
       ) : null}
+      {section === "tips" ? (
+        <div className="stack">
+          <div className="dashboard-card">
+            <h2>Twoje Wskazówki</h2>
+            <p className="muted">
+              Tutaj zbierają się wszystkie programy, dla których masz dostęp do wskazówek, oraz te, które możesz jeszcze odblokować.
+            </p>
+            <div className="status" style={{ marginTop: 16 }}>
+              Aktywne wskazówki dla <strong>{accessibleTipProgramCards.length}</strong> programów.
+              {" "}
+              Bez dostępu pozostaje <strong>{lockedTipProgramCards.length}</strong> programów.
+            </div>
+          </div>
+          <div className="dashboard-card">
+            <h3 style={{ marginTop: 0 }}>Programy z aktywnymi wskazówkami</h3>
+            {accessibleTipProgramCards.length ? (
+              <div className="tile-grid tile-grid-two compact-guide-grid" style={{ marginTop: 16 }}>
+                {accessibleTipProgramCards.map((entry: any) => (
+                  <div className="tile compact-guide-tile tip-program-tile" key={`tips-program-${entry.guide.id}`}>
+                    <strong>{formatGuidePrimaryLabel(entry.guide)}</strong>
+                    <div className="small muted" style={{ marginTop: 6 }}>{formatGuideSecondaryLabel(entry.guide)}</div>
+                    <div className="small muted" style={{ marginTop: 8 }}>
+                      {entry.items.length} {entry.items.length === 1 ? "powiązana wskazówka" : "powiązane wskazówki"}
+                    </div>
+                    <div className="list" style={{ marginTop: 12 }}>
+                      {entry.items.map((item: any) => (
+                        <div className="list-item compact-tip-item" key={item.key}>
+                          <div>
+                            <strong>{item.task}</strong>
+                            <div className="small muted">{item.templateTitle}</div>
+                          </div>
+                          <button
+                            className="btn btn-secondary btn-compact"
+                            onClick={() => setOpenHintGuide(item.hintGuide)}
+                            type="button"
+                          >
+                            Otwórz wskazówki
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="status" style={{ marginTop: 16 }}>Nie masz jeszcze aktywnego dostępu do wskazówek żadnego programu.</div>
+            )}
+          </div>
+          <div className="dashboard-card">
+            <h3 style={{ marginTop: 0 }}>Programy bez dostępu do wskazówek</h3>
+            {lockedTipProgramCards.length ? (
+              <div className="tile-grid tile-grid-two compact-guide-grid" style={{ marginTop: 16 }}>
+                {lockedTipProgramCards.map((entry: any) => (
+                  <div className="tile compact-guide-tile locked-guide-tile" key={`tips-locked-${entry.guide.id}`}>
+                    <strong>{formatGuidePrimaryLabel(entry.guide)}</strong>
+                    <div className="small muted" style={{ marginTop: 6 }}>{formatGuideSecondaryLabel(entry.guide)}</div>
+                    <div className="small muted hint-access-note" style={{ marginTop: 12 }}>
+                      {entry.lockedItemCount
+                        ? `${entry.lockedItemCount} ${(entry.lockedItemCount === 1 ? "krok ma" : "kroki mają")} dostępne wskazówki po odblokowaniu`
+                        : "Brak dostępu do wskazówek"}
+                    </div>
+                    <div className="button-row" style={{ marginTop: 12 }}>
+                      <button
+                        className="btn btn-secondary btn-compact"
+                        onClick={() => void enableHintAccess(Number(entry.guide.sourceGuideId ?? entry.guide.id))}
+                        type="button"
+                      >
+                        Dodaj wskazówki
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="status" style={{ marginTop: 16 }}>Masz już dostęp do wskazówek wszystkich swoich aktywnych programów.</div>
+            )}
+          </div>
+        </div>
+      ) : null}
       {section === "packages" ? (
         <div className="dashboard-card">
           <h2>Pakiety</h2>
@@ -8241,8 +8835,11 @@ function MenteeSection({
           </div>
         </div>
       ) : null}
-      {!mobileViewport ? (
-        <aside className={`cart-side-panel ${cartDrawerOpen ? "is-open" : ""}`}>
+      <aside className={`cart-side-panel ${cartDrawerOpen ? "is-open" : ""} ${mobileViewport ? "is-mobile" : ""}`}>
+        {mobileViewport ? (
+          <button className="cart-side-panel-backdrop" onClick={() => onCartDrawerChange(false)} type="button" />
+        ) : null}
+        <div className="cart-side-panel-card">
           <div className="cart-side-panel-head">
             <div>
               <div className="eyebrow">Koszyk</div>
@@ -8277,7 +8874,7 @@ function MenteeSection({
                   className="btn btn-primary"
                   onClick={() => {
                     onNavigate("packages");
-                    onCartDrawerChange(true);
+                    onCartDrawerChange(false);
                   }}
                   type="button"
                 >
@@ -8291,8 +8888,8 @@ function MenteeSection({
           ) : (
             <div className="status" style={{ marginTop: 16 }}>Dodane produkty pojawią się tutaj od razu po kliknięciu.</div>
           )}
-        </aside>
-      ) : null}
+        </div>
+      </aside>
       {section === "essays" && overview
         ? renderMaterialSectionCard(
             "Twoje Eseje",
