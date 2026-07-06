@@ -1264,7 +1264,6 @@ function Dashboard({
           <button
             className={`cart-drawer-toggle ${cartDrawerOpen ? "is-open" : ""}`}
             onClick={() => {
-              setSection("packages");
               setCartDrawerOpen((current) => !current);
             }}
             type="button"
@@ -7460,15 +7459,15 @@ function MenteeSection({
                   >
                     <div className="guide-tile-head">
                       <strong>{formatGuidePrimaryLabel(guide)}</strong>
-                      <span className={`badge ${hasHintAccess ? "" : "badge-muted"}`}>
-                        {hasHintAccess ? "wskazówki aktywne" : "brak dostępu do wskazówek"}
-                      </span>
+                      {!hasHintAccess ? (
+                        <span className="badge badge-muted">brak dostępu do wskazówek</span>
+                      ) : null}
                     </div>
                     <div className="small muted" style={{ marginTop: 6 }}>{formatGuideSecondaryLabel(guide)}</div>
                     {!hasHintAccess ? (
-                      <div className="button-row" style={{ marginTop: 14 }}>
+                      <div className="button-row" style={{ marginTop: 12 }}>
                         <button
-                          className="btn btn-secondary"
+                          className="btn btn-secondary btn-compact"
                           onClick={() => void enableHintAccess(guide.id)}
                           type="button"
                         >
@@ -7544,6 +7543,26 @@ function MenteeSection({
                     <span className="badge">{mentor.approved ? "approved" : "preview"}</span>
                   </header>
                   <div style={{ marginTop: 8 }}>{renderMultilineText(mentor.bio)}</div>
+                  {mentor.universities?.length ? (
+                    <div className="stack" style={{ marginTop: 12 }}>
+                      <div className="small muted">Programy i uczelnie</div>
+                      <div className="tile-grid tile-grid-two compact-guide-grid mentor-program-grid">
+                        {mentor.universities.map((university: any) => (
+                          <div className="tile compact-guide-tile mentor-program-tile" key={`mentor-university-${mentor.id}-${university.id}`}>
+                            <strong>
+                              {university.programName?.trim()
+                                ? `${university.programName} - ${university.universityName}`
+                                : university.universityName}
+                            </strong>
+                            <div className="small muted" style={{ marginTop: 6 }}>{university.country}</div>
+                            {university.summary ? (
+                              <div className="small muted" style={{ marginTop: 8 }}>{university.summary}</div>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="small muted" style={{ marginTop: 8 }}>
                     {mentor.googleCalendarConnected
                       ? `Google Calendar podłączony${mentor.googleCalendarEmail ? ` • ${mentor.googleCalendarEmail}` : ""}`
