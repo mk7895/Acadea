@@ -788,30 +788,110 @@ function classifyUniversityEmail(input: {
       continue;
     }
   }
-
-  const text = `${input.subject}\n${input.snippet}`.toLowerCase();
-  if (/newsletter|news update|campaign/i.test(text)) {
-    return { actionRequired: false, actionSummary: "To wygląda na newsletter lub ogólną aktualizację.", classification: "newsletter", requiresManualReview: false };
-  }
-  if (/interview|invitation to interview|zaproszenie.*interview|assessment/i.test(text)) {
-    return { actionRequired: true, actionSummary: "Sprawdź szczegóły zaproszenia i przygotuj kolejny krok rekrutacyjny.", classification: "interview", requiresManualReview: false };
-  }
-  if (/missing document|upload|submit.*document|additional document|certified cop|transcript/i.test(text)) {
-    return { actionRequired: true, actionSummary: "Uczelnia prosi o dosłanie lub wgranie dodatkowych dokumentów.", classification: "missing_document", requiresManualReview: false };
-  }
-  if (/offer|conditional|admission decision|accepted|congrat/i.test(text)) {
-    return { actionRequired: true, actionSummary: "To może dotyczyć decyzji rekrutacyjnej lub oferty. Otwórz wiadomość i sprawdź wymagane działania.", classification: "offer_update", requiresManualReview: false };
-  }
-  if (/portal|account|login|activate|osiris|sis|olaf|studielink/i.test(text)) {
-    return { actionRequired: true, actionSummary: "Wiadomość wygląda na dostęp do portalu lub instrukcję aktywacji konta.", classification: "portal_access", requiresManualReview: false };
-  }
-  if (/payment|tuition|deposit|invoice|fee/i.test(text)) {
-    return { actionRequired: true, actionSummary: "Wiadomość może dotyczyć płatności, depozytu lub opłaty uczelnianej.", classification: "payment", requiresManualReview: false };
-  }
-  if (/deadline|reminder|important date|closing date/i.test(text)) {
-    return { actionRequired: true, actionSummary: "To wygląda na przypomnienie o ważnym terminie lub kolejnym etapie.", classification: "reminder", requiresManualReview: false };
-  }
   return { actionRequired: false, actionSummary: "Nie wykryto oczywistego działania. W razie wątpliwości sprawdź pełną treść wiadomości.", classification: "info_only", requiresManualReview: true };
+}
+
+const DEFAULT_EMAIL_CLASSIFIER_RULES: Array<{
+  actionRequired: boolean;
+  actionSummary: string;
+  classification: string;
+  isActive: boolean;
+  matchField: string;
+  name: string;
+  pattern: string;
+  requiresManualReview: boolean;
+  sortOrder: number;
+}> = [
+  {
+    actionRequired: false,
+    actionSummary: "To wygląda na newsletter lub ogólną aktualizację.",
+    classification: "newsletter",
+    isActive: true,
+    matchField: "subject_and_snippet",
+    name: "Newsletter / update",
+    pattern: "newsletter|news update|campaign",
+    requiresManualReview: false,
+    sortOrder: 10,
+  },
+  {
+    actionRequired: true,
+    actionSummary: "Sprawdź szczegóły zaproszenia i przygotuj kolejny krok rekrutacyjny.",
+    classification: "interview",
+    isActive: true,
+    matchField: "subject_and_snippet",
+    name: "Interview / assessment",
+    pattern: "interview|invitation to interview|zaproszenie.*interview|assessment",
+    requiresManualReview: false,
+    sortOrder: 20,
+  },
+  {
+    actionRequired: true,
+    actionSummary: "Uczelnia prosi o dosłanie lub wgranie dodatkowych dokumentów.",
+    classification: "missing_document",
+    isActive: true,
+    matchField: "subject_and_snippet",
+    name: "Missing / additional documents",
+    pattern: "missing document|upload|submit.*document|additional document|certified cop|transcript",
+    requiresManualReview: false,
+    sortOrder: 30,
+  },
+  {
+    actionRequired: true,
+    actionSummary: "To może dotyczyć decyzji rekrutacyjnej lub oferty. Otwórz wiadomość i sprawdź wymagane działania.",
+    classification: "offer_update",
+    isActive: true,
+    matchField: "subject_and_snippet",
+    name: "Offer / decision",
+    pattern: "offer|conditional|admission decision|accepted|congrat",
+    requiresManualReview: false,
+    sortOrder: 40,
+  },
+  {
+    actionRequired: true,
+    actionSummary: "Wiadomość wygląda na dostęp do portalu lub instrukcję aktywacji konta.",
+    classification: "portal_access",
+    isActive: true,
+    matchField: "subject_and_snippet",
+    name: "Portal / account access",
+    pattern: "portal|account|login|activate|osiris|sis|olaf|studielink|password",
+    requiresManualReview: false,
+    sortOrder: 50,
+  },
+  {
+    actionRequired: true,
+    actionSummary: "Wiadomość może dotyczyć płatności, depozytu lub opłaty uczelnianej.",
+    classification: "payment",
+    isActive: true,
+    matchField: "subject_and_snippet",
+    name: "Payment / deposit",
+    pattern: "payment|tuition|deposit|invoice|fee",
+    requiresManualReview: false,
+    sortOrder: 60,
+  },
+  {
+    actionRequired: true,
+    actionSummary: "To wygląda na przypomnienie o ważnym terminie lub kolejnym etapie.",
+    classification: "reminder",
+    isActive: true,
+    matchField: "subject_and_snippet",
+    name: "Reminder / deadline",
+    pattern: "deadline|reminder|important date|closing date",
+    requiresManualReview: false,
+    sortOrder: 70,
+  },
+];
+
+async function ensureDefaultEmailClassifierRules(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+) {
+  const existing = await db
+    .select({ id: platformEmailClassifierRulesTable.id })
+    .from(platformEmailClassifierRulesTable)
+    .limit(1);
+  if (existing.length) {
+    return;
+  }
+  await db.insert(platformEmailClassifierRulesTable).values(DEFAULT_EMAIL_CLASSIFIER_RULES);
 }
 
 function normalizePopupConditions(value: unknown) {
@@ -7399,6 +7479,7 @@ router.get(
   requirePlatformRole("admin"),
   async (_req, res) => {
     const { db } = await import("@workspace/db");
+    await ensureDefaultEmailClassifierRules(db);
     const rows = await db
       .select()
       .from(platformEmailClassifierRulesTable)
@@ -7818,6 +7899,7 @@ router.post(
   requirePlatformRole("mentee"),
   async (req: AuthenticatedRequest, res) => {
     const { db } = await import("@workspace/db");
+    await ensureDefaultEmailClassifierRules(db);
     const [profile] = await db
       .select()
       .from(menteeProfilesTable)
