@@ -22,11 +22,24 @@ type GoogleWorkspaceTokenCacheEntry = {
 };
 
 type DriveFileRecord = {
+  createdTime?: string;
   id: string;
   mimeType?: string;
+  modifiedTime?: string;
   name?: string;
+  parents?: string[];
   size?: string;
   webViewLink?: string;
+};
+
+export type DriveFolderFileEntry = {
+  createdTime: string | null;
+  id: string;
+  mimeType: string;
+  modifiedTime: string | null;
+  name: string;
+  parentId: string | null;
+  sizeBytes: number;
 };
 
 let cachedWorkspaceToken: GoogleWorkspaceTokenCacheEntry | null = null;
@@ -469,6 +482,61 @@ export async function getDriveFolderUsageBytes(folderId: string) {
   }
 
   return totalBytes;
+}
+
+export async function listDriveFolderFiles(folderId: string): Promise<DriveFolderFileEntry[]> {
+  const normalizedFolderId = parseGoogleDriveId(folderId);
+  if (!normalizedFolderId) {
+    return [];
+  }
+
+  const files: DriveFolderFileEntry[] = [];
+  const queue = [normalizedFolderId];
+  const seenFolders = new Set<string>();
+
+  while (queue.length) {
+    const currentFolderId = queue.shift();
+    if (!currentFolderId || seenFolders.has(currentFolderId)) {
+      continue;
+    }
+    seenFolders.add(currentFolderId);
+
+    let pageToken: string | undefined;
+    do {
+      const query = [`'${currentFolderId}' in parents`, "trashed = false"].join(" and ");
+      const response = await googleWorkspaceJson<{
+        files?: DriveFileRecord[];
+        nextPageToken?: string;
+      }>(
+        `${GOOGLE_DRIVE_API_BASE}/files?supportsAllDrives=true&includeItemsFromAllDrives=true&fields=nextPageToken,files(id,name,mimeType,size,createdTime,modifiedTime,parents)&pageSize=1000&q=${encodeURIComponent(
+          query,
+        )}${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ""}`,
+        undefined,
+        ["https://www.googleapis.com/auth/drive"],
+      );
+
+      for (const file of response.files ?? []) {
+        if (file.mimeType === GOOGLE_FOLDER_MIME_TYPE) {
+          queue.push(file.id);
+          continue;
+        }
+
+        files.push({
+          createdTime: file.createdTime ?? null,
+          id: file.id,
+          mimeType: file.mimeType ?? "",
+          modifiedTime: file.modifiedTime ?? null,
+          name: file.name ?? "",
+          parentId: file.parents?.[0] ?? currentFolderId,
+          sizeBytes: Number(file.size ?? 0),
+        });
+      }
+
+      pageToken = response.nextPageToken;
+    } while (pageToken);
+  }
+
+  return files;
 }
 
 export async function shareDriveItemWithUser(input: {

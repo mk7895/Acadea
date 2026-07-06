@@ -84,6 +84,7 @@ import {
   deleteDocumentTab,
   findDriveDocuments,
   getGoogleSharedDriveId,
+  listDriveFolderFiles,
   getDriveFolderUsageBytes,
   hasGoogleWorkspaceServiceAccount,
   listDocumentTabs,
@@ -2578,6 +2579,165 @@ async function getMenteeStorageUsageBytes(
   return Number(row?.totalBytes ?? 0);
 }
 
+async function clearDeletedAssetReferences(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+  deletedDriveFileIds: string[],
+  menteeUserId: number,
+) {
+  if (!deletedDriveFileIds.length) {
+    return;
+  }
+
+  const assetRows = await db
+    .select({
+      id: platformFileAssetsTable.id,
+      objectKey: platformFileAssetsTable.objectKey,
+    })
+    .from(platformFileAssetsTable)
+    .where(
+      and(
+        eq(platformFileAssetsTable.ownerUserId, menteeUserId),
+        inArray(platformFileAssetsTable.objectKey, deletedDriveFileIds),
+      ),
+    );
+  if (!assetRows.length) {
+    return;
+  }
+
+  const assetIds = assetRows.map((row) => row.id);
+  const linkedStates = await db
+    .select({
+      googleDocTabId: platformMaterialItemStatesTable.googleDocTabId,
+      id: platformMaterialItemStatesTable.id,
+    })
+    .from(platformMaterialItemStatesTable)
+    .where(inArray(platformMaterialItemStatesTable.currentFileAssetId, assetIds));
+
+  for (const state of linkedStates) {
+    await db
+      .update(platformMaterialItemStatesTable)
+      .set({
+        completed: state.googleDocTabId ? true : false,
+        completionMethod: state.googleDocTabId ? "doc" : null,
+        currentFileAssetId: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(platformMaterialItemStatesTable.id, state.id));
+  }
+
+  await db
+    .delete(platformFileAssetsTable)
+    .where(inArray(platformFileAssetsTable.id, assetIds));
+}
+
+async function enforceMenteeStoragePolicy(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+  menteeUserId: number,
+) {
+  const [profile] = await db
+    .select()
+    .from(menteeProfilesTable)
+    .where(eq(menteeProfilesTable.userId, menteeUserId))
+    .limit(1);
+
+  const guideLimits = getMenteeGuideLimits(profile);
+  const maxStorageBytes = guideLimits.maxStorageMb * 1024 * 1024;
+  const now = new Date();
+  let usedBytes = await getMenteeStorageUsageBytes(db, menteeUserId);
+
+  if (usedBytes <= maxStorageBytes) {
+    if (profile?.storageLimitExceededAt || profile?.storageCleanupDueAt) {
+      await db
+        .update(menteeProfilesTable)
+        .set({
+          storageCleanupDueAt: null,
+          storageLimitExceededAt: null,
+          updatedAt: now,
+        })
+        .where(eq(menteeProfilesTable.userId, menteeUserId));
+    }
+    return {
+      cleanupDueAt: null,
+      isOverLimit: false,
+      lastAutoCleanupAt: profile?.storageLastAutoCleanupAt ?? null,
+      limitExceededAt: null,
+      maxStorageMb: guideLimits.maxStorageMb,
+      usedBytes,
+    };
+  }
+
+  const existingExceededAt = profile?.storageLimitExceededAt ?? now;
+  const existingCleanupDueAt =
+    profile?.storageCleanupDueAt ?? new Date(existingExceededAt.getTime() + 24 * 60 * 60 * 1000);
+
+  if (!profile?.storageLimitExceededAt || !profile?.storageCleanupDueAt) {
+    await db
+      .update(menteeProfilesTable)
+      .set({
+        storageCleanupDueAt: existingCleanupDueAt,
+        storageLimitExceededAt: existingExceededAt,
+        updatedAt: now,
+      })
+      .where(eq(menteeProfilesTable.userId, menteeUserId));
+  }
+
+  let lastAutoCleanupAt = profile?.storageLastAutoCleanupAt ?? null;
+  if (existingCleanupDueAt.getTime() <= now.getTime()) {
+    const folderId =
+      parseGoogleDriveId(profile?.googleDriveFolderId ?? "") ||
+      parseGoogleDriveId(profile?.googleDriveFolderUrl ?? "");
+    if (folderId) {
+      const essayDocId = parseGoogleDriveId(profile?.googleEssayDocId ?? "") || null;
+      const driveFiles = await listDriveFolderFiles(folderId);
+      const cleanupCandidates = driveFiles
+        .filter((file) =>
+          file.id !== essayDocId &&
+          file.mimeType !== "application/vnd.google-apps.document" &&
+          file.mimeType !== "application/vnd.google-apps.folder" &&
+          file.mimeType !== "application/vnd.google-apps.shortcut",
+        )
+        .sort((left, right) => {
+          const leftTime = new Date(left.createdTime ?? left.modifiedTime ?? 0).getTime();
+          const rightTime = new Date(right.createdTime ?? right.modifiedTime ?? 0).getTime();
+          return rightTime - leftTime;
+        });
+
+      const deletedDriveFileIds: string[] = [];
+      for (const file of cleanupCandidates) {
+        if (usedBytes <= maxStorageBytes) {
+          break;
+        }
+        await trashDriveFile(file.id);
+        deletedDriveFileIds.push(file.id);
+        usedBytes = Math.max(0, usedBytes - file.sizeBytes);
+      }
+
+      await clearDeletedAssetReferences(db, deletedDriveFileIds, menteeUserId);
+      usedBytes = await getMenteeStorageUsageBytes(db, menteeUserId);
+      lastAutoCleanupAt = now;
+    }
+
+    await db
+      .update(menteeProfilesTable)
+      .set({
+        storageCleanupDueAt: usedBytes > maxStorageBytes ? now : null,
+        storageLastAutoCleanupAt: now,
+        storageLimitExceededAt: usedBytes > maxStorageBytes ? existingExceededAt : null,
+        updatedAt: now,
+      })
+      .where(eq(menteeProfilesTable.userId, menteeUserId));
+  }
+
+  return {
+    cleanupDueAt: usedBytes > maxStorageBytes ? existingCleanupDueAt : null,
+    isOverLimit: usedBytes > maxStorageBytes,
+    lastAutoCleanupAt,
+    limitExceededAt: usedBytes > maxStorageBytes ? existingExceededAt : null,
+    maxStorageMb: guideLimits.maxStorageMb,
+    usedBytes,
+  };
+}
+
 async function collectGuideCascadeIds(
   db: Awaited<typeof import("@workspace/db")>["db"],
   rootGuideIds: number[],
@@ -5009,7 +5169,8 @@ router.get(
         .limit(1);
     }
     const guideLimits = getMenteeGuideLimits(profile);
-    const storageUsedBytes = await getMenteeStorageUsageBytes(db, req.platformUser!.id);
+    const storagePolicy = await enforceMenteeStoragePolicy(db, req.platformUser!.id);
+    const storageUsedBytes = storagePolicy.usedBytes;
     const menteeGoogleConnections = await db
       .select()
       .from(platformGoogleConnectionsTable)
@@ -5349,6 +5510,10 @@ router.get(
       })),
       purchasePopups: Object.fromEntries(Array.from(popupConfigMap.entries())),
       storage: {
+        cleanupDueAt: storagePolicy.cleanupDueAt?.toISOString?.() ?? null,
+        isOverLimit: storagePolicy.isOverLimit,
+        lastAutoCleanupAt: storagePolicy.lastAutoCleanupAt?.toISOString?.() ?? null,
+        limitExceededAt: storagePolicy.limitExceededAt?.toISOString?.() ?? null,
         maxStorageMb: guideLimits.maxStorageMb,
         usedBytes: storageUsedBytes,
         usedMb: Number((storageUsedBytes / (1024 * 1024)).toFixed(2)),
@@ -5492,12 +5657,15 @@ router.post(
       .where(eq(menteeProfilesTable.userId, req.platformUser!.id))
       .limit(1);
     const storageLimits = getMenteeGuideLimits(menteeProfile);
-    const currentStorageBytes = await getMenteeStorageUsageBytes(db, req.platformUser!.id);
+    const storagePolicy = await enforceMenteeStoragePolicy(db, req.platformUser!.id);
+    const currentStorageBytes = storagePolicy.usedBytes;
     const maxStorageBytes = storageLimits.maxStorageMb * 1024 * 1024;
     const bytesAfterUpload = currentStorageBytes + buffer.byteLength;
     if (bytesAfterUpload > maxStorageBytes) {
       return res.status(413).json({
-        error: `Przekroczysz obecny limit miejsca ${storageLimits.maxStorageMb} MB. Usuń część plików albo dokup więcej miejsca.`,
+        error: storagePolicy.isOverLimit && storagePolicy.cleanupDueAt
+          ? `Przekroczono obecny limit miejsca ${storageLimits.maxStorageMb} MB. Masz czas do ${storagePolicy.cleanupDueAt.toLocaleString("pl-PL")} na usunięcie plików, inaczej najnowsze pliki zostaną automatycznie przeniesione do kosza Google Drive.`
+          : `Przekroczysz obecny limit miejsca ${storageLimits.maxStorageMb} MB. Usuń część plików albo dokup więcej miejsca.`,
       });
     }
     const uploaded = await uploadFileToDrive({

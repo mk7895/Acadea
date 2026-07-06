@@ -1247,6 +1247,18 @@ function Dashboard({
             </div>
           </div>
           <div className="button-row topbar-actions">
+            {session.user.role === "mentee" && !mobileViewport ? (
+              <button
+                className={`cart-drawer-toggle ${cartDrawerOpen ? "is-open" : ""}`}
+                onClick={() => {
+                  setCartDrawerOpen((current) => !current);
+                }}
+                type="button"
+              >
+                <span>Koszyk</span>
+                <strong>{pendingCartCount}</strong>
+              </button>
+            ) : null}
             <button
               aria-label={mobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
               className="btn btn-secondary mobile-menu-toggle"
@@ -1260,18 +1272,6 @@ function Dashboard({
             </button>
           </div>
         </div>
-        {session.user.role === "mentee" && !mobileViewport ? (
-          <button
-            className={`cart-drawer-toggle ${cartDrawerOpen ? "is-open" : ""}`}
-            onClick={() => {
-              setCartDrawerOpen((current) => !current);
-            }}
-            type="button"
-          >
-            <span>Koszyk</span>
-            <strong>{pendingCartCount}</strong>
-          </button>
-        ) : null}
         {mobileMenuOpen ? (
           <div className="mobile-nav-overlay" onClick={() => setMobileMenuOpen(false)} role="presentation">
             <div className="mobile-nav-sheet" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
@@ -6035,7 +6035,15 @@ function MenteeSection({
   const packages = overview?.packages ?? [];
   const cartItems = overview?.cartItems ?? [];
   const purchasePopups = overview?.purchasePopups ?? {};
-  const storageSummary = overview?.storage ?? { maxStorageMb: 100, usedBytes: 0, usedMb: 0 };
+  const storageSummary = overview?.storage ?? {
+    cleanupDueAt: null,
+    isOverLimit: false,
+    lastAutoCleanupAt: null,
+    limitExceededAt: null,
+    maxStorageMb: 100,
+    usedBytes: 0,
+    usedMb: 0,
+  };
   const universityEmails = overview?.universityEmails ?? [];
   const hintEligibleTemplateIds = (overview?.hintEligibleTemplateIds ?? []).map(String);
   const tipAccessGuides = overview?.tipAccessGuides ?? [];
@@ -7306,15 +7314,6 @@ function MenteeSection({
                         >
                           Zrezygnuj z tej uczelni
                         </button>
-                        {!hintAccessSourceIds.has(Number(guide.sourceGuideId ?? guide.id)) ? (
-                          <button
-                            className="btn btn-secondary"
-                            onClick={() => void enableHintAccess(Number(guide.sourceGuideId ?? guide.id))}
-                            type="button"
-                          >
-                            Dodaj wskazówki
-                          </button>
-                        ) : null}
                       </div>
                       {guideMaterialsMap.get(guide.id)?.length ? (
                         <div className="list">
@@ -7457,22 +7456,11 @@ function MenteeSection({
                     className={`tile compact-guide-tile ${hasHintAccess ? "" : "locked-guide-tile"}`}
                     key={`tip-access-guide-${guide.id}`}
                   >
-                    <div className="guide-tile-head">
-                      <strong>{formatGuidePrimaryLabel(guide)}</strong>
-                      {!hasHintAccess ? (
-                        <span className="badge badge-muted">brak dostępu do wskazówek</span>
-                      ) : null}
-                    </div>
+                    <strong>{formatGuidePrimaryLabel(guide)}</strong>
                     <div className="small muted" style={{ marginTop: 6 }}>{formatGuideSecondaryLabel(guide)}</div>
                     {!hasHintAccess ? (
-                      <div className="button-row" style={{ marginTop: 12 }}>
-                        <button
-                          className="btn btn-secondary btn-compact"
-                          onClick={() => void enableHintAccess(guide.id)}
-                          type="button"
-                        >
-                          Dodaj wskazówki
-                        </button>
+                      <div className="small muted hint-access-note" style={{ marginTop: 12 }}>
+                        Brak dostępu do wskazówek
                       </div>
                     ) : null}
                   </div>
@@ -8186,6 +8174,13 @@ function MenteeSection({
             Obecny limit: <strong>{guideLimits.maxActiveGuideCount}</strong> programów, <strong>{guideLimits.maxHintGuideCount}</strong> wskazówek, <strong>{guideLimits.maxStorageMb} MB</strong> miejsca.
             Wykorzystane miejsce: <strong>{storageSummary.usedMb} MB</strong>.
           </div>
+          {storageSummary.isOverLimit ? (
+            <div className="status" style={{ marginTop: 12 }}>
+              {storageSummary.cleanupDueAt
+                ? `Przekroczono limit miejsca. Masz czas do ${formatDate(storageSummary.cleanupDueAt)} na usunięcie plików. Po tym terminie najnowsze pliki z folderu Google Drive będą automatycznie przenoszone do kosza, z wyłączeniem Essay Doc.`
+                : "Przekroczono limit miejsca. System przygotowuje automatyczny cleanup najnowszych plików z wyłączeniem Essay Doc."}
+            </div>
+          ) : null}
           <div className="tile-grid tile-grid-two" style={{ marginTop: 18 }}>
             {packages.map((item: any) => {
               const inCart = cartItems.some((cartItem: any) => Number(cartItem.productId) === Number(item.id));
