@@ -84,6 +84,7 @@ import {
   deleteDocumentTab,
   findDriveDocuments,
   getGoogleSharedDriveId,
+  getDriveFolderUsageBytes,
   hasGoogleWorkspaceServiceAccount,
   listDocumentTabs,
   parseGoogleDriveId,
@@ -513,6 +514,20 @@ const popupConfigSchema = z.object({
   recommendedProductIds: z.array(z.number().int().positive()).default([]),
   isActive: z.boolean().default(true),
 });
+
+const popupConfigImportSchema = z.object({
+  popups: z.array(
+    z.object({
+      key: z.string().trim().min(1),
+      title: z.string().trim().min(1),
+      body: z.string().trim().optional().default(""),
+      primaryCtaLabel: z.string().trim().min(1).default("Kup sugerowany pakiet"),
+      secondaryCtaLabel: z.string().trim().min(1).default("Zobacz pakiety"),
+      recommendedProductIds: z.array(z.number().int().positive()).default([]),
+      isActive: z.boolean().default(true),
+    }),
+  ).default([]),
+}).transform((value) => value.popups);
 
 const cartItemSchema = z.object({
   productId: z.number().int().positive(),
@@ -2510,6 +2525,22 @@ async function getPopupConfigMap(
       updatedAt: existing?.updatedAt?.toISOString?.() ?? null,
     });
   }
+  for (const row of popupRows) {
+    if (!popupMap.has(row.key)) {
+      popupMap.set(row.key, {
+        body: row.body ?? "",
+        isActive: row.isActive ?? true,
+        key: row.key,
+        primaryCtaLabel: row.primaryCtaLabel ?? "Kup sugerowany pakiet",
+        recommendedProductIds: Array.isArray(row.recommendedProductIds)
+          ? row.recommendedProductIds.filter((value: unknown): value is number => Number.isFinite(value))
+          : [],
+        secondaryCtaLabel: row.secondaryCtaLabel ?? "Zobacz pakiety",
+        title: row.title ?? row.key,
+        updatedAt: row.updatedAt?.toISOString?.() ?? null,
+      });
+    }
+  }
   return popupMap;
 }
 
@@ -2517,6 +2548,26 @@ async function getMenteeStorageUsageBytes(
   db: Awaited<typeof import("@workspace/db")>["db"],
   menteeUserId: number,
 ) {
+  const [profile] = await db
+    .select({
+      googleDriveFolderId: menteeProfilesTable.googleDriveFolderId,
+      googleDriveFolderUrl: menteeProfilesTable.googleDriveFolderUrl,
+    })
+    .from(menteeProfilesTable)
+    .where(eq(menteeProfilesTable.userId, menteeUserId))
+    .limit(1);
+
+  const folderId =
+    parseGoogleDriveId(profile?.googleDriveFolderId ?? "") ||
+    parseGoogleDriveId(profile?.googleDriveFolderUrl ?? "");
+  if (folderId) {
+    try {
+      return await getDriveFolderUsageBytes(folderId);
+    } catch (error) {
+      logger.warn({ err: error, folderId, menteeUserId }, "failed to compute Google Drive folder usage");
+    }
+  }
+
   const [row] = await db
     .select({
       totalBytes: sql<number>`coalesce(sum(${platformFileAssetsTable.sizeBytes}), 0)`,
@@ -6984,6 +7035,104 @@ router.delete(
   },
 );
 
+router.post(
+  "/platform/admin/products/:id/stripe-sync",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: "Invalid product id." });
+    }
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
+    if (!stripeSecretKey) {
+      return res.status(400).json({ error: "Brak STRIPE_SECRET_KEY w środowisku." });
+    }
+    const { db } = await import("@workspace/db");
+    const [product] = await db
+      .select()
+      .from(platformProductsTable)
+      .where(eq(platformProductsTable.id, id))
+      .limit(1);
+    if (!product) {
+      return res.status(404).json({ error: "Nie znaleziono produktu." });
+    }
+
+    const productBody = new URLSearchParams();
+    productBody.set("name", product.title);
+    if (product.description?.trim()) {
+      productBody.set("description", product.description.trim());
+    } else if (product.summary?.trim()) {
+      productBody.set("description", product.summary.trim());
+    }
+    if (product.imageUrl?.trim()) {
+      productBody.set("images[0]", product.imageUrl.trim());
+    }
+    productBody.set("metadata[platformProductId]", String(product.id));
+    productBody.set("metadata[platformSlug]", product.slug);
+
+    const productUrl = product.stripeProductId
+      ? `https://api.stripe.com/v1/products/${encodeURIComponent(product.stripeProductId)}`
+      : "https://api.stripe.com/v1/products";
+    const stripeProductResponse = await fetch(productUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${stripeSecretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: productBody.toString(),
+    });
+    const stripeProductPayload = await stripeProductResponse.json() as {
+      error?: { message?: string };
+      id?: string;
+    };
+    if (!stripeProductResponse.ok || !stripeProductPayload.id) {
+      return res.status(502).json({
+        error: stripeProductPayload.error?.message ?? "Nie udało się zsynchronizować produktu Stripe.",
+      });
+    }
+
+    const priceBody = new URLSearchParams();
+    priceBody.set("product", stripeProductPayload.id);
+    priceBody.set("currency", (product.currency || "PLN").toLowerCase());
+    priceBody.set("unit_amount", String(Math.max(0, Number(product.priceCents ?? 0))));
+    priceBody.set("metadata[platformProductId]", String(product.id));
+    const stripePriceResponse = await fetch("https://api.stripe.com/v1/prices", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${stripeSecretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: priceBody.toString(),
+    });
+    const stripePricePayload = await stripePriceResponse.json() as {
+      error?: { message?: string };
+      id?: string;
+    };
+    if (!stripePriceResponse.ok || !stripePricePayload.id) {
+      return res.status(502).json({
+        error: stripePricePayload.error?.message ?? "Nie udało się utworzyć ceny Stripe.",
+      });
+    }
+
+    const [row] = await db
+      .update(platformProductsTable)
+      .set({
+        stripePriceId: stripePricePayload.id,
+        stripeProductId: stripeProductPayload.id,
+        updatedAt: new Date(),
+      })
+      .where(eq(platformProductsTable.id, id))
+      .returning();
+
+    return res.json({
+      ...row,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    });
+  },
+);
+
 router.get(
   "/platform/admin/popup-configs",
   requirePlatformAuth,
@@ -7000,7 +7149,8 @@ router.put(
   requirePlatformAuth,
   requirePlatformRole("admin"),
   async (req, res) => {
-    const key = PLATFORM_POPUP_KEYS.includes(req.params.key as any) ? req.params.key as (typeof PLATFORM_POPUP_KEYS)[number] : null;
+    const rawKey = req.params.key;
+    const key = (Array.isArray(rawKey) ? rawKey[0] : rawKey)?.trim();
     const parsed = popupConfigSchema.safeParse(req.body);
     if (!key || !parsed.success) {
       return res.status(422).json({ error: parsed.success ? "Invalid popup key." : parsed.error.message });
@@ -7025,6 +7175,39 @@ router.put(
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
     });
+  },
+);
+
+router.post(
+  "/platform/admin/popup-configs/import",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const parsed = popupConfigImportSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const results = [];
+    for (const popup of parsed.data) {
+      const [row] = await db
+        .insert(platformPopupConfigsTable)
+        .values(popup)
+        .onConflictDoUpdate({
+          target: platformPopupConfigsTable.key,
+          set: {
+            ...popup,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+      results.push({
+        ...row,
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+      });
+    }
+    return res.json({ imported: results.length, rows: results });
   },
 );
 
@@ -7294,9 +7477,13 @@ router.post(
 
     const activeGuides = await db
       .select({
+        country: platformGuidesTable.country,
         id: platformGuidesTable.id,
         emailSenderDomains: platformGuidesTable.emailSenderDomains,
         sourceGuideId: platformGuidesTable.sourceGuideId,
+        slug: platformGuidesTable.slug,
+        title: platformGuidesTable.title,
+        universityName: platformGuidesTable.universityName,
       })
       .from(platformGuidesTable)
       .where(
@@ -7315,14 +7502,40 @@ router.post(
     const sourceGuides = sourceGuideIds.length
       ? await db
           .select({
+            country: platformGuidesTable.country,
             emailSenderDomains: platformGuidesTable.emailSenderDomains,
             id: platformGuidesTable.id,
+            slug: platformGuidesTable.slug,
+            title: platformGuidesTable.title,
+            universityName: platformGuidesTable.universityName,
           })
           .from(platformGuidesTable)
           .where(inArray(platformGuidesTable.id, sourceGuideIds))
       : [];
+    const fallbackSourceGuides = await db
+      .select({
+        country: platformGuidesTable.country,
+        emailSenderDomains: platformGuidesTable.emailSenderDomains,
+        id: platformGuidesTable.id,
+        slug: platformGuidesTable.slug,
+        title: platformGuidesTable.title,
+        universityName: platformGuidesTable.universityName,
+      })
+      .from(platformGuidesTable)
+      .where(
+        and(
+          eq(platformGuidesTable.guideType, "admin_template"),
+          eq(platformGuidesTable.status, "published"),
+        ),
+      );
     const sourceGuideMap = new Map(
       sourceGuides.map((guide) => [guide.id, Array.isArray(guide.emailSenderDomains) ? guide.emailSenderDomains : []]),
+    );
+    const fallbackSourceGuideMap = new Map(
+      fallbackSourceGuides.map((guide) => [
+        `${guide.slug}::${guide.country}::${guide.universityName}::${guide.title}`.toLowerCase(),
+        Array.isArray(guide.emailSenderDomains) ? guide.emailSenderDomains : [],
+      ]),
     );
     const senderDomains = Array.from(
       new Set(
@@ -7330,7 +7543,13 @@ router.post(
           (
             Array.isArray(guide.emailSenderDomains) && guide.emailSenderDomains.length
               ? guide.emailSenderDomains
-              : (typeof guide.sourceGuideId === "number" ? sourceGuideMap.get(guide.sourceGuideId) : []) ?? []
+              : (
+                  (typeof guide.sourceGuideId === "number" ? sourceGuideMap.get(guide.sourceGuideId) : null) ??
+                  fallbackSourceGuideMap.get(
+                    `${guide.slug}::${guide.country}::${guide.universityName}::${guide.title}`.toLowerCase(),
+                  ) ??
+                  []
+                )
           )
             .map((value) => value.trim().toLowerCase().replace(/^@/, ""))
             .filter(Boolean),
@@ -7349,6 +7568,7 @@ router.post(
     const listPayload = await listResponse.json() as { messages?: Array<{ id: string }> };
     const messages = Array.isArray(listPayload.messages) ? listPayload.messages : [];
     let imported = 0;
+    let matched = 0;
 
     for (const message of messages) {
       const messageResponse = await googleApiRequestWithAccessToken(
@@ -7372,6 +7592,7 @@ router.post(
       if (!fromDomain || !senderDomains.some((domain) => fromDomain === domain || fromDomain.endsWith(`.${domain}`))) {
         continue;
       }
+      matched += 1;
       const classified = classifyUniversityEmail({
         fromEmail,
         snippet: payload.snippet ?? "",
@@ -7429,13 +7650,17 @@ router.post(
       .limit(100);
 
     return res.json({
+      connectedEmail: connection.externalEmail || metadata.externalEmail || null,
       imported,
+      matched,
       rows: rows.map((row) => ({
         ...row,
         createdAt: row.createdAt.toISOString(),
         receivedAt: row.receivedAt?.toISOString() ?? null,
         updatedAt: row.updatedAt.toISOString(),
       })),
+      scannedMessages: messages.length,
+      senderDomains,
     });
   },
 );

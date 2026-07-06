@@ -25,6 +25,7 @@ type DriveFileRecord = {
   id: string;
   mimeType?: string;
   name?: string;
+  size?: string;
   webViewLink?: string;
 };
 
@@ -419,6 +420,55 @@ export async function findDriveDocuments(input: {
           ? buildGoogleFolderUrl(file.id)
           : buildGoogleViewUrl(file.id)),
   }));
+}
+
+export async function getDriveFolderUsageBytes(folderId: string) {
+  const normalizedFolderId = parseGoogleDriveId(folderId);
+  if (!normalizedFolderId) {
+    return 0;
+  }
+
+  let totalBytes = 0;
+  const queue = [normalizedFolderId];
+  const seenFolders = new Set<string>();
+
+  while (queue.length) {
+    const currentFolderId = queue.shift();
+    if (!currentFolderId || seenFolders.has(currentFolderId)) {
+      continue;
+    }
+    seenFolders.add(currentFolderId);
+
+    let pageToken: string | undefined;
+    do {
+      const query = [
+        `'${currentFolderId}' in parents`,
+        "trashed = false",
+      ].join(" and ");
+      const response = await googleWorkspaceJson<{
+        files?: DriveFileRecord[];
+        nextPageToken?: string;
+      }>(
+        `${GOOGLE_DRIVE_API_BASE}/files?supportsAllDrives=true&includeItemsFromAllDrives=true&fields=nextPageToken,files(id,name,mimeType,size)&pageSize=1000&q=${encodeURIComponent(
+          query,
+        )}${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ""}`,
+        undefined,
+        ["https://www.googleapis.com/auth/drive"],
+      );
+
+      for (const file of response.files ?? []) {
+        if (file.mimeType === GOOGLE_FOLDER_MIME_TYPE) {
+          queue.push(file.id);
+          continue;
+        }
+        totalBytes += Number(file.size ?? 0);
+      }
+
+      pageToken = response.nextPageToken;
+    } while (pageToken);
+  }
+
+  return totalBytes;
 }
 
 export async function shareDriveItemWithUser(input: {

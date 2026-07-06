@@ -20,6 +20,10 @@ function getSessionSecret() {
   return process.env.ADMIN_SESSION_SECRET ?? process.env.GOOGLE_OAUTH_ADMIN_SECRET;
 }
 
+function getPasswordPepper() {
+  return process.env.PLATFORM_PASSWORD_PEPPER?.trim() || "";
+}
+
 export function getAdminEntrySecret() {
   return process.env.ADMIN_PANEL_SECRET ?? process.env.GOOGLE_OAUTH_ADMIN_SECRET;
 }
@@ -40,7 +44,7 @@ export function secretsMatch(received: string | undefined, expected: string | un
 }
 
 export function hashPassword(password: string, salt = randomBytes(16).toString("hex")) {
-  const hash = scryptSync(password, salt, 64).toString("hex");
+  const hash = scryptSync(`${password}${getPasswordPepper()}`, salt, 64).toString("hex");
   return {
     salt,
     hash,
@@ -48,14 +52,17 @@ export function hashPassword(password: string, salt = randomBytes(16).toString("
 }
 
 export function verifyPassword(password: string, passwordSalt: string, passwordHash: string) {
-  const calculated = scryptSync(password, passwordSalt, 64);
   const stored = Buffer.from(passwordHash, "hex");
+  const candidates = [
+    scryptSync(`${password}${getPasswordPepper()}`, passwordSalt, 64),
+    scryptSync(password, passwordSalt, 64),
+  ];
 
-  if (calculated.length !== stored.length) {
+  if (candidates[0].length !== stored.length) {
     return false;
   }
 
-  return timingSafeEqual(calculated, stored);
+  return candidates.some((candidate) => timingSafeEqual(candidate, stored));
 }
 
 export function createAdminSessionToken() {
@@ -111,4 +118,3 @@ export function verifyAdminSessionToken(token: string | undefined) {
     return false;
   }
 }
-

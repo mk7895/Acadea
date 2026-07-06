@@ -1169,6 +1169,27 @@ function Dashboard({
   const [section, setSection] = useState(() => getCookie(sectionCookieName) ?? defaultSection);
   const [expandedMaterialTemplateIds, setExpandedMaterialTemplateIds] = useState<number[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileViewport, setMobileViewport] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth <= 720 : false,
+  );
+  const [pendingCartCount, setPendingCartCount] = useState(0);
+  const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const syncViewport = () => setMobileViewport(window.innerWidth <= 720);
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    return () => window.removeEventListener("resize", syncViewport);
+  }, []);
+
+  useEffect(() => {
+    if (mobileViewport) {
+      setCartDrawerOpen(false);
+    }
+  }, [mobileViewport]);
 
   const menu = useMemo(() => {
     if (session.user.role === "admin") {
@@ -1194,16 +1215,16 @@ function Dashboard({
     }
     return [
       ["universities", "Twoje Uczelnie"],
+      ["packages", pendingCartCount ? `Pakiety (${pendingCartCount})` : "Pakiety"],
+      ["emails", "Twoje Maile od Uczelni"],
       ["profile", "Twoje Dane"],
       ["materials", "Twoje Materiały"],
       ["essays", "Twoje Eseje"],
       ["mentors", "Mentorzy"],
       ["meetings", "Twoje Spotkania"],
       ["offers", "Twoje Oferty"],
-      ["emails", "Twoje Maile od Uczelni"],
-      ["packages", "Pakiety"],
     ];
-  }, [session.user.role]);
+  }, [pendingCartCount, session.user.role]);
 
   useEffect(() => {
     const allowedSections = new Set(menu.map(([value]) => value));
@@ -1234,14 +1255,52 @@ function Dashboard({
             >
               {mobileMenuOpen ? "×" : "☰"}
             </button>
-            <a className="btn btn-secondary" href="https://acadea.org" target="_blank" rel="noreferrer">
-              Marketing site
-            </a>
             <button className="btn btn-primary" onClick={() => void onLogout()}>
               Wyloguj
             </button>
           </div>
         </div>
+        {session.user.role === "mentee" && !mobileViewport ? (
+          <button
+            className={`cart-drawer-toggle ${cartDrawerOpen ? "is-open" : ""}`}
+            onClick={() => {
+              setSection("packages");
+              setCartDrawerOpen((current) => !current);
+            }}
+            type="button"
+          >
+            <span>Koszyk</span>
+            <strong>{pendingCartCount}</strong>
+          </button>
+        ) : null}
+        {mobileMenuOpen ? (
+          <div className="mobile-nav-overlay" onClick={() => setMobileMenuOpen(false)} role="presentation">
+            <div className="mobile-nav-sheet" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
+              <div className="mobile-nav-head">
+                <div className="eyebrow">Platforma Acadea</div>
+                <button className="mobile-nav-close" onClick={() => setMobileMenuOpen(false)} type="button">
+                  ×
+                </button>
+              </div>
+              <div className="mobile-nav-links">
+                {menu.map(([value, label]) => (
+                  <button
+                    key={`mobile-${value}`}
+                    className={section === value ? "active" : ""}
+                    onClick={() => {
+                      setExpandedMaterialTemplateIds([]);
+                      setSection(value);
+                      setMobileMenuOpen(false);
+                    }}
+                    type="button"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
         <div className="dashboard-layout">
           <div className={`dashboard-card sidebar ${mobileMenuOpen ? "mobile-open" : ""}`}>
             {menu.map(([value, label]) => (
@@ -1262,6 +1321,10 @@ function Dashboard({
           <div className="dashboard-main">
             <RoleSection
               expandedMaterialTemplateIds={expandedMaterialTemplateIds}
+              onCartCountChange={setPendingCartCount}
+              onCartDrawerChange={setCartDrawerOpen}
+              cartDrawerOpen={cartDrawerOpen}
+              mobileViewport={mobileViewport}
               onNavigateMentee={(nextSection, nextTemplateId) => {
                 setSection(nextSection);
                 setExpandedMaterialTemplateIds(
@@ -1281,12 +1344,20 @@ function Dashboard({
 
 function RoleSection({
   expandedMaterialTemplateIds,
+  cartDrawerOpen,
+  mobileViewport,
+  onCartCountChange,
+  onCartDrawerChange,
   onNavigateMentee,
   section,
   session,
   token,
 }: {
   expandedMaterialTemplateIds: number[];
+  cartDrawerOpen: boolean;
+  mobileViewport: boolean;
+  onCartCountChange: (count: number) => void;
+  onCartDrawerChange: (open: boolean) => void;
   onNavigateMentee: (nextSection: string, nextTemplateId?: number | null) => void;
   section: string;
   session: SessionPayload;
@@ -1300,8 +1371,12 @@ function RoleSection({
   }
   return (
     <MenteeSection
+      cartDrawerOpen={cartDrawerOpen}
       expandedMaterialTemplateIds={expandedMaterialTemplateIds}
+      mobileViewport={mobileViewport}
       onNavigate={onNavigateMentee}
+      onCartCountChange={onCartCountChange}
+      onCartDrawerChange={onCartDrawerChange}
       section={section}
       token={token}
     />
@@ -1437,6 +1512,7 @@ function AdminSection({
     secondaryCtaLabel: string;
     title: string;
   }>>({});
+  const [popupImportJson, setPopupImportJson] = useState("");
   const [itemGuideForm, setItemGuideForm] = useState({
     appliesToGuideIds: [] as string[],
     title: "",
@@ -2278,6 +2354,17 @@ function AdminSection({
     }
   }
 
+  async function syncProductToStripe(productId: number) {
+    setStatus("");
+    try {
+      await apiFetch(`/admin/products/${productId}/stripe-sync`, { method: "POST" }, token);
+      await refreshCommerceDesigner();
+      setStatus("Produkt został zsynchronizowany ze Stripe.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zsynchronizować produktu ze Stripe.");
+    }
+  }
+
   async function savePopupConfig(key: string) {
     const draft = popupDrafts[key];
     if (!draft) {
@@ -2298,6 +2385,21 @@ function AdminSection({
       setStatus("Popup zakupowy został zapisany.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać popupu.");
+    }
+  }
+
+  async function importPopupConfigs() {
+    setStatus("");
+    try {
+      const parsed = JSON.parse(popupImportJson);
+      await apiFetch("/admin/popup-configs/import", {
+        method: "POST",
+        body: JSON.stringify(parsed),
+      }, token);
+      await refreshCommerceDesigner();
+      setStatus("Popupy zostały zaimportowane.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zaimportować popupów.");
     }
   }
 
@@ -3926,6 +4028,7 @@ function AdminSection({
                   <p className="muted">{product.summary}</p>
                   <div className="button-row">
                     <button className="btn btn-secondary" onClick={() => loadProductIntoEditor(product)} type="button">Edytuj</button>
+                    <button className="btn btn-secondary" onClick={() => void syncProductToStripe(product.id)} type="button">Sync do Stripe</button>
                     <button className="btn btn-secondary" onClick={() => void deleteProduct(product.id)} type="button">Usuń</button>
                   </div>
                 </div>
@@ -3937,7 +4040,20 @@ function AdminSection({
       {section === "purchase-popups" ? (
         <div className="dashboard-card">
           <h2>Popupy Zakupowe</h2>
-          <p className="muted">Tutaj podłączasz istniejące popupy do odpowiednich produktów i ustawiasz treść przycisków zakupowych.</p>
+          <p className="muted">Tutaj podłączasz popupy do produktów, możesz edytować istniejące, tworzyć własne klucze kontekstowe oraz importować wiele popupów naraz przez JSON.</p>
+          <div className="stack" style={{ marginTop: 18, marginBottom: 18 }}>
+            <div className="field">
+              <label>Import popupów z JSON</label>
+              <textarea
+                placeholder='{"popups":[{"key":"context:after_material_upload:template:24:row:item-1","title":"Sprawdź dokument z mentorem","body":"Po uploadzie możesz od razu dokupić konsultację.","primaryCtaLabel":"Kup konsultację","secondaryCtaLabel":"Zobacz pakiety","recommendedProductIds":[1],"isActive":true}]}'
+                value={popupImportJson}
+                onChange={(event) => setPopupImportJson(event.target.value)}
+              />
+            </div>
+            <div className="button-row">
+              <button className="btn btn-primary" onClick={() => void importPopupConfigs()} type="button">Importuj popupy</button>
+            </div>
+          </div>
           <div className="list">
             {popupConfigs.map((popup) => {
               const draft = popupDrafts[popup.key] ?? {
@@ -3953,7 +4069,11 @@ function AdminSection({
                   <header>
                     <div>
                       <h3>{popup.key}</h3>
-                      <div className="muted small">Konfiguracja popupu zakupowego</div>
+                      <div className="muted small">
+                        {popup.key.startsWith("context:")
+                          ? "Popup kontekstowy wywoływany po określonej akcji"
+                          : "Konfiguracja popupu zakupowego"}
+                      </div>
                     </div>
                     <span className="badge">{draft.isActive ? "active" : "inactive"}</span>
                   </header>
@@ -5820,13 +5940,21 @@ function MentorSection({
 }
 
 function MenteeSection({
+  cartDrawerOpen,
   expandedMaterialTemplateIds,
+  mobileViewport,
   onNavigate,
+  onCartCountChange,
+  onCartDrawerChange,
   section,
   token,
 }: {
+  cartDrawerOpen: boolean;
   expandedMaterialTemplateIds: number[];
+  mobileViewport: boolean;
   onNavigate: (nextSection: string, nextTemplateId?: number | null) => void;
+  onCartCountChange: (count: number) => void;
+  onCartDrawerChange: (open: boolean) => void;
   section: string;
   token: string;
 }) {
@@ -6031,6 +6159,16 @@ function MenteeSection({
       .map((guide: any) => Number(guide.sourceGuideId ?? guide.id))
       .filter((value: number) => Number.isFinite(value)),
   );
+  const activeGuideHintCards = (guides ?? []).map((guide: any) => ({
+    guide,
+    hasHintAccess: hintAccessSourceIds.has(Number(guide.sourceGuideId ?? guide.id)),
+    sourceId: Number(guide.sourceGuideId ?? guide.id),
+  }));
+  const cartCount = cartItems.reduce((sum: number, item: any) => sum + Number(item.quantity ?? 0), 0);
+
+  useEffect(() => {
+    onCartCountChange(cartCount);
+  }, [cartCount, onCartCountChange]);
 
   function openPurchaseShell(title: string, body: string, primaryCtaLabel = "Kup sugerowany pakiet", key?: string) {
     const popupConfig = key ? purchasePopups[key] : null;
@@ -6042,6 +6180,19 @@ function MenteeSection({
       secondaryCtaLabel: popupConfig?.secondaryCtaLabel ?? "Zobacz pakiety",
       title: popupConfig?.title ?? title,
     });
+  }
+
+  function maybeOpenContextualPopup(keys: string[]) {
+    const match = keys.find((key) => Boolean(purchasePopups[key]?.isActive));
+    if (!match) {
+      return;
+    }
+    openPurchaseShell(
+      purchasePopups[match]?.title ?? "Rozszerzenie dostępu",
+      purchasePopups[match]?.body ?? "",
+      purchasePopups[match]?.primaryCtaLabel ?? "Kup sugerowany pakiet",
+      match,
+    );
   }
 
   function canAddAnotherGuide() {
@@ -6308,6 +6459,10 @@ function MenteeSection({
       await apiFetch(`/mentee/guides/${templateId}/adopt`, { method: "POST" }, token);
       await refreshOverview();
       setStatus("Uczelnia została dodana do Twojego panelu.");
+      maybeOpenContextualPopup([
+        `context:after_guide_add:guide:${templateId}`,
+        "context:after_guide_add:any",
+      ]);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się dodać uczelni.");
     }
@@ -6339,6 +6494,10 @@ function MenteeSection({
       await apiFetch(`/mentee/guides/${templateGuideId}/hint-access`, { method: "PUT" }, token);
       await refreshOverview();
       setStatus("Dostęp do wskazówek został dodany.");
+      maybeOpenContextualPopup([
+        `context:after_hint_add:guide:${templateGuideId}`,
+        "context:after_hint_add:any",
+      ]);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się dodać wskazówek.");
     }
@@ -6369,6 +6528,7 @@ function MenteeSection({
         body: JSON.stringify({ productId, quantity: 1 }),
       }, token);
       await refreshOverview();
+      onCartDrawerChange(true);
       setStatus("Produkt został dodany do koszyka.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się dodać produktu do koszyka.");
@@ -6395,6 +6555,7 @@ function MenteeSection({
         return;
       }
       await refreshOverview();
+      onCartDrawerChange(false);
       setStatus("Zakup został zastosowany do konta testowego.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się rozpocząć checkoutu.");
@@ -6427,9 +6588,17 @@ function MenteeSection({
   async function refreshUniversityEmails() {
     setStatus("");
     try {
-      await apiFetch("/mentee/university-emails/refresh", { method: "POST" }, token);
+      const payload = await apiFetch<any>("/mentee/university-emails/refresh", { method: "POST" }, token);
       await refreshOverview();
-      setStatus("Skrzynka uczelni została odświeżona.");
+      const imported = Number(payload?.imported ?? 0);
+      const matched = Number(payload?.matched ?? 0);
+      const scanned = Number(payload?.scannedMessages ?? 0);
+      const connectedEmail = payload?.connectedEmail ? ` (${payload.connectedEmail})` : "";
+      setStatus(
+        imported > 0
+          ? `Skrzynka uczelni została odświeżona${connectedEmail}. Zaimportowano ${imported} wiadomości.`
+          : `Skrzynka uczelni została odświeżona${connectedEmail}. Przeskanowano ${scanned} wiadomości, dopasowano ${matched}, zaimportowano ${imported}.`,
+      );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się odświeżyć maili uczelni.");
     }
@@ -6472,6 +6641,13 @@ function MenteeSection({
       }, token);
       await refreshOverview();
       setStatus(completed ? "Element został oznaczony jako wykonany." : "Element został odznaczony.");
+      if (completed) {
+        maybeOpenContextualPopup([
+          `context:after_material_check:template:${templateId}:row:${rowKey}`,
+          `context:after_material_check:template:${templateId}`,
+          "context:after_material_check:any",
+        ]);
+      }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać statusu elementu.");
     } finally {
@@ -6501,6 +6677,11 @@ function MenteeSection({
       }, token);
       await refreshOverview();
       setStatus("Plik został wgrany do Twojego folderu Google Drive.");
+      maybeOpenContextualPopup([
+        `context:after_material_upload:template:${templateId}:row:${rowKey}`,
+        `context:after_material_upload:template:${templateId}`,
+        "context:after_material_upload:any",
+      ]);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się wgrać pliku.");
     } finally {
@@ -6521,6 +6702,11 @@ function MenteeSection({
       }, token);
       await refreshOverview();
       setStatus("Nowa zakładka została dodana do Essay Doc.");
+      maybeOpenContextualPopup([
+        `context:after_doc_tab_create:template:${templateId}:row:${rowKey}`,
+        `context:after_doc_tab_create:template:${templateId}`,
+        "context:after_doc_tab_create:any",
+      ]);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się utworzyć zakładki w Essay Doc.");
     } finally {
@@ -7096,6 +7282,9 @@ function MenteeSection({
           <div className="dashboard-card">
             <h2>Twoje Uczelnie</h2>
             <p className="muted">Tutaj widzisz swoje aktywne uczelnie. Po kliknięciu kafla otwierasz checklistę i wymagania przypisane do tej konkretnej aplikacji.</p>
+            <div className="status" style={{ marginTop: 16 }}>
+              Możesz mieć jednocześnie do <strong>{guideLimits.maxActiveGuideCount}</strong> aktywnych programów.
+            </div>
             <div className="tile-grid tile-grid-two" style={{ marginTop: 18 }}>
               {guides.map((guide: any) => (
                 <details className="tile tile-detail" key={guide.id}>
@@ -7260,21 +7449,39 @@ function MenteeSection({
           <div className="dashboard-card">
             <h2>Dostęp do wskazówek</h2>
             <p className="muted">
-              Możesz mieć jednocześnie do <strong>{guideLimits.maxActiveGuideCount}</strong> aktywnych programów / przewodników.
-              Wskazówki są aktywne maksymalnie dla <strong>{guideLimits.maxHintGuideCount}</strong> programów / przewodników.
+              Wskazówki są aktywne maksymalnie dla <strong>{guideLimits.maxHintGuideCount}</strong> programów.
             </p>
-            {tipAccessGuides.length ? (
+            {activeGuideHintCards.length ? (
               <div className="tile-grid tile-grid-two compact-guide-grid" style={{ marginTop: 16 }}>
-                {tipAccessGuides.map((guide: any) => (
-                  <div className="tile compact-guide-tile" key={`tip-access-guide-${guide.id}`}>
-                    <strong>{formatGuidePrimaryLabel(guide)}</strong>
+                {activeGuideHintCards.map(({ guide, hasHintAccess }: any) => (
+                  <div
+                    className={`tile compact-guide-tile ${hasHintAccess ? "" : "locked-guide-tile"}`}
+                    key={`tip-access-guide-${guide.id}`}
+                  >
+                    <div className="guide-tile-head">
+                      <strong>{formatGuidePrimaryLabel(guide)}</strong>
+                      <span className={`badge ${hasHintAccess ? "" : "badge-muted"}`}>
+                        {hasHintAccess ? "wskazówki aktywne" : "brak dostępu do wskazówek"}
+                      </span>
+                    </div>
                     <div className="small muted" style={{ marginTop: 6 }}>{formatGuideSecondaryLabel(guide)}</div>
+                    {!hasHintAccess ? (
+                      <div className="button-row" style={{ marginTop: 14 }}>
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => void enableHintAccess(guide.id)}
+                          type="button"
+                        >
+                          Dodaj wskazówki
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
             ) : (
               <div className="small muted" style={{ marginTop: 12 }}>
-                Obecnie nie masz aktywnego dostępu do wskazówek żadnego programu / przewodnika.
+                Obecnie nie masz aktywnego dostępu do wskazówek żadnego programu.
               </div>
             )}
           </div>
@@ -7897,7 +8104,17 @@ function MenteeSection({
           ) : (
             <div className="stack" style={{ marginTop: 18 }}>
               <div className="status">
-                Status połączenia Gmail: <strong>{googleConnections.some((connection: any) => connection.connectionType === "gmail_readonly" && connection.status === "connected") ? "połączono" : "nie połączono"}</strong>
+                {(() => {
+                  const gmailConnection = googleConnections.find(
+                    (connection: any) => connection.connectionType === "gmail_readonly" && connection.status === "connected",
+                  );
+                  return (
+                    <>
+                      Status połączenia Gmail: <strong>{gmailConnection ? "połączono" : "nie połączono"}</strong>
+                      {gmailConnection?.externalEmail ? ` (${gmailConnection.externalEmail})` : ""}
+                    </>
+                  );
+                })()}
               </div>
               <div className="button-row">
                 {googleConnections.some((connection: any) => connection.connectionType === "gmail_readonly" && connection.status === "connected") ? (
@@ -8010,6 +8227,58 @@ function MenteeSection({
           </div>
         </div>
       ) : null}
+      {!mobileViewport ? (
+        <aside className={`cart-side-panel ${cartDrawerOpen ? "is-open" : ""}`}>
+          <div className="cart-side-panel-head">
+            <div>
+              <div className="eyebrow">Koszyk</div>
+              <h3>{cartCount ? `Wybrane produkty (${cartCount})` : "Koszyk jest pusty"}</h3>
+            </div>
+            <button className="cart-side-panel-close" onClick={() => onCartDrawerChange(false)} type="button">
+              ×
+            </button>
+          </div>
+          {cartItems.length ? (
+            <div className="stack">
+              <div className="list">
+                {cartItems.map((cartItem: any) => {
+                  const product = packages.find((entry: any) => Number(entry.id) === Number(cartItem.productId));
+                  return (
+                    <div className="list-item" key={`drawer-cart-${cartItem.productId}`}>
+                      <header>
+                        <div>
+                          <h3>{product?.title ?? `Produkt #${cartItem.productId}`}</h3>
+                          <div className="muted small">Ilość: {cartItem.quantity}</div>
+                        </div>
+                        <button className="btn btn-secondary btn-compact" onClick={() => void removeProductFromCart(cartItem.productId)} type="button">
+                          Usuń
+                        </button>
+                      </header>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="button-row">
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    onNavigate("packages");
+                    onCartDrawerChange(true);
+                  }}
+                  type="button"
+                >
+                  Podsumowanie pakietów
+                </button>
+                <button className="btn btn-secondary" onClick={() => void checkoutCart()} type="button">
+                  Przejdź do płatności
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="status" style={{ marginTop: 16 }}>Dodane produkty pojawią się tutaj od razu po kliknięciu.</div>
+          )}
+        </aside>
+      ) : null}
       {section === "essays" && overview
         ? renderMaterialSectionCard(
             "Twoje Eseje",
@@ -8043,13 +8312,21 @@ function MenteeSection({
                   if (recommendedProductId) {
                     void addProductToCart(recommendedProductId);
                   }
-                  onNavigate("packages");
+                  setPurchasePopup(null);
                 }}
                 type="button"
               >
                 {purchasePopup.primaryCtaLabel}
               </button>
-              <button className="btn btn-secondary" onClick={() => onNavigate("packages")} type="button">
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setPurchasePopup(null);
+                  onNavigate("packages");
+                  onCartDrawerChange(true);
+                }}
+                type="button"
+              >
                 {purchasePopup.secondaryCtaLabel ?? "Przejdź do pakietów"}
               </button>
             </div>
