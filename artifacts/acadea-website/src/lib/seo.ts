@@ -9,7 +9,7 @@ export const DEFAULT_LANGUAGE = "pl";
 
 const ORGANIZATION_NAME = "Fundacja Acadea";
 const ORGANIZATION_LOGO = `${SITE_URL}/images/logo-dark.png`;
-const CONTACT_EMAIL = "kontakt@acadea.org";
+const CONTACT_EMAIL = "contact@acadea.org";
 const CONTACT_PHONE = "+48 728 492 936";
 const CONTACT_WHATSAPP = "https://wa.me/48799831204";
 

@@ -8,6 +8,7 @@ import { getCookie, setLongLivedCookie } from "@/lib/cookies";
 
 const TOKEN_KEY = "acadea-platform-session";
 const TIMEZONE_COOKIE_NAME = "acadea_timezone";
+const DASHBOARD_SECTION_COOKIE_PREFIX = "acadea_dashboard_section";
 const DEFAULT_TIMEZONE = "Europe/Warsaw";
 const TIMEZONE_OPTIONS = [
   { value: "Europe/Warsaw", label: "Polska" },
@@ -301,9 +302,6 @@ function formatMeetingDateRange(meeting: { endsAt: string; startsAt: string }, t
 }
 
 function getMeetingCategory(meeting: any) {
-  if (meeting.isSuspicious) {
-    return "suspicious";
-  }
   if (meeting.status === "cancelled") {
     return "cancelled";
   }
@@ -464,6 +462,18 @@ function formatGuideSelectorLabel(guide: any) {
   const primary = formatGuidePrimaryLabel(guide);
   const secondary = formatGuideSecondaryLabel(guide);
   return secondary ? `${primary} • ${secondary}` : primary;
+}
+
+function renderMultilineText(value: string | null | undefined) {
+  return String(value ?? "")
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph, index) => (
+      <p className="muted multiline-paragraph" key={`${index}-${paragraph.slice(0, 24)}`}>
+        {paragraph}
+      </p>
+    ));
 }
 
 function guideHasOffer(guide: any) {
@@ -840,7 +850,7 @@ function AuthShell({
   return (
     <div className="app-shell">
       <div className="app-card">
-        <div className="eyebrow">ACADEA Platform</div>
+        <div className="eyebrow">Platforma Acadea</div>
         <h1 className="hero-title">{title}</h1>
         <p className="muted">{subtitle}</p>
         <div style={{ marginTop: 24 }}>{children}</div>
@@ -1149,9 +1159,16 @@ function Dashboard({
   session: SessionPayload;
   token: string;
 }) {
-  const defaultSection = session.user.role === "mentee" ? "universities" : "overview";
-  const [section, setSection] = useState(defaultSection);
+  const defaultSection =
+    session.user.role === "mentee"
+      ? "universities"
+      : session.user.role === "mentor"
+        ? "profile"
+        : "overview";
+  const sectionCookieName = `${DASHBOARD_SECTION_COOKIE_PREFIX}_${session.user.role}`;
+  const [section, setSection] = useState(() => getCookie(sectionCookieName) ?? defaultSection);
   const [expandedMaterialTemplateIds, setExpandedMaterialTemplateIds] = useState<number[]>([]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const menu = useMemo(() => {
     if (session.user.role === "admin") {
@@ -1162,43 +1179,61 @@ function Dashboard({
         ["profile-designer", "Projektant Twoich Danych"],
         ["materials-designer", "Projektant Kafli Materiałów"],
         ["item-guides", "Wskazówki do Elementów"],
+        ["products", "Produkty i Pakiety"],
+        ["purchase-popups", "Popupy Zakupowe"],
         ["meetings", "Spotkania"],
         ["leads", "Leady"],
       ];
     }
     if (session.user.role === "mentor") {
       return [
-        ["overview", "Przegląd"],
         ["profile", "Profil"],
         ["availability", "Dostępność"],
-        ["guides", "Przewodniki"],
-        ["materials", "Kafle materiałów"],
         ["meetings", "Spotkania"],
       ];
     }
     return [
       ["universities", "Twoje Uczelnie"],
+      ["profile", "Twoje Dane"],
+      ["materials", "Twoje Materiały"],
+      ["essays", "Twoje Eseje"],
       ["mentors", "Mentorzy"],
       ["meetings", "Twoje Spotkania"],
-      ["profile", "Twoje Dane"],
       ["offers", "Twoje Oferty"],
-      ["essays", "Twoje Eseje"],
-      ["materials", "Twoje Materiały"],
+      ["emails", "Twoje Maile od Uczelni"],
+      ["packages", "Pakiety"],
     ];
   }, [session.user.role]);
+
+  useEffect(() => {
+    const allowedSections = new Set(menu.map(([value]) => value));
+    if (!allowedSections.has(section)) {
+      setSection(defaultSection);
+      return;
+    }
+    setLongLivedCookie(sectionCookieName, section);
+  }, [defaultSection, menu, section, sectionCookieName]);
 
   return (
     <div className="app-shell">
       <div className="dashboard">
         <div className="dashboard-topbar app-card" style={{ maxWidth: "none", margin: 0 }}>
           <div>
-            <div className="eyebrow">ACADEA Platform</div>
+            <div className="eyebrow">Platforma Acadea</div>
             <h1 style={{ margin: "14px 0 8px", color: "#153f2c" }}>{session.user.fullName}</h1>
             <div className="muted">
               {session.user.role} • {session.user.email}
             </div>
           </div>
-          <div className="button-row">
+          <div className="button-row topbar-actions">
+            <button
+              aria-label={mobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
+              className="btn btn-secondary mobile-menu-toggle"
+              onClick={() => setMobileMenuOpen((current) => !current)}
+              type="button"
+            >
+              {mobileMenuOpen ? "×" : "☰"}
+            </button>
             <a className="btn btn-secondary" href="https://acadea.org" target="_blank" rel="noreferrer">
               Marketing site
             </a>
@@ -1208,7 +1243,7 @@ function Dashboard({
           </div>
         </div>
         <div className="dashboard-layout">
-          <div className="dashboard-card sidebar">
+          <div className={`dashboard-card sidebar ${mobileMenuOpen ? "mobile-open" : ""}`}>
             {menu.map(([value, label]) => (
               <button
                 key={value}
@@ -1216,6 +1251,7 @@ function Dashboard({
                 onClick={() => {
                   setExpandedMaterialTemplateIds([]);
                   setSection(value);
+                  setMobileMenuOpen(false);
                 }}
                 type="button"
               >
@@ -1287,15 +1323,17 @@ function AdminSection({
   const [mentorDriveDrafts, setMentorDriveDrafts] = useState<Record<string, string>>({});
   const [menteeLimitDrafts, setMenteeLimitDrafts] = useState<Record<string, {
     disabledHintGuideTemplateIds: string[];
+    emailInboxEnabled: boolean;
     maxActiveGuideCount: number;
     maxHintGuideCount: number;
+    maxStorageMb: number;
   }>>({});
   const [mentorAssignments, setMentorAssignments] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
   const [profileFields, setProfileFields] = useState<any[]>([]);
   const [materialTemplates, setMaterialTemplates] = useState<any[]>([]);
   const [adminMeetings, setAdminMeetings] = useState<any[]>([]);
-  const [adminMeetingFilter, setAdminMeetingFilter] = useState<"all" | "upcoming" | "past" | "cancelled" | "suspicious">("all");
+  const [adminMeetingFilter, setAdminMeetingFilter] = useState<"all" | "upcoming" | "past" | "cancelled">("all");
   const [leadType, setLeadType] = useState<LeadKind>("contact");
   const [leads, setLeads] = useState<any[]>([]);
   const [leadCounts, setLeadCounts] = useState<Record<LeadKind, number>>({
@@ -1330,6 +1368,7 @@ function AdminSection({
     slug: "",
     country: "",
     universityName: "",
+    emailSenderDomainsText: "",
     summary: "",
     descriptionMarkdown: "",
     menteeUserId: "",
@@ -1367,6 +1406,37 @@ function AdminSection({
   }>(null);
   const [masterTemplateDocLoading, setMasterTemplateDocLoading] = useState(false);
   const [masterTemplateActionKey, setMasterTemplateActionKey] = useState<string | null>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [popupConfigs, setPopupConfigs] = useState<any[]>([]);
+  const [productEditorId, setProductEditorId] = useState<string>("new");
+  const [productForm, setProductForm] = useState({
+    title: "",
+    slug: "",
+    summary: "",
+    description: "",
+    imageUrl: "",
+    stripePriceId: "",
+    stripeProductId: "",
+    currency: "PLN",
+    priceCents: 0,
+    productType: "bundle",
+    isPackage: true,
+    guideSlotDelta: 0,
+    hintSlotDelta: 0,
+    storageMbDelta: 0,
+    enablesEmailInbox: false,
+    mentorUserId: "",
+    includedProductIds: [] as string[],
+    isActive: true,
+  });
+  const [popupDrafts, setPopupDrafts] = useState<Record<string, {
+    body: string;
+    isActive: boolean;
+    primaryCtaLabel: string;
+    recommendedProductIds: string[];
+    secondaryCtaLabel: string;
+    title: string;
+  }>>({});
   const [itemGuideForm, setItemGuideForm] = useState({
     appliesToGuideIds: [] as string[],
     title: "",
@@ -1449,6 +1519,7 @@ function AdminSection({
       slug: "",
       country: "",
       universityName: "",
+      emailSenderDomainsText: "",
       summary: "",
       descriptionMarkdown: "",
       menteeUserId: "",
@@ -1468,6 +1539,7 @@ function AdminSection({
       slug: guide.slug ?? "",
       country: guide.country ?? "",
       universityName: guide.universityName ?? "",
+      emailSenderDomainsText: Array.isArray(guide.emailSenderDomains) ? guide.emailSenderDomains.join("\n") : "",
       summary: guide.summary ?? "",
       descriptionMarkdown: guide.descriptionMarkdown ?? "",
       menteeUserId: guide.menteeUserId ? String(guide.menteeUserId) : "",
@@ -1528,8 +1600,10 @@ function AdminSection({
             disabledHintGuideTemplateIds: Array.isArray(profile.disabledHintGuideTemplateIds)
               ? profile.disabledHintGuideTemplateIds.map((value: any) => String(value))
               : [],
-            maxActiveGuideCount: Number(profile.maxActiveGuideCount ?? 3),
-            maxHintGuideCount: Number(profile.maxHintGuideCount ?? 3),
+            emailInboxEnabled: Boolean(profile.emailInboxEnabled),
+            maxActiveGuideCount: Number(profile.maxActiveGuideCount ?? 1),
+            maxHintGuideCount: Number(profile.maxHintGuideCount ?? 1),
+            maxStorageMb: Number(profile.maxStorageMb ?? 100),
           },
         ]),
       ),
@@ -1550,6 +1624,32 @@ function AdminSection({
     setProfileFields(fieldsPayload);
     setMaterialTemplates(materialsPayload);
     setMasterTemplateDoc(masterDocPayload);
+  }
+
+  async function refreshCommerceDesigner() {
+    const [productsPayload, popupPayload] = await Promise.all([
+      apiFetch<any[]>("/admin/products", undefined, token),
+      apiFetch<any[]>("/admin/popup-configs", undefined, token),
+    ]);
+    setProducts(productsPayload);
+    setPopupConfigs(popupPayload);
+    setPopupDrafts(
+      Object.fromEntries(
+        (popupPayload ?? []).map((popup: any) => [
+          popup.key,
+          {
+            body: popup.body ?? "",
+            isActive: Boolean(popup.isActive),
+            primaryCtaLabel: popup.primaryCtaLabel ?? "Kup sugerowany pakiet",
+            recommendedProductIds: Array.isArray(popup.recommendedProductIds)
+              ? popup.recommendedProductIds.map((value: any) => String(value))
+              : [],
+            secondaryCtaLabel: popup.secondaryCtaLabel ?? "Zobacz pakiety",
+            title: popup.title ?? "",
+          },
+        ]),
+      ),
+    );
   }
 
   async function refreshAdminMeetings() {
@@ -1721,6 +1821,56 @@ function AdminSection({
     });
   }
 
+  function resetProductForm() {
+    setProductEditorId("new");
+    setProductForm({
+      title: "",
+      slug: "",
+      summary: "",
+      description: "",
+      imageUrl: "",
+      stripePriceId: "",
+      stripeProductId: "",
+      currency: "PLN",
+      priceCents: 0,
+      productType: "bundle",
+      isPackage: true,
+      guideSlotDelta: 0,
+      hintSlotDelta: 0,
+      storageMbDelta: 0,
+      enablesEmailInbox: false,
+      mentorUserId: "",
+      includedProductIds: [],
+      isActive: true,
+    });
+  }
+
+  function loadProductIntoEditor(product: any) {
+    setProductEditorId(String(product.id));
+    setProductForm({
+      title: product.title ?? "",
+      slug: product.slug ?? "",
+      summary: product.summary ?? "",
+      description: product.description ?? "",
+      imageUrl: product.imageUrl ?? "",
+      stripePriceId: product.stripePriceId ?? "",
+      stripeProductId: product.stripeProductId ?? "",
+      currency: product.currency ?? "PLN",
+      priceCents: Number(product.priceCents ?? 0),
+      productType: product.productType ?? "bundle",
+      isPackage: Boolean(product.isPackage),
+      guideSlotDelta: Number(product.guideSlotDelta ?? 0),
+      hintSlotDelta: Number(product.hintSlotDelta ?? 0),
+      storageMbDelta: Number(product.storageMbDelta ?? 0),
+      enablesEmailInbox: Boolean(product.enablesEmailInbox),
+      mentorUserId: product.mentorUserId ? String(product.mentorUserId) : "",
+      includedProductIds: Array.isArray(product.includedProductIds)
+        ? product.includedProductIds.map((value: any) => String(value))
+        : [],
+      isActive: Boolean(product.isActive),
+    });
+  }
+
   function updateMaterialRow(index: number, updater: (row: MaterialRowEditor) => MaterialRowEditor) {
     setMaterialForm((current) => ({
       ...current,
@@ -1777,6 +1927,9 @@ function AdminSection({
     }
     if (section === "profile-designer" || section === "materials-designer" || section === "item-guides") {
       void Promise.all([refreshGuides(), refreshDesigner()]).catch((error) => setStatus(error.message));
+    }
+    if (section === "products" || section === "purchase-popups") {
+      void Promise.all([refreshUsers(), refreshCommerceDesigner()]).catch((error) => setStatus(error.message));
     }
     if (section === "leads") {
       void refreshLeadState(leadType).catch((error) => setStatus(error.message));
@@ -1837,6 +1990,10 @@ function AdminSection({
       slug: guideForm.slug,
       country: guideForm.country,
       universityName: guideForm.universityName,
+      emailSenderDomains: guideForm.emailSenderDomainsText
+        .split("\n")
+        .map((value) => value.trim())
+        .filter(Boolean),
       summary: guideForm.summary,
       descriptionMarkdown: guideForm.descriptionMarkdown,
       estimatedReadMin: 8,
@@ -2074,6 +2231,76 @@ function AdminSection({
     }
   }
 
+  async function saveProduct(event: React.FormEvent) {
+    event.preventDefault();
+    setStatus("");
+    const payload = {
+      ...productForm,
+      mentorUserId: productForm.mentorUserId ? Number(productForm.mentorUserId) : null,
+      priceCents: Number(productForm.priceCents),
+      guideSlotDelta: Number(productForm.guideSlotDelta),
+      hintSlotDelta: Number(productForm.hintSlotDelta),
+      storageMbDelta: Number(productForm.storageMbDelta),
+      includedProductIds: productForm.includedProductIds
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value) && value > 0),
+    };
+    try {
+      if (productEditorId === "new") {
+        await apiFetch("/admin/products", { method: "POST", body: JSON.stringify(payload) }, token);
+        await refreshCommerceDesigner();
+        resetProductForm();
+        setStatus("Produkt został dodany.");
+        return;
+      }
+      await apiFetch(`/admin/products/${productEditorId}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }, token);
+      await refreshCommerceDesigner();
+      setStatus("Produkt został zaktualizowany.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać produktu.");
+    }
+  }
+
+  async function deleteProduct(productId: number) {
+    setStatus("");
+    try {
+      await apiFetch(`/admin/products/${productId}`, { method: "DELETE" }, token);
+      await refreshCommerceDesigner();
+      if (String(productId) === productEditorId) {
+        resetProductForm();
+      }
+      setStatus("Produkt został usunięty.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się usunąć produktu.");
+    }
+  }
+
+  async function savePopupConfig(key: string) {
+    const draft = popupDrafts[key];
+    if (!draft) {
+      return;
+    }
+    setStatus("");
+    try {
+      await apiFetch(`/admin/popup-configs/${key}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          ...draft,
+          recommendedProductIds: draft.recommendedProductIds
+            .map((value) => Number(value))
+            .filter((value) => Number.isFinite(value) && value > 0),
+        }),
+      }, token);
+      await refreshCommerceDesigner();
+      setStatus("Popup zakupowy został zapisany.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać popupu.");
+    }
+  }
+
   async function saveMenteeLimits(userId: number) {
     const draft = menteeLimitDrafts[String(userId)];
     if (!draft) {
@@ -2088,8 +2315,10 @@ function AdminSection({
             disabledHintGuideTemplateIds: draft.disabledHintGuideTemplateIds
               .map((value) => Number(value))
               .filter((value) => Number.isFinite(value) && value > 0),
+            emailInboxEnabled: Boolean(draft.emailInboxEnabled),
             maxActiveGuideCount: Number(draft.maxActiveGuideCount),
             maxHintGuideCount: Number(draft.maxHintGuideCount),
+            maxStorageMb: Number(draft.maxStorageMb),
           }),
         }, token);
       },
@@ -2302,8 +2531,10 @@ function AdminSection({
                 const mentorDriveDraft = mentorDriveDrafts[String(user.id)] ?? (mentorProfile?.googleDriveFolderUrl ?? "");
                 const menteeLimitDraft = menteeLimitDrafts[String(user.id)] ?? {
                   disabledHintGuideTemplateIds: [],
-                  maxActiveGuideCount: Number(menteeProfile?.maxActiveGuideCount ?? 3),
-                  maxHintGuideCount: Number(menteeProfile?.maxHintGuideCount ?? 3),
+                  emailInboxEnabled: Boolean(menteeProfile?.emailInboxEnabled),
+                  maxActiveGuideCount: Number(menteeProfile?.maxActiveGuideCount ?? 1),
+                  maxHintGuideCount: Number(menteeProfile?.maxHintGuideCount ?? 1),
+                  maxStorageMb: Number(menteeProfile?.maxStorageMb ?? 100),
                 };
                 const mentorApproved = Boolean(mentorProfile?.adminApproved);
                 const menteeApproved = Boolean(menteeProfile?.adminApproved);
@@ -2376,6 +2607,43 @@ function AdminSection({
                             />
                           </div>
                         </div>
+                        <div className="grid-2" style={{ marginTop: 12 }}>
+                          <div className="field">
+                            <label>Limit miejsca na pliki (MB)</label>
+                            <input
+                              min={10}
+                              type="number"
+                              value={menteeLimitDraft.maxStorageMb}
+                              onChange={(event) =>
+                                setMenteeLimitDrafts((current) => ({
+                                  ...current,
+                                  [String(user.id)]: {
+                                    ...menteeLimitDraft,
+                                    maxStorageMb: Number(event.target.value),
+                                  },
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Dostęp do maili uczelni</label>
+                            <select
+                              value={String(menteeLimitDraft.emailInboxEnabled)}
+                              onChange={(event) =>
+                                setMenteeLimitDrafts((current) => ({
+                                  ...current,
+                                  [String(user.id)]: {
+                                    ...menteeLimitDraft,
+                                    emailInboxEnabled: event.target.value === "true",
+                                  },
+                                }))
+                              }
+                            >
+                              <option value="false">zablokowany</option>
+                              <option value="true">odblokowany</option>
+                            </select>
+                          </div>
+                        </div>
                         <div className="stack" style={{ marginTop: 10 }}>
                           <div className="muted small">
                             Aktywny dostęp do wskazówek: {(tipAccess?.guides ?? []).length} / {menteeLimitDraft.maxHintGuideCount}
@@ -2408,8 +2676,10 @@ function AdminSection({
                                                 disabledHintGuideTemplateIds: nextDisabledIds
                                                   .map((value) => Number(value))
                                                   .filter((value) => Number.isFinite(value) && value > 0),
+                                                emailInboxEnabled: Boolean(menteeLimitDraft.emailInboxEnabled),
                                                 maxActiveGuideCount: Number(menteeLimitDraft.maxActiveGuideCount),
                                                 maxHintGuideCount: Number(menteeLimitDraft.maxHintGuideCount),
+                                                maxStorageMb: Number(menteeLimitDraft.maxStorageMb),
                                               }),
                                             }, token);
                                           },
@@ -2620,6 +2890,17 @@ function AdminSection({
                 <div className="field">
                   <label>Opis / treść</label>
                   <textarea value={guideForm.descriptionMarkdown} onChange={(event) => setGuideForm((current) => ({ ...current, descriptionMarkdown: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>Domeny maili uczelni / programu</label>
+                  <textarea
+                    placeholder="@uva.nl&#10;admissions.eur.nl&#10;tilburguniversity.edu"
+                    value={guideForm.emailSenderDomainsText}
+                    onChange={(event) => setGuideForm((current) => ({ ...current, emailSenderDomainsText: event.target.value }))}
+                  />
+                  <div className="small muted">
+                    Po jednej domenie w linii. Te domeny są używane w zakładce Twoje Maile od Uczelni.
+                  </div>
                 </div>
                 <div className="field">
                   <label>Zakres tego szablonu</label>
@@ -3481,6 +3762,268 @@ function AdminSection({
           </div>
         </div>
       ) : null}
+      {section === "products" ? (
+        <div className="split">
+          <div className="dashboard-card panel-scroll">
+            <h2>Produkty i Pakiety</h2>
+            <p className="muted">Tutaj budujesz pojedyncze usługi i pakiety sprzedażowe używane przez popupy oraz zakładkę Pakiety u mentee.</p>
+            <form className="stack" onSubmit={saveProduct}>
+              <div className="grid-2">
+                <div className="field">
+                  <label>Tytuł</label>
+                  <input value={productForm.title} onChange={(event) => setProductForm((current) => ({ ...current, title: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>Slug</label>
+                  <input value={productForm.slug} onChange={(event) => setProductForm((current) => ({ ...current, slug: event.target.value }))} />
+                </div>
+              </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label>Typ produktu</label>
+                  <select value={productForm.productType} onChange={(event) => setProductForm((current) => ({ ...current, productType: event.target.value }))}>
+                    <option value="bundle">Pakiet</option>
+                    <option value="guide_slot">Dodatkowy program</option>
+                    <option value="hint_slot">Dodatkowe wskazówki</option>
+                    <option value="email_inbox_access">Dostęp do maili uczelni</option>
+                    <option value="mentor_access">Dostęp do mentora</option>
+                    <option value="storage_boost">Więcej miejsca</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Czy to pakiet widoczny dla mentee</label>
+                  <select value={String(productForm.isPackage)} onChange={(event) => setProductForm((current) => ({ ...current, isPackage: event.target.value === "true" }))}>
+                    <option value="true">tak</option>
+                    <option value="false">nie</option>
+                  </select>
+                </div>
+              </div>
+              <div className="field">
+                <label>Krótki opis</label>
+                <textarea value={productForm.summary} onChange={(event) => setProductForm((current) => ({ ...current, summary: event.target.value }))} />
+              </div>
+              <div className="field">
+                <label>Opis</label>
+                <textarea value={productForm.description} onChange={(event) => setProductForm((current) => ({ ...current, description: event.target.value }))} />
+              </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label>URL zdjęcia</label>
+                  <input value={productForm.imageUrl} onChange={(event) => setProductForm((current) => ({ ...current, imageUrl: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>Waluta</label>
+                  <input value={productForm.currency} onChange={(event) => setProductForm((current) => ({ ...current, currency: event.target.value }))} />
+                </div>
+              </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label>Cena w groszach / centach</label>
+                  <input min={0} type="number" value={productForm.priceCents} onChange={(event) => setProductForm((current) => ({ ...current, priceCents: Number(event.target.value) }))} />
+                </div>
+                <div className="field">
+                  <label>Stripe Price ID</label>
+                  <input value={productForm.stripePriceId} onChange={(event) => setProductForm((current) => ({ ...current, stripePriceId: event.target.value }))} />
+                </div>
+              </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label>Stripe Product ID</label>
+                  <input value={productForm.stripeProductId} onChange={(event) => setProductForm((current) => ({ ...current, stripeProductId: event.target.value }))} />
+                </div>
+                <div className="field">
+                  <label>Mentor powiązany z produktem</label>
+                  <select value={productForm.mentorUserId} onChange={(event) => setProductForm((current) => ({ ...current, mentorUserId: event.target.value }))}>
+                    <option value="">Brak</option>
+                    {mentorUsers.map((mentor) => (
+                      <option key={`product-mentor-${mentor.id}`} value={String(mentor.id)}>
+                        {mentor.fullName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label>+ programy</label>
+                  <input min={0} type="number" value={productForm.guideSlotDelta} onChange={(event) => setProductForm((current) => ({ ...current, guideSlotDelta: Number(event.target.value) }))} />
+                </div>
+                <div className="field">
+                  <label>+ wskazówki</label>
+                  <input min={0} type="number" value={productForm.hintSlotDelta} onChange={(event) => setProductForm((current) => ({ ...current, hintSlotDelta: Number(event.target.value) }))} />
+                </div>
+              </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label>+ miejsce na dysku (MB)</label>
+                  <input min={0} type="number" value={productForm.storageMbDelta} onChange={(event) => setProductForm((current) => ({ ...current, storageMbDelta: Number(event.target.value) }))} />
+                </div>
+                <div className="field">
+                  <label>Daje dostęp do maili uczelni</label>
+                  <select value={String(productForm.enablesEmailInbox)} onChange={(event) => setProductForm((current) => ({ ...current, enablesEmailInbox: event.target.value === "true" }))}>
+                    <option value="false">nie</option>
+                    <option value="true">tak</option>
+                  </select>
+                </div>
+              </div>
+              <div className="field">
+                <label>Produkty zawarte w pakiecie</label>
+                <div className="selector-grid">
+                  {products
+                    .filter((product) => String(product.id) !== productEditorId)
+                    .map((product) => {
+                      const checked = productForm.includedProductIds.includes(String(product.id));
+                      return (
+                        <label className="selector-option" key={`product-include-${product.id}`}>
+                          <input
+                            checked={checked}
+                            type="checkbox"
+                            onChange={() =>
+                              setProductForm((current) => ({
+                                ...current,
+                                includedProductIds: checked
+                                  ? current.includedProductIds.filter((id) => id !== String(product.id))
+                                  : [...current.includedProductIds, String(product.id)],
+                              }))
+                            }
+                          />
+                          <div className="selector-copy">
+                            <strong>{product.title}</strong>
+                            <span className="small muted">{product.productType}</span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                </div>
+              </div>
+              <div className="field">
+                <label>Aktywny</label>
+                <select value={String(productForm.isActive)} onChange={(event) => setProductForm((current) => ({ ...current, isActive: event.target.value === "true" }))}>
+                  <option value="true">tak</option>
+                  <option value="false">nie</option>
+                </select>
+              </div>
+              <div className="button-row">
+                <button className="btn btn-primary">{productEditorId === "new" ? "Dodaj produkt" : "Zapisz produkt"}</button>
+                <button className="btn btn-secondary" onClick={resetProductForm} type="button">Nowy produkt</button>
+              </div>
+            </form>
+          </div>
+          <div className="dashboard-card panel-scroll">
+            <h2>Istniejące produkty</h2>
+            <div className="list">
+              {products.map((product) => (
+                <div className="list-item" key={product.id}>
+                  <header>
+                    <div>
+                      <h3>{product.title}</h3>
+                      <div className="muted small">
+                        {product.productType} • {(Number(product.priceCents ?? 0) / 100).toFixed(2)} {product.currency}
+                      </div>
+                    </div>
+                    <span className="badge">{product.isActive ? "active" : "inactive"}</span>
+                  </header>
+                  <p className="muted">{product.summary}</p>
+                  <div className="button-row">
+                    <button className="btn btn-secondary" onClick={() => loadProductIntoEditor(product)} type="button">Edytuj</button>
+                    <button className="btn btn-secondary" onClick={() => void deleteProduct(product.id)} type="button">Usuń</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {section === "purchase-popups" ? (
+        <div className="dashboard-card">
+          <h2>Popupy Zakupowe</h2>
+          <p className="muted">Tutaj podłączasz istniejące popupy do odpowiednich produktów i ustawiasz treść przycisków zakupowych.</p>
+          <div className="list">
+            {popupConfigs.map((popup) => {
+              const draft = popupDrafts[popup.key] ?? {
+                body: "",
+                isActive: true,
+                primaryCtaLabel: "Kup sugerowany pakiet",
+                recommendedProductIds: [],
+                secondaryCtaLabel: "Zobacz pakiety",
+                title: "",
+              };
+              return (
+                <div className="list-item" key={popup.key}>
+                  <header>
+                    <div>
+                      <h3>{popup.key}</h3>
+                      <div className="muted small">Konfiguracja popupu zakupowego</div>
+                    </div>
+                    <span className="badge">{draft.isActive ? "active" : "inactive"}</span>
+                  </header>
+                  <div className="stack" style={{ marginTop: 12 }}>
+                    <div className="field">
+                      <label>Tytuł</label>
+                      <input value={draft.title} onChange={(event) => setPopupDrafts((current) => ({ ...current, [popup.key]: { ...draft, title: event.target.value } }))} />
+                    </div>
+                    <div className="field">
+                      <label>Treść</label>
+                      <textarea value={draft.body} onChange={(event) => setPopupDrafts((current) => ({ ...current, [popup.key]: { ...draft, body: event.target.value } }))} />
+                    </div>
+                    <div className="grid-2">
+                      <div className="field">
+                        <label>Główny przycisk</label>
+                        <input value={draft.primaryCtaLabel} onChange={(event) => setPopupDrafts((current) => ({ ...current, [popup.key]: { ...draft, primaryCtaLabel: event.target.value } }))} />
+                      </div>
+                      <div className="field">
+                        <label>Drugi przycisk</label>
+                        <input value={draft.secondaryCtaLabel} onChange={(event) => setPopupDrafts((current) => ({ ...current, [popup.key]: { ...draft, secondaryCtaLabel: event.target.value } }))} />
+                      </div>
+                    </div>
+                    <div className="field">
+                      <label>Sugerowane produkty</label>
+                      <div className="selector-grid">
+                        {products.map((product) => {
+                          const checked = draft.recommendedProductIds.includes(String(product.id));
+                          return (
+                            <label className="selector-option" key={`popup-${popup.key}-${product.id}`}>
+                              <input
+                                checked={checked}
+                                type="checkbox"
+                                onChange={() =>
+                                  setPopupDrafts((current) => ({
+                                    ...current,
+                                    [popup.key]: {
+                                      ...draft,
+                                      recommendedProductIds: checked
+                                        ? draft.recommendedProductIds.filter((id) => id !== String(product.id))
+                                        : [...draft.recommendedProductIds, String(product.id)],
+                                    },
+                                  }))
+                                }
+                              />
+                              <div className="selector-copy">
+                                <strong>{product.title}</strong>
+                                <span className="small muted">{product.productType}</span>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="field">
+                      <label>Aktywny</label>
+                      <select value={String(draft.isActive)} onChange={(event) => setPopupDrafts((current) => ({ ...current, [popup.key]: { ...draft, isActive: event.target.value === "true" } }))}>
+                        <option value="true">tak</option>
+                        <option value="false">nie</option>
+                      </select>
+                    </div>
+                    <div className="button-row">
+                      <button className="btn btn-primary" onClick={() => void savePopupConfig(popup.key)} type="button">Zapisz popup</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
       {section === "meetings" ? (
         <div className="dashboard-card">
           <h2>Wszystkie spotkania</h2>
@@ -3491,7 +4034,6 @@ function AdminSection({
               ["upcoming", "Nadchodzące"],
               ["past", "Po czasie"],
               ["cancelled", "Anulowane"],
-              ["suspicious", "Podejrzane"],
             ] as const).map(([value, label]) => (
               <button
                 className={adminMeetingFilter === value ? "btn btn-primary" : "btn btn-secondary"}
@@ -3670,7 +4212,8 @@ function MentorSection({
   const [meetings, setMeetings] = useState<any[]>([]);
   const [status, setStatus] = useState("");
   const [meetingActionId, setMeetingActionId] = useState<string | null>(null);
-  const [mentorMeetingFilter, setMentorMeetingFilter] = useState<"upcoming" | "past" | "cancelled" | "suspicious">("upcoming");
+  const [meetingNoteDrafts, setMeetingNoteDrafts] = useState<Record<number, string>>({});
+  const [mentorMeetingFilter, setMentorMeetingFilter] = useState<"upcoming" | "past" | "cancelled">("upcoming");
   const [editingUniversityId, setEditingUniversityId] = useState<number | null>(null);
   const [universityForm, setUniversityForm] = useState({ country: "", universityName: "", programName: "", summary: "" });
   const [guideForm, setGuideForm] = useState({
@@ -3766,6 +4309,11 @@ function MentorSection({
   async function refreshMentorMeetings() {
     const payload = await apiFetch<any[]>("/mentor/meetings", undefined, token);
     setMeetings(payload);
+    setMeetingNoteDrafts(
+      Object.fromEntries(
+        payload.map((meeting: any) => [meeting.id, String(meeting.mentorNotes ?? "")]),
+      ),
+    );
   }
 
   const calendarConnection = googleConnections.find(
@@ -4011,6 +4559,23 @@ function MentorSection({
       setStatus(occurred ? "Oznaczono, że spotkanie się odbyło." : "Oznaczono, że spotkanie się nie odbyło.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać statusu spotkania.");
+    } finally {
+      setMeetingActionId(null);
+    }
+  }
+
+  async function saveMentorMeetingNotes(meetingId: number, mentorNotes: string) {
+    setMeetingActionId(`${meetingId}:notes`);
+    setStatus("");
+    try {
+      await apiFetch(`/mentor/meetings/${meetingId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ mentorNotes }),
+      }, token);
+      await refreshMentorMeetings();
+      setStatus("Notatki do spotkania zostały zapisane.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać notatek.");
     } finally {
       setMeetingActionId(null);
     }
@@ -4354,6 +4919,32 @@ function MentorSection({
                   <p className="muted">{university.summary}</p>
                 </div>
               ))}
+            </div>
+            <div className="list-item" style={{ marginTop: 18 }}>
+              <h3>Podgląd profilu u mentee</h3>
+              <div className="small muted" style={{ marginBottom: 10 }}>
+                Tak ten profil będzie widoczny po stronie mentee.
+              </div>
+              <div className="tile">
+                <div className="material-summary-row" style={{ alignItems: "flex-start" }}>
+                  <div>
+                    <strong>{session.user.fullName}</strong>
+                    <div className="small muted" style={{ marginTop: 6 }}>{profile.headline || "Brak headline"}</div>
+                  </div>
+                  <span className="badge">{profile.adminApproved ? "approved" : "preview"}</span>
+                </div>
+                <div style={{ marginTop: 12 }}>{renderMultilineText(profile.bio)}</div>
+                {universities.length ? (
+                  <div className="tile-grid tile-grid-two compact-guide-grid" style={{ marginTop: 12 }}>
+                    {universities.map((university) => (
+                      <div className="tile compact-guide-tile" key={`mentor-preview-${university.id}`}>
+                        <strong>{university.programName ? `${university.programName} - ${university.universityName}` : university.universityName}</strong>
+                        <div className="small muted" style={{ marginTop: 6 }}>{university.country}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
@@ -5109,13 +5700,12 @@ function MentorSection({
       {section === "meetings" ? (
         <div className="dashboard-card">
           <h2>Spotkania mentora</h2>
-          <p className="muted">Tutaj widzisz nadchodzące, odbyte, anulowane i podejrzane spotkania wraz z pełnym linkiem do wejścia.</p>
+          <p className="muted">Tutaj widzisz nadchodzące, odbyte i anulowane spotkania wraz z pełnym linkiem do wejścia.</p>
           <div className="button-row" style={{ marginTop: 16 }}>
             {([
               ["upcoming", "Nadchodzące"],
               ["past", "Po czasie"],
               ["cancelled", "Anulowane"],
-              ["suspicious", "Podejrzane"],
             ] as const).map(([value, label]) => (
               <button
                 className={mentorMeetingFilter === value ? "btn btn-primary" : "btn btn-secondary"}
@@ -5191,6 +5781,29 @@ function MentorSection({
                     </button>
                   </div>
                 ) : null}
+                <div className="field" style={{ marginTop: 12 }}>
+                  <label>Notatki mentora do spotkania</label>
+                  <textarea
+                    placeholder="Tutaj możesz dopisać notatki przed lub po spotkaniu."
+                    value={meetingNoteDrafts[meeting.id] ?? ""}
+                    onChange={(event) =>
+                      setMeetingNoteDrafts((current) => ({
+                        ...current,
+                        [meeting.id]: event.target.value,
+                      }))
+                    }
+                  />
+                  <div className="button-row">
+                    <button
+                      className="btn btn-secondary"
+                      disabled={meetingActionId === `${meeting.id}:notes`}
+                      onClick={() => void saveMentorMeetingNotes(meeting.id, meetingNoteDrafts[meeting.id] ?? "")}
+                      type="button"
+                    >
+                      Zapisz notatki
+                    </button>
+                  </div>
+                </div>
                 {meeting.isSuspicious ? (
                   <div className="status" style={{ marginTop: 12 }}>
                     Rozbieżność: mentor i mentee inaczej oznaczyli, czy spotkanie się odbyło.
@@ -5233,9 +5846,18 @@ function MenteeSection({
   const [openHintGuide, setOpenHintGuide] = useState<any | null>(null);
   const [profileValues, setProfileValues] = useState<Record<string, string>>({});
   const [status, setStatus] = useState("");
+  const [purchasePopup, setPurchasePopup] = useState<null | {
+    body: string;
+    key?: string;
+    primaryCtaLabel: string;
+    recommendedProductIds?: number[];
+    secondaryCtaLabel?: string;
+    title: string;
+  }>(null);
   const [materialActionKey, setMaterialActionKey] = useState<string | null>(null);
   const [meetingActionKey, setMeetingActionKey] = useState<string | null>(null);
-  const [meetingFilter, setMeetingFilter] = useState<"upcoming" | "past" | "cancelled" | "suspicious">("upcoming");
+  const [meetingFilter, setMeetingFilter] = useState<"upcoming" | "past" | "cancelled">("upcoming");
+  const [meetingNoteDrafts, setMeetingNoteDrafts] = useState<Record<number, string>>({});
   const [meetingTurnstileToken, setMeetingTurnstileToken] = useState("");
   const [meetingTurnstileResetKey, setMeetingTurnstileResetKey] = useState(0);
   const [openMaterialTemplateIds, setOpenMaterialTemplateIds] = useState<number[]>(expandedMaterialTemplateIds);
@@ -5277,11 +5899,17 @@ function MenteeSection({
   const profileFields = overview?.profileFields ?? [];
   const assignedMentors = overview?.assignedMentors ?? [];
   const availableGuideTemplates = overview?.availableGuideTemplates ?? [];
-  const guideLimits = overview?.guideLimits ?? { maxActiveGuideCount: 3, maxHintGuideCount: 3 };
+  const guideLimits = overview?.guideLimits ?? { emailInboxEnabled: false, maxActiveGuideCount: 1, maxHintGuideCount: 1, maxStorageMb: 100 };
   const materialTemplates = overview?.materialTemplates ?? [];
   const materialItemStates = overview?.materialItemStates ?? [];
   const googleWorkspace = overview?.googleWorkspace ?? {};
+  const googleConnections = overview?.googleConnections ?? [];
   const hintGuides = overview?.hintGuides ?? [];
+  const packages = overview?.packages ?? [];
+  const cartItems = overview?.cartItems ?? [];
+  const purchasePopups = overview?.purchasePopups ?? {};
+  const storageSummary = overview?.storage ?? { maxStorageMb: 100, usedBytes: 0, usedMb: 0 };
+  const universityEmails = overview?.universityEmails ?? [];
   const hintEligibleTemplateIds = (overview?.hintEligibleTemplateIds ?? []).map(String);
   const tipAccessGuides = overview?.tipAccessGuides ?? [];
   const hintGuideMap = new Map((hintGuides ?? []).map((guide: any) => [String(guide.id), guide]));
@@ -5393,11 +6021,46 @@ function MenteeSection({
   const visibleDocumentTemplates = visibleMaterialTemplates.filter(
     (template: any) => !isEssayMaterialTemplate(template) && !isOfferMaterialTemplate(template),
   );
+  const activeGuideSourceIds = new Set(
+    (guides ?? [])
+      .map((guide: any) => Number(guide.sourceGuideId ?? guide.id))
+      .filter((value: number) => Number.isFinite(value)),
+  );
+  const hintAccessSourceIds = new Set(
+    (tipAccessGuides ?? [])
+      .map((guide: any) => Number(guide.sourceGuideId ?? guide.id))
+      .filter((value: number) => Number.isFinite(value)),
+  );
+
+  function openPurchaseShell(title: string, body: string, primaryCtaLabel = "Kup sugerowany pakiet", key?: string) {
+    const popupConfig = key ? purchasePopups[key] : null;
+    setPurchasePopup({
+      body: popupConfig?.body ?? body,
+      key,
+      primaryCtaLabel: popupConfig?.primaryCtaLabel ?? primaryCtaLabel,
+      recommendedProductIds: Array.isArray(popupConfig?.recommendedProductIds) ? popupConfig.recommendedProductIds : [],
+      secondaryCtaLabel: popupConfig?.secondaryCtaLabel ?? "Zobacz pakiety",
+      title: popupConfig?.title ?? title,
+    });
+  }
+
+  function canAddAnotherGuide() {
+    return (guides ?? []).length < Number(guideLimits.maxActiveGuideCount ?? 1);
+  }
+
+  function canAddAnotherHintGuide() {
+    return (tipAccessGuides ?? []).length < Number(guideLimits.maxHintGuideCount ?? 0);
+  }
 
   async function refreshOverview() {
     const payload = await apiFetch<any>("/mentee/overview", undefined, token);
     setOverview(payload);
     setGuides(payload.guides ?? []);
+    setMeetingNoteDrafts(
+      Object.fromEntries(
+        (payload.meetings ?? []).map((meeting: any) => [meeting.id, String(meeting.menteeNotes ?? "")]),
+      ),
+    );
     const nextValues: Record<string, string> = {};
     const responses = new Map<number, string>((payload.profileResponses ?? []).map((entry: any) => [entry.fieldId, String(entry.value ?? "")]));
     for (const field of payload.profileFields ?? []) {
@@ -5421,7 +6084,7 @@ function MenteeSection({
   }, [expandedMaterialTemplateIds, section]);
 
   useEffect(() => {
-    if (section === "universities" || section === "materials" || section === "offers" || section === "essays" || section === "profile" || section === "meetings" || section === "mentors") {
+    if (section === "universities" || section === "materials" || section === "offers" || section === "essays" || section === "profile" || section === "meetings" || section === "mentors" || section === "emails" || section === "packages") {
       void refreshOverview().catch((error) => setStatus(error.message));
     }
     if (section === "mentors") {
@@ -5632,6 +6295,15 @@ function MenteeSection({
 
   async function adoptUniversity(templateId: number) {
     setStatus("");
+    if (!canAddAnotherGuide()) {
+      openPurchaseShell(
+        "Limit programów został wykorzystany",
+        "Masz już wykorzystany obecny limit aktywnych programów. Możesz dokupić dostęp do większej liczby programów w zakładce Pakiety.",
+        "Kup więcej programów",
+        "guide_limit",
+      );
+      return;
+    }
     try {
       await apiFetch(`/mentee/guides/${templateId}/adopt`, { method: "POST" }, token);
       await refreshOverview();
@@ -5649,6 +6321,117 @@ function MenteeSection({
       setStatus("Uczelnia została usunięta z Twojego panelu.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się usunąć uczelni.");
+    }
+  }
+
+  async function enableHintAccess(templateGuideId: number) {
+    setStatus("");
+    if (!canAddAnotherHintGuide()) {
+      openPurchaseShell(
+        "Limit wskazówek został wykorzystany",
+        "Masz już wykorzystany obecny limit aktywnych wskazówek. Możesz dokupić większy pakiet wskazówek w zakładce Pakiety.",
+        "Kup więcej wskazówek",
+        "hint_limit",
+      );
+      return;
+    }
+    try {
+      await apiFetch(`/mentee/guides/${templateGuideId}/hint-access`, { method: "PUT" }, token);
+      await refreshOverview();
+      setStatus("Dostęp do wskazówek został dodany.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się dodać wskazówek.");
+    }
+  }
+
+  async function saveMenteeMeetingNotes(meetingId: number, menteeNotes: string) {
+    setMeetingActionKey(`${meetingId}:notes`);
+    setStatus("");
+    try {
+      await apiFetch(`/mentee/meetings/${meetingId}/notes`, {
+        method: "PATCH",
+        body: JSON.stringify({ menteeNotes }),
+      }, token);
+      await refreshOverview();
+      setStatus("Notatki do spotkania zostały zapisane.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać notatek.");
+    } finally {
+      setMeetingActionKey(null);
+    }
+  }
+
+  async function addProductToCart(productId: number) {
+    setStatus("");
+    try {
+      await apiFetch("/mentee/cart/items", {
+        method: "POST",
+        body: JSON.stringify({ productId, quantity: 1 }),
+      }, token);
+      await refreshOverview();
+      setStatus("Produkt został dodany do koszyka.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się dodać produktu do koszyka.");
+    }
+  }
+
+  async function removeProductFromCart(productId: number) {
+    setStatus("");
+    try {
+      await apiFetch(`/mentee/cart/items/${productId}`, { method: "DELETE" }, token);
+      await refreshOverview();
+      setStatus("Produkt został usunięty z koszyka.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się usunąć produktu z koszyka.");
+    }
+  }
+
+  async function checkoutCart() {
+    setStatus("");
+    try {
+      const payload = await apiFetch<any>("/mentee/cart/checkout", { method: "POST" }, token);
+      if (payload?.checkoutMode === "stripe" && payload?.url) {
+        window.location.href = payload.url;
+        return;
+      }
+      await refreshOverview();
+      setStatus("Zakup został zastosowany do konta testowego.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się rozpocząć checkoutu.");
+    }
+  }
+
+  async function connectUniversityEmailInbox() {
+    setStatus("");
+    try {
+      const payload = await apiFetch<any>("/mentee/google-connections/gmail_readonly/start", { method: "POST" }, token);
+      if (payload?.authUrl) {
+        window.location.href = payload.authUrl;
+      }
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się rozpocząć łączenia Gmaila.");
+    }
+  }
+
+  async function disconnectUniversityEmailInbox() {
+    setStatus("");
+    try {
+      await apiFetch("/mentee/google-connections/gmail_readonly", { method: "DELETE" }, token);
+      await refreshOverview();
+      setStatus("Połączenie Gmail zostało odłączone.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się odłączyć Gmaila.");
+    }
+  }
+
+  async function refreshUniversityEmails() {
+    setStatus("");
+    try {
+      await apiFetch("/mentee/university-emails/refresh", { method: "POST" }, token);
+      await refreshOverview();
+      setStatus("Skrzynka uczelni została odświeżona.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się odświeżyć maili uczelni.");
     }
   }
 
@@ -5813,6 +6596,12 @@ function MenteeSection({
     const actionType = (row.actionType ?? "check_only") as MaterialItemAction;
     const actionPrefix = `${template.id}:${row.displayKey}`;
     const hasHintAccess = Boolean(showHints && hintGuide);
+    const hintExists = Boolean(row.guideId && hintGuide);
+    const hintButtonLabel = hasHintAccess
+      ? "Otwórz wskazówki"
+      : hintExists
+        ? "Odblokuj wskazówki"
+        : "Brak wskazówek";
 
     const content = (
       <>
@@ -5828,15 +6617,24 @@ function MenteeSection({
           <div className="button-row material-actions-row">
             <button
               className="btn btn-secondary"
-              disabled={!hasHintAccess}
+              disabled={!hintExists}
               onClick={() => {
                 if (hasHintAccess && hintGuide) {
                   setOpenHintGuide(hintGuide);
+                  return;
+                }
+                if (hintExists) {
+                  openPurchaseShell(
+                    "Wskazówki są poza Twoim obecnym pakietem",
+                    "Masz dostęp do programu, ale nie do wskazówek dla tego programu. Możesz je odblokować z poziomu zakładki Pakiety.",
+                    "Odblokuj wskazówki",
+                    "hint_locked",
+                  );
                 }
               }}
               type="button"
             >
-              Otwórz wskazówki
+              {hintButtonLabel}
             </button>
             {(actionType === "file_required"
               || actionType === "check_or_file"
@@ -6296,26 +7094,6 @@ function MenteeSection({
       {section === "universities" && overview ? (
         <div className="stack">
           <div className="dashboard-card">
-            <h2>Dostęp do wskazówek</h2>
-            <p className="muted">
-              Możesz mieć jednocześnie do <strong>{guideLimits.maxActiveGuideCount}</strong> aktywnych programów / przewodników.
-              Wskazówki są aktywne maksymalnie dla <strong>{guideLimits.maxHintGuideCount}</strong> programów / przewodników.
-            </p>
-            {tipAccessGuides.length ? (
-              <div className="list" style={{ marginTop: 16 }}>
-                {tipAccessGuides.map((guide: any) => (
-                  <div className="list-item" key={`tip-access-guide-${guide.id}`}>
-                    <h3>{guide.universityName}</h3>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="small muted" style={{ marginTop: 12 }}>
-                Obecnie nie masz aktywnego dostępu do wskazówek żadnego programu / przewodnika.
-              </div>
-            )}
-          </div>
-          <div className="dashboard-card">
             <h2>Twoje Uczelnie</h2>
             <p className="muted">Tutaj widzisz swoje aktywne uczelnie. Po kliknięciu kafla otwierasz checklistę i wymagania przypisane do tej konkretnej aplikacji.</p>
             <div className="tile-grid tile-grid-two" style={{ marginTop: 18 }}>
@@ -6340,6 +7118,15 @@ function MenteeSection({
                         >
                           Zrezygnuj z tej uczelni
                         </button>
+                        {!hintAccessSourceIds.has(Number(guide.sourceGuideId ?? guide.id)) ? (
+                          <button
+                            className="btn btn-secondary"
+                            onClick={() => void enableHintAccess(Number(guide.sourceGuideId ?? guide.id))}
+                            type="button"
+                          >
+                            Dodaj wskazówki
+                          </button>
+                        ) : null}
                       </div>
                       {guideMaterialsMap.get(guide.id)?.length ? (
                         <div className="list">
@@ -6378,6 +7165,7 @@ function MenteeSection({
                                           const universityNames = uniqueStrings(applicableGuides.map((entry: any) => formatGuidePrimaryLabel(entry)));
                                           const showHints = row.guideId && hintEligibleTemplateIds.includes(getGuideTemplateId(guide));
                                           const hintGuide = row.guideId ? hintGuideMap.get(String(row.guideId)) : null;
+                                          const hintExists = Boolean(row.guideId && hintGuide);
                                           return (
                                             <details
                                               className="list-item nested-detail material-row material-row-item"
@@ -6411,15 +7199,24 @@ function MenteeSection({
                                                   <div className="button-row" style={{ marginTop: 8 }}>
                                                     <button
                                                       className="btn btn-secondary"
-                                                      disabled={!showHints || !hintGuide}
+                                                      disabled={!hintExists}
                                                       onClick={() => {
                                                         if (showHints && hintGuide) {
                                                           setOpenHintGuide(hintGuide);
+                                                          return;
+                                                        }
+                                                        if (hintExists) {
+                                                          openPurchaseShell(
+                                                            "Wskazówki są poza Twoim obecnym pakietem",
+                                                            "Masz dostęp do programu, ale nie do wskazówek dla tego programu. Możesz je odblokować z poziomu zakładki Pakiety.",
+                                                            "Odblokuj wskazówki",
+                                                            "hint_locked",
+                                                          );
                                                         }
                                                       }}
                                                       type="button"
                                                     >
-                                                      Pokaż wskazówkę
+                                                      {showHints ? "Pokaż wskazówkę" : hintExists ? "Odblokuj wskazówki" : "Brak wskazówek"}
                                                     </button>
                                                     <button
                                                       className="btn btn-secondary"
@@ -6460,6 +7257,27 @@ function MenteeSection({
             </div>
             {!guides.length ? <div className="status">Nie masz jeszcze żadnej aktywnej uczelni.</div> : null}
           </div>
+          <div className="dashboard-card">
+            <h2>Dostęp do wskazówek</h2>
+            <p className="muted">
+              Możesz mieć jednocześnie do <strong>{guideLimits.maxActiveGuideCount}</strong> aktywnych programów / przewodników.
+              Wskazówki są aktywne maksymalnie dla <strong>{guideLimits.maxHintGuideCount}</strong> programów / przewodników.
+            </p>
+            {tipAccessGuides.length ? (
+              <div className="tile-grid tile-grid-two compact-guide-grid" style={{ marginTop: 16 }}>
+                {tipAccessGuides.map((guide: any) => (
+                  <div className="tile compact-guide-tile" key={`tip-access-guide-${guide.id}`}>
+                    <strong>{formatGuidePrimaryLabel(guide)}</strong>
+                    <div className="small muted" style={{ marginTop: 6 }}>{formatGuideSecondaryLabel(guide)}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="small muted" style={{ marginTop: 12 }}>
+                Obecnie nie masz aktywnego dostępu do wskazówek żadnego programu / przewodnika.
+              </div>
+            )}
+          </div>
           {availableGuideTemplates.length ? (
             <div className="dashboard-card panel-scroll">
               <h2>Dodaj kolejną uczelnię</h2>
@@ -6468,6 +7286,7 @@ function MenteeSection({
                 {availableGuideTemplates.map((guide: any) => (
                   <div className="tile" key={`available-${guide.id}`}>
                     <strong>{formatGuidePrimaryLabel(guide)}</strong>
+                    <div className="small muted" style={{ marginTop: 6 }}>{formatGuideSecondaryLabel(guide)}</div>
                     <p className="muted" style={{ marginTop: 12 }}>{guide.summary}</p>
                     <div className="button-row" style={{ marginTop: 14 }}>
                       <button
@@ -6517,7 +7336,7 @@ function MenteeSection({
                     </div>
                     <span className="badge">{mentor.approved ? "approved" : "preview"}</span>
                   </header>
-                  <p className="muted">{mentor.bio}</p>
+                  <div style={{ marginTop: 8 }}>{renderMultilineText(mentor.bio)}</div>
                   <div className="small muted" style={{ marginTop: 8 }}>
                     {mentor.googleCalendarConnected
                       ? `Google Calendar podłączony${mentor.googleCalendarEmail ? ` • ${mentor.googleCalendarEmail}` : ""}`
@@ -6541,7 +7360,24 @@ function MenteeSection({
                         Wybierz do spotkania
                       </button>
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="button-row">
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() =>
+                          openPurchaseShell(
+                            "Ten mentor wymaga odrębnego dostępu",
+                            "Aby umawiać spotkania z tym mentorem, dodaj odpowiedni pakiet lub dostęp mentorski w zakładce Pakiety.",
+                            "Kup dostęp do mentora",
+                            "mentor_locked",
+                          )
+                        }
+                        type="button"
+                      >
+                        Dodaj mentora
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -6735,7 +7571,6 @@ function MenteeSection({
               ["upcoming", "Nadchodzące"],
               ["past", "Po czasie"],
               ["cancelled", "Anulowane"],
-              ["suspicious", "Podejrzane"],
             ] as const).map(([value, label]) => (
               <button
                 className={meetingFilter === value ? "btn btn-primary" : "btn btn-secondary"}
@@ -6750,7 +7585,7 @@ function MenteeSection({
               </button>
             ))}
           </div>
-          <div className="list">
+          <div className="list" style={{ marginTop: 16 }}>
             {filteredMenteeMeetings.map((meeting: any) => (
               <div className="list-item" key={meeting.id}>
                 <header>
@@ -6912,6 +7747,29 @@ function MenteeSection({
                     </button>
                   </div>
                 ) : null}
+                <div className="field" style={{ marginTop: 12 }}>
+                  <label>Twoje notatki do spotkania</label>
+                  <textarea
+                    placeholder="Tutaj możesz zapisać własne notatki przed albo po spotkaniu."
+                    value={meetingNoteDrafts[meeting.id] ?? ""}
+                    onChange={(event) =>
+                      setMeetingNoteDrafts((current) => ({
+                        ...current,
+                        [meeting.id]: event.target.value,
+                      }))
+                    }
+                  />
+                  <div className="button-row">
+                    <button
+                      className="btn btn-secondary"
+                      disabled={meetingActionKey === `${meeting.id}:notes`}
+                      onClick={() => void saveMenteeMeetingNotes(meeting.id, meetingNoteDrafts[meeting.id] ?? "")}
+                      type="button"
+                    >
+                      Zapisz notatki
+                    </button>
+                  </div>
+                </div>
                 {meeting.isSuspicious ? (
                   <div className="status" style={{ marginTop: 12 }}>
                     Rozbieżność: Ty i mentor inaczej oznaczyliście, czy spotkanie się odbyło.
@@ -7005,6 +7863,153 @@ function MenteeSection({
           </div>
         </div>
       ) : null}
+      {section === "emails" ? (
+        <div className="dashboard-card locked-panel-card">
+          <h2>Twoje Maile od Uczelni</h2>
+          <p className="muted">
+            Ten moduł monitoruje wiadomości z domen uczelni przypisanych do Twoich aktywnych programów i podpowiada, czy trzeba coś zrobić dalej.
+          </p>
+          {!guideLimits.emailInboxEnabled ? (
+            <div className="locked-panel-shell">
+              <div className="locked-panel-content">
+                <h3>Dostęp zablokowany</h3>
+                <p className="muted">
+                  Ta funkcja wymaga osobnego pakietu. Po odblokowaniu połączysz konto Google i zobaczysz maile z uczelni oraz ich automatyczną analizę.
+                </p>
+                <div className="button-row" style={{ justifyContent: "center" }}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() =>
+                      openPurchaseShell(
+                        "Odblokuj maile od uczelni",
+                        "Ten moduł pozwoli połączyć Gmail, śledzić wiadomości z uczelni i pokazywać, co z nich wynika dla Twojej aplikacji.",
+                        "Kup dostęp do maili uczelni",
+                        "email_locked",
+                      )
+                    }
+                    type="button"
+                  >
+                    Odblokuj dostęp
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="stack" style={{ marginTop: 18 }}>
+              <div className="status">
+                Status połączenia Gmail: <strong>{googleConnections.some((connection: any) => connection.connectionType === "gmail_readonly" && connection.status === "connected") ? "połączono" : "nie połączono"}</strong>
+              </div>
+              <div className="button-row">
+                {googleConnections.some((connection: any) => connection.connectionType === "gmail_readonly" && connection.status === "connected") ? (
+                  <>
+                    <button className="btn btn-primary" onClick={() => void refreshUniversityEmails()} type="button">
+                      Odśwież maile
+                    </button>
+                    <button className="btn btn-secondary" onClick={() => void disconnectUniversityEmailInbox()} type="button">
+                      Odłącz Gmail
+                    </button>
+                  </>
+                ) : (
+                  <button className="btn btn-primary" onClick={() => void connectUniversityEmailInbox()} type="button">
+                    Połącz Gmail
+                  </button>
+                )}
+              </div>
+              <div className="list">
+                {universityEmails.length ? (
+                  universityEmails.map((email: any) => (
+                    <div className="list-item" key={email.id}>
+                      <header>
+                        <div>
+                          <h3>{email.subject || "(bez tematu)"}</h3>
+                          <div className="muted small">{email.fromEmail || email.fromName || "Nieznany nadawca"}</div>
+                        </div>
+                        <span className="badge">{email.classification}</span>
+                      </header>
+                      <p className="muted">{email.snippet}</p>
+                      <div className="small">
+                        {email.actionRequired ? "Wymagane działanie" : "Informacyjnie"} • {email.actionSummary}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="status">Po połączeniu Gmaila i odświeżeniu tutaj pokażą się wiadomości z uczelni.</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
+      {section === "packages" ? (
+        <div className="dashboard-card">
+          <h2>Pakiety</h2>
+          <p className="muted">
+            Tutaj możesz dokupić większy limit programów, wskazówek, dostęp do mentorów, maile uczelni i więcej miejsca na pliki.
+          </p>
+          <div className="status" style={{ marginTop: 16 }}>
+            Obecny limit: <strong>{guideLimits.maxActiveGuideCount}</strong> programów, <strong>{guideLimits.maxHintGuideCount}</strong> wskazówek, <strong>{guideLimits.maxStorageMb} MB</strong> miejsca.
+            Wykorzystane miejsce: <strong>{storageSummary.usedMb} MB</strong>.
+          </div>
+          <div className="tile-grid tile-grid-two" style={{ marginTop: 18 }}>
+            {packages.map((item: any) => {
+              const inCart = cartItems.some((cartItem: any) => Number(cartItem.productId) === Number(item.id));
+              return (
+                <div className="tile" key={item.id}>
+                  {item.imageUrl ? <img alt={item.title} src={item.imageUrl} style={{ width: "100%", borderRadius: 18, marginBottom: 12, objectFit: "cover", maxHeight: 180 }} /> : null}
+                  <strong>{item.title}</strong>
+                  <p className="muted" style={{ marginTop: 12 }}>{item.summary || item.description}</p>
+                  <div className="small muted">
+                    {(Number(item.priceCents ?? 0) / 100).toFixed(2)} {item.currency}
+                  </div>
+                  <div className="button-row" style={{ marginTop: 16 }}>
+                    {inCart ? (
+                      <button className="btn btn-secondary" onClick={() => void removeProductFromCart(item.id)} type="button">
+                        Usuń z koszyka
+                      </button>
+                    ) : (
+                      <button className="btn btn-primary" onClick={() => void addProductToCart(item.id)} type="button">
+                        Dodaj do koszyka
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="dashboard-card" style={{ marginTop: 22 }}>
+            <h3 style={{ marginTop: 0 }}>Koszyk</h3>
+            {cartItems.length ? (
+              <div className="stack">
+                <div className="list">
+                  {cartItems.map((cartItem: any) => {
+                    const product = packages.find((entry: any) => Number(entry.id) === Number(cartItem.productId));
+                    return (
+                      <div className="list-item" key={`cart-${cartItem.productId}`}>
+                        <header>
+                          <div>
+                            <h3>{product?.title ?? `Produkt #${cartItem.productId}`}</h3>
+                            <div className="muted small">Ilość: {cartItem.quantity}</div>
+                          </div>
+                          <button className="btn btn-secondary" onClick={() => void removeProductFromCart(cartItem.productId)} type="button">
+                            Usuń
+                          </button>
+                        </header>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="button-row">
+                  <button className="btn btn-primary" onClick={() => void checkoutCart()} type="button">
+                    Przejdź do płatności
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="status">Koszyk jest pusty.</div>
+            )}
+          </div>
+        </div>
+      ) : null}
       {section === "essays" && overview
         ? renderMaterialSectionCard(
             "Twoje Eseje",
@@ -7021,6 +8026,36 @@ function MenteeSection({
             "Nie ma jeszcze żadnych materiałów przypisanych do Twoich uczelni.",
           )
         : null}
+      {purchasePopup ? (
+        <div className="modal-backdrop" onClick={() => setPurchasePopup(null)} role="presentation">
+          <div className="modal-card purchase-modal-card" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
+            <button className="purchase-modal-close" onClick={() => setPurchasePopup(null)} type="button">
+              ×
+            </button>
+            <div className="eyebrow">Rozszerzenie dostępu</div>
+            <h2 style={{ margin: "14px 0 8px", color: "#153f2c" }}>{purchasePopup.title}</h2>
+            <p className="muted">{purchasePopup.body}</p>
+            <div className="button-row" style={{ marginTop: 18 }}>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  const recommendedProductId = purchasePopup.recommendedProductIds?.[0];
+                  if (recommendedProductId) {
+                    void addProductToCart(recommendedProductId);
+                  }
+                  onNavigate("packages");
+                }}
+                type="button"
+              >
+                {purchasePopup.primaryCtaLabel}
+              </button>
+              <button className="btn btn-secondary" onClick={() => onNavigate("packages")} type="button">
+                {purchasePopup.secondaryCtaLabel ?? "Przejdź do pakietów"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {openHintGuide ? (
         <div className="modal-backdrop" onClick={() => setOpenHintGuide(null)} role="presentation">
           <div className="modal-card" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
@@ -7093,24 +8128,24 @@ function PlatformSeoManager() {
       })();
 
     if (location === "/") {
-      document.title = "ACADEA Platform";
+      document.title = "Platforma Acadea";
       robotsMeta.setAttribute("content", "index, follow");
       return;
     }
 
     if (location === "/forgot-password") {
-      document.title = "Reset hasła | ACADEA Platform";
+      document.title = "Reset hasła | Platforma Acadea";
       robotsMeta.setAttribute("content", "noindex, nofollow");
       return;
     }
 
     if (location === "/reset-password") {
-      document.title = "Ustaw nowe hasło | ACADEA Platform";
+      document.title = "Ustaw nowe hasło | Platforma Acadea";
       robotsMeta.setAttribute("content", "noindex, nofollow");
       return;
     }
 
-    document.title = "ACADEA Platform";
+    document.title = "Platforma Acadea";
     robotsMeta.setAttribute("content", "noindex, nofollow");
   }, [location]);
 

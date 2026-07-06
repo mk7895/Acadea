@@ -382,7 +382,7 @@ export default function Blog() {
                 <p className="text-lg font-semibold text-accent">Zapisano! Wkrótce dostaniesz pierwszy e-mail.</p>
               ) : (
                 <>
-                  <div className="mx-auto flex max-w-md flex-col gap-3 sm:flex-row">
+                  <div className="mx-auto flex max-w-xl flex-col gap-3 sm:flex-row sm:items-center">
                     <input
                       type="email"
                       value={email}
@@ -390,13 +390,13 @@ export default function Blog() {
                       onKeyDown={(e) => e.key === "Enter" && handleSubscribe()}
                       placeholder="Twój adres e-mail"
                       data-testid="input-newsletter-email"
-                      className="h-12 flex-1 rounded-full border border-white/20 bg-white/10 px-5 text-sm text-white placeholder-white/50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-accent"
+                      className="h-14 flex-1 rounded-full border border-white/20 bg-white/10 px-5 text-base text-white placeholder-white/50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-accent"
                     />
                     <button
                       onClick={handleSubscribe}
                       disabled={newsStatus === "loading"}
                       data-testid="button-newsletter-subscribe"
-                      className="h-12 shrink-0 rounded-full bg-accent px-7 text-sm font-bold text-primary transition-colors hover:bg-white disabled:opacity-60"
+                      className="h-14 shrink-0 rounded-full bg-accent px-8 text-base font-bold text-primary transition-colors hover:bg-white disabled:opacity-60"
                     >
                       {newsStatus === "loading" ? "Zapisywanie…" : "Zapisz się"}
                     </button>

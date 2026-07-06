@@ -210,8 +210,8 @@ export default function ScholarshipTerms() {
                 </li>
                 <li>
                   Kontakt w sprawach konkursu:{" "}
-                  <a href="mailto:kontakt@acadea.org" className="font-semibold text-primary hover:underline">
-                    kontakt@acadea.org
+                  <a href="mailto:contact@acadea.org" className="font-semibold text-primary hover:underline">
+                    contact@acadea.org
                   </a>.
                 </li>
               </ol>

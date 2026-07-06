@@ -10,6 +10,7 @@
 
 body {
   margin: 0;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(244, 178, 55, 0.14), transparent 26%),
     linear-gradient(180deg, #f7faf7 0%, #eef3ef 100%);
@@ -29,6 +30,7 @@ textarea {
 .app-shell {
   min-height: 100vh;
   padding: 32px 16px 48px;
+  overflow-x: clip;
 }
 
 .app-card,
@@ -330,6 +332,15 @@ textarea {
   color: white;
 }
 
+.mobile-menu-toggle {
+  display: none;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0;
+  font-size: 24px;
+  line-height: 1;
+}
+
 .dashboard-main {
   display: grid;
   gap: 18px;
@@ -517,6 +528,58 @@ textarea {
 
 .list-item h3 {
   margin: 0 0 6px;
+}
+
+.multiline-paragraph {
+  margin: 0 0 10px;
+  white-space: pre-wrap;
+}
+
+.compact-guide-grid {
+  gap: 12px;
+}
+
+.compact-guide-tile {
+  padding: 16px;
+}
+
+.locked-panel-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.locked-panel-shell {
+  margin-top: 18px;
+  min-height: 340px;
+  border: 1px solid #dbe6dd;
+  border-radius: 24px;
+  background:
+    linear-gradient(rgba(255,255,255,0.7), rgba(255,255,255,0.7)),
+    linear-gradient(180deg, #f8fbf8 0%, #eef3ef 100%);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.locked-panel-content {
+  max-width: 520px;
+  text-align: center;
+}
+
+.purchase-modal-card {
+  position: relative;
+}
+
+.purchase-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  border: 0;
+  background: transparent;
+  color: #2d513f;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .badge {
@@ -741,14 +804,39 @@ textarea {
 }
 
 @media (max-width: 720px) {
+  .app-shell {
+    padding-inline: 12px;
+  }
+
   .app-card,
   .dashboard-card,
   .dashboard-topbar {
-    padding: 20px;
+    padding: 18px;
   }
 
   .button-row {
     flex-direction: column;
+  }
+
+  .topbar-actions {
+    align-items: stretch;
+  }
+
+  .mobile-menu-toggle {
+    display: inline-flex;
+  }
+
+  .sidebar {
+    display: none;
+    padding: 14px;
+  }
+
+  .sidebar.mobile-open {
+    display: grid;
+  }
+
+  .dashboard-topbar {
+    align-items: flex-start;
   }
 
   .cookie-banner-actions .btn {
@@ -761,6 +849,14 @@ textarea {
 
   .tile-grid-two {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard {
+    gap: 14px;
+  }
+
+  .dashboard-layout {
+    gap: 14px;
   }
 
   .floating-status {

@@ -62,7 +62,7 @@ export default function PrivacyPolicy() {
 
             <section>
               <h2 className="text-xl font-bold text-primary mt-8 mb-4">§2 Inspektor Ochrony Danych</h2>
-              <p>Na podstawie Art. 37 RODO, Administrator nie powołał Inspektora Ochrony Danych. W sprawach dotyczących przetwarzania danych, w tym danych osobowych, należy kontaktować się bezpośrednio z Administratorem pod adresem: <a href="mailto:kontakt@acadea.org" className="text-primary hover:underline">kontakt@acadea.org</a>.</p>
+              <p>Na podstawie Art. 37 RODO, Administrator nie powołał Inspektora Ochrony Danych. W sprawach dotyczących przetwarzania danych, w tym danych osobowych, należy kontaktować się bezpośrednio z Administratorem pod adresem: <a href="mailto:contact@acadea.org" className="text-primary hover:underline">contact@acadea.org</a>.</p>
             </section>
 
             <section>
@@ -148,7 +148,7 @@ export default function PrivacyPolicy() {
                 <li>Cofnięcia zgody w dowolnym momencie</li>
                 <li>Wniesienia skargi do organu nadzorczego (Prezes UODO)</li>
               </ul>
-              <p className="mt-3">W celu realizacji powyższych praw prosimy o kontakt: <a href="mailto:kontakt@acadea.org" className="text-primary hover:underline">kontakt@acadea.org</a></p>
+              <p className="mt-3">W celu realizacji powyższych praw prosimy o kontakt: <a href="mailto:contact@acadea.org" className="text-primary hover:underline">contact@acadea.org</a></p>
             </section>
 
             <section>
@@ -157,7 +157,7 @@ export default function PrivacyPolicy() {
                 <p><strong>Fundacja Acadea</strong></p>
                 <p>KRS: 0001240540 | NIP: 8982333798 | REGON: 544715960</p>
                 <p>Jedności Narodowej 55-57 / 15, 50-262 Wrocław, Polska</p>
-                <p>E-mail: <a href="mailto:kontakt@acadea.org" className="text-primary hover:underline">kontakt@acadea.org</a></p>
+                <p>E-mail: <a href="mailto:contact@acadea.org" className="text-primary hover:underline">contact@acadea.org</a></p>
                 <p>Tel: <a href="tel:+48728492936" className="text-primary hover:underline">+48 728 492 936</a></p>
               </div>
             </section>

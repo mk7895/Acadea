@@ -19,14 +19,14 @@ export function ArticleWhatsAppGroupBlock() {
             <MessageCircle size={24} />
           </div>
           <div className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-[#b6893f]">
-            Spolecznosc WhatsApp
+            Społeczność WhatsApp
           </div>
           <h3 className="text-2xl font-bold leading-tight text-primary md:text-3xl">
-            Dolacz do grupy ACADEA i miej terminy oraz aktualnosci pod reka
+            Dołącz do grupy ACADEA i miej terminy oraz aktualności pod ręką
           </h3>
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-gray-600 md:text-base">
-            To dobre miejsce, jesli chcesz regularnie widziec przypomnienia o terminach, stypendiach
-            i najwazniejszych momentach w procesie aplikacji na studia za granica.
+            To dobre miejsce, jeśli chcesz regularnie widzieć przypomnienia o terminach, stypendiach
+            i najważniejszych momentach w procesie aplikacji na studia za granicą.
           </p>
 
           <ul className="mt-6 space-y-3">
@@ -45,7 +45,7 @@ export function ArticleWhatsAppGroupBlock() {
             className="mt-7 inline-flex items-center gap-3 rounded-full bg-primary px-7 py-4 text-sm font-bold text-white transition-colors hover:bg-primary/90 md:text-base"
           >
             <MessageCircle size={18} />
-            Dolacz do spolecznosci
+            Dołącz do społeczności
           </a>
         </div>
 
@@ -60,7 +60,7 @@ export function ArticleWhatsAppGroupBlock() {
           </div>
           <p className="mt-5 text-base font-bold text-white">Zeskanuj kod QR</p>
           <p className="mt-2 max-w-[220px] text-sm leading-relaxed text-white/75">
-            Otworz aparat i dolacz do spolecznosci ACADEA na WhatsApp.
+            Otwórz aparat i dołącz do społeczności ACADEA na WhatsApp.
           </p>
         </div>
       </div>

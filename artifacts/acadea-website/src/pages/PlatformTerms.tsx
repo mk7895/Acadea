@@ -273,8 +273,8 @@ export default function PlatformTerms() {
               <ol className="list-decimal pl-5 space-y-3">
                 <li>
                   Reklamacje dotyczące działania Platformy można kierować na adres:
-                  <a href="mailto:kontakt@acadea.org" className="text-primary hover:underline">
-                    {" "}kontakt@acadea.org
+                  <a href="mailto:contact@acadea.org" className="text-primary hover:underline">
+                    {" "}contact@acadea.org
                   </a>.
                 </li>
                 <li>
@@ -326,8 +326,8 @@ export default function PlatformTerms() {
               <p>Jedności Narodowej 55-57 / 15, 50-262 Wrocław, Polska</p>
               <p>
                 E-mail:{" "}
-                <a href="mailto:kontakt@acadea.org" className="text-primary hover:underline">
-                  kontakt@acadea.org
+                <a href="mailto:contact@acadea.org" className="text-primary hover:underline">
+                  contact@acadea.org
                 </a>
               </p>
               <p>

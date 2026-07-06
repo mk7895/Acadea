@@ -43,10 +43,25 @@ export const PLATFORM_CHECKLIST_ITEM_TYPES = [
   "external_link",
   "reused_link",
 ] as const;
-export const PLATFORM_GOOGLE_CONNECTION_TYPES = ["calendar", "drive"] as const;
+export const PLATFORM_GOOGLE_CONNECTION_TYPES = ["calendar", "gmail_readonly"] as const;
 export const PLATFORM_CONNECTION_STATUSES = ["disconnected", "pending", "connected"] as const;
 export const PLATFORM_PROFILE_FIELD_TYPES = ["text", "textarea", "date"] as const;
 export const PLATFORM_MATERIAL_TEMPLATE_TYPES = ["passport_like", "essay_like", "offer_like"] as const;
+export const PLATFORM_PRODUCT_TYPES = [
+  "guide_slot",
+  "hint_slot",
+  "email_inbox_access",
+  "mentor_access",
+  "storage_boost",
+  "bundle",
+] as const;
+export const PLATFORM_POPUP_KEYS = [
+  "guide_limit",
+  "hint_limit",
+  "hint_locked",
+  "mentor_locked",
+  "email_locked",
+] as const;
 
 export const platformUsersTable = pgTable(
   "platform_users",
@@ -158,12 +173,14 @@ export const menteeProfilesTable = pgTable(
     studentEmail: text("student_email"),
     intakeYear: integer("intake_year"),
     targetCountries: jsonb("target_countries").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
-    maxActiveGuideCount: integer("max_active_guide_count").notNull().default(3),
-    maxHintGuideCount: integer("max_hint_guide_count").notNull().default(3),
+    maxActiveGuideCount: integer("max_active_guide_count").notNull().default(1),
+    maxHintGuideCount: integer("max_hint_guide_count").notNull().default(1),
     disabledHintGuideTemplateIds: jsonb("disabled_hint_guide_template_ids")
       .$type<number[]>()
       .notNull()
       .default(sql`'[]'::jsonb`),
+    emailInboxEnabled: boolean("email_inbox_enabled").notNull().default(false),
+    maxStorageMb: integer("max_storage_mb").notNull().default(100),
     googleDriveFolderId: text("google_drive_folder_id"),
     googleDriveFolderUrl: text("google_drive_folder_url"),
     googleEssayDocId: text("google_essay_doc_id"),
@@ -282,6 +299,7 @@ export const platformGuidesTable = pgTable("platform_guides", {
   sortOrder: integer("sort_order").notNull().default(0),
   summary: text("summary").notNull().default(""),
   descriptionMarkdown: text("description_markdown").notNull().default(""),
+  emailSenderDomains: jsonb("email_sender_domains").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
   estimatedReadMin: integer("estimated_read_min").notNull().default(5),
   offerStatus: text("offer_status").notNull().default("none"),
   offerMarkedAt: timestamp("offer_marked_at"),
@@ -393,6 +411,7 @@ export const platformMeetingsTable = pgTable("platform_meetings", {
   externalCalendarEventId: text("external_calendar_event_id"),
   actualDurationMinutes: integer("actual_duration_minutes"),
   mentorNotes: text("mentor_notes"),
+  menteeNotes: text("mentee_notes"),
   cancellationReason: text("cancellation_reason"),
   cancelledAt: timestamp("cancelled_at"),
   cancelledByRole: text("cancelled_by_role"),
@@ -490,6 +509,110 @@ export const platformMentorWorkspaceLinksTable = pgTable(
   }),
 );
 
+export const platformProductsTable = pgTable(
+  "platform_products",
+  {
+    id: serial("id").primaryKey(),
+    title: text("title").notNull(),
+    slug: text("slug").notNull(),
+    summary: text("summary").notNull().default(""),
+    description: text("description").notNull().default(""),
+    imageUrl: text("image_url"),
+    stripePriceId: text("stripe_price_id"),
+    stripeProductId: text("stripe_product_id"),
+    currency: text("currency").notNull().default("PLN"),
+    priceCents: integer("price_cents").notNull().default(0),
+    productType: text("product_type").notNull().default("bundle"),
+    isPackage: boolean("is_package").notNull().default(false),
+    guideSlotDelta: integer("guide_slot_delta").notNull().default(0),
+    hintSlotDelta: integer("hint_slot_delta").notNull().default(0),
+    storageMbDelta: integer("storage_mb_delta").notNull().default(0),
+    enablesEmailInbox: boolean("enables_email_inbox").notNull().default(false),
+    mentorUserId: integer("mentor_user_id").references(() => platformUsersTable.id, {
+      onDelete: "set null",
+    }),
+    includedProductIds: jsonb("included_product_ids").$type<number[]>().notNull().default(sql`'[]'::jsonb`),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    slugUnique: uniqueIndex("platform_products_slug_unique").on(table.slug),
+  }),
+);
+
+export const platformPopupConfigsTable = pgTable(
+  "platform_popup_configs",
+  {
+    id: serial("id").primaryKey(),
+    key: text("key").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    primaryCtaLabel: text("primary_cta_label").notNull().default("Kup sugerowany pakiet"),
+    secondaryCtaLabel: text("secondary_cta_label").notNull().default("Zobacz pakiety"),
+    recommendedProductIds: jsonb("recommended_product_ids").$type<number[]>().notNull().default(sql`'[]'::jsonb`),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    keyUnique: uniqueIndex("platform_popup_configs_key_unique").on(table.key),
+  }),
+);
+
+export const platformCartItemsTable = pgTable(
+  "platform_cart_items",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .references(() => platformUsersTable.id, { onDelete: "cascade" })
+      .notNull(),
+    productId: integer("product_id")
+      .references(() => platformProductsTable.id, { onDelete: "cascade" })
+      .notNull(),
+    quantity: integer("quantity").notNull().default(1),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userProductUnique: uniqueIndex("platform_cart_items_user_product_unique").on(
+      table.userId,
+      table.productId,
+    ),
+  }),
+);
+
+export const platformUniversityEmailsTable = pgTable(
+  "platform_university_emails",
+  {
+    id: serial("id").primaryKey(),
+    menteeUserId: integer("mentee_user_id")
+      .references(() => platformUsersTable.id, { onDelete: "cascade" })
+      .notNull(),
+    guideId: integer("guide_id").references(() => platformGuidesTable.id, {
+      onDelete: "set null",
+    }),
+    gmailMessageId: text("gmail_message_id").notNull(),
+    threadId: text("thread_id"),
+    fromEmail: text("from_email").notNull().default(""),
+    subject: text("subject").notNull().default(""),
+    snippet: text("snippet").notNull().default(""),
+    receivedAt: timestamp("received_at").notNull(),
+    classification: text("classification").notNull().default("info_only"),
+    actionRequired: boolean("action_required").notNull().default(false),
+    actionSummary: text("action_summary").notNull().default(""),
+    requiresManualReview: boolean("requires_manual_review").notNull().default(false),
+    rawPayload: jsonb("raw_payload").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    gmailMessageUnique: uniqueIndex("platform_university_emails_gmail_message_unique").on(
+      table.gmailMessageId,
+    ),
+  }),
+);
+
 export const insertPlatformUserSchema = createInsertSchema(platformUsersTable, {
   role: z.enum(PLATFORM_USER_ROLES),
   status: z.enum(PLATFORM_USER_STATUSES).default("pending"),
@@ -511,5 +634,7 @@ export type PlatformGoogleConnectionType = (typeof PLATFORM_GOOGLE_CONNECTION_TY
 export type PlatformConnectionStatus = (typeof PLATFORM_CONNECTION_STATUSES)[number];
 export type PlatformProfileFieldType = (typeof PLATFORM_PROFILE_FIELD_TYPES)[number];
 export type PlatformMaterialTemplateType = (typeof PLATFORM_MATERIAL_TEMPLATE_TYPES)[number];
+export type PlatformProductType = (typeof PLATFORM_PRODUCT_TYPES)[number];
+export type PlatformPopupKey = (typeof PLATFORM_POPUP_KEYS)[number];
 export type InsertPlatformUser = z.infer<typeof insertPlatformUserSchema>;
 export type PlatformUser = typeof platformUsersTable.$inferSelect;

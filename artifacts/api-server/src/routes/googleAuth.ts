@@ -5,6 +5,7 @@ import { mentorProfilesTable, platformGoogleConnectionsTable } from "@workspace/
 import { logger } from "../lib/logger";
 import { hasDatabaseConfig } from "../lib/databaseConfig";
 import {
+  getGoogleAccountEmailForAccessToken,
   getGoogleConnectionStatus,
   getGooglePrimaryCalendarIdForAccessToken,
   getGoogleOAuthClientCredentials,
@@ -213,8 +214,9 @@ router.get("/google/auth/callback", async (req, res) => {
       }
 
       const externalEmail =
-        (await getGooglePrimaryCalendarIdForAccessToken(tokenData.access_token)) ??
-        "";
+        platformState.connectionType === "gmail_readonly"
+          ? (await getGoogleAccountEmailForAccessToken(tokenData.access_token)) ?? ""
+          : (await getGooglePrimaryCalendarIdForAccessToken(tokenData.access_token)) ?? "";
 
       const [existingConnection] = await db
         .select()

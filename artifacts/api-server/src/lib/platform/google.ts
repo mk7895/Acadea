@@ -1,14 +1,19 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-export const PLATFORM_MENTOR_GOOGLE_SCOPES = [
-  "https://www.googleapis.com/auth/calendar",
-  "https://www.googleapis.com/auth/gmail.send",
-] as const;
+export const PLATFORM_GOOGLE_SCOPES_BY_CONNECTION_TYPE = {
+  calendar: [
+    "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/gmail.send",
+  ],
+  gmail_readonly: [
+    "https://www.googleapis.com/auth/gmail.readonly",
+  ],
+} as const;
 
 const PLATFORM_GOOGLE_STATE_TTL_MS = 1000 * 60 * 10;
 
 type PlatformGoogleOAuthStatePayload = {
-  connectionType: "calendar" | "drive";
+  connectionType: "calendar" | "gmail_readonly";
   exp: number;
   nonce: string;
   purpose: "platform-google-connect";
@@ -46,7 +51,7 @@ function getPlatformGoogleStateSecret() {
 }
 
 export function createPlatformGoogleOAuthState(input: {
-  connectionType: "calendar" | "drive";
+  connectionType: "calendar" | "gmail_readonly";
   userId: number;
 }) {
   const secret = getPlatformGoogleStateSecret();
@@ -106,7 +111,7 @@ export function parsePlatformGoogleOAuthState(
       !Number.isFinite(payload.exp) ||
       payload.exp <= Date.now() ||
       (payload.connectionType !== "calendar" &&
-        payload.connectionType !== "drive")
+        payload.connectionType !== "gmail_readonly")
     ) {
       return null;
     }

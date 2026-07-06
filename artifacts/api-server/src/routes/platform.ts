@@ -21,8 +21,12 @@ import {
   platformMentorAssignmentsTable,
   platformMentorWorkspaceLinksTable,
   platformPasswordResetTokensTable,
+  platformPopupConfigsTable,
+  platformProductsTable,
   platformProfileFieldsTable,
   platformProfileResponsesTable,
+  platformCartItemsTable,
+  platformUniversityEmailsTable,
   platformUsersTable,
   scholarshipApplicationsTable,
   PLATFORM_CHECKLIST_ITEM_TYPES,
@@ -33,7 +37,9 @@ import {
   PLATFORM_MATERIAL_TEMPLATE_TYPES,
   PLATFORM_MEETING_METHODS,
   PLATFORM_MEETING_STATUSES,
+  PLATFORM_POPUP_KEYS,
   PLATFORM_PROFILE_FIELD_TYPES,
+  PLATFORM_PRODUCT_TYPES,
   PLATFORM_USER_ROLES,
   PLATFORM_USER_STATUSES,
   type PlatformUserRole,
@@ -67,7 +73,7 @@ import {
   buildMentorMeetingUrl,
   createPlatformGoogleOAuthState,
   getPlatformGoogleConnectionMetadata,
-  PLATFORM_MENTOR_GOOGLE_SCOPES,
+  PLATFORM_GOOGLE_SCOPES_BY_CONNECTION_TYPE,
 } from "../lib/platform/google";
 import {
   cloneDocumentTabToTarget,
@@ -212,6 +218,7 @@ const guideSchema = z.object({
   slug: z.string().trim().min(1),
   country: z.string().trim().min(1),
   universityName: z.string().trim().min(1),
+  emailSenderDomains: z.array(z.string().trim().min(1)).optional().default([]),
   sortOrder: z.number().int().min(0).default(0),
   summary: z.string().trim().optional().default(""),
   descriptionMarkdown: z.string().trim().optional().default(""),
@@ -291,6 +298,7 @@ const guideImportGuideSchema = z.object({
   country: z.string().trim().min(1),
   universityName: z.string().trim().min(1),
   programName: z.string().trim().optional(),
+  emailSenderDomains: z.array(z.string().trim().min(1)).optional(),
   insertAfterGuideSlug: z.string().trim().min(1).optional(),
   insertBeforeGuideSlug: z.string().trim().min(1).optional(),
   summary: z.string().trim().optional(),
@@ -354,11 +362,12 @@ const guideImportOperationsSchema = z.object({
 const guideImportBlueprintSchema = z.object({
   version: z.literal(1),
   guide: guideImportGuideSchema.optional(),
+  guides: z.array(guideImportGuideSchema).optional(),
   itemGuides: z.array(guideImportItemGuideSchema).optional(),
   materialTemplates: z.array(guideImportMaterialTemplateSchema).optional(),
   operations: guideImportOperationsSchema.optional(),
 }).superRefine((value, ctx) => {
-  const hasGuide = Boolean(value.guide);
+  const hasGuide = Boolean(value.guide) || Boolean(value.guides?.length);
   const hasItemGuides = Boolean(value.itemGuides?.length);
   const hasMaterialTemplates = Boolean(value.materialTemplates?.length);
   const hasOperations = Boolean(
@@ -372,7 +381,7 @@ const guideImportBlueprintSchema = z.object({
   if (!hasGuide && !hasItemGuides && !hasMaterialTemplates && !hasOperations) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Blueprint must contain at least one of: guide, itemGuides, materialTemplates, or operations.",
+      message: "Blueprint must contain at least one of: guide, guides, itemGuides, materialTemplates, or operations.",
       path: [],
     });
   }
@@ -380,7 +389,7 @@ const guideImportBlueprintSchema = z.object({
   if ((hasItemGuides || hasMaterialTemplates) && !hasGuide && !hasOperations) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "When itemGuides or materialTemplates are provided without operations, guide is required.",
+      message: "When itemGuides or materialTemplates are provided without operations, guide or guides is required.",
       path: ["guide"],
     });
   }
@@ -471,6 +480,43 @@ const menteeLimitsSchema = z.object({
   disabledHintGuideTemplateIds: z.array(z.number().int().positive()).optional(),
   maxActiveGuideCount: z.number().int().min(1).max(20).optional(),
   maxHintGuideCount: z.number().int().min(0).max(20).optional(),
+  emailInboxEnabled: z.boolean().optional(),
+  maxStorageMb: z.number().int().min(10).max(102400).optional(),
+});
+
+const productSchema = z.object({
+  title: z.string().trim().min(1),
+  slug: z.string().trim().min(1),
+  summary: z.string().trim().optional().default(""),
+  description: z.string().trim().optional().default(""),
+  imageUrl: z.string().trim().optional().default(""),
+  stripePriceId: z.string().trim().optional().default(""),
+  stripeProductId: z.string().trim().optional().default(""),
+  currency: z.string().trim().min(3).max(8).default("PLN"),
+  priceCents: z.number().int().min(0).default(0),
+  productType: z.enum(PLATFORM_PRODUCT_TYPES),
+  isPackage: z.boolean().default(false),
+  guideSlotDelta: z.number().int().min(0).default(0),
+  hintSlotDelta: z.number().int().min(0).default(0),
+  storageMbDelta: z.number().int().min(0).default(0),
+  enablesEmailInbox: z.boolean().default(false),
+  mentorUserId: z.number().int().positive().nullable().optional(),
+  includedProductIds: z.array(z.number().int().positive()).default([]),
+  isActive: z.boolean().default(true),
+});
+
+const popupConfigSchema = z.object({
+  title: z.string().trim().min(1),
+  body: z.string().trim().optional().default(""),
+  primaryCtaLabel: z.string().trim().min(1).default("Kup sugerowany pakiet"),
+  secondaryCtaLabel: z.string().trim().min(1).default("Zobacz pakiety"),
+  recommendedProductIds: z.array(z.number().int().positive()).default([]),
+  isActive: z.boolean().default(true),
+});
+
+const cartItemSchema = z.object({
+  productId: z.number().int().positive(),
+  quantity: z.number().int().min(1).max(99).default(1),
 });
 
 const googleConnectionSchema = z.object({
@@ -505,6 +551,10 @@ const meetingCancelSchema = z.object({
 
 const meetingOccurredSchema = z.object({
   occurred: z.boolean(),
+});
+
+const meetingMenteeNotesSchema = z.object({
+  menteeNotes: z.string().trim().max(4000).optional().default(""),
 });
 
 const meetingRescheduleSchema = z.object({
@@ -579,20 +629,171 @@ function isItemGuideRecord(guide: { driveFolderUrl: string | null; guideType: st
 
 function getMenteeGuideLimits(profile: {
   disabledHintGuideTemplateIds?: number[] | null;
+  emailInboxEnabled?: boolean | null;
   maxActiveGuideCount?: number | null;
   maxHintGuideCount?: number | null;
+  maxStorageMb?: number | null;
 } | null | undefined) {
   return {
     disabledHintGuideTemplateIds: Array.isArray(profile?.disabledHintGuideTemplateIds)
       ? profile!.disabledHintGuideTemplateIds.filter((value): value is number => Number.isFinite(value))
       : [],
+    emailInboxEnabled: Boolean(profile?.emailInboxEnabled),
     maxActiveGuideCount: Number.isFinite(profile?.maxActiveGuideCount)
       ? Math.max(1, Number(profile?.maxActiveGuideCount))
-      : 3,
+      : 1,
     maxHintGuideCount: Number.isFinite(profile?.maxHintGuideCount)
       ? Math.max(0, Number(profile?.maxHintGuideCount))
-      : 3,
+      : 1,
+    maxStorageMb: Number.isFinite(profile?.maxStorageMb)
+      ? Math.max(10, Number(profile?.maxStorageMb))
+      : 100,
   };
+}
+
+function getDefaultPopupConfig(key: (typeof PLATFORM_POPUP_KEYS)[number]) {
+  switch (key) {
+    case "guide_limit":
+      return {
+        body: "Wykorzystano obecny limit aktywnych programów. Możesz kupić pakiet z większą liczbą programów.",
+        primaryCtaLabel: "Kup więcej programów",
+        secondaryCtaLabel: "Zobacz pakiety",
+        title: "Potrzebujesz większego limitu programów",
+      };
+    case "hint_limit":
+      return {
+        body: "Wykorzystano obecny limit aktywnych wskazówek. Możesz dokupić większy pakiet wskazówek.",
+        primaryCtaLabel: "Kup więcej wskazówek",
+        secondaryCtaLabel: "Zobacz pakiety",
+        title: "Potrzebujesz większego limitu wskazówek",
+      };
+    case "hint_locked":
+      return {
+        body: "Masz dostęp do programu, ale wskazówki do tego programu są zablokowane. Możesz odblokować je odpowiednim pakietem.",
+        primaryCtaLabel: "Odblokuj wskazówki",
+        secondaryCtaLabel: "Zobacz pakiety",
+        title: "Wskazówki są zablokowane",
+      };
+    case "mentor_locked":
+      return {
+        body: "Ten mentor wymaga osobnego dostępu. Możesz dokupić odpowiedni pakiet mentorski.",
+        primaryCtaLabel: "Kup dostęp do mentora",
+        secondaryCtaLabel: "Zobacz pakiety",
+        title: "Ten mentor wymaga odrębnego dostępu",
+      };
+    case "email_locked":
+      return {
+        body: "Ta funkcja jest dostępna po dokupieniu dostępu do monitoringu maili uczelni.",
+        primaryCtaLabel: "Odblokuj maile uczelni",
+        secondaryCtaLabel: "Zobacz pakiety",
+        title: "Dostęp do maili uczelni jest zablokowany",
+      };
+    default:
+      return {
+        body: "",
+        primaryCtaLabel: "Kup sugerowany pakiet",
+        secondaryCtaLabel: "Zobacz pakiety",
+        title: "Rozszerzenie dostępu",
+      };
+  }
+}
+
+function extractEmailAddress(input: string) {
+  const match = input.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  return match?.[0]?.toLowerCase() ?? "";
+}
+
+function classifyUniversityEmail(input: {
+  fromEmail: string;
+  snippet: string;
+  subject: string;
+}) {
+  const text = `${input.subject}\n${input.snippet}`.toLowerCase();
+  if (/newsletter|news update|campaign/i.test(text)) {
+    return { actionRequired: false, actionSummary: "To wygląda na newsletter lub ogólną aktualizację.", classification: "newsletter", requiresManualReview: false };
+  }
+  if (/interview|invitation to interview|zaproszenie.*interview|assessment/i.test(text)) {
+    return { actionRequired: true, actionSummary: "Sprawdź szczegóły zaproszenia i przygotuj kolejny krok rekrutacyjny.", classification: "interview", requiresManualReview: false };
+  }
+  if (/missing document|upload|submit.*document|additional document|certified cop|transcript/i.test(text)) {
+    return { actionRequired: true, actionSummary: "Uczelnia prosi o dosłanie lub wgranie dodatkowych dokumentów.", classification: "missing_document", requiresManualReview: false };
+  }
+  if (/offer|conditional|admission decision|accepted|congrat/i.test(text)) {
+    return { actionRequired: true, actionSummary: "To może dotyczyć decyzji rekrutacyjnej lub oferty. Otwórz wiadomość i sprawdź wymagane działania.", classification: "offer_update", requiresManualReview: false };
+  }
+  if (/portal|account|login|activate|osiris|sis|olaf|studielink/i.test(text)) {
+    return { actionRequired: true, actionSummary: "Wiadomość wygląda na dostęp do portalu lub instrukcję aktywacji konta.", classification: "portal_access", requiresManualReview: false };
+  }
+  if (/payment|tuition|deposit|invoice|fee/i.test(text)) {
+    return { actionRequired: true, actionSummary: "Wiadomość może dotyczyć płatności, depozytu lub opłaty uczelnianej.", classification: "payment", requiresManualReview: false };
+  }
+  if (/deadline|reminder|important date|closing date/i.test(text)) {
+    return { actionRequired: true, actionSummary: "To wygląda na przypomnienie o ważnym terminie lub kolejnym etapie.", classification: "reminder", requiresManualReview: false };
+  }
+  return { actionRequired: false, actionSummary: "Nie wykryto oczywistego działania. W razie wątpliwości sprawdź pełną treść wiadomości.", classification: "info_only", requiresManualReview: true };
+}
+
+async function applyPurchasedProductsToMentee(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+  menteeUserId: number,
+  products: Array<typeof platformProductsTable.$inferSelect>,
+) {
+  const [existingProfile] = await db
+    .select()
+    .from(menteeProfilesTable)
+    .where(eq(menteeProfilesTable.userId, menteeUserId))
+    .limit(1);
+  const currentLimits = getMenteeGuideLimits(existingProfile);
+  const nextGuideCount = currentLimits.maxActiveGuideCount + products.reduce((sum, product) => sum + Number(product.guideSlotDelta ?? 0), 0);
+  const nextHintCount = currentLimits.maxHintGuideCount + products.reduce((sum, product) => sum + Number(product.hintSlotDelta ?? 0), 0);
+  const nextStorageMb = currentLimits.maxStorageMb + products.reduce((sum, product) => sum + Number(product.storageMbDelta ?? 0), 0);
+  const emailInboxEnabled = currentLimits.emailInboxEnabled || products.some((product) => Boolean(product.enablesEmailInbox));
+
+  await db
+    .insert(menteeProfilesTable)
+    .values({
+      adminApproved: Boolean(existingProfile?.adminApproved),
+      disabledHintGuideTemplateIds: currentLimits.disabledHintGuideTemplateIds,
+      emailInboxEnabled,
+      googleDriveFolderId: existingProfile?.googleDriveFolderId ?? null,
+      googleDriveFolderUrl: existingProfile?.googleDriveFolderUrl ?? null,
+      googleEssayDocId: existingProfile?.googleEssayDocId ?? null,
+      googleEssayDocUrl: existingProfile?.googleEssayDocUrl ?? null,
+      intakeYear: existingProfile?.intakeYear ?? null,
+      maxActiveGuideCount: nextGuideCount,
+      maxHintGuideCount: nextHintCount,
+      maxStorageMb: nextStorageMb,
+      primaryMentorUserId: existingProfile?.primaryMentorUserId ?? null,
+      studentEmail: existingProfile?.studentEmail ?? null,
+      targetCountries: existingProfile?.targetCountries ?? [],
+      userId: menteeUserId,
+    })
+    .onConflictDoUpdate({
+      target: menteeProfilesTable.userId,
+      set: {
+        emailInboxEnabled,
+        maxActiveGuideCount: nextGuideCount,
+        maxHintGuideCount: nextHintCount,
+        maxStorageMb: nextStorageMb,
+        updatedAt: new Date(),
+      },
+    });
+
+  const mentorProductIds = products
+    .filter((product) => product.productType === "mentor_access" && Number.isFinite(product.mentorUserId))
+    .map((product) => Number(product.mentorUserId))
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  for (const mentorUserId of mentorProductIds) {
+    await db
+      .insert(platformMentorAssignmentsTable)
+      .values({
+        menteeUserId,
+        mentorUserId,
+        grantedByUserId: menteeUserId,
+      })
+      .onConflictDoNothing();
+  }
 }
 
 function getEligibleHintTemplateIdsForGuides(
@@ -1287,6 +1488,7 @@ async function importGuideBlueprint(
       country: string;
       descriptionMarkdown: string;
       driveFolderUrl: string | null;
+      emailSenderDomains?: string[];
       estimatedReadMin: number;
       guideType: "admin_template" | "mentor_blueprint";
       isVisibleToUnapprovedUsers: boolean;
@@ -1311,6 +1513,7 @@ async function importGuideBlueprint(
           slug: normalizeSlug(payload.slug),
           country: payload.country,
           universityName: payload.universityName,
+          emailSenderDomains: payload.emailSenderDomains ?? [],
           sortOrder: typeof payload.sortOrder === "number" ? payload.sortOrder : existing.sortOrder,
           summary: payload.summary,
           descriptionMarkdown: payload.descriptionMarkdown,
@@ -1335,6 +1538,7 @@ async function importGuideBlueprint(
         slug: normalizeSlug(payload.slug),
         country: payload.country,
         universityName: payload.universityName,
+        emailSenderDomains: payload.emailSenderDomains ?? [],
         sortOrder: typeof payload.sortOrder === "number" ? payload.sortOrder : getNextGuideSortOrder(existingGuides),
         summary: payload.summary,
         descriptionMarkdown: payload.descriptionMarkdown,
@@ -1352,33 +1556,45 @@ async function importGuideBlueprint(
 
   let mainGuide: Awaited<ReturnType<typeof upsertGuide>> | null = null;
   let refreshedGuides = existingGuides;
-  if (blueprint.guide) {
-    mainGuide = await upsertGuide({
-      country: blueprint.guide.country,
-      descriptionMarkdown: blueprint.guide.descriptionMarkdown ?? "",
+  const blueprintGuides = [
+    ...(blueprint.guide ? [blueprint.guide] : []),
+    ...(blueprint.guides ?? []),
+  ];
+
+  for (const [guideIndex, guideInput] of blueprintGuides.entries()) {
+    const upsertedGuide = await upsertGuide({
+      country: guideInput.country,
+      descriptionMarkdown: guideInput.descriptionMarkdown ?? "",
       driveFolderUrl: null,
-      estimatedReadMin: blueprint.guide.estimatedReadMin ?? 12,
-      guideType: blueprint.guide.guideType ?? "admin_template",
-      isVisibleToUnapprovedUsers: blueprint.guide.isVisibleToUnapprovedUsers ?? true,
-      items: normalizeImportedGuideItems(blueprint.guide.items),
-      slug: blueprint.guide.slug,
-      sortOrder: getNextGuideSortOrder(existingGuides),
-      status: blueprint.guide.status ?? "published",
-      summary: blueprint.guide.summary ?? "",
-      title: blueprint.guide.title,
-      universityName: blueprint.guide.universityName,
+      emailSenderDomains: guideInput.emailSenderDomains ?? [],
+      estimatedReadMin: guideInput.estimatedReadMin ?? 12,
+      guideType: guideInput.guideType ?? "admin_template",
+      isVisibleToUnapprovedUsers: guideInput.isVisibleToUnapprovedUsers ?? true,
+      items: normalizeImportedGuideItems(guideInput.items),
+      slug: guideInput.slug,
+      sortOrder: getNextGuideSortOrder(existingGuides) + guideIndex,
+      status: guideInput.status ?? "published",
+      summary: guideInput.summary ?? "",
+      title: guideInput.title,
+      universityName: guideInput.universityName,
     });
+
+    if (!mainGuide) {
+      mainGuide = upsertedGuide;
+    }
 
     refreshedGuides = await applyGuidePlacement(
       db,
       await db.select().from(platformGuidesTable),
-      mainGuide.id,
+      upsertedGuide.id,
       {
-        insertAfterGuideSlug: blueprint.guide.insertAfterGuideSlug,
-        insertBeforeGuideSlug: blueprint.guide.insertBeforeGuideSlug,
+        insertAfterGuideSlug: guideInput.insertAfterGuideSlug,
+        insertBeforeGuideSlug: guideInput.insertBeforeGuideSlug,
       },
     );
+    existingGuides = refreshedGuides;
   }
+
   const fallbackGuideId = mainGuide?.id ?? 0;
   const guideIdBySlug = new Map<string, number>(refreshedGuides.map((guide) => [guide.slug, guide.id]));
   const itemGuideIdByKey = new Map<string, number>();
@@ -1396,6 +1612,7 @@ async function importGuideBlueprint(
       country: itemGuide.country,
       descriptionMarkdown: itemGuide.descriptionMarkdown ?? "",
       driveFolderUrl: createItemGuideMeta(appliesToGuideIds),
+      emailSenderDomains: itemGuide.emailSenderDomains ?? [],
       estimatedReadMin: itemGuide.estimatedReadMin ?? 5,
       guideType: itemGuide.guideType ?? "admin_template",
       isVisibleToUnapprovedUsers: itemGuide.isVisibleToUnapprovedUsers ?? false,
@@ -1544,6 +1761,28 @@ function getGuideBlueprintAssistantSchema() {
             type: "string",
             description:
               "Optional alternative to insertAfterGuideSlug when the guide should appear before an existing guide. Use only one of the two placement fields.",
+          },
+        },
+      },
+      guides: {
+        type: "array",
+        description:
+          "Optional. Use when you want to maintain several existing guides/programmes in one payload, for example updating emailSenderDomains or metadata across multiple programmes at once.",
+        items: {
+          type: "object",
+          required: ["title", "slug", "country", "universityName"],
+          properties: {
+            title: { type: "string" },
+            slug: { type: "string" },
+            country: { type: "string" },
+            universityName: { type: "string" },
+            programName: { type: "string" },
+            insertAfterGuideSlug: { type: "string" },
+            insertBeforeGuideSlug: { type: "string" },
+            emailSenderDomains: {
+              type: "array",
+              items: { type: "string" },
+            },
           },
         },
       },
@@ -2161,6 +2400,7 @@ async function shapeGuideList(
     createdAt: Date;
     descriptionMarkdown: string;
     driveFolderUrl: string | null;
+    emailSenderDomains?: string[] | null;
     estimatedReadMin: number;
     guideType: string;
     id: number;
@@ -2210,6 +2450,7 @@ async function shapeGuideList(
 
     return {
       ...guide,
+      emailSenderDomains: Array.isArray(guide.emailSenderDomains) ? guide.emailSenderDomains.filter(Boolean) : [],
       summary:
         guide.guideType === "self_service_live" && guide.sourceGuideId
           ? sourceGuideMap.get(guide.sourceGuideId)?.summary ?? guide.summary
@@ -2228,6 +2469,43 @@ async function shapeGuideList(
       updatedAt: guide.updatedAt.toISOString(),
     };
   });
+}
+
+async function getPopupConfigMap(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+) {
+  const popupRows = await db.select().from(platformPopupConfigsTable);
+  const popupMap = new Map<string, any>();
+  for (const key of PLATFORM_POPUP_KEYS) {
+    const existing = popupRows.find((row) => row.key === key);
+    popupMap.set(key, {
+      body: existing?.body ?? getDefaultPopupConfig(key).body,
+      isActive: existing?.isActive ?? true,
+      key,
+      primaryCtaLabel: existing?.primaryCtaLabel ?? getDefaultPopupConfig(key).primaryCtaLabel,
+      recommendedProductIds: Array.isArray(existing?.recommendedProductIds)
+        ? existing.recommendedProductIds.filter((value: unknown): value is number => Number.isFinite(value))
+        : [],
+      secondaryCtaLabel: existing?.secondaryCtaLabel ?? getDefaultPopupConfig(key).secondaryCtaLabel,
+      title: existing?.title ?? getDefaultPopupConfig(key).title,
+      updatedAt: existing?.updatedAt?.toISOString?.() ?? null,
+    });
+  }
+  return popupMap;
+}
+
+async function getMenteeStorageUsageBytes(
+  db: Awaited<typeof import("@workspace/db")>["db"],
+  menteeUserId: number,
+) {
+  const [row] = await db
+    .select({
+      totalBytes: sql<number>`coalesce(sum(${platformFileAssetsTable.sizeBytes}), 0)`,
+    })
+    .from(platformFileAssetsTable)
+    .where(eq(platformFileAssetsTable.ownerUserId, menteeUserId));
+
+  return Number(row?.totalBytes ?? 0);
 }
 
 async function collectGuideCascadeIds(
@@ -3476,6 +3754,14 @@ router.get(
         country: "<FILL_COUNTRY>",
         universityName: "<FILL_UNIVERSITY_NAME>",
         programName: "<OPTIONAL_PROGRAMME_NAME>",
+        guideBatchScaffold: [
+          {
+            country: "<FILL_COUNTRY>",
+            universityName: "<FILL_UNIVERSITY_NAME>",
+            programName: "<OPTIONAL_PROGRAMME_NAME>",
+            slug: "<OPTIONAL_EXISTING_OR_NEW_GUIDE_SLUG>",
+          },
+        ],
         desiredPlacement: {
           insertAfterGuideSlug: "<OPTIONAL_EXISTING_GUIDE_SLUG>",
           insertBeforeGuideSlug: "<OPTIONAL_EXISTING_GUIDE_SLUG>",
@@ -3511,6 +3797,7 @@ router.get(
         .map((guide, index) => ({
           country: guide.country,
           currentPosition: index + 1,
+          emailSenderDomains: Array.isArray(guide.emailSenderDomains) ? guide.emailSenderDomains : [],
           guideType: guide.guideType,
           id: guide.id,
           slug: guide.slug,
@@ -3541,8 +3828,10 @@ router.get(
       "Do not prepend or append any explanation, markdown prose, bullets, or code-fence labels outside the JSON body itself.",
       "Use the current DB context provided below.",
       "Before sending this prompt to ChatGPT, first fill the scaffold placeholders in the context: country, universityName, optional programName, and optional desired placement relative to existing guide slugs.",
+      "If you need to update several already-existing guides/programmes in one payload, you may use guides[] in addition to or instead of guide.",
       "If you only want to maintain existing guides (for example delete, reorder, or move them), you may omit guide/materialTemplates and use operations only.",
       "If the new guide belongs between existing universities/programmes, express that using guide.insertAfterGuideSlug or guide.insertBeforeGuideSlug.",
+      "When using guides[] for maintenance, keep every programme as its own separate object and do not merge different programmes at the same university into one shared guide.",
       "If both placement fields are empty, ChatGPT may choose a sensible default position, but when order matters you should fill one of them manually.",
       "Use operations.deleteGuideSlugs to remove existing guides by slug.",
       "Use operations.deleteItemGuideSlugs to remove existing hint/item-guide records by slug.",
@@ -3562,15 +3851,22 @@ router.get(
       "If a tile contains multiple university-specific or programme-specific item rows, structure it with visible country rows and university rows instead of leaving all items flat.",
       "For Dutch shared portal tiles, a common Studielink task may sit directly under the country row, and then university-specific tasks should be grouped under university rows.",
       "If multiple programmes at the same university need separate tasks, represent them as separate university rows whose labels include the programme name, for example 'University of Amsterdam - Business Administration' and 'University of Amsterdam - Business Analytics'.",
+      "Limits and access are tracked per guide / programme, not per raw university name. Do not collapse multiple programme guides at the same university into one generic guide.",
+      "When the same university appears with multiple programmes, keep separate guide slugs, separate programme labels, and separate programme-specific rows wherever requirements differ.",
       "Use a shared tile such as 'Zcentralizowane Portale Aplikacyjne' for national portals like Studielink or Common App, with common country-level tasks first and then programme-specific university rows below.",
       "Use a shared tile such as 'Portale Uczelni' for institution-specific portals like OLAF, SIS, or OSIRIS when several universities/programmes are being maintained together.",
+      "Use the tile title 'Egzaminy wstępne do uczelni' for programme-specific entrance or selection exams when several programmes are being maintained together.",
+      "If 'Potwierdzenie wymogu z matematyki' serves more than one programme, restructure it with visible country rows and university/programme rows instead of one flat shared item.",
       "Once a multi-program tile introduces country and university rows, do not leave trailing generic item rows at the end of the tile. Every later item must either belong to an explicit university/programme row or be a clearly shared country-level step placed before the university-specific blocks.",
       "When a tile has only one programme-specific item group, country/university rows are optional; when a tile mixes multiple programmes or universities, country and university rows should normally be present.",
       "Do not add checklist rows that merely say to paste, submit, or re-enter essays already tracked in essay tiles. Essays should stay in their own essay workflow unless there is a genuinely separate portal-only action and even then the task wording must be precise.",
       "Avoid vague catch-all tasks such as 'follow the welcome page', 'complete remaining conditions', or similar generic placeholders. Every task row should describe a concrete user action.",
+      "If you need to reorganize existing shared tiles, you may delete obsolete tile titles in operations.deleteMaterialTemplateTitles and recreate the cleaned target tiles in the same JSON payload.",
       "Use templateType='offer_like' for tasks that happen only after receiving a conditional or final offer. These tiles belong in the 'Twoje Oferty' tab, not in regular materials.",
       "Do not put waiting-list-only actions into an offer tile unless the user explicitly wants to track waiting-list paths. The default offer tiles should focus on concrete next steps after receiving a conditional or final offer.",
       "Post-offer tasks should be split into concrete tiles when useful, for example acceptance / waiting list, additional post-offer documents, tuition or deposit, and similar clearly scoped follow-up actions.",
+      "Use guide.emailSenderDomains whenever the university sends important mail from known domains or subdomains. Put one clean domain per entry, for example ['uva.nl', 'eur.nl', 'tilburguniversity.edu'].",
+      "When maintaining an existing guide, preserve or intentionally update guide.emailSenderDomains instead of dropping them accidentally.",
       "Use file_or_doc for tasks that may either be uploaded as a file or written inside Essay Doc.",
       "Use docTabTitle and docTabPrompt whenever actionType is file_or_doc.",
       "Whenever actionType is file_required, check_or_file, or file_or_doc, provide rows[].suggestedFilename unless there is a strong product reason not to.",
@@ -3580,6 +3876,7 @@ router.get(
       "Only set rows[].sourceDocumentId and rows[].sourceTabId when the admin explicitly wants to switch a row to use a master Google Docs template tab.",
       "Use guide.programName when relevant, especially for universities that have multiple distinct programmes.",
       "If a programmeName is provided, keep guide.universityName as the institution name only, and reflect the programme in guide.title and in relevant university/item labels where helpful.",
+      "For guide maintenance payloads, use guide.emailSenderDomains or guides[].emailSenderDomains whenever known sender domains should be stored for university-email classification.",
       "Do not create new generic country/university shell rows by default. Reuse existing shell tiles and scope new rows explicitly to the target guide slug unless a truly generic reusable row is intended.",
       "Do not transliterate Polish labels into ASCII when referencing existing titles or tasks from the DB context. Copy them exactly as shown in the context JSON.",
       "Use only one of guide.insertAfterGuideSlug or guide.insertBeforeGuideSlug. If one is not used, omit it instead of sending an empty string.",
@@ -4183,6 +4480,7 @@ router.post(
         slug: normalizeSlug(parsed.data.slug),
         country: parsed.data.country,
         universityName: parsed.data.universityName,
+        emailSenderDomains: parsed.data.emailSenderDomains,
         sortOrder: parsed.data.sortOrder ?? getNextGuideSortOrder(allGuides),
         summary: parsed.data.summary,
         descriptionMarkdown: parsed.data.descriptionMarkdown,
@@ -4227,6 +4525,7 @@ router.put(
         slug: normalizeSlug(parsed.data.slug),
         country: parsed.data.country,
         universityName: parsed.data.universityName,
+        emailSenderDomains: parsed.data.emailSenderDomains,
         sortOrder: parsed.data.sortOrder ?? existingGuide?.sortOrder ?? 0,
         summary: parsed.data.summary,
         descriptionMarkdown: parsed.data.descriptionMarkdown,
@@ -4535,7 +4834,7 @@ router.post(
   requirePlatformRole("mentor"),
   async (req: AuthenticatedRequest, res) => {
     const connectionType =
-      req.params.type === "calendar" || req.params.type === "drive"
+      req.params.type === "calendar" || req.params.type === "gmail_readonly"
         ? req.params.type
         : null;
     if (!connectionType) {
@@ -4557,7 +4856,7 @@ router.post(
       access_type: "offline",
       prompt: "consent",
       include_granted_scopes: "true",
-      scope: PLATFORM_MENTOR_GOOGLE_SCOPES.join(" "),
+      scope: PLATFORM_GOOGLE_SCOPES_BY_CONNECTION_TYPE[connectionType].join(" "),
       state,
     });
 
@@ -4573,7 +4872,7 @@ router.delete(
   requirePlatformRole("mentor"),
   async (req: AuthenticatedRequest, res) => {
     const connectionType =
-      req.params.type === "calendar" || req.params.type === "drive"
+      req.params.type === "calendar" || req.params.type === "gmail_readonly"
         ? req.params.type
         : null;
     if (!connectionType) {
@@ -4630,6 +4929,12 @@ router.get(
         .limit(1);
     }
     const guideLimits = getMenteeGuideLimits(profile);
+    const storageUsedBytes = await getMenteeStorageUsageBytes(db, req.platformUser!.id);
+    const menteeGoogleConnections = await db
+      .select()
+      .from(platformGoogleConnectionsTable)
+      .where(eq(platformGoogleConnectionsTable.userId, req.platformUser!.id))
+      .orderBy(asc(platformGoogleConnectionsTable.connectionType));
     const assignedMentors = await db
       .select({
         assignmentId: platformMentorAssignmentsTable.id,
@@ -4833,7 +5138,14 @@ router.get(
         asc(platformGuidesTable.universityName),
         asc(platformGuidesTable.title),
       );
-    const hintEligibleTemplateIds = getEligibleHintTemplateIdsForGuides(publishedLiveGuides, guideLimits);
+    const persistentHintGuides = assignedGuideTemplates.map((guide) => ({
+      createdAt: guide.createdAt,
+      id: guide.id,
+      sourceGuideId: guide.sourceGuideId,
+    }));
+    const hintEligibleGuideSeed = [...publishedLiveGuides, ...persistentHintGuides]
+      .sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime());
+    const hintEligibleTemplateIds = getEligibleHintTemplateIdsForGuides(hintEligibleGuideSeed, guideLimits);
     const tipAccessGuides = hintEligibleTemplateIds.length
       ? await db
           .select()
@@ -4877,11 +5189,30 @@ router.get(
             ),
           )
       : [];
+    const products = await db
+      .select()
+      .from(platformProductsTable)
+      .where(eq(platformProductsTable.isActive, true))
+      .orderBy(asc(platformProductsTable.isPackage), asc(platformProductsTable.title));
+    const cartItems = await db
+      .select()
+      .from(platformCartItemsTable)
+      .where(eq(platformCartItemsTable.userId, req.platformUser!.id))
+      .orderBy(desc(platformCartItemsTable.createdAt));
+    const popupConfigMap = await getPopupConfigMap(db);
+    const universityEmails = await db
+      .select()
+      .from(platformUniversityEmailsTable)
+      .where(eq(platformUniversityEmailsTable.menteeUserId, req.platformUser!.id))
+      .orderBy(desc(platformUniversityEmailsTable.receivedAt), desc(platformUniversityEmailsTable.createdAt))
+      .limit(100);
 
     return res.json({
       guideLimits: {
+        emailInboxEnabled: guideLimits.emailInboxEnabled,
         maxActiveGuideCount: guideLimits.maxActiveGuideCount,
         maxHintGuideCount: guideLimits.maxHintGuideCount,
+        maxStorageMb: guideLimits.maxStorageMb,
       },
       googleWorkspace: {
         essayDocId: profile?.googleEssayDocId ?? "",
@@ -4889,6 +5220,11 @@ router.get(
         folderId: profile?.googleDriveFolderId ?? "",
         folderUrl: profile?.googleDriveFolderUrl ?? "",
       },
+      googleConnections: menteeGoogleConnections.map((connection) => ({
+        ...connection,
+        createdAt: connection.createdAt.toISOString(),
+        updatedAt: connection.updatedAt.toISOString(),
+      })),
       profile,
       assignedMentors: assignedMentors.map((mentor) => ({
         ...mentor,
@@ -4921,6 +5257,28 @@ router.get(
         updatedAt: state.updatedAt.toISOString(),
       })),
       materialTemplates: normalizedVisibleMaterials,
+      packages: products.map((product) => ({
+        ...product,
+        createdAt: product.createdAt.toISOString(),
+        updatedAt: product.updatedAt.toISOString(),
+      })),
+      cartItems: cartItems.map((item) => ({
+        ...item,
+        createdAt: item.createdAt.toISOString(),
+        updatedAt: item.updatedAt.toISOString(),
+      })),
+      purchasePopups: Object.fromEntries(Array.from(popupConfigMap.entries())),
+      storage: {
+        maxStorageMb: guideLimits.maxStorageMb,
+        usedBytes: storageUsedBytes,
+        usedMb: Number((storageUsedBytes / (1024 * 1024)).toFixed(2)),
+      },
+      universityEmails: universityEmails.map((email) => ({
+        ...email,
+        createdAt: email.createdAt.toISOString(),
+        receivedAt: email.receivedAt?.toISOString() ?? null,
+        updatedAt: email.updatedAt.toISOString(),
+      })),
     });
   },
 );
@@ -5047,6 +5405,20 @@ router.post(
     const buffer = Buffer.from(parsed.data.base64Content, "base64");
     if (buffer.byteLength > MAX_MATERIAL_UPLOAD_BYTES) {
       return res.status(413).json({ error: "Plik jest zbyt duży. Maksymalny rozmiar uploadu to 15 MB." });
+    }
+    const [menteeProfile] = await db
+      .select()
+      .from(menteeProfilesTable)
+      .where(eq(menteeProfilesTable.userId, req.platformUser!.id))
+      .limit(1);
+    const storageLimits = getMenteeGuideLimits(menteeProfile);
+    const currentStorageBytes = await getMenteeStorageUsageBytes(db, req.platformUser!.id);
+    const maxStorageBytes = storageLimits.maxStorageMb * 1024 * 1024;
+    const bytesAfterUpload = currentStorageBytes + buffer.byteLength;
+    if (bytesAfterUpload > maxStorageBytes) {
+      return res.status(413).json({
+        error: `Przekroczysz obecny limit miejsca ${storageLimits.maxStorageMb} MB. Usuń część plików albo dokup więcej miejsca.`,
+      });
     }
     const uploaded = await uploadFileToDrive({
       fileName: effectiveFileName,
@@ -5719,7 +6091,7 @@ router.post(
         `Mentee: ${req.platformUser!.fullName}`,
         `Email mentee: ${req.platformUser!.email}`,
         "",
-        "Spotkanie umówione przez ACADEA Platform.",
+        "Spotkanie umówione przez Platforma Acadea.",
       ]
         .filter(Boolean)
         .join("\n"),
@@ -5919,6 +6291,15 @@ router.post(
       return res.status(409).json({ error: "Ta uczelnia jest już dodana do Twojego panelu." });
     }
 
+    await db
+      .insert(platformGuideAssignmentsTable)
+      .values({
+        guideId: sourceGuide.id,
+        grantedByUserId: req.platformUser!.id,
+        menteeUserId: req.platformUser!.id,
+      })
+      .onConflictDoNothing();
+
     const existingLiveGuides = await db
       .select({ id: platformGuidesTable.id })
       .from(platformGuidesTable)
@@ -6023,6 +6404,64 @@ router.patch(
       return res.status(404).json({ error: "Nie znaleziono uczelni do usunięcia." });
     }
     await hardDeleteGuidesAndReferences(db, [guide.id]);
+    return res.status(204).end();
+  },
+);
+
+router.put(
+  "/platform/mentee/guides/:id/hint-access",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const sourceGuideId = Number(req.params.id);
+    if (!Number.isFinite(sourceGuideId)) {
+      return res.status(400).json({ error: "Invalid guide id." });
+    }
+
+    const { db } = await import("@workspace/db");
+    const [sourceGuide] = await db
+      .select()
+      .from(platformGuidesTable)
+      .where(
+        and(
+          eq(platformGuidesTable.id, sourceGuideId),
+          eq(platformGuidesTable.guideType, "admin_template"),
+          eq(platformGuidesTable.status, "published"),
+        ),
+      )
+      .limit(1);
+    if (!sourceGuide) {
+      return res.status(404).json({ error: "Nie znaleziono programu do odblokowania wskazówek." });
+    }
+
+    const [menteeProfile] = await db
+      .select()
+      .from(menteeProfilesTable)
+      .where(eq(menteeProfilesTable.userId, req.platformUser!.id))
+      .limit(1);
+    const guideLimits = getMenteeGuideLimits(menteeProfile);
+
+    const persistentAssignments = await db
+      .select()
+      .from(platformGuideAssignmentsTable)
+      .where(eq(platformGuideAssignmentsTable.menteeUserId, req.platformUser!.id))
+      .orderBy(desc(platformGuideAssignmentsTable.createdAt));
+    const persistentGuideIds = persistentAssignments.map((row) => row.guideId);
+    if (!persistentGuideIds.includes(sourceGuide.id) && persistentGuideIds.length >= guideLimits.maxHintGuideCount) {
+      return res.status(400).json({
+        error: `Na ten moment możesz mieć aktywne wskazówki maksymalnie dla ${guideLimits.maxHintGuideCount} programów / przewodników.`,
+      });
+    }
+
+    await db
+      .insert(platformGuideAssignmentsTable)
+      .values({
+        guideId: sourceGuide.id,
+        grantedByUserId: req.platformUser!.id,
+        menteeUserId: req.platformUser!.id,
+      })
+      .onConflictDoNothing();
+
     return res.status(204).end();
   },
 );
@@ -6369,6 +6808,37 @@ router.patch(
   },
 );
 
+router.patch(
+  "/platform/mentee/meetings/:id/notes",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = meetingMenteeNotesSchema.safeParse(req.body);
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid meeting id." : parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [meeting] = await db
+      .update(platformMeetingsTable)
+      .set({
+        menteeNotes: parsed.data.menteeNotes || null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(platformMeetingsTable.id, id),
+          eq(platformMeetingsTable.menteeUserId, req.platformUser!.id),
+        ),
+      )
+      .returning();
+    if (!meeting) {
+      return res.status(404).json({ error: "Nie znaleziono spotkania." });
+    }
+    return res.json(serializeMeetingRecord(meeting));
+  },
+);
+
 router.get(
   "/platform/admin/meetings",
   requirePlatformAuth,
@@ -6390,6 +6860,528 @@ router.get(
         mentorName: userMap.get(meeting.mentorUserId) ?? "",
       })),
     );
+  },
+);
+
+router.get(
+  "/platform/admin/products",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (_req, res) => {
+    const { db } = await import("@workspace/db");
+    const rows = await db
+      .select()
+      .from(platformProductsTable)
+      .orderBy(asc(platformProductsTable.isPackage), asc(platformProductsTable.title));
+    return res.json(
+      rows.map((row) => ({
+        ...row,
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+      })),
+    );
+  },
+);
+
+router.post(
+  "/platform/admin/products",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const parsed = productSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [row] = await db
+      .insert(platformProductsTable)
+      .values({
+        ...parsed.data,
+        mentorUserId: parsed.data.mentorUserId ?? null,
+      })
+      .returning();
+    return res.status(201).json({
+      ...row,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    });
+  },
+);
+
+router.put(
+  "/platform/admin/products/:id",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = productSchema.safeParse(req.body);
+    if (!Number.isFinite(id) || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid product id." : parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [row] = await db
+      .update(platformProductsTable)
+      .set({
+        ...parsed.data,
+        mentorUserId: parsed.data.mentorUserId ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(platformProductsTable.id, id))
+      .returning();
+    if (!row) {
+      return res.status(404).json({ error: "Nie znaleziono produktu." });
+    }
+    return res.json({
+      ...row,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    });
+  },
+);
+
+router.delete(
+  "/platform/admin/products/:id",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: "Invalid product id." });
+    }
+    const { db } = await import("@workspace/db");
+    await db.delete(platformProductsTable).where(eq(platformProductsTable.id, id));
+    return res.status(204).end();
+  },
+);
+
+router.get(
+  "/platform/admin/popup-configs",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (_req, res) => {
+    const { db } = await import("@workspace/db");
+    const popupMap = await getPopupConfigMap(db);
+    return res.json(Array.from(popupMap.values()));
+  },
+);
+
+router.put(
+  "/platform/admin/popup-configs/:key",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (req, res) => {
+    const key = PLATFORM_POPUP_KEYS.includes(req.params.key as any) ? req.params.key as (typeof PLATFORM_POPUP_KEYS)[number] : null;
+    const parsed = popupConfigSchema.safeParse(req.body);
+    if (!key || !parsed.success) {
+      return res.status(422).json({ error: parsed.success ? "Invalid popup key." : parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [row] = await db
+      .insert(platformPopupConfigsTable)
+      .values({
+        key,
+        ...parsed.data,
+      })
+      .onConflictDoUpdate({
+        target: platformPopupConfigsTable.key,
+        set: {
+          ...parsed.data,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return res.json({
+      ...row,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    });
+  },
+);
+
+router.get(
+  "/platform/mentee/store",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const { db } = await import("@workspace/db");
+    const products = await db
+      .select()
+      .from(platformProductsTable)
+      .where(eq(platformProductsTable.isActive, true))
+      .orderBy(asc(platformProductsTable.isPackage), asc(platformProductsTable.title));
+    const cartItems = await db
+      .select()
+      .from(platformCartItemsTable)
+      .where(eq(platformCartItemsTable.userId, req.platformUser!.id))
+      .orderBy(desc(platformCartItemsTable.createdAt));
+    const popupMap = await getPopupConfigMap(db);
+    return res.json({
+      cartItems: cartItems.map((item) => ({
+        ...item,
+        createdAt: item.createdAt.toISOString(),
+        updatedAt: item.updatedAt.toISOString(),
+      })),
+      popups: Object.fromEntries(Array.from(popupMap.entries())),
+      products: products.map((product) => ({
+        ...product,
+        createdAt: product.createdAt.toISOString(),
+        updatedAt: product.updatedAt.toISOString(),
+      })),
+    });
+  },
+);
+
+router.post(
+  "/platform/mentee/cart/items",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = cartItemSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [product] = await db
+      .select()
+      .from(platformProductsTable)
+      .where(and(eq(platformProductsTable.id, parsed.data.productId), eq(platformProductsTable.isActive, true)))
+      .limit(1);
+    if (!product) {
+      return res.status(404).json({ error: "Nie znaleziono produktu." });
+    }
+    const [item] = await db
+      .insert(platformCartItemsTable)
+      .values({
+        userId: req.platformUser!.id,
+        productId: parsed.data.productId,
+        quantity: parsed.data.quantity,
+      })
+      .onConflictDoUpdate({
+        target: [platformCartItemsTable.userId, platformCartItemsTable.productId] as never,
+        set: {
+          quantity: parsed.data.quantity,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return res.status(201).json({
+      ...item,
+      createdAt: item.createdAt.toISOString(),
+      updatedAt: item.updatedAt.toISOString(),
+    });
+  },
+);
+
+router.delete(
+  "/platform/mentee/cart/items/:productId",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const productId = Number(req.params.productId);
+    if (!Number.isFinite(productId)) {
+      return res.status(400).json({ error: "Invalid product id." });
+    }
+    const { db } = await import("@workspace/db");
+    await db
+      .delete(platformCartItemsTable)
+      .where(and(eq(platformCartItemsTable.userId, req.platformUser!.id), eq(platformCartItemsTable.productId, productId)));
+    return res.status(204).end();
+  },
+);
+
+router.post(
+  "/platform/mentee/cart/checkout",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const { db } = await import("@workspace/db");
+    const cartItems = await db
+      .select()
+      .from(platformCartItemsTable)
+      .where(eq(platformCartItemsTable.userId, req.platformUser!.id))
+      .orderBy(desc(platformCartItemsTable.createdAt));
+    if (!cartItems.length) {
+      return res.status(400).json({ error: "Koszyk jest pusty." });
+    }
+    const productIds = cartItems.map((item) => item.productId);
+    const products = await db
+      .select()
+      .from(platformProductsTable)
+      .where(inArray(platformProductsTable.id, productIds));
+    const productMap = new Map(products.map((product) => [product.id, product]));
+    const activeItems = cartItems
+      .map((item) => ({ item, product: productMap.get(item.productId) }))
+      .filter((entry): entry is { item: typeof cartItems[number]; product: typeof products[number] } => Boolean(entry.product?.isActive));
+    if (!activeItems.length) {
+      return res.status(400).json({ error: "W koszyku nie ma aktywnych produktów." });
+    }
+
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
+    const successUrl =
+      process.env.PLATFORM_STRIPE_SUCCESS_URL?.trim() ||
+      `${process.env.PLATFORM_APP_URL?.trim().replace(/\/$/, "") ?? getRequestOrigin(req)}/?checkout=success`;
+    const cancelUrl =
+      process.env.PLATFORM_STRIPE_CANCEL_URL?.trim() ||
+      `${process.env.PLATFORM_APP_URL?.trim().replace(/\/$/, "") ?? getRequestOrigin(req)}/?checkout=cancelled`;
+
+    const pricedItems = activeItems.filter((entry) => entry.product.stripePriceId);
+    if (stripeSecretKey && pricedItems.length === activeItems.length) {
+      const body = new URLSearchParams();
+      body.set("mode", "payment");
+      body.set("success_url", successUrl);
+      body.set("cancel_url", cancelUrl);
+      body.set("customer_email", req.platformUser!.email);
+      activeItems.forEach((entry, index) => {
+        body.set(`line_items[${index}][price]`, entry.product.stripePriceId ?? "");
+        body.set(`line_items[${index}][quantity]`, String(entry.item.quantity));
+      });
+      body.set("metadata[menteeUserId]", String(req.platformUser!.id));
+      body.set(
+        "metadata[productIds]",
+        activeItems.map((entry) => `${entry.product.id}x${entry.item.quantity}`).join(","),
+      );
+      const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${stripeSecretKey}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: body.toString(),
+      });
+      const stripeData = await stripeResponse.json() as { id?: string; url?: string; error?: { message?: string } };
+      if (!stripeResponse.ok || !stripeData.url) {
+        return res.status(502).json({ error: stripeData.error?.message ?? "Nie udało się utworzyć sesji Stripe." });
+      }
+      return res.json({
+        checkoutMode: "stripe",
+        sessionId: stripeData.id ?? null,
+        url: stripeData.url,
+      });
+    }
+
+    const expandedProducts: Array<typeof platformProductsTable.$inferSelect> = [];
+    for (const entry of activeItems) {
+      for (let index = 0; index < entry.item.quantity; index += 1) {
+        expandedProducts.push(entry.product);
+      }
+    }
+    await applyPurchasedProductsToMentee(db, req.platformUser!.id, expandedProducts);
+    await db.delete(platformCartItemsTable).where(eq(platformCartItemsTable.userId, req.platformUser!.id));
+    return res.json({
+      appliedProducts: expandedProducts.map((product) => product.id),
+      checkoutMode: "development_direct_apply",
+      success: true,
+    });
+  },
+);
+
+router.post(
+  "/platform/mentee/google-connections/gmail_readonly/start",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const [profile] = (await (await import("@workspace/db")).db
+      .select()
+      .from(menteeProfilesTable)
+      .where(eq(menteeProfilesTable.userId, req.platformUser!.id))
+      .limit(1));
+    const limits = getMenteeGuideLimits(profile);
+    if (!limits.emailInboxEnabled) {
+      return res.status(403).json({ error: "Dostęp do maili uczelni jest obecnie zablokowany." });
+    }
+    const { clientId } = getGoogleOAuthClientCredentials();
+    const redirectUri =
+      process.env.GOOGLE_OAUTH_REDIRECT_URI?.trim() ||
+      `${getRequestOrigin(req)}/api/google/auth/callback`;
+    const state = createPlatformGoogleOAuthState({
+      connectionType: "gmail_readonly",
+      userId: req.platformUser!.id,
+    });
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      access_type: "offline",
+      prompt: "consent",
+      include_granted_scopes: "true",
+      scope: PLATFORM_GOOGLE_SCOPES_BY_CONNECTION_TYPE.gmail_readonly.join(" "),
+      state,
+    });
+    return res.json({
+      authUrl: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`,
+    });
+  },
+);
+
+router.delete(
+  "/platform/mentee/google-connections/gmail_readonly",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const { db } = await import("@workspace/db");
+    await db
+      .delete(platformGoogleConnectionsTable)
+      .where(
+        and(
+          eq(platformGoogleConnectionsTable.userId, req.platformUser!.id),
+          eq(platformGoogleConnectionsTable.connectionType, "gmail_readonly"),
+        ),
+      );
+    return res.status(204).end();
+  },
+);
+
+router.post(
+  "/platform/mentee/university-emails/refresh",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const { db } = await import("@workspace/db");
+    const [profile] = await db
+      .select()
+      .from(menteeProfilesTable)
+      .where(eq(menteeProfilesTable.userId, req.platformUser!.id))
+      .limit(1);
+    const limits = getMenteeGuideLimits(profile);
+    if (!limits.emailInboxEnabled) {
+      return res.status(403).json({ error: "Dostęp do maili uczelni jest obecnie zablokowany." });
+    }
+    const [connection] = await db
+      .select()
+      .from(platformGoogleConnectionsTable)
+      .where(
+        and(
+          eq(platformGoogleConnectionsTable.userId, req.platformUser!.id),
+          eq(platformGoogleConnectionsTable.connectionType, "gmail_readonly"),
+          eq(platformGoogleConnectionsTable.status, "connected"),
+        ),
+      )
+      .limit(1);
+    const metadata = getPlatformGoogleConnectionMetadata(connection?.metadata);
+    if (!connection || !metadata.refreshToken) {
+      return res.status(400).json({ error: "Najpierw połącz Gmail do odczytu wiadomości." });
+    }
+
+    const activeGuides = await db
+      .select({
+        emailSenderDomains: platformGuidesTable.emailSenderDomains,
+      })
+      .from(platformGuidesTable)
+      .where(
+        and(
+          eq(platformGuidesTable.menteeUserId, req.platformUser!.id),
+          eq(platformGuidesTable.status, "published"),
+        ),
+      );
+    const senderDomains = Array.from(
+      new Set(
+        activeGuides.flatMap((guide) =>
+          (Array.isArray(guide.emailSenderDomains) ? guide.emailSenderDomains : [])
+            .map((value) => value.trim().toLowerCase().replace(/^@/, ""))
+            .filter(Boolean),
+        ),
+      ),
+    );
+    if (!senderDomains.length) {
+      return res.json({ imported: 0, message: "Brak skonfigurowanych domen uczelni dla aktywnych programów." });
+    }
+
+    const accessToken = await getGoogleAccessTokenForRefreshToken(metadata.refreshToken);
+    const listResponse = await googleApiRequestWithAccessToken(
+      accessToken,
+      "/gmail/v1/users/me/messages?maxResults=40&q=newer_than:120d",
+    );
+    const listPayload = await listResponse.json() as { messages?: Array<{ id: string }> };
+    const messages = Array.isArray(listPayload.messages) ? listPayload.messages : [];
+    let imported = 0;
+
+    for (const message of messages) {
+      const messageResponse = await googleApiRequestWithAccessToken(
+        accessToken,
+        `/gmail/v1/users/me/messages/${encodeURIComponent(message.id)}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
+      );
+      if (!messageResponse.ok) {
+        continue;
+      }
+      const payload = await messageResponse.json() as {
+        id?: string;
+        internalDate?: string;
+        payload?: { headers?: Array<{ name?: string; value?: string }> };
+        snippet?: string;
+      };
+      const headers = Array.isArray(payload.payload?.headers) ? payload.payload?.headers ?? [] : [];
+      const fromHeader = headers.find((header) => header.name?.toLowerCase() === "from")?.value ?? "";
+      const subject = headers.find((header) => header.name?.toLowerCase() === "subject")?.value ?? "";
+      const fromEmail = extractEmailAddress(fromHeader);
+      const fromDomain = fromEmail.split("@")[1]?.toLowerCase() ?? "";
+      if (!fromDomain || !senderDomains.some((domain) => fromDomain === domain || fromDomain.endsWith(`.${domain}`))) {
+        continue;
+      }
+      const classified = classifyUniversityEmail({
+        fromEmail,
+        snippet: payload.snippet ?? "",
+        subject,
+      });
+      await db
+        .insert(platformUniversityEmailsTable)
+        .values({
+          actionRequired: classified.actionRequired,
+          actionSummary: classified.actionSummary,
+          classification: classified.classification,
+          fromEmail: fromEmail || fromHeader || "",
+          gmailMessageId: payload.id ?? message.id,
+          menteeUserId: req.platformUser!.id,
+          rawPayload: {
+            fromHeader,
+            headers,
+            snippet: payload.snippet ?? "",
+            subject,
+          },
+          receivedAt: payload.internalDate ? new Date(Number(payload.internalDate)) : new Date(),
+          requiresManualReview: classified.requiresManualReview,
+          snippet: payload.snippet ?? "",
+          subject: subject || "(bez tematu)",
+          threadId: null,
+        })
+        .onConflictDoUpdate({
+          target: platformUniversityEmailsTable.gmailMessageId,
+          set: {
+            actionRequired: classified.actionRequired,
+            actionSummary: classified.actionSummary,
+            classification: classified.classification,
+            fromEmail: fromEmail || fromHeader || "",
+            rawPayload: {
+              fromHeader,
+              headers,
+              snippet: payload.snippet ?? "",
+              subject,
+            },
+            receivedAt: payload.internalDate ? new Date(Number(payload.internalDate)) : new Date(),
+            requiresManualReview: classified.requiresManualReview,
+            snippet: payload.snippet ?? "",
+            subject: subject || "(bez tematu)",
+            updatedAt: new Date(),
+          },
+        });
+      imported += 1;
+    }
+
+    const rows = await db
+      .select()
+      .from(platformUniversityEmailsTable)
+      .where(eq(platformUniversityEmailsTable.menteeUserId, req.platformUser!.id))
+      .orderBy(desc(platformUniversityEmailsTable.receivedAt), desc(platformUniversityEmailsTable.createdAt))
+      .limit(100);
+
+    return res.json({
+      imported,
+      rows: rows.map((row) => ({
+        ...row,
+        createdAt: row.createdAt.toISOString(),
+        receivedAt: row.receivedAt?.toISOString() ?? null,
+        updatedAt: row.updatedAt.toISOString(),
+      })),
+    });
   },
 );
 
@@ -6764,10 +7756,14 @@ router.patch(
         adminApproved: Boolean(existing?.adminApproved),
         disabledHintGuideTemplateIds:
           parsed.data.disabledHintGuideTemplateIds ?? currentLimits.disabledHintGuideTemplateIds,
+        emailInboxEnabled:
+          parsed.data.emailInboxEnabled ?? currentLimits.emailInboxEnabled,
         maxActiveGuideCount:
           parsed.data.maxActiveGuideCount ?? currentLimits.maxActiveGuideCount,
         maxHintGuideCount:
           parsed.data.maxHintGuideCount ?? currentLimits.maxHintGuideCount,
+        maxStorageMb:
+          parsed.data.maxStorageMb ?? currentLimits.maxStorageMb,
         primaryMentorUserId: existing?.primaryMentorUserId ?? null,
         studentEmail: existing?.studentEmail ?? null,
         targetCountries: existing?.targetCountries ?? [],
@@ -6779,10 +7775,14 @@ router.patch(
         set: {
           disabledHintGuideTemplateIds:
             parsed.data.disabledHintGuideTemplateIds ?? currentLimits.disabledHintGuideTemplateIds,
+          emailInboxEnabled:
+            parsed.data.emailInboxEnabled ?? currentLimits.emailInboxEnabled,
           maxActiveGuideCount:
             parsed.data.maxActiveGuideCount ?? currentLimits.maxActiveGuideCount,
           maxHintGuideCount:
             parsed.data.maxHintGuideCount ?? currentLimits.maxHintGuideCount,
+          maxStorageMb:
+            parsed.data.maxStorageMb ?? currentLimits.maxStorageMb,
           updatedAt: new Date(),
         },
       })
@@ -6977,6 +7977,7 @@ router.post(
         slug: normalizeSlug(parsed.data.slug),
         country: parsed.data.country,
         universityName: parsed.data.universityName,
+        emailSenderDomains: parsed.data.emailSenderDomains,
         sortOrder: parsed.data.sortOrder ?? getNextGuideSortOrder(allGuides),
         summary: parsed.data.summary,
         descriptionMarkdown: parsed.data.descriptionMarkdown,
@@ -7019,6 +8020,7 @@ router.put(
         slug: normalizeSlug(parsed.data.slug),
         country: parsed.data.country,
         universityName: parsed.data.universityName,
+        emailSenderDomains: parsed.data.emailSenderDomains,
         sortOrder: parsed.data.sortOrder ?? existingGuide?.sortOrder ?? 0,
         summary: parsed.data.summary,
         descriptionMarkdown: parsed.data.descriptionMarkdown,

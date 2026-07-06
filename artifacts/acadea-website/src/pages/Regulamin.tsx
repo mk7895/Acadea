@@ -108,7 +108,7 @@ export default function Regulamin() {
               </ul>
               <p className="mt-3">Serwis udostępnia dane kontaktowe:</p>
               <ul className="list-disc pl-5 mt-2 space-y-1">
-                <li>Adres e-mail: <a href="mailto:kontakt@acadea.org" className="text-primary hover:underline">kontakt@acadea.org</a></li>
+                <li>Adres e-mail: <a href="mailto:contact@acadea.org" className="text-primary hover:underline">contact@acadea.org</a></li>
                 <li>Telefon: <a href="tel:+48728492936" className="text-primary hover:underline">+48 728 492 936</a></li>
               </ul>
             </section>
@@ -142,7 +142,7 @@ export default function Regulamin() {
               <p className="font-bold text-primary mb-1">Fundacja Acadea</p>
               <p>KRS: 0001240540 | NIP: 8982333798 | REGON: 544715960</p>
               <p>Jedności Narodowej 55-57 / 15, 50-262 Wrocław, Polska</p>
-              <p>E-mail: <a href="mailto:kontakt@acadea.org" className="text-primary hover:underline">kontakt@acadea.org</a></p>
+              <p>E-mail: <a href="mailto:contact@acadea.org" className="text-primary hover:underline">contact@acadea.org</a></p>
               <p>Tel: <a href="tel:+48728492936" className="text-primary hover:underline">+48 728 492 936</a></p>
             </div>
           </div>

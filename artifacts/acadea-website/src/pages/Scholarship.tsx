@@ -159,12 +159,9 @@ export default function Scholarship() {
               <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-8">
                 <Heart size={32} className="text-accent" />
               </div>
-              <blockquote className="text-2xl md:text-3xl font-bold text-primary leading-snug mb-3">
-                „Edukacja jest najpotężniejszą bronią, której możesz użyć, aby zmienić świat.”
-              </blockquote>
-              <p className="text-sm font-semibold text-accent uppercase tracking-widest mb-6">
-                — Nelson Mandela
-              </p>
+              <div className="text-2xl md:text-3xl font-bold text-primary leading-snug mb-6">
+                Czasem potrzeba jednej osoby, marzenie zamieniło się w realny plan. Kogoś, kto pokaże pierwszy krok i pomoże uwierzyć, że ambitne cele są naprawdę osiągalne.
+              </div>
               <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
                 Wierzymy w to każdego dnia. Dlatego stworzyliśmy program, który daje ambitnym, zmotywowanym osobom dostęp do mentoringu i wsparcia w realizacji ich marzeń i celów naukowych.
               </p>

@@ -481,7 +481,7 @@ export async function sendContactEmails(input: {
         : `Cześć ${input.name}, ${autoresponseIntro} ${autoresponseNextStep}`,
     bodyHtml:
       input.type === "newsletter"
-        ? "<p style=\"margin:0;\">Jeśli chcesz kiedyś zrezygnować, po prostu odpisz na wiadomość lub napisz do nas na kontakt@acadea.org.</p>"
+        ? "<p style=\"margin:0;\">Jeśli chcesz kiedyś zrezygnować, po prostu odpisz na wiadomość lub napisz do nas na contact@acadea.org.</p>"
         : `<strong>Treść Twojego zgłoszenia:</strong><br /><br />${nl2br(input.message)}`,
   });
 
@@ -528,7 +528,7 @@ export async function sendPlatformPasswordResetEmail(input: {
     return { sent: false };
   }
 
-  const subject = "ACADEA Platform: zmiana hasła";
+  const subject = "Platforma Acadea: zmiana hasła";
   const text = [
     `Cześć ${input.fullName},`,
     "",
@@ -578,7 +578,7 @@ export async function sendPlatformDriveShareEmail(input: {
     return { sent: false };
   }
 
-  const subject = "ACADEA Platform: udostępniono Ci folder Google Drive";
+  const subject = "Platforma Acadea: udostępniono Ci folder Google Drive";
   const text = [
     `Cześć ${input.fullName},`,
     "",

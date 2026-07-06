@@ -35,7 +35,7 @@ export function Footer() {
     <footer className="bg-primary text-white pt-16 pb-8">
       <div className="sr-only" aria-hidden="true">
         Fundacja Acadea, Jedności Narodowej 55-57 / 15, 50-262 Wrocław, Polska.
-        Kontakt: kontakt@acadea.org, telefon +48 728 492 936.
+        Kontakt: contact@acadea.org, telefon +48 728 492 936.
       </div>
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
@@ -140,8 +140,8 @@ export function Footer() {
             <ul className="space-y-4">
               <li className="flex items-start gap-3 text-gray-300">
                 <Mail size={20} className="text-accent shrink-0 mt-0.5" />
-                <a href="mailto:kontakt@acadea.org" className="hover:text-white transition-colors">
-                  kontakt@acadea.org
+                <a href="mailto:contact@acadea.org" className="hover:text-white transition-colors">
+                  contact@acadea.org
                 </a>
               </li>
               <li className="flex items-start gap-3 text-gray-300">

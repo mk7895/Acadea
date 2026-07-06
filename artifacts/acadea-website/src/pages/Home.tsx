@@ -264,7 +264,7 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.7, delay: 0.1 }}
-              className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-primary/5 to-accent/10 border border-primary/10 min-h-[360px] p-2 md:p-2.5"
+              className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-primary/5 to-accent/10 border border-primary/10 p-2 md:min-h-[360px] md:p-2.5"
             >
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent/10 blur-[80px]" />

@@ -20,7 +20,7 @@ import {
   useSeo,
 } from "@/lib/seo";
 
-const CONTACT_EMAIL = "kontakt@acadea.org";
+const CONTACT_EMAIL = "contact@acadea.org";
 const CONTACT_PHONE = "+48 728 492 936";
 const CONTACT_PHONE_HREF = "+48728492936";
 const CONTACT_WHATSAPP = "+48 799 831 204";
