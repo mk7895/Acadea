@@ -1287,16 +1287,18 @@ function Dashboard({
               </div>
               <div className="mobile-nav-links">
                 <div className="mobile-nav-actions">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      setCartDrawerOpen(true);
-                      setMobileMenuOpen(false);
-                    }}
-                    type="button"
-                  >
-                    Koszyk ({pendingCartCount})
-                  </button>
+                  {session.user.role === "mentee" ? (
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        setCartDrawerOpen(true);
+                        setMobileMenuOpen(false);
+                      }}
+                      type="button"
+                    >
+                      Koszyk ({pendingCartCount})
+                    </button>
+                  ) : null}
                   <button className="btn btn-primary" onClick={() => void onLogout()} type="button">
                     Wyloguj
                   </button>
