@@ -148,7 +148,7 @@ export default function HowItWorks() {
         >
           <h2 className="text-3xl font-bold text-primary mb-4">Gotowy zrobić pierwszy krok?</h2>
           <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-            Najlepszy czas na rozpoczęcie przygotowań to 12-18 miesięcy przed maturą. Nie czekaj do ostatniej chwili.
+            Najlepszy czas na rozpoczęcie przygotowań jest na przynajmniej rok przed maturą. Nie czekaj do ostatniej chwili.
           </p>
           <Link href="/kontakt" className="inline-flex justify-center">
             <Button size="lg" className="inline-flex h-14 items-center justify-center px-10 text-center text-lg rounded-full shadow-md">

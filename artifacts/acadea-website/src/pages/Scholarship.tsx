@@ -223,6 +223,16 @@ export default function Scholarship() {
                 <p className="text-gray-600 max-w-2xl mx-auto">
                   Stypendium to nie tylko wsparcie finansowe, ale też ludzie, którzy pomagają przekuć potencjał w konkretny plan.
                 </p>
+                <div className="mt-6 flex justify-center">
+                  <a
+                    href="/mentorzy-acadea.pdf"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
+                  >
+                    Dowiedz się o Mentorach
+                  </a>
+                </div>
               </div>
               <div className="flex flex-wrap justify-center gap-4">
                 {SORTED_SCHOLARSHIP_MENTORS.map((mentor) => (
