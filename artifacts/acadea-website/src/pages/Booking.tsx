@@ -18,6 +18,7 @@ import {
 import { getApiBase } from "@/lib/api-base";
 import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
 import { TIMEZONE_COOKIE_NAME, getCookie, setLongLivedCookie } from "@/lib/cookies";
+import { DEFAULT_TIMEZONE, TIMEZONE_OPTIONS } from "@/lib/timezones";
 import { useCookieConsent } from "@/components/CookieConsent";
 import {
   createBreadcrumbSchema,
@@ -28,48 +29,6 @@ import {
 } from "@/lib/seo";
 
 const API_BASE = getApiBase();
-const DEFAULT_TIMEZONE = "Europe/Warsaw";
-const TIMEZONE_OPTIONS = [
-  { value: "Europe/Warsaw", label: "Polska" },
-  { value: "Europe/London", label: "Wielka Brytania" },
-  { value: "Europe/Paris", label: "Europa Zachodnia" },
-  { value: "Europe/Berlin", label: "Niemcy" },
-  { value: "Europe/Amsterdam", label: "Holandia" },
-  { value: "Europe/Brussels", label: "Belgia" },
-  { value: "Europe/Vienna", label: "Austria" },
-  { value: "Europe/Madrid", label: "Hiszpania" },
-  { value: "Europe/Rome", label: "Włochy" },
-  { value: "Europe/Zurich", label: "Szwajcaria" },
-  { value: "Europe/Stockholm", label: "Szwecja" },
-  { value: "Europe/Copenhagen", label: "Dania" },
-  { value: "Europe/Helsinki", label: "Finlandia" },
-  { value: "Europe/Athens", label: "Grecja" },
-  { value: "Europe/Istanbul", label: "Turcja" },
-  { value: "Europe/Dublin", label: "Irlandia" },
-  { value: "America/New_York", label: "USA Wschód" },
-  { value: "America/Toronto", label: "Kanada Wschód" },
-  { value: "America/Chicago", label: "USA Central" },
-  { value: "America/Mexico_City", label: "Meksyk" },
-  { value: "America/Denver", label: "USA Góry Skaliste" },
-  { value: "America/Phoenix", label: "Arizona" },
-  { value: "America/Los_Angeles", label: "USA Zachód" },
-  { value: "America/Vancouver", label: "Kanada Zachód" },
-  { value: "America/Sao_Paulo", label: "Brazylia" },
-  { value: "Asia/Dubai", label: "Zatoka Perska" },
-  { value: "Asia/Jerusalem", label: "Izrael" },
-  { value: "Asia/Riyadh", label: "Arabia Saudyjska" },
-  { value: "Asia/Singapore", label: "Singapur" },
-  { value: "Asia/Hong_Kong", label: "Hongkong" },
-  { value: "Asia/Shanghai", label: "Chiny" },
-  { value: "Asia/Tokyo", label: "Japonia" },
-  { value: "Asia/Seoul", label: "Korea Południowa" },
-  { value: "Asia/Kolkata", label: "Indie" },
-  { value: "Australia/Sydney", label: "Australia" },
-  { value: "Australia/Melbourne", label: "Australia Melbourne" },
-  { value: "Australia/Perth", label: "Australia Perth" },
-  { value: "Pacific/Auckland", label: "Nowa Zelandia" },
-] as const;
-
 type Slot = { start: string; end: string; label: string };
 
 type DayGroup = {

@@ -12,11 +12,14 @@ import {
   hasGoogleOAuthCredentials,
 } from "../lib/google";
 import { hasDatabaseConfig } from "../lib/databaseConfig";
-import { DEFAULT_WEEKLY_SCHEDULE, loadMarketingBookingSettings } from "../lib/marketingBookingSettings";
+import {
+  DEFAULT_MARKETING_BOOKING_TIMEZONE,
+  DEFAULT_WEEKLY_SCHEDULE,
+  loadMarketingBookingSettings,
+} from "../lib/marketingBookingSettings";
 
 const router = Router();
 
-const TZ = "Europe/Warsaw";
 const ZOOM_LINK = "https://nyu.zoom.us/j/5717075193";
 const SLOT_DURATION_MS = 20 * 60 * 1000;
 const BOOKING_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
@@ -72,6 +75,94 @@ function addWeekdays(start: Date, weekdays: number) {
   return date;
 }
 
+function getZonedDateParts(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    weekday: "short",
+  });
+
+  const parts = Object.fromEntries(
+    formatter
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  ) as Record<string, string>;
+
+  const weekdayMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    hour: Number(parts.hour),
+    minute: Number(parts.minute),
+    second: Number(parts.second),
+    weekday: weekdayMap[parts.weekday] ?? date.getUTCDay(),
+  };
+}
+
+function zonedDateTimeToUtc(input: {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second?: number;
+  timeZone: string;
+}) {
+  const second = input.second ?? 0;
+  let utcMs = Date.UTC(
+    input.year,
+    input.month - 1,
+    input.day,
+    input.hour,
+    input.minute,
+    second,
+  );
+
+  for (let index = 0; index < 4; index += 1) {
+    const actual = getZonedDateParts(new Date(utcMs), input.timeZone);
+    const desiredAsUtc = Date.UTC(
+      input.year,
+      input.month - 1,
+      input.day,
+      input.hour,
+      input.minute,
+      second,
+    );
+    const actualAsUtc = Date.UTC(
+      actual.year,
+      actual.month - 1,
+      actual.day,
+      actual.hour,
+      actual.minute,
+      actual.second,
+    );
+    const diff = desiredAsUtc - actualAsUtc;
+    if (diff === 0) {
+      break;
+    }
+    utcMs += diff;
+  }
+
+  return new Date(utcMs);
+}
+
 function toMinutes(value: string) {
   const [hoursRaw, minutesRaw] = value.split(":");
   const hours = Number(hoursRaw);
@@ -116,57 +207,90 @@ function buildSlotsFromBusy(input: {
   busy: BusyWindow[];
   month?: { month: number; year: number } | null;
   weeklySchedule?: Array<{ weekday: number; startTime: string; endTime: string; isActive: boolean }>;
+  timeZone?: string;
 }) {
   const now = new Date();
-  const bookingWindowEnd = new Date(now.getTime() + BOOKING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const timeZone = input.timeZone ?? DEFAULT_MARKETING_BOOKING_TIMEZONE;
   const busy = input.busy;
   const weeklySchedule = input.weeklySchedule?.length ? input.weeklySchedule : DEFAULT_WEEKLY_SCHEDULE;
   const slots: BookingSlot[] = [];
-  const cursor = input.month
-    ? new Date(Date.UTC(input.month.year, input.month.month - 1, 1, 0, 0, 0, 0))
-    : new Date(now);
+  const currentLocal = getZonedDateParts(now, timeZone);
+  const localStartDate = new Date(
+    Date.UTC(currentLocal.year, currentLocal.month - 1, currentLocal.day),
+  );
+  const bookingWindowEnd = new Date(
+    localStartDate.getTime() + BOOKING_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+  );
 
-  if (!input.month) {
-    cursor.setMinutes(0, 0, 0);
-    cursor.setHours(cursor.getHours() + 1);
+  let rangeStart = localStartDate;
+  let rangeEnd = addWeekdays(now, PUBLIC_BOOKING_WEEKDAYS);
+  if (input.month) {
+    rangeStart = new Date(Date.UTC(input.month.year, input.month.month - 1, 1));
+    rangeEnd = new Date(Date.UTC(input.month.year, input.month.month, 1));
   }
 
-  const rangeEnd = input.month
-    ? new Date(Date.UTC(input.month.year, input.month.month, 1, 0, 0, 0, 0))
-    : addWeekdays(now, PUBLIC_BOOKING_WEEKDAYS);
+  const startMs = Math.max(rangeStart.getTime(), localStartDate.getTime());
+  const endMs = Math.min(rangeEnd.getTime(), bookingWindowEnd.getTime());
+  if (endMs <= startMs) {
+    return [];
+  }
 
-  while (cursor < rangeEnd && cursor < bookingWindowEnd && slots.length < 300) {
-    const slotEnd = new Date(cursor.getTime() + SLOT_DURATION_MS);
-    if (!isOutsideLeadWindow(cursor, now)) {
-      cursor.setHours(cursor.getHours() + 1);
-      continue;
+  for (
+    let currentMs = startMs;
+    currentMs < endMs && slots.length < 300;
+    currentMs += 24 * 60 * 60 * 1000
+  ) {
+    const localDate = new Date(currentMs);
+    const year = localDate.getUTCFullYear();
+    const month = localDate.getUTCMonth() + 1;
+    const day = localDate.getUTCDate();
+    const weekday = localDate.getUTCDay();
+    const matchingRules = weeklySchedule.filter(
+      (rule) => rule.isActive && rule.weekday === weekday,
+    );
+
+    for (const rule of matchingRules) {
+      const startMinutes = toMinutes(rule.startTime);
+      const endMinutes = toMinutes(rule.endTime);
+      if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+        continue;
+      }
+
+      let cursorMinutes = startMinutes;
+      while (cursorMinutes + SLOT_DURATION_MS / 60000 <= endMinutes && slots.length < 300) {
+        const slotStart = zonedDateTimeToUtc({
+          year,
+          month,
+          day,
+          hour: Math.floor(cursorMinutes / 60),
+          minute: cursorMinutes % 60,
+          timeZone,
+        });
+        const slotEnd = new Date(slotStart.getTime() + SLOT_DURATION_MS);
+
+        if (!isOutsideLeadWindow(slotStart, now)) {
+          cursorMinutes += 30;
+          continue;
+        }
+
+        const overlaps = busy.some(({ start, end }) => {
+          return slotStart < new Date(end) && slotEnd > new Date(start);
+        });
+        if (!overlaps) {
+          slots.push({
+            start: slotStart.toISOString(),
+            end: slotEnd.toISOString(),
+            label: slotStart.toLocaleTimeString("pl-PL", {
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone,
+            }),
+          });
+        }
+
+        cursorMinutes += 30;
+      }
     }
-
-    if (!isSlotInsideWorkingHours(cursor, slotEnd, weeklySchedule)) {
-      cursor.setMinutes(cursor.getMinutes() + 30);
-      continue;
-    }
-
-    const overlaps = busy.some(({ start, end }) => {
-      return cursor < new Date(end) && slotEnd > new Date(start);
-    });
-    if (overlaps) {
-      cursor.setMinutes(cursor.getMinutes() + 30);
-      continue;
-    }
-
-    const label = cursor.toLocaleTimeString("pl-PL", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: TZ,
-    });
-    slots.push({
-      start: cursor.toISOString(),
-      end: slotEnd.toISOString(),
-      label,
-    });
-
-    cursor.setMinutes(cursor.getMinutes() + 30);
   }
 
   return slots;
@@ -192,10 +316,11 @@ router.get("/slots", async (req, res) => {
       slots: buildSlotsFromBusy({
         busy: [],
         month: requestedMonth,
+        timeZone: bookingSettings.timeZone,
         weeklySchedule: bookingSettings.weeklySchedule,
       }),
       mode: "local",
-      timezone: TZ,
+      timezone: bookingSettings.timeZone,
     });
   }
 
@@ -209,7 +334,7 @@ router.get("/slots", async (req, res) => {
       body: JSON.stringify({
         timeMin: now.toISOString(),
         timeMax: to.toISOString(),
-        timeZone: TZ,
+        timeZone: bookingSettings.timeZone,
         items: [{ id: calendarId }],
       }),
     });
@@ -233,7 +358,7 @@ router.get("/slots", async (req, res) => {
             body: JSON.stringify({
               timeMin: now.toISOString(),
               timeMax: to.toISOString(),
-              timeZone: TZ,
+              timeZone: bookingSettings.timeZone,
               items: [{ id: entry.email }],
             }),
           });
@@ -258,9 +383,10 @@ router.get("/slots", async (req, res) => {
     const slots = buildSlotsFromBusy({
       busy: [...busy, ...additionalBusyWindows.flat()],
       month: requestedMonth,
+      timeZone: bookingSettings.timeZone,
       weeklySchedule: bookingSettings.weeklySchedule,
     });
-    return res.json({ slots, timezone: TZ });
+    return res.json({ slots, timezone: bookingSettings.timeZone });
   } catch (err) {
     logger.error({ err }, "booking/slots error");
     return res
@@ -373,8 +499,8 @@ router.post("/create", async (req, res) => {
         .filter(Boolean)
         .join("\n"),
       location: ZOOM_LINK,
-      start: { dateTime: start, timeZone: TZ },
-      end: { dateTime: end, timeZone: TZ },
+      start: { dateTime: start, timeZone: bookingSettings.timeZone },
+      end: { dateTime: end, timeZone: bookingSettings.timeZone },
       attendees,
       reminders: {
         useDefault: false,

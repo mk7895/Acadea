@@ -22,6 +22,7 @@ import {
   type ArticleCategoryGroup,
   type ArticleTocItem,
 } from "@/lib/article-content";
+import { DEFAULT_TIMEZONE, TIMEZONE_OPTIONS, isSupportedTimezone } from "@/lib/timezones";
 import { useSeo } from "@/lib/seo";
 
 const API_BASE = getApiBase();
@@ -67,6 +68,8 @@ type AdminAdditionalCalendar = {
 };
 
 type BookingSettingsState = {
+  storageReady?: boolean;
+  timeZone: string;
   weeklySchedule: AdminWeeklyScheduleRule[];
   additionalCalendars: AdminAdditionalCalendar[];
 };
@@ -166,6 +169,8 @@ export default function AdminArticles() {
   const [googleConnection, setGoogleConnection] = useState<GoogleConnectionState | null>(null);
   const [isCheckingGoogleConnection, setIsCheckingGoogleConnection] = useState(false);
   const [bookingSettings, setBookingSettings] = useState<BookingSettingsState>({
+    storageReady: true,
+    timeZone: DEFAULT_TIMEZONE,
     weeklySchedule: defaultWeeklySchedule,
     additionalCalendars: [],
   });
@@ -240,6 +245,15 @@ export default function AdminArticles() {
       }
 
       setBookingSettings({
+        storageReady:
+          typeof (data as BookingSettingsState).storageReady === "boolean"
+            ? (data as BookingSettingsState).storageReady
+            : true,
+        timeZone:
+          typeof (data as BookingSettingsState).timeZone === "string" &&
+          isSupportedTimezone((data as BookingSettingsState).timeZone)
+            ? (data as BookingSettingsState).timeZone
+            : DEFAULT_TIMEZONE,
         weeklySchedule: Array.isArray((data as BookingSettingsState).weeklySchedule)
           ? (data as BookingSettingsState).weeklySchedule
           : defaultWeeklySchedule,
@@ -983,6 +997,11 @@ export default function AdminArticles() {
                       {googleConnection?.reason ? (
                         <p className="mt-3 max-w-2xl text-sm text-[#8a5b2d]">{googleConnection.reason}</p>
                       ) : null}
+                      {bookingSettings.storageReady === false ? (
+                        <p className="mt-3 max-w-2xl text-sm text-[#8a5b2d]">
+                          Baza nie ma jeszcze tabeli dla tych ustawień. Odczyt działa na wartościach domyślnych, ale zapis i dodawanie dodatkowych kalendarzy zadziała dopiero po wklejeniu SQL update do Cloud SQL.
+                        </p>
+                      ) : null}
                     </div>
                     <button
                       onClick={connectGoogle}
@@ -1003,6 +1022,28 @@ export default function AdminArticles() {
                   <p className="mt-2 text-sm text-[#7c6c56]">
                     To odpowiednik publicznej dostępności dla formularza na stronie głównej. Backend połączy te reguły z zajętością wszystkich podłączonych kalendarzy.
                   </p>
+                  <div className="mt-5 max-w-md">
+                    <label className="mb-2 block text-sm font-semibold text-primary">Strefa czasowa godzin pracy</label>
+                    <select
+                      value={bookingSettings.timeZone}
+                      onChange={(e) =>
+                        setBookingSettings((current) => ({
+                          ...current,
+                          timeZone: e.target.value,
+                        }))
+                      }
+                      className="h-11 w-full rounded-2xl border border-[#ded7c9] bg-white px-4"
+                    >
+                      {TIMEZONE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Te godziny będą interpretowane właśnie w tej strefie czasowej, niezależnie od strefy użytkownika oglądającego formularz.
+                    </p>
+                  </div>
                   <div className="mt-5 space-y-4">
                     {WEEKDAY_LABELS.map((label, weekday) => {
                       const dayRules = bookingSettings.weeklySchedule

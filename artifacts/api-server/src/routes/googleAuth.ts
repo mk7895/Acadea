@@ -11,7 +11,10 @@ import {
   getGoogleOAuthClientCredentials,
   updateStoredGoogleTokens,
 } from "../lib/google";
-import { upsertMarketingAdditionalCalendar } from "../lib/marketingBookingSettings";
+import {
+  MarketingBookingSettingsStorageError,
+  upsertMarketingAdditionalCalendar,
+} from "../lib/marketingBookingSettings";
 import {
   getPlatformGoogleConnectionMetadata,
   parsePlatformGoogleOAuthState,
@@ -445,6 +448,11 @@ router.get("/google/auth/callback", async (req, res) => {
     `);
   } catch (err) {
     logger.error({ err }, "google oauth callback failed");
+    if (err instanceof MarketingBookingSettingsStorageError) {
+      return res.status(503).send(
+        "Google OAuth callback failed because Cloud SQL is missing the marketing_booking_settings table. Apply the latest SQL update first.",
+      );
+    }
     return res.status(500).send("Google OAuth callback failed.");
   }
 });

@@ -15,6 +15,15 @@ export type AdditionalCalendar = {
   connectedAt?: string;
 };
 
+export const DEFAULT_MARKETING_BOOKING_TIMEZONE = "Europe/Warsaw";
+
+export class MarketingBookingSettingsStorageError extends Error {
+  constructor(message = "Brakuje tabeli marketing_booking_settings w bazie danych.") {
+    super(message);
+    this.name = "MarketingBookingSettingsStorageError";
+  }
+}
+
 export const DEFAULT_WEEKLY_SCHEDULE: WeeklyRule[] = [
   { weekday: 0, startTime: "09:00", endTime: "17:00", isActive: false },
   { weekday: 1, startTime: "09:00", endTime: "17:00", isActive: true },
@@ -96,27 +105,47 @@ function normalizeAdditionalCalendarsValue(input: unknown): AdditionalCalendar[]
 export async function loadMarketingBookingSettings() {
   if (!hasDatabaseConfig()) {
     return {
+      timeZone: DEFAULT_MARKETING_BOOKING_TIMEZONE,
       weeklySchedule: DEFAULT_WEEKLY_SCHEDULE.map((entry) => ({ ...entry })),
       additionalCalendars: [] as AdditionalCalendar[],
+      storageReady: false,
     };
   }
 
-  const { db } = await import("@workspace/db");
-  const schema = await import("@workspace/db/schema");
-  const marketingBookingSettingsTable = schema.marketingBookingSettingsTable;
-  const [row] = await db
-    .select()
-    .from(marketingBookingSettingsTable)
-    .where(eq(marketingBookingSettingsTable.id, 1))
-    .limit(1);
+  try {
+    const { db } = await import("@workspace/db");
+    const schema = await import("@workspace/db/schema");
+    const marketingBookingSettingsTable = schema.marketingBookingSettingsTable;
+    const [row] = await db
+      .select()
+      .from(marketingBookingSettingsTable)
+      .where(eq(marketingBookingSettingsTable.id, 1))
+      .limit(1);
 
-  return {
-    weeklySchedule: normalizeWeeklyScheduleValue(row?.weeklySchedule),
-    additionalCalendars: normalizeAdditionalCalendarsValue(row?.additionalCalendars),
-  };
+    return {
+      timeZone: typeof row?.timeZone === "string" && row.timeZone.trim()
+        ? row.timeZone.trim()
+        : DEFAULT_MARKETING_BOOKING_TIMEZONE,
+      weeklySchedule: normalizeWeeklyScheduleValue(row?.weeklySchedule),
+      additionalCalendars: normalizeAdditionalCalendarsValue(row?.additionalCalendars),
+      storageReady: true,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes('relation "marketing_booking_settings" does not exist')) {
+      return {
+        timeZone: DEFAULT_MARKETING_BOOKING_TIMEZONE,
+        weeklySchedule: DEFAULT_WEEKLY_SCHEDULE.map((entry) => ({ ...entry })),
+        additionalCalendars: [] as AdditionalCalendar[],
+        storageReady: false,
+      };
+    }
+    throw error;
+  }
 }
 
 export async function saveMarketingBookingSettings(input: {
+  timeZone: string;
   weeklySchedule: WeeklyRule[];
   additionalCalendars: AdditionalCalendar[];
 }) {
@@ -127,27 +156,38 @@ export async function saveMarketingBookingSettings(input: {
   const { db } = await import("@workspace/db");
   const schema = await import("@workspace/db/schema");
   const marketingBookingSettingsTable = schema.marketingBookingSettingsTable;
+  const timeZone = input.timeZone.trim() || DEFAULT_MARKETING_BOOKING_TIMEZONE;
   const weeklySchedule = normalizeWeeklyScheduleValue(input.weeklySchedule);
   const additionalCalendars = normalizeAdditionalCalendarsValue(input.additionalCalendars);
 
-  await db
-    .insert(marketingBookingSettingsTable)
-    .values({
-      id: 1,
-      weeklySchedule,
-      additionalCalendars,
-      updatedAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: marketingBookingSettingsTable.id,
-      set: {
+  try {
+    await db
+      .insert(marketingBookingSettingsTable)
+      .values({
+        id: 1,
+        timeZone,
         weeklySchedule,
         additionalCalendars,
         updatedAt: new Date(),
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: marketingBookingSettingsTable.id,
+        set: {
+          timeZone,
+          weeklySchedule,
+          additionalCalendars,
+          updatedAt: new Date(),
+        },
+      });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes('relation "marketing_booking_settings" does not exist')) {
+      throw new MarketingBookingSettingsStorageError();
+    }
+    throw error;
+  }
 
-  return { weeklySchedule, additionalCalendars };
+  return { timeZone, weeklySchedule, additionalCalendars };
 }
 
 export async function upsertMarketingAdditionalCalendar(input: {
@@ -168,6 +208,7 @@ export async function upsertMarketingAdditionalCalendar(input: {
   ].sort((left, right) => left.email.localeCompare(right.email));
 
   return saveMarketingBookingSettings({
+    timeZone: current.timeZone,
     weeklySchedule: current.weeklySchedule,
     additionalCalendars,
   });

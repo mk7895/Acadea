@@ -3,8 +3,10 @@ import { asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import { hasDatabaseConfig } from "../lib/databaseConfig";
 import {
+  DEFAULT_MARKETING_BOOKING_TIMEZONE,
   DEFAULT_WEEKLY_SCHEDULE,
   loadMarketingBookingSettings,
+  MarketingBookingSettingsStorageError,
   saveMarketingBookingSettings,
 } from "../lib/marketingBookingSettings";
 import {
@@ -93,6 +95,7 @@ const additionalCalendarSchema = z.object({
 });
 
 const bookingSettingsSchema = z.object({
+  timeZone: z.string().trim().min(1).default(DEFAULT_MARKETING_BOOKING_TIMEZONE),
   weeklySchedule: z.array(weeklyRuleSchema).default(DEFAULT_WEEKLY_SCHEDULE),
   additionalCalendars: z.array(additionalCalendarSchema).default([]),
 });
@@ -270,6 +273,8 @@ router.get("/admin/booking-settings", requireAdmin, async (_req, res) => {
 
   const settings = await loadMarketingBookingSettings();
   return res.json({
+    storageReady: settings.storageReady,
+    timeZone: settings.timeZone,
     weeklySchedule: settings.weeklySchedule,
     additionalCalendars: settings.additionalCalendars.map((entry) => ({
       email: entry.email,
@@ -301,19 +306,32 @@ router.put("/admin/booking-settings", requireAdmin, async (req, res) => {
       inviteToEvents: inviteByEmail.get(entry.email) ?? false,
     }));
 
-  const saved = await saveMarketingBookingSettings({
-    weeklySchedule: parsed.data.weeklySchedule,
-    additionalCalendars: nextAdditionalCalendars,
-  });
+  try {
+    const saved = await saveMarketingBookingSettings({
+      timeZone: parsed.data.timeZone,
+      weeklySchedule: parsed.data.weeklySchedule,
+      additionalCalendars: nextAdditionalCalendars,
+    });
 
-  return res.json({
-    weeklySchedule: saved.weeklySchedule,
-    additionalCalendars: saved.additionalCalendars.map((entry) => ({
-      email: entry.email,
-      inviteToEvents: entry.inviteToEvents,
-      connectedAt: entry.connectedAt ?? null,
-    })),
-  });
+    return res.json({
+      storageReady: true,
+      timeZone: saved.timeZone,
+      weeklySchedule: saved.weeklySchedule,
+      additionalCalendars: saved.additionalCalendars.map((entry) => ({
+        email: entry.email,
+        inviteToEvents: entry.inviteToEvents,
+        connectedAt: entry.connectedAt ?? null,
+      })),
+    });
+  } catch (error) {
+    if (error instanceof MarketingBookingSettingsStorageError) {
+      return res.status(503).json({
+        error:
+          "Brakuje tabeli marketing_booking_settings w Cloud SQL. Wklej najnowszy SQL update dla ustawień kalendarza strony głównej.",
+      });
+    }
+    throw error;
+  }
 });
 
 router.get("/admin/article-taxonomy", requireAdmin, async (_req, res) => {

@@ -17,6 +17,7 @@ export type MarketingBookingAdditionalCalendar = {
 
 export const marketingBookingSettingsTable = pgTable("marketing_booking_settings", {
   id: integer("id").primaryKey().default(1),
+  timeZone: text("time_zone").notNull().default("Europe/Warsaw"),
   weeklySchedule: jsonb("weekly_schedule")
     .$type<MarketingBookingWeeklyRule[]>()
     .notNull()
