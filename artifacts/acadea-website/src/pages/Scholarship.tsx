@@ -213,40 +213,42 @@ export default function Scholarship() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="mt-12"
+                initial={{opacity: 0, y: 24}}
+                whileInView={{opacity: 1, y: 0}}
+                viewport={{once: true}}
+                className="mt-12"
             >
               <div className="text-center mb-8">
                 <h3 className="text-2xl md:text-3xl font-bold text-primary mb-3">Nasi mentorzy</h3>
                 <p className="text-gray-600 max-w-2xl mx-auto">
-                  Stypendium to nie tylko wsparcie finansowe, ale też ludzie, którzy pomagają przekuć potencjał w konkretny plan.
+                  Stypendium to nie tylko wsparcie finansowe, ale też ludzie, którzy pomagają przekuć potencjał w
+                  konkretny plan.
                 </p>
-                <div className="mt-6 flex justify-center">
-                  <a
+              </div>
+              <div className="flex flex-wrap justify-center gap-4">
+                {SORTED_SCHOLARSHIP_MENTORS.map((mentor) => (
+                    <div
+                        key={mentor.name}
+                        className="w-full rounded-2xl border border-primary/10 bg-white/85 p-6 shadow-sm md:basis-[calc((100%_-_2rem)/3)] md:max-w-[calc((100%_-_2rem)/3)]"
+                    >
+                      <div
+                          className="w-11 h-11 rounded-full bg-primary/8 text-primary flex items-center justify-center mb-4">
+                        <GraduationCap size={20}/>
+                      </div>
+                      <h4 className="text-lg font-bold text-primary">{mentor.name}</h4>
+                      <p className="text-sm text-gray-600 leading-relaxed mt-3">{mentor.desc}</p>
+                    </div>
+                ))}
+              </div>
+              <div className="mt-6 flex justify-center">
+                <a
                     href="/mentorzy-acadea.pdf"
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
-                  >
-                    Dowiedz się o Mentorach
-                  </a>
-                </div>
-              </div>
-              <div className="flex flex-wrap justify-center gap-4">
-                {SORTED_SCHOLARSHIP_MENTORS.map((mentor) => (
-                  <div
-                    key={mentor.name}
-                    className="w-full rounded-2xl border border-primary/10 bg-white/85 p-6 shadow-sm md:basis-[calc((100%_-_2rem)/3)] md:max-w-[calc((100%_-_2rem)/3)]"
-                  >
-                    <div className="w-11 h-11 rounded-full bg-primary/8 text-primary flex items-center justify-center mb-4">
-                      <GraduationCap size={20} />
-                    </div>
-                    <h4 className="text-lg font-bold text-primary">{mentor.name}</h4>
-                    <p className="text-sm text-gray-600 leading-relaxed mt-3">{mentor.desc}</p>
-                  </div>
-                ))}
+                >
+                  Dowiedz się więcej o Mentorach
+                </a>
               </div>
             </motion.div>
           </div>
@@ -257,10 +259,10 @@ export default function Scholarship() {
       <section className="py-12 md:py-16 bg-gray-50">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-3xl mx-auto text-center"
+              initial={{opacity: 0, y: 24}}
+              whileInView={{opacity: 1, y: 0}}
+              viewport={{once: true}}
+              className="max-w-3xl mx-auto text-center"
           >
             <h2 className="text-4xl font-bold text-primary mb-6">Aplikuj o stypendium</h2>
             <p className="text-lg text-gray-600 mb-10 leading-relaxed">
