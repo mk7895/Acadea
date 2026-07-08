@@ -11,6 +11,7 @@ import {
   getGoogleOAuthClientCredentials,
   updateStoredGoogleTokens,
 } from "../lib/google";
+import { upsertMarketingAdditionalCalendar } from "../lib/marketingBookingSettings";
 import {
   getPlatformGoogleConnectionMetadata,
   parsePlatformGoogleOAuthState,
@@ -25,7 +26,10 @@ const GOOGLE_SCOPES = [
 ];
 
 const STATE_TTL_MS = 10 * 60 * 1000;
-const pendingStates = new Map<string, number>();
+const pendingStates = new Map<
+  string,
+  { expiresAt: number; mode: "primary" | "secondary"; inviteToEvents: boolean }
+>();
 
 function getAdminSecret() {
   return process.env.GOOGLE_OAUTH_ADMIN_SECRET;
@@ -70,12 +74,19 @@ function requireAdminSession(req: Parameters<typeof router.get>[1] extends never
   return verifyAdminSessionToken(getBearerToken(req));
 }
 
-function createAdminGoogleAuthUrl(req: Parameters<typeof router.get>[1] extends never ? never : any) {
+function createAdminGoogleAuthUrl(
+  req: Parameters<typeof router.get>[1] extends never ? never : any,
+  options?: { mode?: "primary" | "secondary"; inviteToEvents?: boolean },
+) {
   pruneExpiredStates();
 
   const { clientId } = getGoogleOAuthClientCredentials();
   const state = randomBytes(24).toString("hex");
-  pendingStates.set(state, Date.now() + STATE_TTL_MS);
+  pendingStates.set(state, {
+    expiresAt: Date.now() + STATE_TTL_MS,
+    mode: options?.mode ?? "primary",
+    inviteToEvents: options?.inviteToEvents ?? false,
+  });
 
   const params = new URLSearchParams({
     client_id: clientId,
@@ -92,8 +103,8 @@ function createAdminGoogleAuthUrl(req: Parameters<typeof router.get>[1] extends 
 }
 
 function pruneExpiredStates(now = Date.now()) {
-  for (const [state, expiresAt] of pendingStates.entries()) {
-    if (expiresAt <= now) {
+  for (const [state, metadata] of pendingStates.entries()) {
+    if (metadata.expiresAt <= now) {
       pendingStates.delete(state);
     }
   }
@@ -151,6 +162,21 @@ router.post("/admin/google/auth/start", (req, res) => {
 
   return res.json({
     authorizationUrl: createAdminGoogleAuthUrl(req),
+  });
+});
+
+router.post("/admin/google/calendar-connections/start", (req, res) => {
+  if (!requireAdminSession(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const inviteToEvents = Boolean(req.body?.inviteToEvents);
+
+  return res.json({
+    authorizationUrl: createAdminGoogleAuthUrl(req, {
+      mode: "secondary",
+      inviteToEvents,
+    }),
   });
 });
 
@@ -315,6 +341,7 @@ router.get("/google/auth/callback", async (req, res) => {
     return res.status(400).send("Invalid or expired OAuth state.");
   }
 
+  const pendingState = pendingStates.get(state)!;
   pendingStates.delete(state);
 
   if (!code) {
@@ -338,6 +365,7 @@ router.get("/google/auth/callback", async (req, res) => {
     });
 
     const tokenData = (await tokenRes.json()) as {
+      access_token?: string;
       error?: string;
       error_description?: string;
       refresh_token?: string;
@@ -356,6 +384,40 @@ router.get("/google/auth/callback", async (req, res) => {
       throw new Error(
         "Google did not return a refresh token. Re-run consent with prompt=consent or revoke the previous grant first.",
       );
+    }
+
+    if (pendingState.mode === "secondary") {
+      if (!hasDatabaseConfig()) {
+        throw new Error("Database config is required for additional calendars.");
+      }
+
+      const accessToken = tokenData.access_token;
+      if (!accessToken) {
+        throw new Error("Google did not return an access token.");
+      }
+
+      const externalEmail =
+        (await getGooglePrimaryCalendarIdForAccessToken(accessToken)) ?? "";
+
+      if (!externalEmail) {
+        throw new Error("Nie udało się odczytać adresu dodatkowego kalendarza.");
+      }
+
+      await upsertMarketingAdditionalCalendar({
+        email: externalEmail,
+        refreshToken: tokenData.refresh_token,
+        inviteToEvents: pendingState.inviteToEvents,
+      });
+
+      return res.send(`
+        <html>
+          <body style="font-family: sans-serif; padding: 32px; line-height: 1.5;">
+            <h1>Dodatkowy kalendarz został połączony</h1>
+            <p>Konto <code>${externalEmail}</code> zostało dodane do sprawdzania dostępności.</p>
+            <p>Możesz zamknąć tę kartę i wrócić do panelu.</p>
+          </body>
+        </html>
+      `);
     }
 
     await updateStoredGoogleTokens({

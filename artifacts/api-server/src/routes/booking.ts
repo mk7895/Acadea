@@ -4,12 +4,15 @@ import { logger } from "../lib/logger";
 import { sendBookingEmails } from "../lib/mailer";
 import { verifyTurnstileToken } from "../lib/turnstile";
 import {
+  getGoogleAccessTokenForRefreshToken,
   getGoogleAccountEmail,
   getGoogleCalendarId,
   googleApiRequest,
+  googleApiRequestWithAccessToken,
   hasGoogleOAuthCredentials,
 } from "../lib/google";
 import { hasDatabaseConfig } from "../lib/databaseConfig";
+import { DEFAULT_WEEKLY_SCHEDULE, loadMarketingBookingSettings } from "../lib/marketingBookingSettings";
 
 const router = Router();
 
@@ -69,13 +72,55 @@ function addWeekdays(start: Date, weekdays: number) {
   return date;
 }
 
+function toMinutes(value: string) {
+  const [hoursRaw, minutesRaw] = value.split(":");
+  const hours = Number(hoursRaw);
+  const minutes = Number(minutesRaw);
+  if (
+    !Number.isInteger(hours) ||
+    !Number.isInteger(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return null;
+  }
+  return hours * 60 + minutes;
+}
+
+function isSlotInsideWorkingHours(
+  cursor: Date,
+  slotEnd: Date,
+  schedule: Array<{ weekday: number; startTime: string; endTime: string; isActive: boolean }>,
+) {
+  const dayRules = schedule.filter((entry) => entry.weekday === cursor.getDay() && entry.isActive);
+  if (!dayRules.length) {
+    return false;
+  }
+
+  const slotStartMinutes = cursor.getHours() * 60 + cursor.getMinutes();
+  const slotEndMinutes = slotEnd.getHours() * 60 + slotEnd.getMinutes();
+
+  return dayRules.some((rule) => {
+    const startMinutes = toMinutes(rule.startTime);
+    const endMinutes = toMinutes(rule.endTime);
+    if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+      return false;
+    }
+    return slotStartMinutes >= startMinutes && slotEndMinutes <= endMinutes;
+  });
+}
+
 function buildSlotsFromBusy(input: {
   busy: BusyWindow[];
   month?: { month: number; year: number } | null;
+  weeklySchedule?: Array<{ weekday: number; startTime: string; endTime: string; isActive: boolean }>;
 }) {
   const now = new Date();
   const bookingWindowEnd = new Date(now.getTime() + BOOKING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   const busy = input.busy;
+  const weeklySchedule = input.weeklySchedule?.length ? input.weeklySchedule : DEFAULT_WEEKLY_SCHEDULE;
   const slots: BookingSlot[] = [];
   const cursor = input.month
     ? new Date(Date.UTC(input.month.year, input.month.month - 1, 1, 0, 0, 0, 0))
@@ -91,34 +136,35 @@ function buildSlotsFromBusy(input: {
     : addWeekdays(now, PUBLIC_BOOKING_WEEKDAYS);
 
   while (cursor < rangeEnd && cursor < bookingWindowEnd && slots.length < 300) {
-    const dow = cursor.getDay();
-    if (dow !== 0 && dow !== 6) {
-      const hour = cursor.getHours();
-      if (hour >= 9 && hour < 17) {
-        const slotEnd = new Date(cursor.getTime() + SLOT_DURATION_MS);
-        if (!isOutsideLeadWindow(cursor, now)) {
-          cursor.setHours(cursor.getHours() + 1);
-          continue;
-        }
-        const overlaps = busy.some(({ start, end }) => {
-          return cursor < new Date(end) && slotEnd > new Date(start);
-        });
-        if (overlaps) {
-          cursor.setMinutes(cursor.getMinutes() + 30);
-          continue;
-        }
-        const label = cursor.toLocaleTimeString("pl-PL", {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: TZ,
-        });
-        slots.push({
-          start: cursor.toISOString(),
-          end: slotEnd.toISOString(),
-          label,
-        });
-      }
+    const slotEnd = new Date(cursor.getTime() + SLOT_DURATION_MS);
+    if (!isOutsideLeadWindow(cursor, now)) {
+      cursor.setHours(cursor.getHours() + 1);
+      continue;
     }
+
+    if (!isSlotInsideWorkingHours(cursor, slotEnd, weeklySchedule)) {
+      cursor.setMinutes(cursor.getMinutes() + 30);
+      continue;
+    }
+
+    const overlaps = busy.some(({ start, end }) => {
+      return cursor < new Date(end) && slotEnd > new Date(start);
+    });
+    if (overlaps) {
+      cursor.setMinutes(cursor.getMinutes() + 30);
+      continue;
+    }
+
+    const label = cursor.toLocaleTimeString("pl-PL", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: TZ,
+    });
+    slots.push({
+      start: cursor.toISOString(),
+      end: slotEnd.toISOString(),
+      label,
+    });
 
     cursor.setMinutes(cursor.getMinutes() + 30);
   }
@@ -136,12 +182,18 @@ router.get("/slots", async (req, res) => {
     return res.status(400).json({ error: "Nieprawidłowy miesiąc." });
   }
 
+  const bookingSettings = await loadMarketingBookingSettings();
+
   if (!(await hasGoogleOAuthCredentials())) {
     logger.warn(
       "Calendar connector credentials unavailable; serving local development booking slots",
     );
     return res.json({
-      slots: buildSlotsFromBusy({ busy: [], month: requestedMonth }),
+      slots: buildSlotsFromBusy({
+        busy: [],
+        month: requestedMonth,
+        weeklySchedule: bookingSettings.weeklySchedule,
+      }),
       mode: "local",
       timezone: TZ,
     });
@@ -170,8 +222,44 @@ router.get("/slots", async (req, res) => {
     const fbData = JSON.parse(rawFb) as {
       calendars?: Record<string, { busy: { start: string; end: string }[] }>;
     };
-    const busy = fbData.calendars?.[calendarId]?.busy ?? [];
-    const slots = buildSlotsFromBusy({ busy, month: requestedMonth });
+    const busy = [...(fbData.calendars?.[calendarId]?.busy ?? [])];
+
+    const additionalBusyWindows = await Promise.all(
+      bookingSettings.additionalCalendars.map(async (entry) => {
+        try {
+          const accessToken = await getGoogleAccessTokenForRefreshToken(entry.refreshToken);
+          const response = await googleApiRequestWithAccessToken(accessToken, "/calendar/v3/freeBusy", {
+            method: "POST",
+            body: JSON.stringify({
+              timeMin: now.toISOString(),
+              timeMax: to.toISOString(),
+              timeZone: TZ,
+              items: [{ id: entry.email }],
+            }),
+          });
+
+          const payload = (await response.json().catch(() => ({}))) as {
+            calendars?: Record<string, { busy: { start: string; end: string }[] }>;
+          };
+
+          if (!response.ok) {
+            logger.warn({ email: entry.email, status: response.status }, "secondary calendar freeBusy failed");
+            return [];
+          }
+
+          return payload.calendars?.[entry.email]?.busy ?? [];
+        } catch (error) {
+          logger.warn({ err: error, email: entry.email }, "secondary calendar busy scan failed");
+          return [];
+        }
+      }),
+    );
+
+    const slots = buildSlotsFromBusy({
+      busy: [...busy, ...additionalBusyWindows.flat()],
+      month: requestedMonth,
+      weeklySchedule: bookingSettings.weeklySchedule,
+    });
     return res.json({ slots, timezone: TZ });
   } catch (err) {
     logger.error({ err }, "booking/slots error");
@@ -252,11 +340,23 @@ router.post("/create", async (req, res) => {
   try {
     const calendarId = getGoogleCalendarId();
     const organizerEmail = await getGoogleAccountEmail();
+    const bookingSettings = await loadMarketingBookingSettings();
+    const invitedAdditionalEmails = bookingSettings.additionalCalendars
+      .filter((entry) => entry.inviteToEvents)
+      .map((entry) => entry.email);
+    const attendeeEmails = Array.from(
+      new Set(
+        [email, organizerEmail, ...invitedAdditionalEmails]
+          .filter((value): value is string => Boolean(value && value.trim()))
+          .map((value) => value.trim().toLowerCase()),
+      ),
+    );
     const attendees = [
-      { email, displayName: name },
-      ...(organizerEmail && organizerEmail !== email
-        ? [{ email: organizerEmail, displayName: "ACADEA" }]
-        : []),
+      ...attendeeEmails.map((attendeeEmail) => ({
+        email: attendeeEmail,
+        displayName:
+          attendeeEmail === email ? name : attendeeEmail === organizerEmail ? "ACADEA" : attendeeEmail,
+      })),
     ];
 
     const event = {

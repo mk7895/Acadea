@@ -324,10 +324,10 @@ export default function Booking() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 text-primary text-xs font-semibold mb-5 uppercase tracking-widest">
             <Calendar size={13} />
-            Bezpłatna konsultacja
+            Pierwsza rozmowa jest bezpłatna
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-3">
-            Bezpłatna konsultacja
+            Umów konsultację
           </h1>
           <p className="text-gray-500 text-lg">
             Wybierz termin, a nasz doradca skontaktuje się z Tobą.

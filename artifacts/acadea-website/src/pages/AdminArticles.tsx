@@ -53,6 +53,24 @@ type GoogleConnectionState = {
   reason?: string;
 };
 
+type AdminWeeklyScheduleRule = {
+  weekday: number;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+};
+
+type AdminAdditionalCalendar = {
+  email: string;
+  inviteToEvents: boolean;
+  connectedAt: string | null;
+};
+
+type BookingSettingsState = {
+  weeklySchedule: AdminWeeklyScheduleRule[];
+  additionalCalendars: AdminAdditionalCalendar[];
+};
+
 const emptyEditor: EditorState = {
   sortOrder: 0,
   category: "Artykuł",
@@ -67,6 +85,26 @@ const emptyEditor: EditorState = {
   relatedSlugs: [],
   isPublished: true,
 };
+
+const WEEKDAY_LABELS = [
+  "Niedziela",
+  "Poniedziałek",
+  "Wtorek",
+  "Środa",
+  "Czwartek",
+  "Piątek",
+  "Sobota",
+];
+
+const defaultWeeklySchedule: AdminWeeklyScheduleRule[] = [
+  { weekday: 0, startTime: "09:00", endTime: "17:00", isActive: false },
+  { weekday: 1, startTime: "09:00", endTime: "17:00", isActive: true },
+  { weekday: 2, startTime: "09:00", endTime: "17:00", isActive: true },
+  { weekday: 3, startTime: "09:00", endTime: "17:00", isActive: true },
+  { weekday: 4, startTime: "09:00", endTime: "17:00", isActive: true },
+  { weekday: 5, startTime: "09:00", endTime: "17:00", isActive: true },
+  { weekday: 6, startTime: "09:00", endTime: "17:00", isActive: false },
+];
 
 function toEditorState(article: ArticleEditorRecord): EditorState {
   return {
@@ -118,6 +156,7 @@ export default function AdminArticles() {
   const [editor, setEditor] = useState<EditorState>(emptyEditor);
   const [status, setStatus] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<"articles" | "calendar">("articles");
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupSlug, setNewGroupSlug] = useState("");
   const [newCategoryGroupId, setNewCategoryGroupId] = useState<number | "">("");
@@ -126,6 +165,14 @@ export default function AdminArticles() {
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
   const [googleConnection, setGoogleConnection] = useState<GoogleConnectionState | null>(null);
   const [isCheckingGoogleConnection, setIsCheckingGoogleConnection] = useState(false);
+  const [bookingSettings, setBookingSettings] = useState<BookingSettingsState>({
+    weeklySchedule: defaultWeeklySchedule,
+    additionalCalendars: [],
+  });
+  const [isLoadingBookingSettings, setIsLoadingBookingSettings] = useState(false);
+  const [isSavingBookingSettings, setIsSavingBookingSettings] = useState(false);
+  const [isConnectingAdditionalGoogle, setIsConnectingAdditionalGoogle] = useState(false);
+  const [inviteNewAdditionalCalendar, setInviteNewAdditionalCalendar] = useState(false);
   const markdownRef = useRef<HTMLTextAreaElement | null>(null);
 
   async function loadAdminData(currentToken: string) {
@@ -168,6 +215,43 @@ export default function AdminArticles() {
       return null;
     } finally {
       setIsCheckingGoogleConnection(false);
+    }
+  }
+
+  async function loadBookingSettings(currentToken: string) {
+    setIsLoadingBookingSettings(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/admin/booking-settings`, {
+        headers: {
+          Authorization: `Bearer ${currentToken}`,
+        },
+      });
+
+      const data = (await response.json().catch(() => ({}))) as
+        | BookingSettingsState
+        | { error?: string };
+
+      if (!response.ok) {
+        if ("error" in data && data.error) {
+          setStatus(data.error);
+        }
+        return null;
+      }
+
+      setBookingSettings({
+        weeklySchedule: Array.isArray((data as BookingSettingsState).weeklySchedule)
+          ? (data as BookingSettingsState).weeklySchedule
+          : defaultWeeklySchedule,
+        additionalCalendars: Array.isArray((data as BookingSettingsState).additionalCalendars)
+          ? (data as BookingSettingsState).additionalCalendars
+          : [],
+      });
+      return data as BookingSettingsState;
+    } catch {
+      return null;
+    } finally {
+      setIsLoadingBookingSettings(false);
     }
   }
 
@@ -259,7 +343,7 @@ export default function AdminArticles() {
         }
       });
 
-    void loadGoogleConnection(token);
+    void Promise.all([loadGoogleConnection(token), loadBookingSettings(token)]);
 
     return () => {
       cancelled = true;
@@ -270,7 +354,7 @@ export default function AdminArticles() {
     if (!token) return;
 
     function handleFocus() {
-      void loadGoogleConnection(token);
+      void Promise.all([loadGoogleConnection(token), loadBookingSettings(token)]);
     }
 
     window.addEventListener("focus", handleFocus);
@@ -404,6 +488,50 @@ export default function AdminArticles() {
     }
   }
 
+  async function connectAdditionalGoogleCalendar() {
+    setStatus("");
+    setIsConnectingAdditionalGoogle(true);
+    const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
+
+    try {
+      const response = await fetch(`${API_BASE}/admin/google/calendar-connections/start`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inviteToEvents: inviteNewAdditionalCalendar,
+        }),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        authorizationUrl?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !data.authorizationUrl) {
+        popup?.close();
+        setStatus(data.error ?? "Nie udało się rozpocząć połączenia dodatkowego kalendarza.");
+        return;
+      }
+
+      if (popup) {
+        popup.location.href = data.authorizationUrl;
+        popup.focus();
+      } else {
+        window.location.href = data.authorizationUrl;
+      }
+
+      setStatus("Otwarto okno logowania Google dla dodatkowego kalendarza. Po zakończeniu wróć do panelu.");
+    } catch {
+      popup?.close();
+      setStatus("Nie udało się rozpocząć połączenia dodatkowego kalendarza.");
+    } finally {
+      setIsConnectingAdditionalGoogle(false);
+    }
+  }
+
   const googleBadge = useMemo(() => {
     if (isCheckingGoogleConnection && !googleConnection) {
       return {
@@ -484,6 +612,64 @@ export default function AdminArticles() {
       setSelectedId(saved.id);
       setEditor(toEditorState(saved));
     }
+  }
+
+  async function saveBookingSettings() {
+    setIsSavingBookingSettings(true);
+    setStatus("");
+
+    try {
+      const response = await fetch(`${API_BASE}/admin/booking-settings`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(bookingSettings),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as
+        | BookingSettingsState
+        | { error?: string };
+
+      if (!response.ok) {
+        setStatus(("error" in data && data.error) || "Nie udało się zapisać ustawień kalendarza.");
+        return;
+      }
+
+      setBookingSettings(data as BookingSettingsState);
+      setStatus("Ustawienia kalendarza zostały zapisane.");
+    } catch {
+      setStatus("Nie udało się zapisać ustawień kalendarza.");
+    } finally {
+      setIsSavingBookingSettings(false);
+    }
+  }
+
+  function updateBookingDayRules(
+    weekday: number,
+    updater: (rules: AdminWeeklyScheduleRule[]) => AdminWeeklyScheduleRule[],
+  ) {
+    setBookingSettings((current) => {
+      const dayRules = current.weeklySchedule.filter((entry) => entry.weekday === weekday);
+      const otherRules = current.weeklySchedule.filter((entry) => entry.weekday !== weekday);
+      const nextRules = updater(dayRules).sort((left, right) => left.startTime.localeCompare(right.startTime));
+      return {
+        ...current,
+        weeklySchedule: [...otherRules, ...nextRules].sort((left, right) =>
+          left.weekday === right.weekday
+            ? left.startTime.localeCompare(right.startTime)
+            : left.weekday - right.weekday,
+        ),
+      };
+    });
+  }
+
+  function removeAdditionalCalendar(email: string) {
+    setBookingSettings((current) => ({
+      ...current,
+      additionalCalendars: current.additionalCalendars.filter((entry) => entry.email !== email),
+    }));
   }
 
   async function deleteArticleRecord() {
@@ -714,50 +900,297 @@ export default function AdminArticles() {
           <main className="rounded-[32px] border border-[#e8e0d4] bg-white p-6 md:p-8">
             <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78]">Edytor</p>
-                <h1 className="text-3xl font-bold text-primary">{editor.id ? "Edytuj artykuł" : "Nowy artykuł"}</h1>
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${googleBadge.className}`}>
-                    {googleBadge.label}
-                  </span>
-                  {googleConnection?.accountEmail ? (
-                    <span className="text-sm text-[#7c6c56]">Konto: {googleConnection.accountEmail}</span>
-                  ) : null}
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#9b8e78]">Panel administracyjny</p>
+                <h1 className="text-3xl font-bold text-primary">
+                  {activeTab === "articles"
+                    ? editor.id
+                      ? "Edytuj artykuł"
+                      : "Nowy artykuł"
+                    : "Kalendarz i maile"}
+                </h1>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("articles")}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                      activeTab === "articles"
+                        ? "bg-primary text-white"
+                        : "border border-[#d8cfbf] text-primary"
+                    }`}
+                  >
+                    Artykuły
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("calendar")}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                      activeTab === "calendar"
+                        ? "bg-primary text-white"
+                        : "border border-[#d8cfbf] text-primary"
+                    }`}
+                  >
+                    Kalendarz i maile
+                  </button>
                 </div>
-                {googleConnection?.reason ? (
-                  <p className="mt-2 max-w-2xl text-sm text-[#8a5b2d]">{googleConnection.reason}</p>
-                ) : null}
               </div>
               <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={connectGoogle}
-                  disabled={isConnectingGoogle}
-                  className="rounded-full border border-[#d8cfbf] px-5 py-3 font-semibold text-primary disabled:opacity-60"
-                >
-                  {isConnectingGoogle
-                    ? "Łączenie Google…"
-                    : googleConnection?.status === "connected"
-                      ? "Połącz ponownie Google"
-                      : "Połącz Google"}
-                </button>
+                {activeTab === "articles" ? (
+                  <button onClick={deleteArticleRecord} className="rounded-full border border-red-200 px-5 py-3 font-semibold text-red-700">
+                    Usuń
+                  </button>
+                ) : (
+                  <button
+                    onClick={saveBookingSettings}
+                    disabled={isSavingBookingSettings}
+                    className="rounded-full bg-primary px-6 py-3 font-semibold text-white disabled:opacity-60"
+                  >
+                    {isSavingBookingSettings ? "Zapisywanie…" : "Zapisz ustawienia kalendarza"}
+                  </button>
+                )}
                 <button onClick={logout} className="rounded-full border border-[#d8cfbf] px-5 py-3 font-semibold text-primary">
                   Wyloguj
                 </button>
-                <button onClick={deleteArticleRecord} className="rounded-full border border-red-200 px-5 py-3 font-semibold text-red-700">
-                  Usuń
-                </button>
-                <button
-                  onClick={saveArticle}
-                  disabled={isSaving}
-                  className="rounded-full bg-primary px-6 py-3 font-semibold text-white disabled:opacity-60"
-                >
-                  {isSaving ? "Zapisywanie…" : "Zapisz artykuł"}
-                </button>
+                {activeTab === "articles" ? (
+                  <button
+                    onClick={saveArticle}
+                    disabled={isSaving}
+                    className="rounded-full bg-primary px-6 py-3 font-semibold text-white disabled:opacity-60"
+                  >
+                    {isSaving ? "Zapisywanie…" : "Zapisz artykuł"}
+                  </button>
+                ) : null}
               </div>
             </div>
 
             {status ? <p className="mb-5 text-sm text-primary">{status}</p> : null}
+            {activeTab === "calendar" ? (
+              <div className="space-y-6">
+                <section className="rounded-[24px] border border-[#ece3d6] bg-[#fcfbf8] p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold text-primary">Główne konto Google</h2>
+                      <p className="mt-2 max-w-3xl text-sm text-[#7c6c56]">
+                        To konto nadal wysyła zaproszenia, tworzy wydarzenia i nadaje im oficjalny organizer. Dodatkowe kalendarze poniżej służą tylko do sprawdzania dostępności, chyba że zaznaczysz ich zapraszanie do eventów.
+                      </p>
+                      <div className="mt-4 flex flex-wrap items-center gap-3">
+                        <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${googleBadge.className}`}>
+                          {googleBadge.label}
+                        </span>
+                        {googleConnection?.accountEmail ? (
+                          <span className="text-sm text-[#7c6c56]">Konto: {googleConnection.accountEmail}</span>
+                        ) : null}
+                      </div>
+                      {googleConnection?.reason ? (
+                        <p className="mt-3 max-w-2xl text-sm text-[#8a5b2d]">{googleConnection.reason}</p>
+                      ) : null}
+                    </div>
+                    <button
+                      onClick={connectGoogle}
+                      disabled={isConnectingGoogle}
+                      className="rounded-full border border-[#d8cfbf] px-5 py-3 font-semibold text-primary disabled:opacity-60"
+                    >
+                      {isConnectingGoogle
+                        ? "Łączenie Google…"
+                        : googleConnection?.status === "connected"
+                          ? "Połącz ponownie konto główne"
+                          : "Połącz konto główne"}
+                    </button>
+                  </div>
+                </section>
 
+                <section className="rounded-[24px] border border-[#ece3d6] bg-[#fcfbf8] p-5">
+                  <h2 className="text-xl font-bold text-primary">Godziny pracy</h2>
+                  <p className="mt-2 text-sm text-[#7c6c56]">
+                    To odpowiednik publicznej dostępności dla formularza na stronie głównej. Backend połączy te reguły z zajętością wszystkich podłączonych kalendarzy.
+                  </p>
+                  <div className="mt-5 space-y-4">
+                    {WEEKDAY_LABELS.map((label, weekday) => {
+                      const dayRules = bookingSettings.weeklySchedule
+                        .filter((entry) => entry.weekday === weekday)
+                        .sort((left, right) => left.startTime.localeCompare(right.startTime));
+                      const hasActiveRule = dayRules.some((entry) => entry.isActive);
+
+                      return (
+                        <div key={weekday} className="rounded-2xl border border-[#ebe3d8] bg-white p-4">
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                            <div>
+                              <p className="font-semibold text-primary">{label}</p>
+                              <p className="text-sm text-gray-500">{hasActiveRule ? "Dostępny" : "Niedostępny"}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateBookingDayRules(weekday, (rules) =>
+                                    (rules.length ? rules : [{ weekday, startTime: "09:00", endTime: "17:00", isActive: false }]).map((rule) => ({
+                                      ...rule,
+                                      isActive: !hasActiveRule,
+                                    })),
+                                  )
+                                }
+                                className="rounded-full border border-[#d8cfbf] px-4 py-2 text-sm font-semibold text-primary"
+                              >
+                                {hasActiveRule ? "Wyłącz dzień" : "Włącz dzień"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateBookingDayRules(weekday, (rules) => [
+                                    ...rules,
+                                    { weekday, startTime: "09:00", endTime: "17:00", isActive: true },
+                                  ])
+                                }
+                                className="rounded-full border border-[#d8cfbf] px-4 py-2 text-sm font-semibold text-primary"
+                              >
+                                Dodaj przedział
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 space-y-3">
+                            {dayRules.length ? dayRules.map((rule, index) => (
+                              <div key={`${weekday}-${index}`} className="grid gap-3 md:grid-cols-4">
+                                <input
+                                  type="time"
+                                  value={rule.startTime}
+                                  onChange={(e) =>
+                                    updateBookingDayRules(weekday, (rules) =>
+                                      rules.map((entry, entryIndex) =>
+                                        entryIndex === index ? { ...entry, startTime: e.target.value } : entry,
+                                      ),
+                                    )
+                                  }
+                                  className="h-11 rounded-2xl border border-[#ded7c9] px-4"
+                                />
+                                <input
+                                  type="time"
+                                  value={rule.endTime}
+                                  onChange={(e) =>
+                                    updateBookingDayRules(weekday, (rules) =>
+                                      rules.map((entry, entryIndex) =>
+                                        entryIndex === index ? { ...entry, endTime: e.target.value } : entry,
+                                      ),
+                                    )
+                                  }
+                                  className="h-11 rounded-2xl border border-[#ded7c9] px-4"
+                                />
+                                <select
+                                  value={String(rule.isActive)}
+                                  onChange={(e) =>
+                                    updateBookingDayRules(weekday, (rules) =>
+                                      rules.map((entry, entryIndex) =>
+                                        entryIndex === index
+                                          ? { ...entry, isActive: e.target.value === "true" }
+                                          : entry,
+                                      ),
+                                    )
+                                  }
+                                  className="h-11 rounded-2xl border border-[#ded7c9] bg-white px-4"
+                                >
+                                  <option value="true">Aktywne</option>
+                                  <option value="false">Nieaktywne</option>
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateBookingDayRules(weekday, (rules) =>
+                                      rules.filter((_, entryIndex) => entryIndex !== index),
+                                    )
+                                  }
+                                  className="rounded-2xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700"
+                                >
+                                  Usuń przedział
+                                </button>
+                              </div>
+                            )) : (
+                              <p className="text-sm text-gray-500">Brak przedziałów dla tego dnia.</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                <section className="rounded-[24px] border border-[#ece3d6] bg-[#fcfbf8] p-5">
+                  <h2 className="text-xl font-bold text-primary">Dodatkowe kalendarze do sprawdzania zajętości</h2>
+                  <p className="mt-2 text-sm text-[#7c6c56]">
+                    Podłącz tu dodatkowe konta Google, które mają blokować sloty w formularzu. Główne konto nadal pozostaje organizerem i źródłem maili, ale możesz zaznaczyć, że konkretne dodatkowe konto też ma dostać zaproszenie na event.
+                  </p>
+
+                  <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-[#ebe3d8] bg-white p-4 md:flex-row md:items-center md:justify-between">
+                    <label className="inline-flex items-center gap-3 text-sm font-semibold text-primary">
+                      <input
+                        type="checkbox"
+                        checked={inviteNewAdditionalCalendar}
+                        onChange={(e) => setInviteNewAdditionalCalendar(e.target.checked)}
+                      />
+                      Zapraszaj to nowe konto do eventów tworzonych z głównego kalendarza
+                    </label>
+                    <button
+                      type="button"
+                      onClick={connectAdditionalGoogleCalendar}
+                      disabled={isConnectingAdditionalGoogle}
+                      className="rounded-full bg-primary px-5 py-3 font-semibold text-white disabled:opacity-60"
+                    >
+                      {isConnectingAdditionalGoogle ? "Łączenie..." : "Dodaj dodatkowy kalendarz Google"}
+                    </button>
+                  </div>
+
+                  <div className="mt-5 space-y-3">
+                    {bookingSettings.additionalCalendars.length ? (
+                      bookingSettings.additionalCalendars.map((entry) => (
+                        <div key={entry.email} className="rounded-2xl border border-[#ebe3d8] bg-white p-4">
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <div>
+                              <p className="font-semibold text-primary">{entry.email}</p>
+                              <p className="text-sm text-gray-500">
+                                {entry.connectedAt
+                                  ? `Połączono: ${new Date(entry.connectedAt).toLocaleString("pl-PL")}`
+                                  : "Połączono"}
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3">
+                              <label className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
+                                <input
+                                  type="checkbox"
+                                  checked={entry.inviteToEvents}
+                                  onChange={(e) =>
+                                    setBookingSettings((current) => ({
+                                      ...current,
+                                      additionalCalendars: current.additionalCalendars.map((calendar) =>
+                                        calendar.email === entry.email
+                                          ? { ...calendar, inviteToEvents: e.target.checked }
+                                          : calendar,
+                                      ),
+                                    }))
+                                  }
+                                />
+                                Zapraszaj do eventów
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => removeAdditionalCalendar(entry.email)}
+                                className="rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-700"
+                              >
+                                Usuń
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">
+                        {isLoadingBookingSettings
+                          ? "Ładowanie kalendarzy..."
+                          : "Brak dodatkowych kalendarzy. Na razie sprawdzana jest tylko dostępność głównego konta."}
+                      </p>
+                    )}
+                  </div>
+                </section>
+              </div>
+            ) : (
+              <>
             <section className="mb-6 rounded-[24px] border border-[#ece3d6] bg-[#fcfbf8] p-5">
               <h2 className="mb-4 text-lg font-bold text-primary">Grupy kategorii i kategorie</h2>
               <div className="grid gap-6 lg:grid-cols-2">
@@ -1155,6 +1588,8 @@ export default function AdminArticles() {
                 </section>
               </div>
             </div>
+              </>
+            )}
           </main>
         </div>
       </div>

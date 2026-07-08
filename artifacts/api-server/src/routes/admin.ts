@@ -3,6 +3,11 @@ import { asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import { hasDatabaseConfig } from "../lib/databaseConfig";
 import {
+  DEFAULT_WEEKLY_SCHEDULE,
+  loadMarketingBookingSettings,
+  saveMarketingBookingSettings,
+} from "../lib/marketingBookingSettings";
+import {
   estimateReadMinutes,
   extractMarkdownHeadings,
   normalizeArticleSlug,
@@ -73,6 +78,23 @@ const categorySchema = z.object({
   sortOrder: z.number().int().min(0).default(0),
   name: z.string().trim().min(1),
   slug: z.string().trim().optional(),
+});
+
+const weeklyRuleSchema = z.object({
+  weekday: z.number().int().min(0).max(6),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/),
+  isActive: z.boolean(),
+});
+
+const additionalCalendarSchema = z.object({
+  email: z.email(),
+  inviteToEvents: z.boolean().default(false),
+});
+
+const bookingSettingsSchema = z.object({
+  weeklySchedule: z.array(weeklyRuleSchema).default(DEFAULT_WEEKLY_SCHEDULE),
+  additionalCalendars: z.array(additionalCalendarSchema).default([]),
 });
 
 function getRequestOrigin(req: Request) {
@@ -239,6 +261,59 @@ router.post("/admin/auth/entry", (req, res) => {
 
 router.get("/admin/auth/status", (req, res) => {
   return res.json({ authenticated: verifyAdminSessionToken(getBearerToken(req)) });
+});
+
+router.get("/admin/booking-settings", requireAdmin, async (_req, res) => {
+  if (!hasDatabaseConfig()) {
+    return res.status(503).json({ error: "Database not configured." });
+  }
+
+  const settings = await loadMarketingBookingSettings();
+  return res.json({
+    weeklySchedule: settings.weeklySchedule,
+    additionalCalendars: settings.additionalCalendars.map((entry) => ({
+      email: entry.email,
+      inviteToEvents: entry.inviteToEvents,
+      connectedAt: entry.connectedAt ?? null,
+    })),
+  });
+});
+
+router.put("/admin/booking-settings", requireAdmin, async (req, res) => {
+  if (!hasDatabaseConfig()) {
+    return res.status(503).json({ error: "Database not configured." });
+  }
+
+  const parsed = bookingSettingsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(422).json({ error: parsed.error.message });
+  }
+
+  const current = await loadMarketingBookingSettings();
+  const inviteByEmail = new Map(
+    parsed.data.additionalCalendars.map((entry) => [entry.email.trim().toLowerCase(), entry.inviteToEvents]),
+  );
+
+  const nextAdditionalCalendars = current.additionalCalendars
+    .filter((entry) => inviteByEmail.has(entry.email))
+    .map((entry) => ({
+      ...entry,
+      inviteToEvents: inviteByEmail.get(entry.email) ?? false,
+    }));
+
+  const saved = await saveMarketingBookingSettings({
+    weeklySchedule: parsed.data.weeklySchedule,
+    additionalCalendars: nextAdditionalCalendars,
+  });
+
+  return res.json({
+    weeklySchedule: saved.weeklySchedule,
+    additionalCalendars: saved.additionalCalendars.map((entry) => ({
+      email: entry.email,
+      inviteToEvents: entry.inviteToEvents,
+      connectedAt: entry.connectedAt ?? null,
+    })),
+  });
 });
 
 router.get("/admin/article-taxonomy", requireAdmin, async (_req, res) => {
