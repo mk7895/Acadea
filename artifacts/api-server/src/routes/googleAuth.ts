@@ -408,6 +408,7 @@ router.get("/google/auth/callback", async (req, res) => {
 
       await upsertMarketingAdditionalCalendar({
         email: externalEmail,
+        fullName: "",
         refreshToken: tokenData.refresh_token,
         inviteToEvents: pendingState.inviteToEvents,
       });

@@ -10,6 +10,7 @@ export type WeeklyRule = {
 
 export type AdditionalCalendar = {
   email: string;
+  fullName?: string;
   refreshToken: string;
   inviteToEvents: boolean;
   connectedAt?: string;
@@ -83,6 +84,7 @@ function normalizeAdditionalCalendarsValue(input: unknown): AdditionalCalendar[]
     if (!entry || typeof entry !== "object") continue;
     const candidate = entry as Record<string, unknown>;
     const email = String(candidate.email ?? "").trim().toLowerCase();
+    const fullName = String(candidate.fullName ?? "").trim();
     const refreshToken = String(candidate.refreshToken ?? "").trim();
     const inviteToEvents = Boolean(candidate.inviteToEvents);
     const connectedAt = String(candidate.connectedAt ?? "").trim();
@@ -93,6 +95,7 @@ function normalizeAdditionalCalendarsValue(input: unknown): AdditionalCalendar[]
 
     normalized.push({
       email,
+      fullName: fullName || undefined,
       refreshToken,
       inviteToEvents,
       connectedAt: connectedAt || undefined,
@@ -192,15 +195,18 @@ export async function saveMarketingBookingSettings(input: {
 
 export async function upsertMarketingAdditionalCalendar(input: {
   email: string;
+  fullName?: string;
   refreshToken: string;
   inviteToEvents: boolean;
 }) {
   const current = await loadMarketingBookingSettings();
   const email = input.email.trim().toLowerCase();
+  const existingEntry = current.additionalCalendars.find((entry) => entry.email === email);
   const additionalCalendars = [
     ...current.additionalCalendars.filter((entry) => entry.email !== email),
     {
       email,
+      fullName: input.fullName?.trim() || existingEntry?.fullName,
       refreshToken: input.refreshToken,
       inviteToEvents: input.inviteToEvents,
       connectedAt: new Date().toISOString(),

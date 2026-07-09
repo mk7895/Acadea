@@ -227,7 +227,7 @@ export default function ScholarshipForm() {
                     {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                   </div>
                   <Input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)}
-                    placeholder="Telefon (opcjonalnie)" className="rounded-xl" />
+                    placeholder="Telefon" className="rounded-xl" />
                 </div>
               </div>
 
@@ -248,9 +248,9 @@ export default function ScholarshipForm() {
                   <Input value={form.averageGrade} onChange={(e) => set("averageGrade", e.target.value)}
                     placeholder="Średnia ocen za ostatni rok szkolny, np. 5.17" className="rounded-xl" />
                   <Input value={form.gradeYear} onChange={(e) => set("gradeYear", e.target.value)}
-                    placeholder="Klasa lub planowany rok matury (opcjonalnie)" className="rounded-xl" />
+                    placeholder="Klasa lub planowany rok matury" className="rounded-xl" />
                   <Input value={form.targetCountry} onChange={(e) => set("targetCountry", e.target.value)}
-                    placeholder="Docelowy kraj studiów (opcjonalnie)" className="rounded-xl" />
+                    placeholder="Docelowy kraj studiów" className="rounded-xl" />
                   <div>
                     <Input value={form.field} onChange={(e) => set("field", e.target.value)}
                       placeholder="Co chcesz studiować? *" className={`rounded-xl ${errors.field ? "border-red-400" : ""}`} />

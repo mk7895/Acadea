@@ -28,6 +28,7 @@ const PUBLIC_BOOKING_WEEKDAYS = 14;
 
 type BookingSlot = { start: string; end: string; label: string };
 type BusyWindow = { start: string; end: string };
+type BookingMentorOption = { email: string; fullName: string };
 
 type GoogleEventResponse = {
   error?: { message?: string };
@@ -296,6 +297,17 @@ function buildSlotsFromBusy(input: {
   return slots;
 }
 
+function getBookingMentorOptions(
+  additionalCalendars: Array<{ email: string; fullName?: string }>,
+): BookingMentorOption[] {
+  return additionalCalendars
+    .map((entry) => ({
+      email: entry.email,
+      fullName: entry.fullName?.trim() || entry.email,
+    }))
+    .sort((left, right) => left.fullName.localeCompare(right.fullName, "pl"));
+}
+
 // ─── GET /api/booking/slots ──────────────────────────────────────────────────
 // Returns available 1-hour slots for the next 14 weekdays (9:00–17:00 Warsaw)
 router.get("/slots", async (req, res) => {
@@ -307,6 +319,13 @@ router.get("/slots", async (req, res) => {
   }
 
   const bookingSettings = await loadMarketingBookingSettings();
+  const mentors = getBookingMentorOptions(bookingSettings.additionalCalendars);
+  const requestedMentorEmail =
+    typeof req.query.mentorEmail === "string" ? req.query.mentorEmail.trim().toLowerCase() : "";
+  const selectedMentor =
+    (requestedMentorEmail
+      ? bookingSettings.additionalCalendars.find((entry) => entry.email === requestedMentorEmail)
+      : null) ?? null;
 
   if (!(await hasGoogleOAuthCredentials())) {
     logger.warn(
@@ -319,6 +338,8 @@ router.get("/slots", async (req, res) => {
         timeZone: bookingSettings.timeZone,
         weeklySchedule: bookingSettings.weeklySchedule,
       }),
+      mentors,
+      selectedMentorEmail: selectedMentor?.email ?? null,
       mode: "local",
       timezone: bookingSettings.timeZone,
     });
@@ -349,8 +370,10 @@ router.get("/slots", async (req, res) => {
     };
     const busy = [...(fbData.calendars?.[calendarId]?.busy ?? [])];
 
+    const calendarsToCheck = selectedMentor ? [selectedMentor] : [];
+
     const additionalBusyWindows = await Promise.all(
-      bookingSettings.additionalCalendars.map(async (entry) => {
+      calendarsToCheck.map(async (entry) => {
         try {
           const accessToken = await getGoogleAccessTokenForRefreshToken(entry.refreshToken);
           const response = await googleApiRequestWithAccessToken(accessToken, "/calendar/v3/freeBusy", {
@@ -386,7 +409,12 @@ router.get("/slots", async (req, res) => {
       timeZone: bookingSettings.timeZone,
       weeklySchedule: bookingSettings.weeklySchedule,
     });
-    return res.json({ slots, timezone: bookingSettings.timeZone });
+    return res.json({
+      slots,
+      mentors,
+      selectedMentorEmail: selectedMentor?.email ?? null,
+      timezone: bookingSettings.timeZone,
+    });
   } catch (err) {
     logger.error({ err }, "booking/slots error");
     return res
@@ -403,6 +431,7 @@ const CreateSchema = z.object({
   email: z.string().email(),
   phone: z.string().optional(),
   topic: z.string().min(2),
+  mentorEmail: z.string().email().optional(),
   turnstileToken: z.string().min(1).optional(),
 });
 
@@ -413,7 +442,7 @@ router.post("/create", async (req, res) => {
       .status(400)
       .json({ error: "Nieprawidłowe dane", details: parsed.error.flatten() });
   }
-  const { start, end, name, email, phone, topic } = parsed.data;
+  const { start, end, name, email, phone, topic, mentorEmail } = parsed.data;
   const startDate = new Date(start);
   const endDate = new Date(end);
 
@@ -434,7 +463,7 @@ router.post("/create", async (req, res) => {
 
   if (!(await hasGoogleOAuthCredentials())) {
     logger.warn(
-      { start, email },
+      { start, email, mentorEmail },
       "Calendar connector credentials unavailable; confirming local development booking without calendar sync",
     );
 
@@ -445,7 +474,7 @@ router.post("/create", async (req, res) => {
           name,
           email,
           phone: phone ?? null,
-          message: `Temat: ${topic}\nTryb: local-dev booking`,
+          message: `Temat: ${topic}${mentorEmail ? `\nMentor: ${mentorEmail}` : ""}\nTryb: local-dev booking`,
         });
       } catch (dbErr) {
         logger.warn({ err: dbErr }, "mailing list save failed (non-fatal)");
@@ -467,6 +496,11 @@ router.post("/create", async (req, res) => {
     const calendarId = getGoogleCalendarId();
     const organizerEmail = await getGoogleAccountEmail();
     const bookingSettings = await loadMarketingBookingSettings();
+    const selectedMentor = mentorEmail
+      ? bookingSettings.additionalCalendars.find(
+          (entry) => entry.email === mentorEmail.trim().toLowerCase(),
+        ) ?? null
+      : null;
     const invitedAdditionalEmails = bookingSettings.additionalCalendars
       .filter((entry) => entry.inviteToEvents)
       .map((entry) => entry.email);
@@ -491,6 +525,7 @@ router.post("/create", async (req, res) => {
         `Temat: ${topic}`,
         `Email: ${email}`,
         phone ? `Telefon: ${phone}` : null,
+        selectedMentor ? `Wybrany mentor: ${selectedMentor.fullName?.trim() || selectedMentor.email}` : null,
         "",
         `Dołącz do spotkania przez Zoom: ${ZOOM_LINK}`,
         "",
@@ -539,7 +574,7 @@ router.post("/create", async (req, res) => {
           name,
           email,
           phone: phone ?? null,
-          message: `Temat: ${topic}`,
+          message: `Temat: ${topic}${selectedMentor ? `\nMentor: ${selectedMentor.fullName?.trim() || selectedMentor.email}` : ""}`,
         });
       } catch (dbErr) {
         logger.warn({ err: dbErr }, "mailing list save failed (non-fatal)");

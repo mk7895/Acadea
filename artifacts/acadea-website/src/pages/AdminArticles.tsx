@@ -63,6 +63,7 @@ type AdminWeeklyScheduleRule = {
 
 type AdminAdditionalCalendar = {
   email: string;
+  fullName: string;
   inviteToEvents: boolean;
   connectedAt: string | null;
 };
@@ -258,7 +259,10 @@ export default function AdminArticles() {
           ? (data as BookingSettingsState).weeklySchedule
           : defaultWeeklySchedule,
         additionalCalendars: Array.isArray((data as BookingSettingsState).additionalCalendars)
-          ? (data as BookingSettingsState).additionalCalendars
+          ? (data as BookingSettingsState).additionalCalendars.map((entry) => ({
+              ...entry,
+              fullName: entry.fullName ?? "",
+            }))
           : [],
       });
       return data as BookingSettingsState;
@@ -1183,7 +1187,23 @@ export default function AdminArticles() {
                       bookingSettings.additionalCalendars.map((entry) => (
                         <div key={entry.email} className="rounded-2xl border border-[#ebe3d8] bg-white p-4">
                           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                            <div>
+                            <div className="flex-1">
+                              <input
+                                type="text"
+                                value={entry.fullName}
+                                onChange={(e) =>
+                                  setBookingSettings((current) => ({
+                                    ...current,
+                                    additionalCalendars: current.additionalCalendars.map((calendar) =>
+                                      calendar.email === entry.email
+                                        ? { ...calendar, fullName: e.target.value }
+                                        : calendar,
+                                    ),
+                                  }))
+                                }
+                                placeholder="Imię i nazwisko mentora"
+                                className="mb-2 h-11 w-full rounded-2xl border border-[#ded7c9] px-4"
+                              />
                               <p className="font-semibold text-primary">{entry.email}</p>
                               <p className="text-sm text-gray-500">
                                 {entry.connectedAt

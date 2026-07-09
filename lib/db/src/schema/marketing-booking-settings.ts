@@ -10,6 +10,7 @@ export type MarketingBookingWeeklyRule = {
 
 export type MarketingBookingAdditionalCalendar = {
   email: string;
+  fullName?: string;
   refreshToken: string;
   inviteToEvents: boolean;
   connectedAt?: string;

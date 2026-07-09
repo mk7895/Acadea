@@ -30,6 +30,7 @@ import {
 
 const API_BASE = getApiBase();
 type Slot = { start: string; end: string; label: string };
+type MentorOption = { email: string; fullName: string };
 
 type DayGroup = {
   dateKey: string;
@@ -148,23 +149,45 @@ export default function Booking() {
     const saved = getCookie(TIMEZONE_COOKIE_NAME);
     return saved && findTimezoneOption(saved) ? saved : DEFAULT_TIMEZONE;
   });
+  const [mentors, setMentors] = useState<MentorOption[]>([]);
+  const [selectedMentorEmail, setSelectedMentorEmail] = useState("");
 
   useEffect(() => {
     setLoadingSlots(true);
     setSlotsError("");
-    fetch(`${API_BASE}/booking/slots`)
+    const params = new URLSearchParams();
+    if (selectedMentorEmail) {
+      params.set("mentorEmail", selectedMentorEmail);
+    }
+    fetch(`${API_BASE}/booking/slots${params.toString() ? `?${params.toString()}` : ""}`)
       .then((r) => r.json())
-      .then((data: { slots?: Slot[]; error?: string }) => {
+      .then((data: {
+        slots?: Slot[];
+        mentors?: MentorOption[];
+        selectedMentorEmail?: string | null;
+        error?: string;
+      }) => {
         if (data.error) {
           setSlotsError(data.error);
           return;
         }
         setSlotsError("");
         setRawSlots(data.slots ?? []);
+        const nextMentors = Array.isArray(data.mentors) ? data.mentors : [];
+        setMentors(nextMentors);
+        setSelectedMentorEmail((current) => {
+          if (data.selectedMentorEmail) {
+            return data.selectedMentorEmail;
+          }
+          if (current && nextMentors.some((mentor) => mentor.email === current)) {
+            return current;
+          }
+          return nextMentors[0]?.email ?? "";
+        });
       })
       .catch(() => setSlotsError("Nie udało się pobrać terminów. Spróbuj ponownie."))
       .finally(() => setLoadingSlots(false));
-  }, []);
+  }, [selectedMentorEmail]);
 
   useEffect(() => {
     if (canUsePreferencesCookies) {
@@ -192,7 +215,7 @@ export default function Booking() {
     if (step > 0 && step < 3) {
       setStep(0);
     }
-  }, [timezone]);
+  }, [timezone, selectedMentorEmail]);
 
   const days = useMemo(() => buildDayGroups(rawSlots, timezone), [rawSlots, timezone]);
   const selectedDay = useMemo(
@@ -237,6 +260,7 @@ export default function Booking() {
           ...selectedSlot,
           ...form,
           topic: topicValue,
+          mentorEmail: selectedMentorEmail || undefined,
           consent: consentChecked,
           turnstileToken,
         }),
@@ -295,12 +319,12 @@ export default function Booking() {
 
         {step < 3 && (
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 mb-6">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-2 text-base font-semibold text-primary">
-                <Globe2 size={18} />
-                <span>Wybierz strefę czasową</span>
-              </div>
-              <div className="w-full md:w-[360px]">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div>
+                <div className="mb-2 flex items-center gap-2 text-base font-semibold text-primary">
+                  <Globe2 size={18} />
+                  <span>Wybierz strefę czasową</span>
+                </div>
                 <select
                   value={timezone}
                   onChange={(event) => setTimezone(event.target.value)}
@@ -311,6 +335,27 @@ export default function Booking() {
                       {option.label}
                     </option>
                   ))}
+                </select>
+              </div>
+              <div>
+                <div className="mb-2 flex items-center gap-2 text-base font-semibold text-primary">
+                  <User size={18} />
+                  <span>Wybierz mentora</span>
+                </div>
+                <select
+                  value={selectedMentorEmail}
+                  onChange={(event) => setSelectedMentorEmail(event.target.value)}
+                  className="flex h-11 w-full appearance-none rounded-2xl border border-gray-200 bg-white px-4 pr-10 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  {mentors.length ? (
+                    mentors.map((mentor) => (
+                      <option key={mentor.email} value={mentor.email}>
+                        {mentor.fullName}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">Brak mentorów do wyboru</option>
+                  )}
                 </select>
               </div>
             </div>

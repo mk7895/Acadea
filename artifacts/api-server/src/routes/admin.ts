@@ -91,6 +91,7 @@ const weeklyRuleSchema = z.object({
 
 const additionalCalendarSchema = z.object({
   email: z.email(),
+  fullName: z.string().trim().max(160).optional().default(""),
   inviteToEvents: z.boolean().default(false),
 });
 
@@ -278,6 +279,7 @@ router.get("/admin/booking-settings", requireAdmin, async (_req, res) => {
     weeklySchedule: settings.weeklySchedule,
     additionalCalendars: settings.additionalCalendars.map((entry) => ({
       email: entry.email,
+      fullName: entry.fullName ?? "",
       inviteToEvents: entry.inviteToEvents,
       connectedAt: entry.connectedAt ?? null,
     })),
@@ -298,11 +300,15 @@ router.put("/admin/booking-settings", requireAdmin, async (req, res) => {
   const inviteByEmail = new Map(
     parsed.data.additionalCalendars.map((entry) => [entry.email.trim().toLowerCase(), entry.inviteToEvents]),
   );
+  const fullNameByEmail = new Map(
+    parsed.data.additionalCalendars.map((entry) => [entry.email.trim().toLowerCase(), entry.fullName?.trim() ?? ""]),
+  );
 
   const nextAdditionalCalendars = current.additionalCalendars
     .filter((entry) => inviteByEmail.has(entry.email))
     .map((entry) => ({
       ...entry,
+      fullName: fullNameByEmail.get(entry.email) || undefined,
       inviteToEvents: inviteByEmail.get(entry.email) ?? false,
     }));
 
@@ -319,6 +325,7 @@ router.put("/admin/booking-settings", requireAdmin, async (req, res) => {
       weeklySchedule: saved.weeklySchedule,
       additionalCalendars: saved.additionalCalendars.map((entry) => ({
         email: entry.email,
+        fullName: entry.fullName ?? "",
         inviteToEvents: entry.inviteToEvents,
         connectedAt: entry.connectedAt ?? null,
       })),
