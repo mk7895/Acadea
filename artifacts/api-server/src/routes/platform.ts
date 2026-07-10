@@ -1382,6 +1382,24 @@ function resolveGuideIdsFromSlugs(
   return ids.length ? ids : [fallbackGuideId];
 }
 
+function resolveGuideIdsFromSlugsOrFallbackIds(
+  slugs: string[] | undefined,
+  guideIdBySlug: Map<string, number>,
+  fallbackGuideIds: number[],
+  fallbackGuideId: number,
+) {
+  const ids = (slugs ?? [])
+    .map((slug) => guideIdBySlug.get(slug))
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  if (ids.length) {
+    return ids;
+  }
+  if (fallbackGuideIds.length) {
+    return fallbackGuideIds;
+  }
+  return fallbackGuideId ? [fallbackGuideId] : [];
+}
+
 function compareGuideSortOrder(
   a: {
     country?: string | null;
@@ -1808,19 +1826,29 @@ async function importGuideBlueprint(
     if (!fallbackGuideId && !(template.appliesToGuideSlugs?.length)) {
       throw new Error(`Material template "${template.title}" imported without a main guide must explicitly set appliesToGuideSlugs.`);
     }
-    const appliesToGuideIds = resolveGuideIdsFromSlugs(
+    const resolvedGuideId = template.guideKey ? itemGuideIdByKey.get(template.guideKey) ?? null : null;
+    const existing =
+      (template.targetTemplateTitle
+        ? existingTemplates.find((item) => item.title === template.targetTemplateTitle)
+        : null) ??
+      existingTemplates.find(
+        (item) => item.title === template.title && item.guideId === resolvedGuideId,
+      );
+
+    const appliesToGuideIds = resolveGuideIdsFromSlugsOrFallbackIds(
       template.appliesToGuideSlugs,
       guideIdBySlug,
+      Array.isArray(existing?.appliesToGuideIds) ? existing.appliesToGuideIds : [],
       fallbackGuideId,
     );
-    const resolvedGuideId = template.guideKey ? itemGuideIdByKey.get(template.guideKey) ?? null : null;
     const importedRows = template.rows.map((row) => ({
       actionType: row.actionType ?? "check_only",
       alternativeOptions: row.alternativeOptions ?? [],
-      appliesToGuideIds: resolveGuideIdsFromSlugs(
+      appliesToGuideIds: resolveGuideIdsFromSlugsOrFallbackIds(
         row.appliesToGuideSlugs,
         guideIdBySlug,
-        appliesToGuideIds[0] ?? fallbackGuideId,
+        appliesToGuideIds,
+        fallbackGuideId,
       ),
       country: row.country ?? "",
       docTabPrompt: row.docTabPrompt ?? "",
@@ -1835,14 +1863,6 @@ async function importGuideBlueprint(
       university: row.university ?? "",
     }));
     const importedStructure = normalizeMaterialStructureRows(importedRows);
-
-    const existing =
-      (template.targetTemplateTitle
-        ? existingTemplates.find((item) => item.title === template.targetTemplateTitle)
-        : null) ??
-      existingTemplates.find(
-        (item) => item.title === template.title && item.guideId === resolvedGuideId,
-      );
 
     if (!existing && importedStructure.length === 0) {
       throw new Error(

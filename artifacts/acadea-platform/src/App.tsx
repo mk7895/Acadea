@@ -6592,7 +6592,8 @@ function MenteeSection({
         .map((template: any) => ({
           ...template,
           visibleRows: (template.visibleRows ?? []).filter((row: any) => rowAppliesToGuide(row, guide)),
-        })),
+        }))
+        .filter((template: any) => (template.visibleRows ?? []).some((row: any) => row.level === "item")),
     ]),
   );
   const offeredGuides = (guides ?? []).filter((guide: any) => guideHasOffer(guide));

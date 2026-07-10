@@ -1,0 +1,3431 @@
+{
+  "version": 1,
+  "guides": [
+    {
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "programName": "International Business Administration (IBA)",
+      "slug": "iba-erasmus-university-rotterdam",
+      "title": "IBA - Erasmus University Rotterdam",
+      "emailSenderDomains": [
+        "eur.nl",
+        "rsm.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Business Administration",
+      "slug": "business-administration-university-of-amsterdam",
+      "title": "Business Administration - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Business Analytics",
+      "slug": "business-analytics-university-of-amsterdam",
+      "title": "Business Analytics - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "programName": "International Business Administration",
+      "slug": "international-business-administration-tilburg-university",
+      "title": "International Business Administration - Tilburg University",
+      "emailSenderDomains": [
+        "tilburguniversity.edu",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "TU Delft",
+      "programName": "Aerospace Engineering",
+      "slug": "aerospace-engineering-tu-delft",
+      "title": "Aerospace Engineering - TU Delft",
+      "emailSenderDomains": [
+        "tudelft.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "TU Delft",
+      "programName": "Computer Science and Engineering",
+      "slug": "computer-science-and-engineering-tu-delft",
+      "title": "Computer Science and Engineering - TU Delft",
+      "emailSenderDomains": [
+        "tudelft.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "TU Delft",
+      "programName": "Earth, Climate and Technology",
+      "slug": "earth-climate-and-technology-tu-delft",
+      "title": "Earth, Climate and Technology - TU Delft",
+      "emailSenderDomains": [
+        "tudelft.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "TU Delft",
+      "programName": "Nanobiology",
+      "slug": "nanobiology-tu-delft",
+      "title": "Nanobiology - TU Delft",
+      "emailSenderDomains": [
+        "tudelft.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Leiden University",
+      "programName": "Archaeology",
+      "slug": "archaeology-leiden-university",
+      "title": "Archaeology - Leiden University",
+      "emailSenderDomains": [
+        "leidenuniv.nl",
+        "universiteitleiden.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Leiden University",
+      "programName": "Arts, Media and Society",
+      "slug": "arts-media-and-society-leiden-university",
+      "title": "Arts, Media and Society - Leiden University",
+      "emailSenderDomains": [
+        "leidenuniv.nl",
+        "universiteitleiden.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Leiden University",
+      "programName": "Dutch Studies",
+      "slug": "dutch-studies-leiden-university",
+      "title": "Dutch Studies - Leiden University",
+      "emailSenderDomains": [
+        "leidenuniv.nl",
+        "universiteitleiden.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Leiden University",
+      "programName": "International Relations and Organisations",
+      "slug": "international-relations-and-organisations-leiden-university",
+      "title": "International Relations and Organisations - Leiden University",
+      "emailSenderDomains": [
+        "leidenuniv.nl",
+        "universiteitleiden.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Leiden University",
+      "programName": "International Studies",
+      "slug": "international-studies-leiden-university",
+      "title": "International Studies - Leiden University",
+      "emailSenderDomains": [
+        "leidenuniv.nl",
+        "universiteitleiden.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Leiden University",
+      "programName": "Liberal Arts and Sciences: Global Challenges",
+      "slug": "liberal-arts-and-sciences-global-challenges-leiden-university",
+      "title": "Liberal Arts and Sciences: Global Challenges - Leiden University",
+      "emailSenderDomains": [
+        "leidenuniv.nl",
+        "universiteitleiden.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Leiden University",
+      "programName": "Linguistics",
+      "slug": "linguistics-leiden-university",
+      "title": "Linguistics - Leiden University",
+      "emailSenderDomains": [
+        "leidenuniv.nl",
+        "universiteitleiden.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Leiden University",
+      "programName": "Philosophy: Global and Comparative Perspectives",
+      "slug": "philosophy-global-and-comparative-perspectives-leiden-university",
+      "title": "Philosophy: Global and Comparative Perspectives - Leiden University",
+      "emailSenderDomains": [
+        "leidenuniv.nl",
+        "universiteitleiden.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Leiden University",
+      "programName": "Psychology",
+      "slug": "psychology-leiden-university",
+      "title": "Psychology - Leiden University",
+      "emailSenderDomains": [
+        "leidenuniv.nl",
+        "universiteitleiden.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Leiden University",
+      "programName": "Security Studies",
+      "slug": "security-studies-leiden-university",
+      "title": "Security Studies - Leiden University",
+      "emailSenderDomains": [
+        "leidenuniv.nl",
+        "universiteitleiden.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Leiden University",
+      "programName": "South and Southeast Asian Studies",
+      "slug": "south-and-southeast-asian-studies-leiden-university",
+      "title": "South and Southeast Asian Studies - Leiden University",
+      "emailSenderDomains": [
+        "leidenuniv.nl",
+        "universiteitleiden.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Leiden University",
+      "programName": "Urban Studies",
+      "slug": "urban-studies-leiden-university",
+      "title": "Urban Studies - Leiden University",
+      "emailSenderDomains": [
+        "leidenuniv.nl",
+        "universiteitleiden.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Actuarial Science",
+      "slug": "actuarial-science-university-of-amsterdam",
+      "title": "Actuarial Science - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Ancient Studies",
+      "slug": "ancient-studies-university-of-amsterdam",
+      "title": "Ancient Studies - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Archaeology",
+      "slug": "archaeology-university-of-amsterdam",
+      "title": "Archaeology - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Computational Social Science",
+      "slug": "computational-social-science-university-of-amsterdam",
+      "title": "Computational Social Science - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Cultural Anthropology and Development Sociology",
+      "slug": "cultural-anthropology-and-development-sociology-university-of-amsterdam",
+      "title": "Cultural Anthropology and Development Sociology - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Econometrics and Data Science",
+      "slug": "econometrics-and-data-science-university-of-amsterdam",
+      "title": "Econometrics and Data Science - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Economics and Business Economics",
+      "slug": "economics-and-business-economics-university-of-amsterdam",
+      "title": "Economics and Business Economics - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "English Language and Culture",
+      "slug": "english-language-and-culture-university-of-amsterdam",
+      "title": "English Language and Culture - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "European Studies",
+      "slug": "european-studies-university-of-amsterdam",
+      "title": "European Studies - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Future Planet Studies",
+      "slug": "future-planet-studies-university-of-amsterdam",
+      "title": "Future Planet Studies - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Global Arts, Culture and Politics",
+      "slug": "global-arts-culture-and-politics-university-of-amsterdam",
+      "title": "Global Arts, Culture and Politics - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Global Communication Science",
+      "slug": "global-communication-science-university-of-amsterdam",
+      "title": "Global Communication Science - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Human Geography and Planning",
+      "slug": "human-geography-and-planning-university-of-amsterdam",
+      "title": "Human Geography and Planning - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Liberal Arts and Sciences (Amsterdam University College)",
+      "slug": "liberal-arts-and-sciences-amsterdam-university-college-university-of-amsterdam",
+      "title": "Liberal Arts and Sciences (Amsterdam University College) - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "auc.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Linguistics",
+      "slug": "linguistics-university-of-amsterdam",
+      "title": "Linguistics - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Literary and Cultural Analysis",
+      "slug": "literary-and-cultural-analysis-university-of-amsterdam",
+      "title": "Literary and Cultural Analysis - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Media and Culture",
+      "slug": "media-and-culture-university-of-amsterdam",
+      "title": "Media and Culture - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Media and Information",
+      "slug": "media-and-information-university-of-amsterdam",
+      "title": "Media and Information - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Political Science",
+      "slug": "political-science-university-of-amsterdam",
+      "title": "Political Science - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Politics, Psychology, Law and Economics (PPLE)",
+      "slug": "politics-psychology-law-and-economics-pple-university-of-amsterdam",
+      "title": "Politics, Psychology, Law and Economics (PPLE) - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Psychology",
+      "slug": "psychology-university-of-amsterdam",
+      "title": "Psychology - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Sign Language Linguistics",
+      "slug": "sign-language-linguistics-university-of-amsterdam",
+      "title": "Sign Language Linguistics - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Amsterdam",
+      "programName": "Sociology",
+      "slug": "sociology-university-of-amsterdam",
+      "title": "Sociology - University of Amsterdam",
+      "emailSenderDomains": [
+        "uva.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Utrecht University",
+      "programName": "College of Pharmaceutical Sciences",
+      "slug": "college-of-pharmaceutical-sciences-utrecht-university",
+      "title": "College of Pharmaceutical Sciences - Utrecht University",
+      "emailSenderDomains": [
+        "uu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Utrecht University",
+      "programName": "Economics and Business Economics",
+      "slug": "economics-and-business-economics-utrecht-university",
+      "title": "Economics and Business Economics - Utrecht University",
+      "emailSenderDomains": [
+        "uu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Utrecht University",
+      "programName": "Global Sustainability Science",
+      "slug": "global-sustainability-science-utrecht-university",
+      "title": "Global Sustainability Science - Utrecht University",
+      "emailSenderDomains": [
+        "uu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Utrecht University",
+      "programName": "History",
+      "slug": "history-utrecht-university",
+      "title": "History - Utrecht University",
+      "emailSenderDomains": [
+        "uu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Utrecht University",
+      "programName": "Linguistics",
+      "slug": "linguistics-utrecht-university",
+      "title": "Linguistics - Utrecht University",
+      "emailSenderDomains": [
+        "uu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Utrecht University",
+      "programName": "Literary Studies",
+      "slug": "literary-studies-utrecht-university",
+      "title": "Literary Studies - Utrecht University",
+      "emailSenderDomains": [
+        "uu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Utrecht University",
+      "programName": "Media and Culture",
+      "slug": "media-and-culture-utrecht-university",
+      "title": "Media and Culture - Utrecht University",
+      "emailSenderDomains": [
+        "uu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Utrecht University",
+      "programName": "Molecular and Biophysical Life Sciences",
+      "slug": "molecular-and-biophysical-life-sciences-utrecht-university",
+      "title": "Molecular and Biophysical Life Sciences - Utrecht University",
+      "emailSenderDomains": [
+        "uu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Utrecht University",
+      "programName": "Philosophy, Politics and Economics",
+      "slug": "philosophy-politics-and-economics-utrecht-university",
+      "title": "Philosophy, Politics and Economics - Utrecht University",
+      "emailSenderDomains": [
+        "uu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Utrecht University",
+      "programName": "University College Roosevelt",
+      "slug": "university-college-roosevelt-utrecht-university",
+      "title": "University College Roosevelt - Utrecht University",
+      "emailSenderDomains": [
+        "uu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Utrecht University",
+      "programName": "University College Utrecht",
+      "slug": "university-college-utrecht-utrecht-university",
+      "title": "University College Utrecht - Utrecht University",
+      "emailSenderDomains": [
+        "uu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "American Studies",
+      "slug": "american-studies-university-of-groningen",
+      "title": "American Studies - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Art History",
+      "slug": "art-history-university-of-groningen",
+      "title": "Art History - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Arts, Culture and Media",
+      "slug": "arts-culture-and-media-university-of-groningen",
+      "title": "Arts, Culture and Media - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Communication and Information Studies",
+      "slug": "communication-and-information-studies-university-of-groningen",
+      "title": "Communication and Information Studies - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "English Language and Culture",
+      "slug": "english-language-and-culture-university-of-groningen",
+      "title": "English Language and Culture - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "European Languages and Cultures",
+      "slug": "european-languages-and-cultures-university-of-groningen",
+      "title": "European Languages and Cultures - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "History",
+      "slug": "history-university-of-groningen",
+      "title": "History - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "International Relations and International Organization",
+      "slug": "international-relations-and-international-organization-university-of-groningen",
+      "title": "International Relations and International Organization - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Media Studies",
+      "slug": "media-studies-university-of-groningen",
+      "title": "Media Studies - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Data Science and Society",
+      "slug": "data-science-and-society-university-of-groningen",
+      "title": "Data Science and Society - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Global Responsibility and Leadership",
+      "slug": "global-responsibility-and-leadership-university-of-groningen",
+      "title": "Global Responsibility and Leadership - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Econometrics and Operations Research",
+      "slug": "econometrics-and-operations-research-university-of-groningen",
+      "title": "Econometrics and Operations Research - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Economics and Business Economics",
+      "slug": "economics-and-business-economics-university-of-groningen",
+      "title": "Economics and Business Economics - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "International Business",
+      "slug": "international-business-university-of-groningen",
+      "title": "International Business - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Applied Mathematics",
+      "slug": "applied-mathematics-university-of-groningen",
+      "title": "Applied Mathematics - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Applied Physics",
+      "slug": "applied-physics-university-of-groningen",
+      "title": "Applied Physics - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Artificial Intelligence",
+      "slug": "artificial-intelligence-university-of-groningen",
+      "title": "Artificial Intelligence - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Astronomy",
+      "slug": "astronomy-university-of-groningen",
+      "title": "Astronomy - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Biology",
+      "slug": "biology-university-of-groningen",
+      "title": "Biology - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Biomedical Engineering",
+      "slug": "biomedical-engineering-university-of-groningen",
+      "title": "Biomedical Engineering - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Chemical Engineering",
+      "slug": "chemical-engineering-university-of-groningen",
+      "title": "Chemical Engineering - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Chemistry",
+      "slug": "chemistry-university-of-groningen",
+      "title": "Chemistry - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Computing Science",
+      "slug": "computing-science-university-of-groningen",
+      "title": "Computing Science - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Industrial Engineering and Management",
+      "slug": "industrial-engineering-and-management-university-of-groningen",
+      "title": "Industrial Engineering and Management - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Life Science and Technology",
+      "slug": "life-science-and-technology-university-of-groningen",
+      "title": "Life Science and Technology - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Mathematics",
+      "slug": "mathematics-university-of-groningen",
+      "title": "Mathematics - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Physics",
+      "slug": "physics-university-of-groningen",
+      "title": "Physics - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Human Geography and Planning",
+      "slug": "human-geography-and-planning-university-of-groningen",
+      "title": "Human Geography and Planning - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Spatial Planning and Design",
+      "slug": "spatial-planning-and-design-university-of-groningen",
+      "title": "Spatial Planning and Design - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Psychology",
+      "slug": "psychology-university-of-groningen",
+      "title": "Psychology - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Philosophy of a Specific Discipline",
+      "slug": "philosophy-of-a-specific-discipline-university-of-groningen",
+      "title": "Philosophy of a Specific Discipline - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "International and European Law",
+      "slug": "international-and-european-law-university-of-groningen",
+      "title": "International and European Law - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Religious Studies",
+      "slug": "religious-studies-university-of-groningen",
+      "title": "Religious Studies - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Groningen",
+      "programName": "Liberal Arts and Sciences",
+      "slug": "liberal-arts-and-sciences-university-of-groningen",
+      "title": "Liberal Arts and Sciences - University of Groningen",
+      "emailSenderDomains": [
+        "rug.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "programName": "International Bachelor Communication and Media",
+      "slug": "international-bachelor-communication-and-media-erasmus-university-rotterdam",
+      "title": "International Bachelor Communication and Media - Erasmus University Rotterdam",
+      "emailSenderDomains": [
+        "eur.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "programName": "International Bachelor Economics and Business Economics",
+      "slug": "international-bachelor-economics-and-business-economics-erasmus-university-rotterdam",
+      "title": "International Bachelor Economics and Business Economics - Erasmus University Rotterdam",
+      "emailSenderDomains": [
+        "eur.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "programName": "International Bachelor Econometrics and Operations Research",
+      "slug": "international-bachelor-econometrics-and-operations-research-erasmus-university-rotterdam",
+      "title": "International Bachelor Econometrics and Operations Research - Erasmus University Rotterdam",
+      "emailSenderDomains": [
+        "eur.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "programName": "Nanobiology",
+      "slug": "nanobiology-erasmus-university-rotterdam",
+      "title": "Nanobiology - Erasmus University Rotterdam",
+      "emailSenderDomains": [
+        "eur.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "programName": "Double bachelor BSc2 in Econometrics and Economics",
+      "slug": "double-bachelor-bsc2-in-econometrics-and-economics-erasmus-university-rotterdam",
+      "title": "Double bachelor BSc2 in Econometrics and Economics - Erasmus University Rotterdam",
+      "emailSenderDomains": [
+        "eur.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "programName": "International Bachelor Arts and Culture Studies",
+      "slug": "international-bachelor-arts-and-culture-studies-erasmus-university-rotterdam",
+      "title": "International Bachelor Arts and Culture Studies - Erasmus University Rotterdam",
+      "emailSenderDomains": [
+        "eur.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "programName": "International Bachelor History",
+      "slug": "international-bachelor-history-erasmus-university-rotterdam",
+      "title": "International Bachelor History - Erasmus University Rotterdam",
+      "emailSenderDomains": [
+        "eur.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "programName": "International Bachelor in Psychology",
+      "slug": "international-bachelor-in-psychology-erasmus-university-rotterdam",
+      "title": "International Bachelor in Psychology - Erasmus University Rotterdam",
+      "emailSenderDomains": [
+        "eur.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "programName": "Management of International Social Challenges",
+      "slug": "management-of-international-social-challenges-erasmus-university-rotterdam",
+      "title": "Management of International Social Challenges - Erasmus University Rotterdam",
+      "emailSenderDomains": [
+        "eur.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "programName": "Dual Degree in Arts and Sciences",
+      "slug": "dual-degree-in-arts-and-sciences-erasmus-university-rotterdam",
+      "title": "Dual Degree in Arts and Sciences - Erasmus University Rotterdam",
+      "emailSenderDomains": [
+        "eur.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "programName": "Double bachelor in Economics and Philosophy of Economics",
+      "slug": "double-bachelor-in-economics-and-philosophy-of-economics-erasmus-university-rotterdam",
+      "title": "Double bachelor in Economics and Philosophy of Economics - Erasmus University Rotterdam",
+      "emailSenderDomains": [
+        "eur.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "programName": "Double bachelor in Econometrics and Philosophy of Econometrics",
+      "slug": "double-bachelor-in-econometrics-and-philosophy-of-econometrics-erasmus-university-rotterdam",
+      "title": "Double bachelor in Econometrics and Philosophy of Econometrics - Erasmus University Rotterdam",
+      "emailSenderDomains": [
+        "eur.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Erasmus University Rotterdam",
+      "programName": "Liberal Arts and Sciences",
+      "slug": "liberal-arts-and-sciences-erasmus-university-rotterdam",
+      "title": "Liberal Arts and Sciences - Erasmus University Rotterdam",
+      "emailSenderDomains": [
+        "eur.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "programName": "Cognitive Science and Artificial Intelligence",
+      "slug": "cognitive-science-and-artificial-intelligence-tilburg-university",
+      "title": "Cognitive Science and Artificial Intelligence - Tilburg University",
+      "emailSenderDomains": [
+        "tilburguniversity.edu",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "programName": "Data Science",
+      "slug": "data-science-tilburg-university",
+      "title": "Data Science - Tilburg University",
+      "emailSenderDomains": [
+        "tilburguniversity.edu",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "programName": "Digital Culture and Society",
+      "slug": "digital-culture-and-society-tilburg-university",
+      "title": "Digital Culture and Society - Tilburg University",
+      "emailSenderDomains": [
+        "tilburguniversity.edu",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "programName": "Econometrics and Operations Research",
+      "slug": "econometrics-and-operations-research-tilburg-university",
+      "title": "Econometrics and Operations Research - Tilburg University",
+      "emailSenderDomains": [
+        "tilburguniversity.edu",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "programName": "Economics",
+      "slug": "economics-tilburg-university",
+      "title": "Economics - Tilburg University",
+      "emailSenderDomains": [
+        "tilburguniversity.edu",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "programName": "Entrepreneurship and Business Innovation",
+      "slug": "entrepreneurship-and-business-innovation-tilburg-university",
+      "title": "Entrepreneurship and Business Innovation - Tilburg University",
+      "emailSenderDomains": [
+        "tilburguniversity.edu",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "programName": "Global Law",
+      "slug": "global-law-tilburg-university",
+      "title": "Global Law - Tilburg University",
+      "emailSenderDomains": [
+        "tilburguniversity.edu",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "programName": "Global Management of Social Issues",
+      "slug": "global-management-of-social-issues-tilburg-university",
+      "title": "Global Management of Social Issues - Tilburg University",
+      "emailSenderDomains": [
+        "tilburguniversity.edu",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "programName": "International Sociology",
+      "slug": "international-sociology-tilburg-university",
+      "title": "International Sociology - Tilburg University",
+      "emailSenderDomains": [
+        "tilburguniversity.edu",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "programName": "Psychology",
+      "slug": "psychology-tilburg-university",
+      "title": "Psychology - Tilburg University",
+      "emailSenderDomains": [
+        "tilburguniversity.edu",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Tilburg University",
+      "programName": "University College Tilburg: Liberal Arts and Sciences",
+      "slug": "university-college-tilburg-liberal-arts-and-sciences-tilburg-university",
+      "title": "University College Tilburg: Liberal Arts and Sciences - Tilburg University",
+      "emailSenderDomains": [
+        "tilburguniversity.edu",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Arts and Culture",
+      "slug": "arts-and-culture-maastricht-university",
+      "title": "Arts and Culture - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Biomedical Sciences",
+      "slug": "biomedical-sciences-maastricht-university",
+      "title": "Biomedical Sciences - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Brain Science",
+      "slug": "brain-science-maastricht-university",
+      "title": "Brain Science - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Business Analytics",
+      "slug": "business-analytics-maastricht-university",
+      "title": "Business Analytics - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Business Engineering",
+      "slug": "business-engineering-maastricht-university",
+      "title": "Business Engineering - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Circular Engineering",
+      "slug": "circular-engineering-maastricht-university",
+      "title": "Circular Engineering - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Computer Science",
+      "slug": "computer-science-maastricht-university",
+      "title": "Computer Science - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Data Science and Artificial Intelligence",
+      "slug": "data-science-and-artificial-intelligence-maastricht-university",
+      "title": "Data Science and Artificial Intelligence - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Digital Society",
+      "slug": "digital-society-maastricht-university",
+      "title": "Digital Society - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Econometrics and Operations Research",
+      "slug": "econometrics-and-operations-research-maastricht-university",
+      "title": "Econometrics and Operations Research - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Economics and Business Economics",
+      "slug": "economics-and-business-economics-maastricht-university",
+      "title": "Economics and Business Economics - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "European Law School",
+      "slug": "european-law-school-maastricht-university",
+      "title": "European Law School - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "European Public Health",
+      "slug": "european-public-health-maastricht-university",
+      "title": "European Public Health - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "European Studies",
+      "slug": "european-studies-maastricht-university",
+      "title": "European Studies - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Global Studies",
+      "slug": "global-studies-maastricht-university",
+      "title": "Global Studies - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "International Business",
+      "slug": "international-business-maastricht-university",
+      "title": "International Business - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Maastricht Science Programme",
+      "slug": "maastricht-science-programme-maastricht-university",
+      "title": "Maastricht Science Programme - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Psychology",
+      "slug": "psychology-maastricht-university",
+      "title": "Psychology - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Regenerative Medicine and Technology",
+      "slug": "regenerative-medicine-and-technology-maastricht-university",
+      "title": "Regenerative Medicine and Technology - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Sustainable Bioscience",
+      "slug": "sustainable-bioscience-maastricht-university",
+      "title": "Sustainable Bioscience - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "University College Maastricht",
+      "slug": "university-college-maastricht-maastricht-university",
+      "title": "University College Maastricht - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "University College Venlo",
+      "slug": "university-college-venlo-maastricht-university",
+      "title": "University College Venlo - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Maastricht University",
+      "programName": "Urban Sustainability Studies",
+      "slug": "urban-sustainability-studies-maastricht-university",
+      "title": "Urban Sustainability Studies - Maastricht University",
+      "emailSenderDomains": [
+        "maastrichtuniversity.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Ancient Studies",
+      "slug": "ancient-studies-vrije-universiteit-amsterdam",
+      "title": "Ancient Studies - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Archaeology",
+      "slug": "archaeology-vrije-universiteit-amsterdam",
+      "title": "Archaeology - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Artificial Intelligence",
+      "slug": "artificial-intelligence-vrije-universiteit-amsterdam",
+      "title": "Artificial Intelligence - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Business Analytics",
+      "slug": "business-analytics-vrije-universiteit-amsterdam",
+      "title": "Business Analytics - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Communication Science",
+      "slug": "communication-science-vrije-universiteit-amsterdam",
+      "title": "Communication Science - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Communication and Information Studies",
+      "slug": "communication-and-information-studies-vrije-universiteit-amsterdam",
+      "title": "Communication and Information Studies - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Computer Science",
+      "slug": "computer-science-vrije-universiteit-amsterdam",
+      "title": "Computer Science - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Creative Technology",
+      "slug": "creative-technology-vrije-universiteit-amsterdam",
+      "title": "Creative Technology - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Cultural Anthropology and Development Sociology",
+      "slug": "cultural-anthropology-and-development-sociology-vrije-universiteit-amsterdam",
+      "title": "Cultural Anthropology and Development Sociology - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Econometrics and Data Science",
+      "slug": "econometrics-and-data-science-vrije-universiteit-amsterdam",
+      "title": "Econometrics and Data Science - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Econometrics and Operations Research",
+      "slug": "econometrics-and-operations-research-vrije-universiteit-amsterdam",
+      "title": "Econometrics and Operations Research - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Economics and Business Economics",
+      "slug": "economics-and-business-economics-vrije-universiteit-amsterdam",
+      "title": "Economics and Business Economics - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "History and International Studies",
+      "slug": "history-and-international-studies-vrije-universiteit-amsterdam",
+      "title": "History and International Studies - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "International Business Administration",
+      "slug": "international-business-administration-vrije-universiteit-amsterdam",
+      "title": "International Business Administration - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Law in Society",
+      "slug": "law-in-society-vrije-universiteit-amsterdam",
+      "title": "Law in Society - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Literature and Society",
+      "slug": "literature-and-society-vrije-universiteit-amsterdam",
+      "title": "Literature and Society - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Mathematics",
+      "slug": "mathematics-vrije-universiteit-amsterdam",
+      "title": "Mathematics - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Mechanical Engineering",
+      "slug": "mechanical-engineering-vrije-universiteit-amsterdam",
+      "title": "Mechanical Engineering - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Media, Art, Design and Architecture",
+      "slug": "media-art-design-and-architecture-vrije-universiteit-amsterdam",
+      "title": "Media, Art, Design and Architecture - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Philosophy",
+      "slug": "philosophy-vrije-universiteit-amsterdam",
+      "title": "Philosophy - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Philosophy, Politics and Economics",
+      "slug": "philosophy-politics-and-economics-vrije-universiteit-amsterdam",
+      "title": "Philosophy, Politics and Economics - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Political Science: Global Politics",
+      "slug": "political-science-global-politics-vrije-universiteit-amsterdam",
+      "title": "Political Science: Global Politics - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Vrije Universiteit Amsterdam",
+      "programName": "Psychology",
+      "slug": "psychology-vrije-universiteit-amsterdam",
+      "title": "Psychology - Vrije Universiteit Amsterdam",
+      "emailSenderDomains": [
+        "vu.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "Advanced Technology",
+      "slug": "advanced-technology-university-of-twente",
+      "title": "Advanced Technology - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "Applied Mathematics",
+      "slug": "applied-mathematics-university-of-twente",
+      "title": "Applied Mathematics - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "Business Information Technology",
+      "slug": "business-information-technology-university-of-twente",
+      "title": "Business Information Technology - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "Chemical Science and Engineering",
+      "slug": "chemical-science-and-engineering-university-of-twente",
+      "title": "Chemical Science and Engineering - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "Civil Engineering",
+      "slug": "civil-engineering-university-of-twente",
+      "title": "Civil Engineering - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "Communication Science",
+      "slug": "communication-science-university-of-twente",
+      "title": "Communication Science - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "Creative Technology",
+      "slug": "creative-technology-university-of-twente",
+      "title": "Creative Technology - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "Electrical Engineering",
+      "slug": "electrical-engineering-university-of-twente",
+      "title": "Electrical Engineering - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "Industrial Design Engineering",
+      "slug": "industrial-design-engineering-university-of-twente",
+      "title": "Industrial Design Engineering - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "Industrial Engineering and Management",
+      "slug": "industrial-engineering-and-management-university-of-twente",
+      "title": "Industrial Engineering and Management - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "International Business Administration",
+      "slug": "international-business-administration-university-of-twente",
+      "title": "International Business Administration - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "Mechanical Engineering",
+      "slug": "mechanical-engineering-university-of-twente",
+      "title": "Mechanical Engineering - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "Psychology",
+      "slug": "psychology-university-of-twente",
+      "title": "Psychology - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "Public Administration",
+      "slug": "public-administration-university-of-twente",
+      "title": "Public Administration - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "University of Twente",
+      "programName": "Technical Computer Science",
+      "slug": "technical-computer-science-university-of-twente",
+      "title": "Technical Computer Science - University of Twente",
+      "emailSenderDomains": [
+        "utwente.nl",
+        "studielink.nl"
+      ]
+    },
+    {
+      "country": "Holandia",
+      "universityName": "Utrecht University",
+      "programName": "English Language and Culture",
+      "slug": "english-language-and-culture-utrecht-university",
+      "title": "English Language and Culture - Utrecht University",
+      "emailSenderDomains": [
+        "uu.nl",
+        "studielink.nl"
+      ],
+      "insertBeforeGuideSlug": "college-of-pharmaceutical-sciences-utrecht-university"
+    },
+    {
+      "title": "University of Oxford",
+      "slug": "university-of-oxford",
+      "country": "Wielka Brytania",
+      "universityName": "University of Oxford",
+      "emailSenderDomains": [
+        "ox.ac.uk"
+      ],
+      "insertAfterGuideSlug": "international-business-administration-tilburg-university",
+      "summary": "Przewodnik ACADEA dla aplikacji na University of Oxford.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **University of Oxford**.\n\nProces aplikacji rozpoczyna się w portalu UCAS, a następnie przechodzi do wymagań programu oraz ewentualnego portalu uczelni.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Rozpocznij aplikację przez UCAS",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "University of Cambridge",
+      "slug": "university-of-cambridge",
+      "country": "Wielka Brytania",
+      "universityName": "University of Cambridge",
+      "emailSenderDomains": [
+        "cam.ac.uk"
+      ],
+      "insertAfterGuideSlug": "university-of-oxford",
+      "summary": "Przewodnik ACADEA dla aplikacji na University of Cambridge.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **University of Cambridge**.\n\nProces aplikacji rozpoczyna się w portalu UCAS, a następnie przechodzi do wymagań programu oraz ewentualnego portalu uczelni.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Rozpocznij aplikację przez UCAS",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Imperial College London",
+      "slug": "imperial-college-london",
+      "country": "Wielka Brytania",
+      "universityName": "Imperial College London",
+      "emailSenderDomains": [
+        "imperial.ac.uk"
+      ],
+      "insertAfterGuideSlug": "university-of-cambridge",
+      "summary": "Przewodnik ACADEA dla aplikacji na Imperial College London.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Imperial College London**.\n\nProces aplikacji rozpoczyna się w portalu UCAS, a następnie przechodzi do wymagań programu oraz ewentualnego portalu uczelni.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Rozpocznij aplikację przez UCAS",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "London School of Economics",
+      "slug": "london-school-of-economics",
+      "country": "Wielka Brytania",
+      "universityName": "London School of Economics",
+      "emailSenderDomains": [
+        "lse.ac.uk"
+      ],
+      "insertAfterGuideSlug": "imperial-college-london",
+      "summary": "Przewodnik ACADEA dla aplikacji na London School of Economics.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **London School of Economics**.\n\nProces aplikacji rozpoczyna się w portalu UCAS, a następnie przechodzi do wymagań programu oraz ewentualnego portalu uczelni.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Rozpocznij aplikację przez UCAS",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "UCL",
+      "slug": "ucl",
+      "country": "Wielka Brytania",
+      "universityName": "UCL",
+      "emailSenderDomains": [
+        "ucl.ac.uk"
+      ],
+      "insertAfterGuideSlug": "london-school-of-economics",
+      "summary": "Przewodnik ACADEA dla aplikacji na UCL.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **UCL**.\n\nProces aplikacji rozpoczyna się w portalu UCAS, a następnie przechodzi do wymagań programu oraz ewentualnego portalu uczelni.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Rozpocznij aplikację przez UCAS",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "King's College London",
+      "slug": "king-s-college-london",
+      "country": "Wielka Brytania",
+      "universityName": "King's College London",
+      "emailSenderDomains": [
+        "kcl.ac.uk"
+      ],
+      "insertAfterGuideSlug": "ucl",
+      "summary": "Przewodnik ACADEA dla aplikacji na King's College London.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **King's College London**.\n\nProces aplikacji rozpoczyna się w portalu UCAS, a następnie przechodzi do wymagań programu oraz ewentualnego portalu uczelni.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Rozpocznij aplikację przez UCAS",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Queen Mary University London",
+      "slug": "queen-mary-university-london",
+      "country": "Wielka Brytania",
+      "universityName": "Queen Mary University London",
+      "emailSenderDomains": [
+        "qmul.ac.uk"
+      ],
+      "insertAfterGuideSlug": "king-s-college-london",
+      "summary": "Przewodnik ACADEA dla aplikacji na Queen Mary University London.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Queen Mary University London**.\n\nProces aplikacji rozpoczyna się w portalu UCAS, a następnie przechodzi do wymagań programu oraz ewentualnego portalu uczelni.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Rozpocznij aplikację przez UCAS",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "University of Warwick",
+      "slug": "university-of-warwick",
+      "country": "Wielka Brytania",
+      "universityName": "University of Warwick",
+      "emailSenderDomains": [
+        "warwick.ac.uk"
+      ],
+      "insertAfterGuideSlug": "queen-mary-university-london",
+      "summary": "Przewodnik ACADEA dla aplikacji na University of Warwick.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **University of Warwick**.\n\nProces aplikacji rozpoczyna się w portalu UCAS, a następnie przechodzi do wymagań programu oraz ewentualnego portalu uczelni.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Rozpocznij aplikację przez UCAS",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Durham University",
+      "slug": "durham-university",
+      "country": "Wielka Brytania",
+      "universityName": "Durham University",
+      "emailSenderDomains": [
+        "durham.ac.uk"
+      ],
+      "insertAfterGuideSlug": "university-of-warwick",
+      "summary": "Przewodnik ACADEA dla aplikacji na Durham University.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Durham University**.\n\nProces aplikacji rozpoczyna się w portalu UCAS, a następnie przechodzi do wymagań programu oraz ewentualnego portalu uczelni.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Rozpocznij aplikację przez UCAS",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "University of Bath",
+      "slug": "university-of-bath",
+      "country": "Wielka Brytania",
+      "universityName": "University of Bath",
+      "emailSenderDomains": [
+        "bath.ac.uk"
+      ],
+      "insertAfterGuideSlug": "durham-university",
+      "summary": "Przewodnik ACADEA dla aplikacji na University of Bath.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **University of Bath**.\n\nProces aplikacji rozpoczyna się w portalu UCAS, a następnie przechodzi do wymagań programu oraz ewentualnego portalu uczelni.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Rozpocznij aplikację przez UCAS",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "University of St Andrews",
+      "slug": "university-of-st-andrews",
+      "country": "Wielka Brytania",
+      "universityName": "University of St Andrews",
+      "emailSenderDomains": [
+        "st-andrews.ac.uk"
+      ],
+      "insertAfterGuideSlug": "university-of-bath",
+      "summary": "Przewodnik ACADEA dla aplikacji na University of St Andrews.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **University of St Andrews**.\n\nProces aplikacji rozpoczyna się w portalu UCAS, a następnie przechodzi do wymagań programu oraz ewentualnego portalu uczelni.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Rozpocznij aplikację przez UCAS",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "University of Edinburgh",
+      "slug": "university-of-edinburgh",
+      "country": "Wielka Brytania",
+      "universityName": "University of Edinburgh",
+      "emailSenderDomains": [
+        "ed.ac.uk"
+      ],
+      "insertAfterGuideSlug": "university-of-st-andrews",
+      "summary": "Przewodnik ACADEA dla aplikacji na University of Edinburgh.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **University of Edinburgh**.\n\nProces aplikacji rozpoczyna się w portalu UCAS, a następnie przechodzi do wymagań programu oraz ewentualnego portalu uczelni.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Rozpocznij aplikację przez UCAS",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "University of Manchester",
+      "slug": "university-of-manchester",
+      "country": "Wielka Brytania",
+      "universityName": "University of Manchester",
+      "emailSenderDomains": [
+        "manchester.ac.uk"
+      ],
+      "insertAfterGuideSlug": "university-of-edinburgh",
+      "summary": "Przewodnik ACADEA dla aplikacji na University of Manchester.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **University of Manchester**.\n\nProces aplikacji rozpoczyna się w portalu UCAS, a następnie przechodzi do wymagań programu oraz ewentualnego portalu uczelni.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Rozpocznij aplikację przez UCAS",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Università di Bologna",
+      "slug": "universita-di-bologna",
+      "country": "Włochy",
+      "universityName": "Università di Bologna",
+      "emailSenderDomains": [
+        "unibo.it"
+      ],
+      "insertAfterGuideSlug": "esade-business-and-law-school",
+      "summary": "Przewodnik ACADEA dla aplikacji na Università di Bologna.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Università di Bologna**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Politecnico di Milano",
+      "slug": "politecnico-di-milano",
+      "country": "Włochy",
+      "universityName": "Politecnico di Milano",
+      "emailSenderDomains": [
+        "polimi.it"
+      ],
+      "insertAfterGuideSlug": "universita-di-bologna",
+      "summary": "Przewodnik ACADEA dla aplikacji na Politecnico di Milano.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Politecnico di Milano**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Università La Sapienza",
+      "slug": "universita-la-sapienza",
+      "country": "Włochy",
+      "universityName": "Università La Sapienza",
+      "emailSenderDomains": [
+        "uniroma1.it"
+      ],
+      "insertAfterGuideSlug": "politecnico-di-milano",
+      "summary": "Przewodnik ACADEA dla aplikacji na Università La Sapienza.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Università La Sapienza**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Università di Padova",
+      "slug": "universita-di-padova",
+      "country": "Włochy",
+      "universityName": "Università di Padova",
+      "emailSenderDomains": [
+        "unipd.it"
+      ],
+      "insertAfterGuideSlug": "universita-la-sapienza",
+      "summary": "Przewodnik ACADEA dla aplikacji na Università di Padova.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Università di Padova**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Bocconi University",
+      "slug": "bocconi-university",
+      "country": "Włochy",
+      "universityName": "Bocconi University",
+      "emailSenderDomains": [
+        "bocconi.it"
+      ],
+      "insertAfterGuideSlug": "universita-di-padova",
+      "summary": "Przewodnik ACADEA dla aplikacji na Bocconi University.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Bocconi University**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Università degli Studi di Torino",
+      "slug": "universita-degli-studi-di-torino",
+      "country": "Włochy",
+      "universityName": "Università degli Studi di Torino",
+      "emailSenderDomains": [
+        "unito.it"
+      ],
+      "insertAfterGuideSlug": "bocconi-university",
+      "summary": "Przewodnik ACADEA dla aplikacji na Università degli Studi di Torino.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Università degli Studi di Torino**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Politecnico di Torino",
+      "slug": "politecnico-di-torino",
+      "country": "Włochy",
+      "universityName": "Politecnico di Torino",
+      "emailSenderDomains": [
+        "polito.it"
+      ],
+      "insertAfterGuideSlug": "universita-degli-studi-di-torino",
+      "summary": "Przewodnik ACADEA dla aplikacji na Politecnico di Torino.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Politecnico di Torino**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "MIT",
+      "slug": "mit",
+      "country": "USA",
+      "universityName": "MIT",
+      "emailSenderDomains": [
+        "mit.edu"
+      ],
+      "insertAfterGuideSlug": "york-university",
+      "summary": "Przewodnik ACADEA dla aplikacji na MIT.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **MIT**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Harvard University",
+      "slug": "harvard-university",
+      "country": "USA",
+      "universityName": "Harvard University",
+      "emailSenderDomains": [
+        "harvard.edu"
+      ],
+      "insertAfterGuideSlug": "mit",
+      "summary": "Przewodnik ACADEA dla aplikacji na Harvard University.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Harvard University**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Stanford University",
+      "slug": "stanford-university",
+      "country": "USA",
+      "universityName": "Stanford University",
+      "emailSenderDomains": [
+        "stanford.edu"
+      ],
+      "insertAfterGuideSlug": "harvard-university",
+      "summary": "Przewodnik ACADEA dla aplikacji na Stanford University.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Stanford University**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Columbia University",
+      "slug": "columbia-university",
+      "country": "USA",
+      "universityName": "Columbia University",
+      "emailSenderDomains": [
+        "columbia.edu"
+      ],
+      "insertAfterGuideSlug": "stanford-university",
+      "summary": "Przewodnik ACADEA dla aplikacji na Columbia University.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Columbia University**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "NYU",
+      "slug": "nyu",
+      "country": "USA",
+      "universityName": "NYU",
+      "emailSenderDomains": [
+        "nyu.edu"
+      ],
+      "insertAfterGuideSlug": "columbia-university",
+      "summary": "Przewodnik ACADEA dla aplikacji na NYU.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **NYU**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Yale University",
+      "slug": "yale-university",
+      "country": "USA",
+      "universityName": "Yale University",
+      "emailSenderDomains": [
+        "yale.edu"
+      ],
+      "insertAfterGuideSlug": "nyu",
+      "summary": "Przewodnik ACADEA dla aplikacji na Yale University.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Yale University**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "University of Pennsylvania",
+      "slug": "university-of-pennsylvania",
+      "country": "USA",
+      "universityName": "University of Pennsylvania",
+      "emailSenderDomains": [
+        "upenn.edu"
+      ],
+      "insertAfterGuideSlug": "yale-university",
+      "summary": "Przewodnik ACADEA dla aplikacji na University of Pennsylvania.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **University of Pennsylvania**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Dartmouth College",
+      "slug": "dartmouth-college",
+      "country": "USA",
+      "universityName": "Dartmouth College",
+      "emailSenderDomains": [
+        "dartmouth.edu"
+      ],
+      "insertAfterGuideSlug": "university-of-pennsylvania",
+      "summary": "Przewodnik ACADEA dla aplikacji na Dartmouth College.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Dartmouth College**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Princeton University",
+      "slug": "princeton-university",
+      "country": "USA",
+      "universityName": "Princeton University",
+      "emailSenderDomains": [
+        "princeton.edu"
+      ],
+      "insertAfterGuideSlug": "dartmouth-college",
+      "summary": "Przewodnik ACADEA dla aplikacji na Princeton University.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Princeton University**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Caltech",
+      "slug": "caltech",
+      "country": "USA",
+      "universityName": "Caltech",
+      "emailSenderDomains": [
+        "caltech.edu"
+      ],
+      "insertAfterGuideSlug": "princeton-university",
+      "summary": "Przewodnik ACADEA dla aplikacji na Caltech.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Caltech**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Carnegie Mellon University",
+      "slug": "carnegie-mellon-university",
+      "country": "USA",
+      "universityName": "Carnegie Mellon University",
+      "emailSenderDomains": [
+        "cmu.edu"
+      ],
+      "insertAfterGuideSlug": "caltech",
+      "summary": "Przewodnik ACADEA dla aplikacji na Carnegie Mellon University.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Carnegie Mellon University**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "UCLA",
+      "slug": "ucla",
+      "country": "USA",
+      "universityName": "UCLA",
+      "emailSenderDomains": [
+        "ucla.edu"
+      ],
+      "insertAfterGuideSlug": "carnegie-mellon-university",
+      "summary": "Przewodnik ACADEA dla aplikacji na UCLA.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **UCLA**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "UC Berkeley",
+      "slug": "uc-berkeley",
+      "country": "USA",
+      "universityName": "UC Berkeley",
+      "emailSenderDomains": [
+        "berkeley.edu"
+      ],
+      "insertAfterGuideSlug": "ucla",
+      "summary": "Przewodnik ACADEA dla aplikacji na UC Berkeley.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **UC Berkeley**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Georgia Tech",
+      "slug": "georgia-tech",
+      "country": "USA",
+      "universityName": "Georgia Tech",
+      "emailSenderDomains": [
+        "gatech.edu"
+      ],
+      "insertAfterGuideSlug": "uc-berkeley",
+      "summary": "Przewodnik ACADEA dla aplikacji na Georgia Tech.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Georgia Tech**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Johns Hopkins University",
+      "slug": "johns-hopkins-university",
+      "country": "USA",
+      "universityName": "Johns Hopkins University",
+      "emailSenderDomains": [
+        "jhu.edu"
+      ],
+      "insertAfterGuideSlug": "georgia-tech",
+      "summary": "Przewodnik ACADEA dla aplikacji na Johns Hopkins University.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Johns Hopkins University**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    },
+    {
+      "title": "Northwestern University",
+      "slug": "northwestern-university",
+      "country": "USA",
+      "universityName": "Northwestern University",
+      "emailSenderDomains": [
+        "northwestern.edu"
+      ],
+      "insertAfterGuideSlug": "johns-hopkins-university",
+      "summary": "Przewodnik ACADEA dla aplikacji na Northwestern University.",
+      "descriptionMarkdown": "Przewodnik dotyczy aplikacji na **Northwestern University**.\n\nProces aplikacji obejmuje sprawdzenie wymagań programu, założenie konta w portalu uczelni i skompletowanie dokumentów przed deadlinem.\nW przypadku kierunków artystycznych, architektonicznych albo projektowych warto od razu sprawdzić, czy uczelnia wymaga portfolio, audition albo dodatkowych materiałów.\n\nZnajdziesz tu uporządkowane najważniejsze kroki: dokumenty podstawowe, portal krajowy tam, gdzie obowiązuje, oraz portal uczelni i formalne wysłanie aplikacji.",
+      "estimatedReadMin": 8,
+      "status": "published",
+      "guideType": "admin_template",
+      "isVisibleToUnapprovedUsers": true,
+      "items": [
+        {
+          "sortOrder": 0,
+          "sectionTitle": "Start",
+          "title": "Sprawdź wymagania programu i deadline",
+          "description": "Zweryfikuj język, wymagania przedmiotowe, dodatkowe testy i termin aplikacji przed rozpoczęciem kompletowania dokumentów.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 1,
+          "sectionTitle": "Dokumenty",
+          "title": "Przygotuj dokumenty podstawowe",
+          "description": "Zbierz transkrypty, przewidywane ukończenie szkoły, dokument tożsamości i potwierdzenie języka zgodnie z wymaganiami programu.",
+          "itemType": "todo"
+        },
+        {
+          "sortOrder": 2,
+          "sectionTitle": "Aplikacja",
+          "title": "Załóż konto w portalu uczelni i złóż aplikację",
+          "description": "Przejdź przez wszystkie wymagane kroki w systemie rekrutacyjnym, wgraj dokumenty i upewnij się, że aplikacja została formalnie wysłana.",
+          "itemType": "todo"
+        }
+      ]
+    }
+  ],
+  "operations": {
+    "deleteGuideSlugs": [
+      "tu-munich",
+      "humboldt-universitat-berlin",
+      "universitat-heidelberg",
+      "kit-karlsruhe",
+      "university-college-dublin",
+      "trinity-college-dublin",
+      "university-college-cork",
+      "university-of-galway",
+      "sciences-po",
+      "hec-paris",
+      "universite-psl",
+      "ecole-polytechnique",
+      "sorbonne-university",
+      "eth-zurich",
+      "epfl-lausanne",
+      "universitat-zurich",
+      "universitat-basel",
+      "kth-royal-institute-of-technology",
+      "lund-university",
+      "uppsala-university",
+      "technical-univ-of-denmark-dtu",
+      "univ-of-copenhagen",
+      "aarhus-university",
+      "copenhagen-business-school",
+      "ie-university",
+      "univ-complutense-de-madrid",
+      "universitat-de-barcelona",
+      "esade-business-and-law-school",
+      "universitat-wien",
+      "tu-wien",
+      "wirtschaftsuniversitat-wien",
+      "mci-management-center-innsbruck",
+      "universitat-klagenfurt",
+      "ku-leuven",
+      "universite-libre-de-bruxelles",
+      "ghent-university",
+      "vrije-universiteit-brussel",
+      "university-of-oslo",
+      "ntnu-trondheim",
+      "bi-norwegian-business-school",
+      "charles-university-prague",
+      "czech-technical-university",
+      "universidade-de-lisboa",
+      "universidade-do-porto",
+      "nova-university-lisbon",
+      "aalto-university",
+      "university-of-helsinki",
+      "tampere-university",
+      "university-of-toronto",
+      "mcgill-university",
+      "ubc-vancouver",
+      "university-of-waterloo",
+      "york-university",
+      "peking-university",
+      "tsinghua-university",
+      "fudan-university",
+      "zhejiang-university",
+      "seoul-national-university",
+      "kaist",
+      "yonsei-university",
+      "sungkyunkwan-university-skku",
+      "hanyang-university",
+      "inha-university",
+      "national-university-of-singapore",
+      "nanyang-technological-university",
+      "smu",
+      "university-of-tokyo",
+      "kyoto-university",
+      "waseda-university",
+      "osaka-university",
+      "temple-university-japan",
+      "university-of-melbourne",
+      "university-of-sydney",
+      "anu",
+      "unsw-sydney",
+      "monash-university",
+      "university-of-malta",
+      "mcast",
+      "malta-business-school",
+      "nyu-abu-dhabi",
+      "khalifa-university",
+      "american-university-of-sharjah",
+      "hku",
+      "hkust",
+      "chinese-university-of-hong-kong",
+      "city-university-of-hong-kong"
+    ]
+  },
+  "materialTemplates": []
+}
