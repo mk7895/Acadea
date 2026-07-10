@@ -33,7 +33,7 @@ export default function PrivacyPolicy() {
       <div className="container mx-auto px-4 max-w-3xl">
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 md:p-12">
           <h1 className="text-3xl md:text-4xl font-bold text-primary mb-2">Polityka Prywatności</h1>
-          <p className="text-gray-400 text-sm mb-10">Ostatnia aktualizacja: czerwiec 2026</p>
+          <p className="text-gray-400 text-sm mb-10">Ostatnia aktualizacja: lipiec 2026</p>
 
           <div className="prose prose-gray max-w-none space-y-8 text-gray-600 text-sm leading-relaxed">
             <p>
@@ -49,7 +49,7 @@ export default function PrivacyPolicy() {
                 <li><strong>Serwis</strong> — serwis internetowy „ACADEA" działający pod adresami https://acadea.org oraz https://app.acadea.org, wraz z powiązanymi formularzami, panelem administracyjnym i platformą dla mentorów oraz mentee</li>
                 <li><strong>Serwis zewnętrzny</strong> — serwisy internetowe partnerów, usługodawców lub usługobiorców współpracujących z Administratorem</li>
                 <li><strong>Administrator Serwisu / Danych</strong> — Administratorem Serwisu oraz Administratorem Danych (dalej Administrator) jest <strong>Fundacja Acadea</strong>, KRS: 0001240540, NIP: 8982333798, REGON: 544715960, z siedzibą: Jedności Narodowej 55-57 / 15, 50-262 Wrocław, świadcząca usługi drogą elektroniczną za pośrednictwem Serwisu</li>
-                <li><strong>Użytkownik</strong> — osoba fizyczna, dla której Administrator świadczy usługi drogą elektroniczną za pośrednictwem Serwisu, w tym kandydat(ka), rodzic, mentor(ka), mentee lub administrator platformy</li>
+                <li><strong>Użytkownik</strong> — osoba fizyczna korzystająca z Serwisu, w tym kandydat lub kandydatka do programu stypendialnego, rodzic lub opiekun prawny kandydata, mentor lub mentorka, mentee albo użytkownik platformy</li>
                 <li><strong>Urządzenie</strong> — elektroniczne urządzenie wraz z oprogramowaniem, za pośrednictwem którego Użytkownik uzyskuje dostęp do Serwisu</li>
                 <li><strong>Cookies (ciasteczka)</strong> — dane tekstowe gromadzone w formie plików zamieszczanych na Urządzeniu Użytkownika</li>
                 <li><strong>RODO</strong> — Rozporządzenie Parlamentu Europejskiego i Rady (UE) 2016/679 z dnia 27 kwietnia 2016 r. w sprawie ochrony osób fizycznych w związku z przetwarzaniem danych osobowych</li>
@@ -95,17 +95,39 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-primary mt-8 mb-4">§6 Cele przetwarzania danych osobowych</h2>
-              <p>Dane osobowe dobrowolnie podane przez Użytkowników są przetwarzane w jednym z następujących celów:</p>
-              <ul className="list-disc pl-5 mt-3 space-y-1">
-                <li>Realizacja usług elektronicznych (formularz kontaktowy, rezerwacja spotkań, newsletter, formularz stypendialny, formularz zgłoszenia mentora)</li>
-                <li>Komunikacja Administratora z Użytkownikami w sprawach związanych z Serwisem</li>
-                <li>Obsługa kont użytkowników w platformie `app.acadea.org`, w tym logowania, resetu hasła, zarządzania rolami oraz utrzymania sesji użytkownika</li>
-                <li>Obsługa profili mentorów i mentee, przewodników, materiałów, zapisów na spotkania oraz danych podawanych w ramach procesu aplikacyjnego i mentoringowego</li>
-                <li>Zapewnienie bezpieczeństwa Serwisu, wykrywanie nadużyć oraz ochrona formularzy i logowania przed spamem i automatycznymi atakami</li>
-                <li>Zapewnienie prawnie uzasadnionego interesu Administratora</li>
+              <h2 className="text-xl font-bold text-primary mt-8 mb-4">§6 Cele i podstawy prawne przetwarzania danych osobowych</h2>
+              <p>
+                Dane osobowe podane przez Użytkowników mogą być przetwarzane w następujących celach i na następujących podstawach prawnych:
+              </p>
+              <ul className="list-disc pl-5 mt-3 space-y-2">
+                <li>
+                  obsługa formularza kontaktowego, formularza mentorskiego, newslettera oraz rezerwacji spotkań — na podstawie art. 6 ust. 1 lit. b lub f RODO, w zależności od charakteru zgłoszenia;
+                </li>
+                <li>
+                  przyjęcie i ocena zgłoszenia do Konkursu Stypendialnego ACADEA, kontakt z kandydatem, przeprowadzenie konkursu, wybór stypendystów oraz realizacja programu stypendialnego — na podstawie art. 6 ust. 1 lit. b i f RODO;
+                </li>
+                <li>
+                  w przypadku osoby niepełnoletniej: obsługa i udokumentowanie zgody rodzica lub opiekuna prawnego na udział w konkursie oraz na przetwarzanie danych niezbędnych do przeprowadzenia konkursu — na podstawie art. 6 ust. 1 lit. c, f oraz, gdy jest to wymagane, art. 6 ust. 1 lit. a RODO;
+                </li>
+                <li>
+                  prowadzenie i zabezpieczenie kont użytkowników w platformie <strong>app.acadea.org</strong>, w tym logowanie, reset hasła, utrzymanie sesji, zarządzanie rolami i dostępem do materiałów — na podstawie art. 6 ust. 1 lit. b oraz f RODO;
+                </li>
+                <li>
+                  obsługa przewodników, materiałów, wskazówek, spotkań, skrzynek mailowych i innych danych przetwarzanych w platformie w ramach usług ACADEA — na podstawie art. 6 ust. 1 lit. b oraz f RODO;
+                </li>
+                <li>
+                  zapewnienie bezpieczeństwa Serwisu i platformy, ochrona przed spamem, nadużyciami i automatycznymi atakami, prowadzenie logów technicznych i audytowych — na podstawie art. 6 ust. 1 lit. f RODO;
+                </li>
+                <li>
+                  analityka, statystyka oraz ulepszanie Serwisu — na podstawie art. 6 ust. 1 lit. f RODO, a w zakresie cookies marketingowych lub analitycznych także na podstawie zgody, jeśli jest wymagana;
+                </li>
+                <li>
+                  dochodzenie lub obrona przed roszczeniami oraz wykazanie zgodności działań Administratora z obowiązkami prawnymi — na podstawie art. 6 ust. 1 lit. c i f RODO.
+                </li>
               </ul>
-              <p className="mt-3">Dane o Użytkownikach gromadzone anonimowo i automatycznie są przetwarzane w celach statystycznych oraz remarketingowych.</p>
+              <p className="mt-3">
+                Dane o Użytkownikach gromadzone anonimowo i automatycznie mogą być przetwarzane w celach statystycznych, bezpieczeństwa oraz — jeżeli Użytkownik wyraził odpowiednią zgodę — marketingowych.
+              </p>
             </section>
 
             <section>

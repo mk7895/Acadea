@@ -56,6 +56,9 @@ export default function ScholarshipForm() {
     name: "",
     email: "",
     phone: "",
+    isAdultDeclared: "",
+    parentEmail: "",
+    parentFullName: "",
     school: "",
     averageGrade: "",
     gradeYear: "",
@@ -69,7 +72,7 @@ export default function ScholarshipForm() {
     projects: "",
     motivation: "",
   });
-  const [consent, setConsent] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -83,6 +86,20 @@ export default function ScholarshipForm() {
     const e: Record<string, string> = {};
     if (!form.name.trim() || form.name.trim().length < 2) e.name = "Podaj imię i nazwisko.";
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Podaj poprawny e-mail.";
+    if (!form.isAdultDeclared) {
+      e.isAdultDeclared = "Wskaż, czy masz ukończone 18 lat.";
+    }
+    if (form.isAdultDeclared === "minor") {
+      if (!form.parentFullName.trim() || form.parentFullName.trim().length < 2) {
+        e.parentFullName = "Podaj imię i nazwisko rodzica lub opiekuna prawnego.";
+      }
+      if (
+        !form.parentEmail.trim() ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.parentEmail)
+      ) {
+        e.parentEmail = "Podaj poprawny e-mail rodzica lub opiekuna prawnego.";
+      }
+    }
     if (!form.school.trim()) e.school = "Podaj nazwę szkoły lub liceum.";
     if (!form.field.trim()) e.field = "Napisz, co chcesz studiować.";
     if (!form.noMentorPreference) {
@@ -96,7 +113,10 @@ export default function ScholarshipForm() {
     }
     if (!form.achievements.trim() || form.achievements.trim().length < 10) e.achievements = "Opisz swoje osiągnięcia (min. 10 znaków).";
     if (!form.motivation.trim() || form.motivation.trim().length < 20) e.motivation = "Napisz kilka zdań o sobie (min. 20 znaków).";
-    if (!consent) e.consent = "Zgoda na politykę prywatności jest wymagana.";
+    if (!termsAccepted) {
+      e.termsAccepted =
+        "Akceptacja regulaminu i potwierdzenie zapoznania się z polityką prywatności są wymagane.";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -118,8 +138,18 @@ export default function ScholarshipForm() {
           name: form.name,
           email: form.email,
           phone: form.phone || undefined,
+          isAdultDeclared: form.isAdultDeclared === "adult",
           message: [
             "Zgłoszenie do Konkursu Stypendialnego ACADEA 2026",
+            form.isAdultDeclared === "minor"
+              ? "Status pełnoletności: kandydat(ka) niepełnoletni(a)"
+              : "Status pełnoletności: kandydat(ka) pełnoletni(a)",
+            form.isAdultDeclared === "minor"
+              ? `Rodzic / opiekun prawny: ${form.parentFullName}`
+              : null,
+            form.isAdultDeclared === "minor"
+              ? `E-mail rodzica / opiekuna prawnego: ${form.parentEmail}`
+              : null,
             `Szkoła: ${form.school}`,
             form.averageGrade ? `Średnia ocen za ostatni rok szkolny: ${form.averageGrade}` : null,
             form.gradeYear ? `Klasa / rok ukończenia: ${form.gradeYear}` : null,
@@ -135,10 +165,16 @@ export default function ScholarshipForm() {
             `Osiągnięcia (konkursy, nagrody, olimpiady, publikacje): ${form.achievements}`,
             form.projects ? `Projekty stworzone w wolnym czasie: ${form.projects}` : null,
             `Motywacja: ${form.motivation}`,
-            "Zgoda na politykę prywatności: tak",
+            "Akceptacja regulaminu Konkursu Stypendialnego ACADEA 2026: tak",
+            "Potwierdzenie zapoznania się z polityką prywatności: tak",
+            "Oświadczenie dotyczące osoby niepełnoletniej: jeżeli kandydat jest niepełnoletni, zgłoszenie zostało przesłane za uprzednią zgodą rodzica lub opiekuna prawnego",
           ]
             .filter(Boolean)
             .join("\n"),
+          parentEmail: form.isAdultDeclared === "minor" ? form.parentEmail : undefined,
+          parentFullName: form.isAdultDeclared === "minor" ? form.parentFullName : undefined,
+          privacyPolicyAcknowledged: true,
+          termsAccepted: true,
           type: "scholarship",
           turnstileToken,
         }),
@@ -175,7 +211,7 @@ export default function ScholarshipForm() {
             Aplikuj o stypendium
           </h1>
           <p className="text-gray-500 text-lg max-w-lg mx-auto">
-            Wypełnij formularz. Zgłoszenia rozpatrujemy z indywidualną uwagą dla każdej historii.
+            Formularz jest przeznaczony dla osób, które w roku szkolnym 2026/2027 będą uczniami szkół średnich. Zgłoszenia rozpatrujemy z indywidualną uwagą dla każdej historii.
           </p>
         </motion.div>
 
@@ -192,7 +228,11 @@ export default function ScholarshipForm() {
               </div>
               <h2 className="text-2xl font-bold text-primary mb-2">Zgłoszenie wysłane!</h2>
               <p className="text-gray-500 mb-8">
-                Dziękujemy, <strong>{form.name.split(" ")[0]}</strong>! Zgłoszenie otrzymaliśmy i odezwiemy się do Ciebie po jego przejrzeniu.
+                Dziękujemy, <strong>{form.name.split(" ")[0]}</strong>! Zgłoszenie otrzymaliśmy
+                {form.isAdultDeclared === "minor"
+                  ? `, a na adres ${form.parentEmail} wysłaliśmy link do zgody rodzica lub opiekuna prawnego.`
+                  : "."}{" "}
+                Odezwiemy się do Ciebie po przejrzeniu aplikacji.
               </p>
               <Link href="/">
                 <Button className="rounded-full bg-primary text-white hover:bg-primary/90 font-semibold px-8">
@@ -228,6 +268,84 @@ export default function ScholarshipForm() {
                   </div>
                   <Input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)}
                     placeholder="Telefon" className="rounded-xl" />
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      Czy w dniu wysłania zgłoszenia masz ukończone 18 lat? *
+                    </label>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {[
+                        { value: "adult", label: "Tak, mam ukończone 18 lat" },
+                        { value: "minor", label: "Nie, mam mniej niż 18 lat" },
+                      ].map((option) => (
+                        <label
+                          key={option.value}
+                          className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm leading-relaxed ${
+                            form.isAdultDeclared === option.value
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-gray-200 bg-gray-50 text-gray-600"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="age-status"
+                            value={option.value}
+                            checked={form.isAdultDeclared === option.value}
+                            onChange={(event) =>
+                              setForm((current) => ({
+                                ...current,
+                                isAdultDeclared: event.target.value,
+                                parentEmail:
+                                  event.target.value === "minor"
+                                    ? current.parentEmail
+                                    : "",
+                                parentFullName:
+                                  event.target.value === "minor"
+                                    ? current.parentFullName
+                                    : "",
+                              }))
+                            }
+                            className="mt-1 h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                          />
+                          <span>{option.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {errors.isAdultDeclared ? (
+                      <p className="text-red-500 text-xs mt-1">{errors.isAdultDeclared}</p>
+                    ) : null}
+                  </div>
+                  {form.isAdultDeclared === "minor" ? (
+                    <div className="rounded-2xl border border-accent/40 bg-accent/10 p-4 space-y-3">
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        Dla osoby niepełnoletniej potrzebujemy kontaktu do rodzica lub opiekuna
+                        prawnego. Po wysłaniu zgłoszenia wyślemy na ten adres bezpieczny link do
+                        podpisania formularza zgody.
+                      </p>
+                      <div>
+                        <Input
+                          value={form.parentFullName}
+                          onChange={(e) => set("parentFullName", e.target.value)}
+                          placeholder="Imię i nazwisko rodzica / opiekuna prawnego *"
+                          className={`rounded-xl ${errors.parentFullName ? "border-red-400" : ""}`}
+                        />
+                        {errors.parentFullName ? (
+                          <p className="text-red-500 text-xs mt-1">{errors.parentFullName}</p>
+                        ) : null}
+                      </div>
+                      <div>
+                        <Input
+                          type="email"
+                          value={form.parentEmail}
+                          onChange={(e) => set("parentEmail", e.target.value)}
+                          placeholder="E-mail rodzica / opiekuna prawnego *"
+                          className={`rounded-xl ${errors.parentEmail ? "border-red-400" : ""}`}
+                        />
+                        {errors.parentEmail ? (
+                          <p className="text-red-500 text-xs mt-1">{errors.parentEmail}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -392,19 +510,32 @@ export default function ScholarshipForm() {
                 <label className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 leading-relaxed">
                   <input
                     type="checkbox"
-                    checked={consent}
-                    onChange={(e) => setConsent(e.target.checked)}
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
                     className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
                   <span>
-                    Wyrażam zgodę na przetwarzanie moich danych osobowych zgodnie z{" "}
-                    <Link href="/polityka-prywatnosci" className="font-semibold text-primary hover:underline">
-                      polityką prywatności
+                    Oświadczam, że zapoznałem(-am) się z{" "}
+                    <Link
+                      href="/stypendium/regulamin"
+                      className="font-semibold text-primary hover:underline"
+                    >
+                      Regulaminem Konkursu Stypendialnego ACADEA 2026
+                    </Link>{" "}
+                    i akceptuję jego postanowienia oraz zapoznałem(-am) się z{" "}
+                    <Link
+                      href="/polityka-prywatnosci"
+                      className="font-semibold text-primary hover:underline"
+                    >
+                      Polityką Prywatności
                     </Link>
-                    .
+                    . Jeżeli jestem osobą niepełnoletnią, potwierdzam, że zgłoszenie składam za
+                    uprzednią zgodą rodzica lub opiekuna prawnego. *
                   </span>
                 </label>
-                {errors.consent && <p className="text-red-500 text-xs">{errors.consent}</p>}
+                {errors.termsAccepted ? (
+                  <p className="text-red-500 text-xs">{errors.termsAccepted}</p>
+                ) : null}
               </div>
 
               {submitError && (
@@ -432,7 +563,9 @@ export default function ScholarshipForm() {
                 )}
               </Button>
               <p className="text-center text-xs text-gray-400">
-                Wypełnij formularz. Zgłoszenia rozpatrujemy z indywidualną uwagą dla każdej historii.
+                Zgłoszenia rozpatrujemy indywidualnie. W przypadku osoby niepełnoletniej pełna
+                aktywacja zgłoszenia wymaga podpisu rodzica lub opiekuna prawnego z linku
+                wysłanego e-mailem.
               </p>
             </motion.form>
           )}

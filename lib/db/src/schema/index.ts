@@ -28,3 +28,4 @@ export * from "./mentor-application";
 export * from "./newsletter-signup";
 export * from "./platform";
 export * from "./scholarship-application";
+export * from "./scholarship-parent-consent";

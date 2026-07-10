@@ -83,8 +83,23 @@ export default function ScholarshipTerms() {
             </section>
 
             <section>
-              <h2 className="mb-3 text-xl font-bold text-primary">§2. Zgłoszenia</h2>
+              <h2 className="mb-3 text-xl font-bold text-primary">§2. Uczestnicy i zgłoszenia</h2>
               <ol className="list-decimal space-y-2 pl-5">
+                <li>
+                  Konkurs jest skierowany do osób, które w roku szkolnym 2026/2027 będą uczniami szkół ponadpodstawowych, w szczególności liceów ogólnokształcących, techników lub szkół branżowych.
+                </li>
+                <li>
+                  Warunkiem udziału w konkursie jest posiadanie statusu ucznia szkoły ponadpodstawowej w roku szkolnym 2026/2027. Organizator może poprosić kandydata o przedstawienie dokumentu lub innego potwierdzenia spełnienia tego warunku.
+                </li>
+                <li>
+                  Osoba niepełnoletnia może wziąć udział w konkursie i przesłać zgłoszenie wyłącznie za uprzednią zgodą swojego rodzica lub opiekuna prawnego.
+                </li>
+                <li>
+                  Przesłanie zgłoszenia przez osobę niepełnoletnią oznacza złożenie przez nią oświadczenia, że uzyskała zgodę rodzica lub opiekuna prawnego na udział w konkursie, przesłanie zgłoszenia oraz przetwarzanie danych osobowych niezbędnych do przeprowadzenia konkursu.
+                </li>
+                <li>
+                  Organizator może zażądać przedstawienia potwierdzenia zgody rodzica lub opiekuna prawnego, w szczególności przed przyznaniem albo rozpoczęciem realizacji stypendium. Brak przedstawienia takiego potwierdzenia w wyznaczonym terminie może skutkować nieuwzględnieniem zgłoszenia lub odstąpieniem od przyznania wsparcia.
+                </li>
                 <li>
                   Zgłoszenia są przyjmowane przez formularz dostępny na stronie{" "}
                   <Link href="/stypendium/aplikacja" className="font-semibold text-primary hover:underline">
@@ -104,7 +119,7 @@ export default function ScholarshipTerms() {
                   Wysyłanie wielu zgłoszeń w krótkim czasie, obchodzenie ograniczenia albo składanie aplikacji pod różnymi danymi może skutkować nieuwzględnieniem wszystkich takich zgłoszeń, wykluczeniem z bieżącej rekrutacji, a w powtarzających się przypadkach także trwałą blokadą udziału w kolejnych edycjach programu.
                 </li>
                 <li>
-                  Organizator może pozostawić bez rozpoznania zgłoszenie niekompletne, oczywiście nierzetelne albo naruszające zasady konkursu.
+                  Organizator może pozostawić bez rozpoznania zgłoszenie niekompletne, oczywiście nierzetelne, niespełniające warunków udziału albo naruszające zasady konkursu.
                 </li>
               </ol>
             </section>
@@ -188,10 +203,16 @@ export default function ScholarshipTerms() {
               <h2 className="mb-3 text-xl font-bold text-primary">§7. Dane osobowe</h2>
               <ol className="list-decimal space-y-2 pl-5">
                 <li>
-                  Dane osobowe kandydatów są przetwarzane w celu przeprowadzenia konkursu, kontaktu z kandydatami i realizacji programu stypendialnego.
+                  Administratorem danych osobowych kandydatów jest Fundacja Acadea z siedzibą we Wrocławiu.
                 </li>
                 <li>
-                  Szczegółowe informacje o przetwarzaniu danych znajdują się w{" "}
+                  Dane osobowe kandydatów są przetwarzane w celu przyjęcia i oceny zgłoszeń, przeprowadzenia konkursu, kontaktu z kandydatami, wyboru stypendystów, obrony przed ewentualnymi roszczeniami oraz realizacji programu stypendialnego.
+                </li>
+                <li>
+                  W przypadku kandydatów niepełnoletnich Organizator może przetwarzać także dane rodzica lub opiekuna prawnego, jeżeli są one potrzebne do potwierdzenia zgody na udział w konkursie albo realizacji wsparcia.
+                </li>
+                <li>
+                  Szczegółowe informacje o zasadach, podstawach prawnych i okresach przetwarzania danych znajdują się w{" "}
                   <Link href="/polityka-prywatnosci" className="font-semibold text-primary hover:underline">
                     Polityce Prywatności
                   </Link>.

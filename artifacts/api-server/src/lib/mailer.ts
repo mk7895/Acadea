@@ -516,6 +516,118 @@ export async function sendContactEmails(input: {
   return { organizerSent, autoresponseSent };
 }
 
+export async function sendScholarshipParentConsentEmail(input: {
+  applicantName: string;
+  parentEmail: string;
+  parentFullName: string;
+  consentUrl: string;
+  expiresAt: Date;
+}) {
+  const { senderEmail, notifyEmail } = await resolveOrganizationMailbox();
+
+  if (!notifyEmail || !senderEmail || !(await hasGoogleGmailCredentials())) {
+    logger.warn(
+      "Unable to send scholarship parent consent email because Gmail credentials are incomplete",
+    );
+    return { parentSent: false, organizerSent: false };
+  }
+
+  const expiresAtLabel = input.expiresAt.toLocaleString("pl-PL", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  const parentText = [
+    `Cześć ${input.parentFullName},`,
+    "",
+    `${input.applicantName} wskazał(a) ten adres jako kontakt do rodzica lub opiekuna prawnego w zgłoszeniu do Konkursu Stypendialnego ACADEA 2026.`,
+    "Aby potwierdzić zgodę na udział osoby niepełnoletniej w konkursie, otwórz poniższy link i podpisz formularz:",
+    input.consentUrl,
+    "",
+    `Link wygaśnie: ${expiresAtLabel}.`,
+    "",
+    "Jeżeli to zgłoszenie nie dotyczy Twojego dziecka lub podopiecznego, zignoruj tę wiadomość.",
+    "",
+    "Pozdrawiamy,",
+    "Zespół ACADEA",
+  ].join("\n");
+
+  const parentHtml = renderEmailShell({
+    title: "Prośba o zgodę rodzica lub opiekuna prawnego",
+    intro: `${input.applicantName} wskazał(a) ten adres jako kontakt do rodzica lub opiekuna prawnego w zgłoszeniu do Konkursu Stypendialnego ACADEA 2026.`,
+    summaryRows: [
+      { label: "Kandydat(ka)", value: input.applicantName },
+      { label: "Rodzic / opiekun", value: input.parentFullName },
+      { label: "Link ważny do", value: expiresAtLabel },
+    ],
+    bodyHtml: `
+      <p style="margin:0 0 14px;">Aby potwierdzić zgodę na udział osoby niepełnoletniej w konkursie, otwórz bezpieczny formularz pod tym adresem:</p>
+      <p style="margin:0 0 18px;">
+        <a href="${escapeHtml(input.consentUrl)}" style="display:inline-block; padding:12px 18px; border-radius:999px; background:${BRAND_PRIMARY}; color:#ffffff; text-decoration:none; font-weight:700;">
+          Otwórz formularz zgody
+        </a>
+      </p>
+      <p style="margin:0 0 18px;">
+        Jeśli przycisk nie działa, skopiuj ten adres do przeglądarki:<br />
+        <span style="word-break:break-all;">${escapeHtml(input.consentUrl)}</span>
+      </p>
+      <p style="margin:0;">Jeżeli to zgłoszenie nie dotyczy Twojego dziecka lub podopiecznego, zignoruj tę wiadomość.</p>
+    `,
+  });
+
+  const organizerText = [
+    "Utworzono nową prośbę o zgodę rodzica do zgłoszenia stypendialnego.",
+    "",
+    `Kandydat(ka): ${input.applicantName}`,
+    `Rodzic / opiekun: ${input.parentFullName}`,
+    `E-mail rodzica / opiekuna: ${input.parentEmail}`,
+    `Link ważny do: ${expiresAtLabel}`,
+    "",
+    `Link: ${input.consentUrl}`,
+  ].join("\n");
+
+  const organizerHtml = renderEmailShell({
+    title: "Nowa prośba o zgodę rodzica",
+    intro: "Dla zgłoszenia stypendialnego utworzono i wysłano formularz zgody rodzica lub opiekuna prawnego.",
+    summaryRows: [
+      { label: "Kandydat(ka)", value: input.applicantName },
+      { label: "Rodzic / opiekun", value: input.parentFullName },
+      { label: "E-mail rodzica", value: input.parentEmail },
+      { label: "Link ważny do", value: expiresAtLabel },
+    ],
+    bodyHtml: `<strong>Link do formularza:</strong><br /><br /><a href="${escapeHtml(input.consentUrl)}">${escapeHtml(input.consentUrl)}</a>`,
+  });
+
+  let parentSent = false;
+  let organizerSent = false;
+
+  try {
+    parentSent = await sendGmailMessage({
+      from: senderEmail,
+      to: { email: input.parentEmail, name: input.parentFullName },
+      subject: "ACADEA: potwierdź zgodę rodzica lub opiekuna prawnego",
+      text: parentText,
+      html: parentHtml,
+    });
+  } catch (err) {
+    logger.warn({ err }, "scholarship parent consent email failed");
+  }
+
+  try {
+    organizerSent = await sendGmailMessage({
+      from: senderEmail,
+      to: { email: notifyEmail, name: "ACADEA" },
+      subject: `ACADEA: wysłano formularz zgody rodzica dla ${input.applicantName}`,
+      text: organizerText,
+      html: organizerHtml,
+    });
+  } catch (err) {
+    logger.warn({ err }, "scholarship parent consent organizer email failed");
+  }
+
+  return { organizerSent, parentSent };
+}
+
 export async function sendPlatformPasswordResetEmail(input: {
   email: string;
   fullName: string;

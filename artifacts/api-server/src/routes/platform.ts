@@ -28,6 +28,7 @@ import {
   platformCartItemsTable,
   platformEmailClassifierRulesTable,
   platformUniversityEmailsTable,
+  scholarshipParentConsentsTable,
   platformUsersTable,
   scholarshipApplicationsTable,
   PLATFORM_CHECKLIST_ITEM_TYPES,
@@ -8919,7 +8920,35 @@ router.get(
       case "mentor":
         return res.json(await db.select().from(mentorApplicationsTable).orderBy(desc(mentorApplicationsTable.createdAt)));
       case "scholarship":
-        return res.json(await db.select().from(scholarshipApplicationsTable).orderBy(desc(scholarshipApplicationsTable.createdAt)));
+        const applications = await db
+          .select()
+          .from(scholarshipApplicationsTable)
+          .orderBy(desc(scholarshipApplicationsTable.createdAt));
+        const applicationIds = applications.map((row) => row.id);
+        const consents = applicationIds.length
+          ? await db
+              .select()
+              .from(scholarshipParentConsentsTable)
+              .where(
+                inArray(
+                  scholarshipParentConsentsTable.scholarshipApplicationId,
+                  applicationIds,
+                ),
+              )
+              .orderBy(desc(scholarshipParentConsentsTable.createdAt))
+          : [];
+        const consentByApplicationId = new Map<number, (typeof consents)[number]>();
+        for (const consent of consents) {
+          if (!consentByApplicationId.has(consent.scholarshipApplicationId)) {
+            consentByApplicationId.set(consent.scholarshipApplicationId, consent);
+          }
+        }
+        return res.json(
+          applications.map((application) => ({
+            ...application,
+            parentConsent: consentByApplicationId.get(application.id) ?? null,
+          })),
+        );
       case "newsletter":
         return res.json(await db.select().from(newsletterSignupsTable).orderBy(desc(newsletterSignupsTable.createdAt)));
       case "booking":

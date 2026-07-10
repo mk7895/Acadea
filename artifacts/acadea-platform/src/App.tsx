@@ -756,6 +756,21 @@ function formatDate(value: string | null | undefined) {
   return date.toLocaleString("pl-PL");
 }
 
+function formatParentConsentStatus(value: unknown) {
+  switch (value) {
+    case "signed":
+      return "zgoda rodzica podpisana";
+    case "pending":
+      return "oczekuje na zgodę rodzica";
+    case "expired":
+      return "link zgody rodzica wygasł";
+    case "not_required":
+      return "zgoda rodzica niewymagana";
+    default:
+      return null;
+  }
+}
+
 function renderLeadSummary(kind: LeadKind, lead: Record<string, unknown>) {
   const name = typeof lead.name === "string" && lead.name ? lead.name : "Brak imienia";
   const email = typeof lead.email === "string" && lead.email ? lead.email : "Brak e-maila";
@@ -783,10 +798,19 @@ function renderLeadSummary(kind: LeadKind, lead: Record<string, unknown>) {
         body: message || "Aplikacja mentorska bez dodatkowej treści.",
       };
     case "scholarship":
+      const parentConsentStatus = formatParentConsentStatus(lead.parentConsentStatus);
+      const parentConsent = lead.parentConsent as Record<string, unknown> | null | undefined;
+      const parentConsentMeta =
+        parentConsent && typeof parentConsent.parentFullName === "string"
+          ? ` • rodzic/opiekun: ${parentConsent.parentFullName}`
+          : "";
       return {
         title: name,
-        meta: [email, phone].filter(Boolean).join(" • "),
-        body: message || "Zgłoszenie stypendialne bez dodatkowej treści.",
+        meta: [email, phone, parentConsentStatus].filter(Boolean).join(" • "),
+        body:
+          `${message || "Zgłoszenie stypendialne bez dodatkowej treści."}${
+            parentConsentStatus ? `\n\nStatus zgody rodzica: ${parentConsentStatus}${parentConsentMeta}` : ""
+          }`,
       };
     case "contact":
     default:
@@ -4714,6 +4738,42 @@ function AdminSection({
                         </div>
                       </header>
                       <p className="muted">{summary.body}</p>
+                      {leadType === "scholarship" &&
+                      lead.parentConsent &&
+                      typeof lead.parentConsent === "object" ? (
+                        <div
+                          style={{
+                            marginTop: 12,
+                            padding: 12,
+                            borderRadius: 12,
+                            border: "1px solid var(--border-color)",
+                            background: "var(--surface-subtle)",
+                          }}
+                        >
+                          <div className="small" style={{ fontWeight: 700, marginBottom: 6 }}>
+                            Formularz zgody rodzica / opiekuna
+                          </div>
+                          <div className="small muted">
+                            Kandydat(ka): {typeof lead.name === "string" ? lead.name : "brak"} •
+                            rodzic/opiekun: {String((lead.parentConsent as any).parentFullName ?? "brak")}
+                          </div>
+                          <div className="small muted">
+                            Status: {formatParentConsentStatus(lead.parentConsentStatus) ?? "brak"} •
+                            wysłano: {formatDate(typeof (lead.parentConsent as any).createdAt === "string" ? (lead.parentConsent as any).createdAt : null)} •
+                            podpisano: {formatDate(typeof (lead.parentConsent as any).signedAt === "string" ? (lead.parentConsent as any).signedAt : null)}
+                          </div>
+                          {(lead.parentConsent as any).relationshipToApplicant ? (
+                            <div className="small muted">
+                              Relacja: {String((lead.parentConsent as any).relationshipToApplicant)}
+                            </div>
+                          ) : null}
+                          {(lead.parentConsent as any).signatureName ? (
+                            <div className="small muted">
+                              Podpis: {String((lead.parentConsent as any).signatureName)}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
                       <details className="small">
                         <summary>Zobacz pełny rekord</summary>
                         <pre style={{ margin: "10px 0 0", whiteSpace: "pre-wrap" }}>{JSON.stringify(lead, null, 2)}</pre>

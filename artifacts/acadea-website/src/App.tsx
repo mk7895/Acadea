@@ -26,6 +26,7 @@ const Contact = lazy(() => import("@/pages/Contact"));
 const Blog = lazy(() => import("@/pages/Blog"));
 const Scholarship = lazy(() => import("@/pages/Scholarship"));
 const ScholarshipForm = lazy(() => import("@/pages/ScholarshipForm"));
+const ScholarshipParentConsent = lazy(() => import("@/pages/ScholarshipParentConsent"));
 const ScholarshipTerms = lazy(() => import("@/pages/ScholarshipTerms"));
 const Booking = lazy(() => import("@/pages/Booking"));
 const MentorForm = lazy(() => import("@/pages/MentorForm"));
@@ -105,6 +106,7 @@ function Router() {
           <Route path="/baza-wiedzy/:slug" component={ArticlePage} />
           <Route path="/stypendium" component={Scholarship} />
           <Route path="/stypendium/aplikacja" component={ScholarshipForm} />
+          <Route path="/stypendium/zgoda-rodzica" component={ScholarshipParentConsent} />
           <Route path="/stypendium/regulamin" component={ScholarshipTerms} />
           <Route path="/umow-spotkanie" component={Booking} />
           <Route path="/mentoruj" component={MentorForm} />
