@@ -1259,11 +1259,9 @@ function mergeImportedRowsIntoExistingStructure(
   const areCompatibleScopedValues = (existingValue: string, importedValue: string) => {
     const normalizedExisting = normalizeMatchToken(existingValue);
     const normalizedImported = normalizeMatchToken(importedValue);
-    return (
-      !normalizedExisting ||
-      !normalizedImported ||
-      normalizedExisting === normalizedImported
-    );
+    // Empty scopes only match other empty scopes. Treating an empty value as a
+    // wildcard merges identically named tasks from different universities.
+    return normalizedExisting === normalizedImported;
   };
 
   const findMatchingRowIndex = (
