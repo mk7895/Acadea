@@ -6423,6 +6423,8 @@ function MenteeSection({
   const [selectedMentorDayKey, setSelectedMentorDayKey] = useState<string | null>(null);
   const [publicGuides, setPublicGuides] = useState<any[]>([]);
   const [guides, setGuides] = useState<any[]>([]);
+  const [availableGuideCountryFilter, setAvailableGuideCountryFilter] = useState("all");
+  const [availableGuideUniversityFilter, setAvailableGuideUniversityFilter] = useState("all");
   const [openHintGuide, setOpenHintGuide] = useState<any | null>(null);
   const [profileValues, setProfileValues] = useState<Record<string, string>>({});
   const [status, setStatus] = useState("");
@@ -6479,6 +6481,33 @@ function MenteeSection({
   const profileFields = overview?.profileFields ?? [];
   const assignedMentors = overview?.assignedMentors ?? [];
   const availableGuideTemplates = overview?.availableGuideTemplates ?? [];
+  const availableGuideCountryOptions = useMemo(
+    () =>
+      uniqueStrings(availableGuideTemplates.map((guide: any) => guide.country))
+        .sort((left, right) => left.localeCompare(right, "pl")),
+    [availableGuideTemplates],
+  );
+  const availableGuideUniversityOptions = useMemo(() => {
+    const scopedGuides = availableGuideTemplates.filter((guide: any) =>
+      availableGuideCountryFilter === "all" ? true : guide.country === availableGuideCountryFilter,
+    );
+    return uniqueStrings(scopedGuides.map((guide: any) => guide.universityName || formatGuidePrimaryLabel(guide)))
+      .sort((left, right) => left.localeCompare(right, "pl"));
+  }, [availableGuideCountryFilter, availableGuideTemplates]);
+  const filteredAvailableGuideTemplates = useMemo(
+    () =>
+      availableGuideTemplates.filter((guide: any) => {
+        if (availableGuideCountryFilter !== "all" && guide.country !== availableGuideCountryFilter) {
+          return false;
+        }
+        const universityLabel = guide.universityName || formatGuidePrimaryLabel(guide);
+        if (availableGuideUniversityFilter !== "all" && universityLabel !== availableGuideUniversityFilter) {
+          return false;
+        }
+        return true;
+      }),
+    [availableGuideCountryFilter, availableGuideTemplates, availableGuideUniversityFilter],
+  );
   const guideLimits = overview?.guideLimits ?? { emailInboxEnabled: false, maxActiveGuideCount: 1, maxHintGuideCount: 1, maxStorageMb: 100 };
   const materialTemplates = overview?.materialTemplates ?? [];
   const materialItemStates = overview?.materialItemStates ?? [];
@@ -6658,6 +6687,15 @@ function MenteeSection({
   useEffect(() => {
     onCartCountChange(cartCount);
   }, [cartCount, onCartCountChange]);
+
+  useEffect(() => {
+    if (
+      availableGuideUniversityFilter !== "all"
+      && !availableGuideUniversityOptions.includes(availableGuideUniversityFilter)
+    ) {
+      setAvailableGuideUniversityFilter("all");
+    }
+  }, [availableGuideUniversityFilter, availableGuideUniversityOptions]);
 
   function openPurchaseShell(title: string, body: string, primaryCtaLabel = "Kup sugerowany pakiet", key?: string) {
     const popupConfig = key ? purchasePopups[key] : null;
@@ -7995,8 +8033,52 @@ function MenteeSection({
             <div className="dashboard-card panel-scroll">
               <h2>Dodaj kolejną uczelnię</h2>
               <p className="muted">Te uczelnie ACADEA możesz samodzielnie dodać do swojego panelu.</p>
+              <div
+                className="button-row"
+                style={{ alignItems: "end", flexWrap: "wrap", gap: 12, marginTop: 18 }}
+              >
+                <div className="field" style={{ flex: "1 1 220px", marginBottom: 0 }}>
+                  <label>Filtruj po kraju</label>
+                  <select
+                    value={availableGuideCountryFilter}
+                    onChange={(event) => setAvailableGuideCountryFilter(event.target.value)}
+                  >
+                    <option value="all">Wszystkie kraje</option>
+                    {availableGuideCountryOptions.map((country) => (
+                      <option key={`available-country-${country}`} value={country}>{country}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field" style={{ flex: "1 1 260px", marginBottom: 0 }}>
+                  <label>Filtruj po uczelni</label>
+                  <select
+                    value={availableGuideUniversityFilter}
+                    onChange={(event) => setAvailableGuideUniversityFilter(event.target.value)}
+                  >
+                    <option value="all">Wszystkie uczelnie</option>
+                    {availableGuideUniversityOptions.map((university) => (
+                      <option key={`available-university-${university}`} value={university}>{university}</option>
+                    ))}
+                  </select>
+                </div>
+                {(availableGuideCountryFilter !== "all" || availableGuideUniversityFilter !== "all") ? (
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setAvailableGuideCountryFilter("all");
+                      setAvailableGuideUniversityFilter("all");
+                    }}
+                    type="button"
+                  >
+                    Wyczyść filtry
+                  </button>
+                ) : null}
+              </div>
+              <div className="small muted" style={{ marginTop: 10 }}>
+                Pokazano {filteredAvailableGuideTemplates.length} z {availableGuideTemplates.length} dostępnych programów.
+              </div>
               <div className="tile-grid tile-grid-two" style={{ marginTop: 18 }}>
-                {availableGuideTemplates.map((guide: any) => (
+                {filteredAvailableGuideTemplates.map((guide: any) => (
                   <div className="tile" key={`available-${guide.id}`}>
                     <strong>{formatGuidePrimaryLabel(guide)}</strong>
                     <div className="small muted" style={{ marginTop: 6 }}>{formatGuideSecondaryLabel(guide)}</div>
@@ -8013,6 +8095,11 @@ function MenteeSection({
                   </div>
                 ))}
               </div>
+              {!filteredAvailableGuideTemplates.length ? (
+                <div className="status" style={{ marginTop: 16 }}>
+                  Brak programów pasujących do wybranych filtrów.
+                </div>
+              ) : null}
             </div>
           ) : null}
           {!(overview.profile as any)?.adminApproved ? (

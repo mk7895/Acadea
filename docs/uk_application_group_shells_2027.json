@@ -1,0 +1,861 @@
+{
+  "version": 1,
+  "preparedAt": "2026-07-10",
+  "scope": "UK undergraduate application grouping shells for 2027 entry planning",
+  "notes": [
+    "This file is a planning artifact, not an import payload.",
+    "Shells group programmes by application mechanics before course-by-course guide buildout.",
+    "courseCoverageSummary lists all confirmed relevant courses when the shell is small; broader shells list representative examples and note that other standard-entry courses remain in the same bucket.",
+    "Source links are official university pages captured on 2026-07-10."
+  ],
+  "universities": [
+    {
+      "slug": "university-of-oxford",
+      "universityName": "University of Oxford",
+      "auditStatus": "shell_coverage_verified_2027",
+      "sources": [
+        "https://www.ox.ac.uk/admissions/undergraduate/applying/guide-for-applicants/admissions-tests",
+        "https://www.ox.ac.uk/admissions/undergraduate/courses/admissions-requirements/summary-table-of-admissions-requirements",
+        "https://www.ox.ac.uk/admissions/undergraduate/courses/course-listing/law-jurisprudence",
+        "https://www.medsci.ox.ac.uk/study/medicine/pre-clinical/requirements/ucat",
+        "https://www.rsa.ox.ac.uk/study/undergraduate/applying-to-study-for-a-bfa"
+      ],
+      "shells": [
+        {
+          "shellKey": "oxford-ucas-standard",
+          "label": "Oxford - standard UCAS route without a preregistration test",
+          "selectionType": "ucas_standard",
+          "courseExamples": [
+            "Biochemistry",
+            "Chemistry",
+            "Classics",
+            "English and Modern Languages",
+            "Geography",
+            "History",
+            "Modern Languages",
+            "Music",
+            "Philosophy and Modern Languages",
+            "Theology and Religion"
+          ],
+          "courseCoverageSummary": "Representative examples only because this bucket is large: Biochemistry, Chemistry, Classics, English and Modern Languages, Geography, History, Modern Languages, Music, Philosophy and Modern Languages, Theology and Religion, and other Oxford courses that do not require TMUA, ESAT, TARA, LNAT or UCAT.",
+          "notes": "Many courses in this bucket still require interviews, and some also require written work."
+        },
+        {
+          "shellKey": "oxford-tmua",
+          "label": "Oxford - courses requiring TMUA",
+          "selectionType": "tmua_required",
+          "courseExamples": [
+            "Computer Science",
+            "Computer Science and Philosophy",
+            "Mathematics",
+            "Mathematics and Computer Science",
+            "Mathematics and Philosophy",
+            "Mathematics and Statistics"
+          ],
+          "courseCoverageSummary": "Confirmed TMUA routes: Computer Science, Computer Science and Philosophy, Mathematics, Mathematics and Computer Science, Mathematics and Philosophy, and Mathematics and Statistics.",
+          "notes": "Confirmed on Oxford admissions test mapping for 2027 entry."
+        },
+        {
+          "shellKey": "oxford-esat",
+          "label": "Oxford - courses requiring ESAT",
+          "selectionType": "esat_required",
+          "courseExamples": [
+            "Biomedical Sciences",
+            "Engineering Science",
+            "Physics",
+            "Physics and Philosophy"
+          ],
+          "courseCoverageSummary": "Confirmed ESAT routes: Biomedical Sciences, Engineering Science, Physics, and Physics and Philosophy.",
+          "notes": "Use as the science-engineering testing shell for Oxford."
+        },
+        {
+          "shellKey": "oxford-tara",
+          "label": "Oxford - courses requiring TARA",
+          "selectionType": "tara_required",
+          "courseExamples": [
+            "Economics and Management",
+            "History and Economics",
+            "History and Politics",
+            "Human Sciences",
+            "PPE",
+            "Psychology (Experimental)",
+            "Psychology, Philosophy and Linguistics"
+          ],
+          "courseCoverageSummary": "Confirmed TARA routes: Economics and Management, History and Economics, History and Politics, Human Sciences, PPE, Psychology (Experimental), and Psychology, Philosophy and Linguistics.",
+          "notes": "This is the main Oxford social-science / policy / psychology test family."
+        },
+        {
+          "shellKey": "oxford-lnat",
+          "label": "Oxford - law routes requiring LNAT",
+          "selectionType": "lnat_required",
+          "courseExamples": [
+            "Law (Jurisprudence)",
+            "Law with Law Studies in Europe"
+          ],
+          "courseCoverageSummary": "Confirmed LNAT routes: Law (Jurisprudence) and Law with Law Studies in Europe.",
+          "notes": "Keep separate from other humanities because deadlines and prep differ."
+        },
+        {
+          "shellKey": "oxford-ucat",
+          "label": "Oxford - medicine routes requiring UCAT",
+          "selectionType": "ucat_required",
+          "courseExamples": [
+            "Medicine"
+          ],
+          "courseCoverageSummary": "Confirmed UCAT route: Medicine.",
+          "notes": "Shortlisting then feeds into interview handling."
+        },
+        {
+          "shellKey": "oxford-written-work",
+          "label": "Oxford - courses requiring written work",
+          "selectionType": "written_work_required",
+          "courseExamples": [
+            "Classics",
+            "English Language and Literature",
+            "History",
+            "History and Economics",
+            "History and Politics",
+            "History and Modern Languages",
+            "History and English",
+            "History and Russian"
+          ],
+          "courseCoverageSummary": "Confirmed written-work-heavy routes include Classics, English Language and Literature, History, History and Economics, History and Politics, History and Modern Languages, History and English, and History and Russian.",
+          "notes": "Use as an overlay shell on top of the main route where applicable."
+        },
+        {
+          "shellKey": "oxford-portfolio-art",
+          "label": "Oxford - artistic routes requiring portfolio",
+          "selectionType": "portfolio_required",
+          "courseExamples": [
+            "Fine Art"
+          ],
+          "courseCoverageSummary": "Confirmed portfolio route: Fine Art.",
+          "notes": "Fine Art has a separate digital portfolio process beyond UCAS submission."
+        },
+        {
+          "shellKey": "oxford-interview",
+          "label": "Oxford - shortlisted interview route",
+          "selectionType": "interview_shortlisted",
+          "courseExamples": [
+            "Most Oxford undergraduate courses"
+          ],
+          "courseCoverageSummary": "Interview remains a core Oxford selection stage across most undergraduate courses, including tested and non-tested routes.",
+          "notes": "Treat this as a reusable operational shell rather than a standalone guide family."
+        }
+      ]
+    },
+    {
+      "slug": "university-of-cambridge",
+      "universityName": "University of Cambridge",
+      "auditStatus": "shell_coverage_verified_2027",
+      "sources": [
+        "https://www.undergraduate.study.cam.ac.uk/apply/how/admission-tests",
+        "https://www.undergraduate.study.cam.ac.uk/apply/application-dates-deadlines"
+      ],
+      "shells": [
+        {
+          "shellKey": "cambridge-ucas-standard",
+          "label": "Cambridge - standard route without preregistration test",
+          "selectionType": "ucas_standard",
+          "courseExamples": [
+            "Archaeology",
+            "Education",
+            "History of Art",
+            "Land Economy",
+            "Theology, Religion, and Philosophy of Religion"
+          ],
+          "courseCoverageSummary": "Confirmed standard non-preregistration examples include Archaeology, Education, History of Art, Land Economy, and Theology, Religion, and Philosophy of Religion. Other Cambridge courses may still sit in this bucket even if they later use a college assessment.",
+          "notes": "Some non-preregistration courses still move into college assessment and interview."
+        },
+        {
+          "shellKey": "cambridge-tmua",
+          "label": "Cambridge - courses requiring TMUA",
+          "selectionType": "tmua_required",
+          "courseExamples": [
+            "Computer Science",
+            "Economics",
+            "Mathematics"
+          ],
+          "courseCoverageSummary": "Confirmed TMUA routes: Computer Science, Economics, and Mathematics.",
+          "notes": "Computer Science can also involve a college-specific CSAT at some colleges."
+        },
+        {
+          "shellKey": "cambridge-esat",
+          "label": "Cambridge - courses requiring ESAT",
+          "selectionType": "esat_required",
+          "courseExamples": [
+            "Chemical Engineering and Biotechnology",
+            "Engineering",
+            "Natural Sciences",
+            "Veterinary Medicine"
+          ],
+          "courseCoverageSummary": "Confirmed ESAT routes: Chemical Engineering and Biotechnology, Engineering, Natural Sciences, and Veterinary Medicine.",
+          "notes": "These are Cambridge’s main science-engineering ESAT routes."
+        },
+        {
+          "shellKey": "cambridge-lnat",
+          "label": "Cambridge - law routes requiring LNAT",
+          "selectionType": "lnat_required",
+          "courseExamples": [
+            "Law"
+          ],
+          "courseCoverageSummary": "Confirmed LNAT route: Law.",
+          "notes": "Keep this shell distinct because law timelines and prep differ from other humanities."
+        },
+        {
+          "shellKey": "cambridge-ucat",
+          "label": "Cambridge - medicine routes requiring UCAT",
+          "selectionType": "ucat_required",
+          "courseExamples": [
+            "Medicine (Standard Course)",
+            "Medicine (Graduate Course)"
+          ],
+          "courseCoverageSummary": "Confirmed UCAT routes: Medicine (Standard Course) and Medicine (Graduate Course).",
+          "notes": "The 15 October UCAS deadline and UCAT timeline should be handled together."
+        },
+        {
+          "shellKey": "cambridge-college-assessment",
+          "label": "Cambridge - courses with college assessment after shortlist",
+          "selectionType": "college_assessment",
+          "courseExamples": [
+            "Architecture",
+            "Asian and Middle Eastern Studies",
+            "Classics",
+            "Design",
+            "English",
+            "Geography",
+            "History",
+            "HSPS",
+            "Music",
+            "Philosophy"
+          ],
+          "courseCoverageSummary": "Representative college-assessment routes: Architecture, Asian and Middle Eastern Studies, Classics, Design, English, Geography, History, HSPS, Music, Philosophy, and other Cambridge courses listed in the official college assessment table.",
+          "notes": "These are not preregistration tests, but they still create a different operational shell from plain UCAS routes."
+        },
+        {
+          "shellKey": "cambridge-interview",
+          "label": "Cambridge - shortlisted interview route",
+          "selectionType": "interview_shortlisted",
+          "courseExamples": [
+            "Most Cambridge undergraduate courses"
+          ],
+          "courseCoverageSummary": "Interview remains a core Cambridge selection stage across most undergraduate routes.",
+          "notes": "Keep as a reusable shell layered on top of the test/assessment family."
+        }
+      ]
+    },
+    {
+      "slug": "imperial-college-london",
+      "universityName": "Imperial College London",
+      "auditStatus": "shell_coverage_verified_2027",
+      "sources": [
+        "https://www.imperial.ac.uk/study/apply/undergraduate/process/admissions-tests/",
+        "https://www.imperial.ac.uk/study/apply/undergraduate/process/admissions-tests/tmua/",
+        "https://www.imperial.ac.uk/study/apply/undergraduate/process/admissions-tests/esat/",
+        "https://www.imperial.ac.uk/study/courses/undergraduate/2027/medicine/",
+        "https://www.imperial.ac.uk/business-school/undergraduate/economics-finance-data-science/how-to-apply/"
+      ],
+      "shells": [
+        {
+          "shellKey": "imperial-tmua",
+          "label": "Imperial - courses requiring TMUA",
+          "selectionType": "tmua_required",
+          "courseExamples": [
+            "Department of Computing routes",
+            "Joint Mathematics and Computer Science routes",
+            "Department of Mathematics routes",
+            "Economics, Finance and Data Science"
+          ],
+          "courseCoverageSummary": "Confirmed TMUA families: all Department of Computing routes, joint Mathematics and Computer Science routes, all Department of Mathematics routes, and BSc Economics, Finance and Data Science.",
+          "notes": "Imperial’s official TMUA page is department-based rather than a complete course-title matrix, so the shell should be built department-first."
+        },
+        {
+          "shellKey": "imperial-esat",
+          "label": "Imperial - courses requiring ESAT",
+          "selectionType": "esat_required",
+          "courseExamples": [
+            "Aeronautics",
+            "Chemical Engineering",
+            "Civil and Environmental Engineering",
+            "Design Engineering",
+            "Electrical and Electronic Engineering",
+            "Life Sciences routes",
+            "Mechanical Engineering",
+            "Physics"
+          ],
+          "courseCoverageSummary": "Confirmed ESAT families: Aeronautics, Chemical Engineering, Civil and Environmental Engineering, Dyson School of Design Engineering, Electrical and Electronic Engineering, Life Sciences routes, Mechanical Engineering, and Physics.",
+          "notes": "Imperial publishes this family at department level and specifies module combinations per department."
+        },
+        {
+          "shellKey": "imperial-ucat",
+          "label": "Imperial - medicine routes requiring UCAT",
+          "selectionType": "ucat_required",
+          "courseExamples": [
+            "Medicine MBBS/BSc"
+          ],
+          "courseCoverageSummary": "Confirmed UCAT route: Medicine MBBS/BSc.",
+          "notes": "Graduate Entry Medicine is a separate GAMSAT-or-UCAT process and should sit outside the standard undergraduate shell set if added later."
+        },
+        {
+          "shellKey": "imperial-course-interview",
+          "label": "Imperial - courses with department interview stage",
+          "selectionType": "interview_required",
+          "courseExamples": [
+            "Economics, Finance and Data Science",
+            "Medicine",
+            "Design Engineering",
+            "other shortlisted Imperial departments"
+          ],
+          "courseCoverageSummary": "Confirmed interview-led families include Economics, Finance and Data Science, Medicine, Design Engineering, and other Imperial departments that shortlist after reviewing tests plus UCAS materials.",
+          "notes": "Use as an overlay shell because Imperial combines tests with department interviews rather than relying on one universal pattern."
+        }
+      ]
+    },
+    {
+      "slug": "london-school-of-economics",
+      "universityName": "London School of Economics",
+      "auditStatus": "shell_coverage_verified_2027",
+      "sources": [
+        "https://www.lse.ac.uk/study-at-lse/Undergraduate/Prospective-Students/How-to-Apply/entry-requirements",
+        "https://www.lse.ac.uk/study-at-lse/Undergraduate/Prospective-Students/How-to-Apply/Test-of-Mathematics-for-University-Admission-TMUA"
+      ],
+      "shells": [
+        {
+          "shellKey": "lse-ucas-standard",
+          "label": "LSE - standard UCAS route without external admissions test",
+          "selectionType": "ucas_standard",
+          "courseExamples": [
+            "Anthropology and Law",
+            "Geography",
+            "History",
+            "International Relations",
+            "Management",
+            "Philosophy and Economics",
+            "Politics and Economics",
+            "Social Anthropology",
+            "Social Policy and Sociology",
+            "Sociology"
+          ],
+          "courseCoverageSummary": "Representative standard-entry routes: Anthropology and Law, Geography, History, International Relations, Management, Philosophy and Economics, Politics and Economics, Social Anthropology, Social Policy and Sociology, Sociology, and other LSE courses without TMUA or LNAT.",
+          "notes": "This bucket is large, so examples are representative rather than exhaustive."
+        },
+        {
+          "shellKey": "lse-tmua-mandatory",
+          "label": "LSE - programmes with mandatory TMUA",
+          "selectionType": "tmua_required",
+          "courseExamples": [
+            "Economics",
+            "Econometrics and Mathematical Economics"
+          ],
+          "courseCoverageSummary": "Confirmed mandatory TMUA programmes: Economics and Econometrics and Mathematical Economics.",
+          "notes": "These should be split from the broader mathematically intensive but test-recommended LSE family."
+        },
+        {
+          "shellKey": "lse-tmua-recommended",
+          "label": "LSE - programmes with recommended TMUA",
+          "selectionType": "tmua_recommended",
+          "courseExamples": [
+            "Actuarial Science",
+            "Actuarial Science with a Placement Year",
+            "Data Science",
+            "Economics and Data Science",
+            "Financial Mathematics and Statistics",
+            "Mathematics and Economics",
+            "Mathematics with Economics",
+            "Mathematics, Statistics, and Business"
+          ],
+          "courseCoverageSummary": "Confirmed TMUA-recommended programmes: Actuarial Science, Actuarial Science with a Placement Year, Data Science, Economics and Data Science, Financial Mathematics and Statistics, Mathematics and Economics, Mathematics with Economics, and Mathematics, Statistics, and Business.",
+          "notes": "Recommended still matters operationally because applicants need guidance on when TMUA materially strengthens the file."
+        },
+        {
+          "shellKey": "lse-lnat",
+          "label": "LSE - law routes requiring LNAT",
+          "selectionType": "lnat_required",
+          "courseExamples": [
+            "Law LLB"
+          ],
+          "courseCoverageSummary": "Confirmed LNAT route: Law LLB.",
+          "notes": "Keep separate because LNAT prep and deadlines are distinct from the rest of LSE."
+        },
+        {
+          "shellKey": "lse-ugaa-contingent",
+          "label": "LSE - qualification-contingent UGAA route",
+          "selectionType": "qualification_contingent_assessment",
+          "courseExamples": [
+            "Selected applicants whose qualifications trigger UGAA review"
+          ],
+          "courseCoverageSummary": "This is not a course family but an operational shell for applicants whose qualification background triggers LSE’s UGAA handling.",
+          "notes": "Keep as a shell because it changes workflow even though it is not programme-wide."
+        }
+      ]
+    },
+    {
+      "slug": "ucl",
+      "universityName": "UCL",
+      "auditStatus": "shell_coverage_verified_2027",
+      "sources": [
+        "https://www.ucl.ac.uk/prospective-students/undergraduate/degrees/law-llb-2026",
+        "https://www.ucl.ac.uk/study/prospective-students/undergraduate/courses/architecture-bsc",
+        "https://www.ucl.ac.uk/study/prospective-students/undergraduate/courses/art-and-technology-ba",
+        "https://www.ucl.ac.uk/slade/study/ba-bfa-admissions/",
+        "https://www.ucl.ac.uk/medical-sciences/divisions/medical-school/study/undergraduate/mbbs-admissions/entry-requirements"
+      ],
+      "shells": [
+        {
+          "shellKey": "ucl-ucas-standard",
+          "label": "UCL - standard UCAS route without extra admissions artifact",
+          "selectionType": "ucas_standard",
+          "courseExamples": [
+            "Economics",
+            "History",
+            "Politics and International Relations",
+            "Psychology",
+            "Biomedical Sciences",
+            "Chemical Engineering",
+            "Physics",
+            "Pharmacy",
+            "Philosophy",
+            "Geography"
+          ],
+          "courseCoverageSummary": "Representative standard-entry routes: Economics, History, Politics and International Relations, Psychology, Biomedical Sciences, Chemical Engineering, Physics, Pharmacy, Philosophy, Geography, and other UCL courses that do not require LNAT, UCAT or portfolio review.",
+          "notes": "This shell intentionally excludes Law, Medicine, and known portfolio-led courses."
+        },
+        {
+          "shellKey": "ucl-lnat",
+          "label": "UCL - law routes requiring LNAT",
+          "selectionType": "lnat_required",
+          "courseExamples": [
+            "Law LLB"
+          ],
+          "courseCoverageSummary": "Confirmed LNAT route: Law LLB.",
+          "notes": "UCL law should not be merged into the generic humanities shell."
+        },
+        {
+          "shellKey": "ucl-ucat",
+          "label": "UCL - medicine routes requiring UCAT",
+          "selectionType": "ucat_required",
+          "courseExamples": [
+            "Medicine MBBS/BSc"
+          ],
+          "courseCoverageSummary": "Confirmed UCAT route: Medicine MBBS/BSc.",
+          "notes": "UCL uses UCAT in the year of application and then ranks eligible candidates for interview."
+        },
+        {
+          "shellKey": "ucl-portfolio-art-architecture",
+          "label": "UCL - artistic or built-environment routes requiring portfolio",
+          "selectionType": "portfolio_required",
+          "courseExamples": [
+            "Architecture BSc",
+            "Architecture MSci",
+            "Fine Art BA/BFA",
+            "Art and Technology BA"
+          ],
+          "courseCoverageSummary": "Confirmed portfolio-led routes: Architecture BSc, Architecture MSci, Fine Art BA/BFA, and Art and Technology BA.",
+          "notes": "Architecture uses invited portfolio review; Slade routes also move shortlisted applicants into interview handling."
+        }
+      ]
+    },
+    {
+      "slug": "kings-college-london",
+      "universityName": "King's College London",
+      "auditStatus": "shell_coverage_verified_2027",
+      "sources": [
+        "https://www.kcl.ac.uk/study/undergraduate/how-to-apply/entry-requirements",
+        "https://www.kcl.ac.uk/study/undergraduate/courses/law-llb/requirements"
+      ],
+      "shells": [
+        {
+          "shellKey": "kcl-ucas-standard",
+          "label": "King's - standard UCAS route",
+          "selectionType": "ucas_standard",
+          "courseExamples": [
+            "Business Management",
+            "Computer Science",
+            "English",
+            "Geography",
+            "History",
+            "International Relations",
+            "Liberal Arts",
+            "Philosophy",
+            "Psychology",
+            "War Studies"
+          ],
+          "courseCoverageSummary": "Representative standard-entry routes: Business Management, Computer Science, English, Geography, History, International Relations, Liberal Arts, Philosophy, Psychology, War Studies, and other King’s courses without LNAT, UCAT or Casper.",
+          "notes": "This shell excludes the law and clinical routes."
+        },
+        {
+          "shellKey": "kcl-lnat",
+          "label": "King's - law and PPL routes requiring LNAT",
+          "selectionType": "lnat_required",
+          "courseExamples": [
+            "Law LLB",
+            "Politics, Philosophy and Law BA"
+          ],
+          "courseCoverageSummary": "Confirmed LNAT routes: Law LLB and Politics, Philosophy and Law BA.",
+          "notes": "LNAT deadline handling should be shared across these routes."
+        },
+        {
+          "shellKey": "kcl-ucat",
+          "label": "King's - medicine and dentistry routes requiring UCAT",
+          "selectionType": "ucat_required",
+          "courseExamples": [
+            "Medicine MBBS",
+            "Dentistry BDS"
+          ],
+          "courseCoverageSummary": "Confirmed UCAT routes: Medicine MBBS and Dentistry BDS.",
+          "notes": "These routes then move into clinical shortlisting / interview workflow."
+        },
+        {
+          "shellKey": "kcl-casper",
+          "label": "King's - routes requiring Casper",
+          "selectionType": "casper_required",
+          "courseExamples": [
+            "Dental Therapy and Hygiene"
+          ],
+          "courseCoverageSummary": "Confirmed Casper route: Dental Therapy and Hygiene.",
+          "notes": "Keep this separate because it is a distinct admissions mechanic from both UCAT and standard UCAS."
+        }
+      ]
+    },
+    {
+      "slug": "queen-mary-university-of-london",
+      "universityName": "Queen Mary University of London",
+      "auditStatus": "shell_coverage_verified_2027",
+      "sources": [
+        "https://www.qmul.ac.uk/law/undergraduate/courses/ug-law-faq/prospective-student-faq/",
+        "https://www.qmul.ac.uk/fmd/study/undergraduate/courses/a100/entry-requirements/",
+        "https://www.qmul.ac.uk/fmd/study/undergraduate/courses/a101/entry-requirements/",
+        "https://www.qmul.ac.uk/undergraduate/coursefinder/courses/2027/dentistry/"
+      ],
+      "shells": [
+        {
+          "shellKey": "qmul-ucas-standard",
+          "label": "Queen Mary - standard UCAS route",
+          "selectionType": "ucas_standard",
+          "courseExamples": [
+            "Economics and Finance",
+            "English",
+            "History",
+            "Mathematics",
+            "Physics",
+            "Politics",
+            "Psychology",
+            "Computer Science",
+            "Business Management",
+            "Law"
+          ],
+          "courseCoverageSummary": "Representative standard-entry routes: Economics and Finance, English, History, Mathematics, Physics, Politics, Psychology, Computer Science, Business Management, Law, and other Queen Mary courses without clinical testing.",
+          "notes": "Queen Mary law is intentionally left in the standard shell because the current law FAQ states LNAT is not currently required."
+        },
+        {
+          "shellKey": "qmul-clinical-ucat",
+          "label": "Queen Mary - medicine and dentistry routes requiring UCAT",
+          "selectionType": "ucat_required",
+          "courseExamples": [
+            "Medicine (5 Year Programme)",
+            "Medicine - Graduate Entry Programme",
+            "Dentistry BDS"
+          ],
+          "courseCoverageSummary": "Confirmed UCAT routes: Medicine (5 Year Programme), Medicine - Graduate Entry Programme, and Dentistry BDS.",
+          "notes": "Clinical routes should be grouped separately because UCAT and interview handling drive a different workflow from mainstream Queen Mary courses."
+        }
+      ]
+    },
+    {
+      "slug": "university-of-warwick",
+      "universityName": "University of Warwick",
+      "auditStatus": "shell_coverage_verified_2027",
+      "sources": [
+        "https://warwick.ac.uk/study/undergraduate/courses/llb-law/"
+      ],
+      "shells": [
+        {
+          "shellKey": "warwick-ucas-standard",
+          "label": "Warwick - standard UCAS route",
+          "selectionType": "ucas_standard",
+          "courseExamples": [
+            "Economics",
+            "History",
+            "International Relations",
+            "Mathematics",
+            "MORSE",
+            "Philosophy",
+            "Physics",
+            "Politics",
+            "Psychology",
+            "Sociology"
+          ],
+          "courseCoverageSummary": "Representative standard-entry routes: Economics, History, International Relations, Mathematics, MORSE, Philosophy, Physics, Politics, Psychology, Sociology, and other Warwick courses without an additional admissions test.",
+          "notes": "Warwick’s mainstream route is comparatively clean operationally."
+        },
+        {
+          "shellKey": "warwick-law-no-lnat",
+          "label": "Warwick - law routes without LNAT",
+          "selectionType": "law_no_lnat",
+          "courseExamples": [
+            "Law LLB and related Warwick law study routes"
+          ],
+          "courseCoverageSummary": "Warwick law should be handled as its own shell because applicants often expect LNAT, but Warwick explicitly states that it does not currently require it.",
+          "notes": "This shell exists mainly to prevent incorrect LNAT guidance."
+        }
+      ]
+    },
+    {
+      "slug": "durham-university",
+      "universityName": "Durham University",
+      "auditStatus": "shell_coverage_verified_2027",
+      "sources": [
+        "https://www.durham.ac.uk/study/courses/law-m101/",
+        "https://www.durham.ac.uk/study/undergraduate/how-to-apply/entry-requirements/"
+      ],
+      "shells": [
+        {
+          "shellKey": "durham-ucas-standard",
+          "label": "Durham - standard UCAS route",
+          "selectionType": "ucas_standard",
+          "courseExamples": [
+            "Business and Management",
+            "Classics",
+            "Economics",
+            "English Literature",
+            "History",
+            "International Relations",
+            "Philosophy",
+            "Physics",
+            "Politics",
+            "Psychology"
+          ],
+          "courseCoverageSummary": "Representative standard-entry routes: Business and Management, Classics, Economics, English Literature, History, International Relations, Philosophy, Physics, Politics, Psychology, and other Durham courses without LNAT or maths-test handling.",
+          "notes": "Most Durham undergraduate routes remain standard UCAS-only."
+        },
+        {
+          "shellKey": "durham-lnat",
+          "label": "Durham - law routes using LNAT",
+          "selectionType": "lnat_required",
+          "courseExamples": [
+            "Law LLB"
+          ],
+          "courseCoverageSummary": "Confirmed LNAT route: Law LLB.",
+          "notes": "Keep separate because Durham law applicants need LNAT-specific planning."
+        },
+        {
+          "shellKey": "durham-maths-test",
+          "label": "Durham - mathematics routes with subject-test handling",
+          "selectionType": "tmua_or_maths_test",
+          "courseExamples": [
+            "Mathematics and closely related Durham maths routes"
+          ],
+          "courseCoverageSummary": "Use this shell for Mathematics and any closely related Durham routes where the current admissions setup uses or strongly values a mathematics admissions test.",
+          "notes": "Durham appears in the current TMUA ecosystem; keep this shell even before the full course-level matrix is built."
+        }
+      ]
+    },
+    {
+      "slug": "university-of-bath",
+      "universityName": "University of Bath",
+      "auditStatus": "shell_coverage_verified_2027",
+      "sources": [
+        "https://www.bath.ac.uk/courses/undergraduate-2026/architecture/bsc-architecture-including-placements/"
+      ],
+      "shells": [
+        {
+          "shellKey": "bath-ucas-standard",
+          "label": "Bath - standard UCAS route",
+          "selectionType": "ucas_standard",
+          "courseExamples": [
+            "Accounting and Finance",
+            "Business",
+            "Computer Science",
+            "Economics",
+            "International Management",
+            "Mathematics",
+            "Pharmacy",
+            "Physics",
+            "Politics with Economics",
+            "Psychology"
+          ],
+          "courseCoverageSummary": "Representative standard-entry routes: Accounting and Finance, Business, Computer Science, Economics, International Management, Mathematics, Pharmacy, Physics, Politics with Economics, Psychology, and other Bath courses without portfolio or admissions-test handling.",
+          "notes": "Bath’s mainstream undergraduate routes are operationally simple compared with Oxbridge / London clinical cases."
+        },
+        {
+          "shellKey": "bath-architecture-interview-no-portfolio",
+          "label": "Bath - architecture route with possible interview and no portfolio",
+          "selectionType": "interview_possible_no_portfolio",
+          "courseExamples": [
+            "Architecture BSc including placements"
+          ],
+          "courseCoverageSummary": "Confirmed special shell: Architecture BSc including placements.",
+          "notes": "Bath states portfolios are not normally considered for this route, but some applicants may be invited to interview in specific cases."
+        }
+      ]
+    },
+    {
+      "slug": "university-of-st-andrews",
+      "universityName": "University of St Andrews",
+      "auditStatus": "shell_coverage_verified_2027",
+      "sources": [
+        "https://www.st-andrews.ac.uk/study/undergraduate/apply/common/",
+        "https://www.st-andrews.ac.uk/assets/university/study-at-st-andrews/documents/prospectus-and-brochures/ug-prospectus_2027_entry.pdf",
+        "https://www.st-andrews.ac.uk/subjects/medicine/selection/"
+      ],
+      "shells": [
+        {
+          "shellKey": "st-andrews-ucas-standard",
+          "label": "St Andrews - standard UCAS route",
+          "selectionType": "ucas_standard",
+          "courseExamples": [
+            "Ancient History",
+            "Art History",
+            "Classics",
+            "Computer Science",
+            "Economics",
+            "English",
+            "International Relations",
+            "Mathematics",
+            "Philosophy",
+            "Psychology"
+          ],
+          "courseCoverageSummary": "Representative standard-entry routes: Ancient History, Art History, Classics, Computer Science, Economics, English, International Relations, Mathematics, Philosophy, Psychology, and other St Andrews subjects submitted through UCAS.",
+          "notes": "This is the default shell for mainstream St Andrews undergraduate applications."
+        },
+        {
+          "shellKey": "st-andrews-common-app",
+          "label": "St Andrews - alternative application route (Common App or direct, eligibility-dependent)",
+          "selectionType": "alternative_application_route",
+          "courseExamples": [
+            "Non-Medicine St Andrews applicants using Common App or an eligible direct route"
+          ],
+          "courseCoverageSummary": "Operational shell for St Andrews applicants who apply outside the default UCAS route through the Common Application or an eligible direct route. Medicine is excluded from Common App.",
+          "notes": "This shell matters because route mechanics, deadlines, and document handling differ even when the academic course does not."
+        },
+        {
+          "shellKey": "st-andrews-ucat-medicine",
+          "label": "St Andrews - medicine routes requiring UCAT and interview ranking",
+          "selectionType": "ucat_required",
+          "courseExamples": [
+            "Medicine A100",
+            "Medicine A990"
+          ],
+          "courseCoverageSummary": "Confirmed clinical routes: Medicine A100 and Medicine A990.",
+          "notes": "St Andrews ranks eligible Medicine applicants by UCAT and then uses interviews in the offer process."
+        }
+      ]
+    },
+    {
+      "slug": "university-of-edinburgh",
+      "universityName": "University of Edinburgh",
+      "auditStatus": "shell_coverage_verified_2027",
+      "sources": [
+        "https://study.ed.ac.uk/programmes/undergraduate/354-mbchb-medicine-6-year-programme/entry-requirements",
+        "https://medicine-vet-medicine.ed.ac.uk/edinburgh-medical-school/medicine/applying/how-to-apply/requirements/ucat",
+        "https://study.ed.ac.uk/programmes/undergraduate/669-fine-art",
+        "https://study.ed.ac.uk/programmes/undergraduate/500-graphic-design",
+        "https://study.ed.ac.uk/programmes/undergraduate/505-product-design",
+        "https://www.eca.ed.ac.uk/portfolio-examples-page"
+      ],
+      "shells": [
+        {
+          "shellKey": "edinburgh-ucas-standard",
+          "label": "Edinburgh - standard UCAS route",
+          "selectionType": "ucas_standard",
+          "courseExamples": [
+            "Economics",
+            "English Literature",
+            "History",
+            "Informatics",
+            "International Relations",
+            "Law",
+            "Mathematics",
+            "Philosophy",
+            "Physics",
+            "Psychology"
+          ],
+          "courseCoverageSummary": "Representative standard-entry routes: Economics, English Literature, History, Informatics, International Relations, Law, Mathematics, Philosophy, Physics, Psychology, and other Edinburgh courses without UCAT or art-design portfolio handling.",
+          "notes": "Architecture stays in the standard shell for now because the current source set clearly confirms portfolio workflows for art/design, not a separate architecture admissions portfolio requirement."
+        },
+        {
+          "shellKey": "edinburgh-ucat-medicine",
+          "label": "Edinburgh - medicine routes requiring UCAT and interview",
+          "selectionType": "ucat_required",
+          "courseExamples": [
+            "MBChB Medicine (6-year programme)"
+          ],
+          "courseCoverageSummary": "Confirmed UCAT route: MBChB Medicine (6-year programme).",
+          "notes": "Edinburgh also uses interview and a UCAT minimum threshold / SJT handling for Medicine."
+        },
+        {
+          "shellKey": "edinburgh-portfolio-art-and-design",
+          "label": "Edinburgh - art and design routes requiring portfolio",
+          "selectionType": "portfolio_required",
+          "courseExamples": [
+            "Animation",
+            "Fashion",
+            "Fine Art",
+            "Graphic Design",
+            "Illustration",
+            "Interior Design",
+            "Jewellery and Silversmithing",
+            "Performance Costume",
+            "Product Design",
+            "Textiles"
+          ],
+          "courseCoverageSummary": "Confirmed portfolio-led examples include Animation, Fashion, Fine Art, Graphic Design, Illustration, Interior Design, Jewellery and Silversmithing, Performance Costume, Product Design, Textiles, and other Edinburgh College of Art art-design routes with the same digital portfolio workflow.",
+          "notes": "This is intentionally an art-design family shell rather than many tiny course shells at this stage."
+        }
+      ]
+    },
+    {
+      "slug": "university-of-manchester",
+      "universityName": "University of Manchester",
+      "auditStatus": "shell_coverage_verified_2027",
+      "sources": [
+        "https://www.manchester.ac.uk/study/undergraduate/courses/2026/00178/ba-architecture/",
+        "https://www.bmh.manchester.ac.uk/study/medicine/apply/ucat/",
+        "https://www.bmh.manchester.ac.uk/study/dentistry/apply/ucat/",
+        "https://www.bmh.manchester.ac.uk/study/medicine/apply/data/"
+      ],
+      "shells": [
+        {
+          "shellKey": "manchester-ucas-standard",
+          "label": "Manchester - standard UCAS route",
+          "selectionType": "ucas_standard",
+          "courseExamples": [
+            "Accounting and Finance",
+            "Computer Science",
+            "Economics",
+            "English Literature",
+            "History",
+            "Law",
+            "Mathematics",
+            "Mechanical Engineering",
+            "Physics",
+            "Politics and International Relations"
+          ],
+          "courseCoverageSummary": "Representative standard-entry routes: Accounting and Finance, Computer Science, Economics, English Literature, History, Law, Mathematics, Mechanical Engineering, Physics, Politics and International Relations, and other Manchester courses without UCAT or portfolio handling.",
+          "notes": "This shell excludes the clinical and architecture exceptions."
+        },
+        {
+          "shellKey": "manchester-clinical-ucat",
+          "label": "Manchester - medicine and dentistry routes requiring UCAT",
+          "selectionType": "ucat_required",
+          "courseExamples": [
+            "Medicine MBChB",
+            "Dentistry BDS"
+          ],
+          "courseCoverageSummary": "Confirmed UCAT routes: Medicine MBChB and Dentistry BDS.",
+          "notes": "Manchester explicitly uses UCAT as the first step in selecting candidates for Medicine and Dentistry."
+        },
+        {
+          "shellKey": "manchester-architecture-portfolio",
+          "label": "Manchester - architecture route requiring digital portfolio",
+          "selectionType": "portfolio_required",
+          "courseExamples": [
+            "BA Architecture"
+          ],
+          "courseCoverageSummary": "Confirmed portfolio route: BA Architecture.",
+          "notes": "Manchester School of Architecture requests a digital portfolio from applicants who meet entry requirements and are invited to that stage."
+        }
+      ]
+    }
+  ]
+}
