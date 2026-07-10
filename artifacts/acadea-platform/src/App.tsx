@@ -7533,10 +7533,17 @@ function MenteeSection({
       });
     });
 
+    const visibleSections = sections
+      .map((section) => ({
+        ...section,
+        tiles: section.tiles.filter((tile) => tile.rows.some((row: any) => row.level === "item")),
+      }))
+      .filter((section) => section.tiles.length > 0);
+
     return (
       <div className="stack" key={`essay-template-${template.id}`} style={{ marginTop: 18 }}>
         {template.description ? <p className="muted">{template.description}</p> : null}
-        {sections.map((section) => (
+        {visibleSections.map((section) => (
           <div className="essay-country-section" key={`${template.id}-${section.country}`}>
             <div className="material-heading material-heading-country">
               <h3>{section.country}</h3>

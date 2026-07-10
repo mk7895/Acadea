@@ -4085,7 +4085,9 @@ router.post(
     }
 
     const { db } = await import("@workspace/db");
-    const result = await importGuideBlueprint(db, req.platformUser!.id, parsed.data);
+    const result = await db.transaction(async (tx) =>
+      importGuideBlueprint(tx as unknown as typeof db, req.platformUser!.id, parsed.data),
+    );
     return res.status(201).json(result);
   },
 );
