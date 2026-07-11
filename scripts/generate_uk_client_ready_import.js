@@ -5,10 +5,11 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "..");
-const sourcePath = path.join(root, "acadea_restore_4_countries_with_workflow_tiles.json");
-const shellsPath = path.join(root, "docs", "uk_application_group_shells_2027.json");
+const sourcePath = path.join(root, ".import-jsons", "acadea_restore_4_countries_with_workflow_tiles.json");
+const shellsPath = path.join(root, ".local-work", "docs", "uk_application_group_shells_2027.json");
 const outputPath = path.join(
   root,
+  ".import-jsons",
   "acadea_restore_4_countries_with_uk_client_ready_import_safe.json",
 );
 
