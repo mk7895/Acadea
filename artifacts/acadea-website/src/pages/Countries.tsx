@@ -51,32 +51,32 @@ export default function Countries() {
   const { isEnglish, localizePath, t } = useLanguage();
 
   useSeo({
-    title: t("Kraje i uczelnie za granica | ACADEA", "Countries and universities abroad | ACADEA"),
+    title: t("Kraje i uczelnie za granicą | ACADEA", "Countries and universities abroad | ACADEA"),
     description: t(
-      "Poznaj kraje i uczelnie, do ktorych pomagamy aplikowac. Sprawdz wymagania, kierunki i mozliwosci studiowania za granica z ACADEA.",
+      "Poznaj kraje i uczelnie, do których pomagamy aplikować. Sprawdź wymagania, kierunki i możliwości studiowania za granicą z ACADEA.",
       "Explore the countries and universities we help students apply to. Compare systems, destinations and study abroad opportunities with ACADEA.",
     ),
     path: localizePath("/kraje"),
     keywords: isEnglish
       ? ["countries to study abroad", "universities abroad", "where to study abroad", "international universities"]
-      : ["studia za granica kraje", "uczelnie za granica", "gdzie studiowac za granica", "kraje i uczelnie"],
+      : ["studia za granicą kraje", "uczelnie za granicą", "gdzie studiować za granicą", "kraje i uczelnie"],
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
       createCollectionPageSchema({
         path: localizePath("/kraje"),
-        title: t("Kraje i uczelnie za granica | ACADEA", "Countries and universities abroad | ACADEA"),
+        title: t("Kraje i uczelnie za granicą | ACADEA", "Countries and universities abroad | ACADEA"),
         description: t(
-          "Przeglad krajow i uczelni, do ktorych pomagamy aplikowac w ramach doradztwa ACADEA.",
+          "Przegląd krajów i uczelni, do których pomagamy aplikować w ramach doradztwa ACADEA.",
           "An overview of the countries and universities ACADEA supports students with.",
         ),
       }),
       createBreadcrumbSchema([
-        { name: t("Strona Glowna", "Home"), path: localizePath("/") },
+        { name: t("Strona Główna", "Home"), path: localizePath("/") },
         { name: t("Kraje i Uczelnie", "Countries and universities"), path: localizePath("/kraje") },
       ]),
       createItemListSchema({
-        name: t("Kraje dostepne w ACADEA", "Countries available with ACADEA"),
+        name: t("Kraje dostępne w ACADEA", "Countries available with ACADEA"),
         items: countries.map((country) => ({
           name: isEnglish ? countryContentEn[country.slug]?.name ?? country.name : country.name,
           path: localizePath(`/kraje/${country.slug}`),
@@ -95,7 +95,7 @@ export default function Countries() {
               animate={{ opacity: 1, y: 0 }}
               className="text-4xl md:text-6xl font-bold text-primary mb-6"
             >
-              {t("Swiat stoi przed Toba otworem", "The world is open to you")}
+              {t("Świat stoi przed Tobą otworem", "The world is open to you")}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -104,7 +104,7 @@ export default function Countries() {
               className="text-lg md:text-xl text-gray-600"
             >
               {t(
-                "Pomagamy w aplikacji do ponad 25 krajow na swiecie. Kazdy z nich ma swoj specyficzny system edukacji, wymagania i terminy. Obroc globus lub wybierz kraj ponizej, aby poznac uczelnie, na ktore mozemy wspolnie zaaplikowac.",
+                "Pomagamy w aplikacji do ponad 25 krajów na świecie. Każdy z nich ma swój specyficzny system edukacji, wymagania i terminy. Obróć globus lub wybierz kraj poniżej, aby poznać uczelnie, na które możemy wspólnie zaaplikować.",
                 "We support applications to more than 25 countries worldwide. Each destination has its own admissions system, deadlines and expectations. Spin the globe or choose a country below to explore the universities we can apply to together.",
               )}
             </motion.p>
@@ -169,17 +169,17 @@ export default function Countries() {
 
         <div className="mt-12 md:mt-16 pt-10 md:pt-12 border-t border-gray-200 text-center">
           <h2 className="text-2xl font-bold text-primary mb-4">
-            {t("Nie wiesz, ktory kraj wybrac?", "Not sure which country to choose?")}
+            {t("Nie wiesz, który kraj wybrać?", "Not sure which country to choose?")}
           </h2>
           <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
             {t(
-              "Podczas pierwszej bezplatnej konsultacji przeanalizujemy Twoj profil i doradzimy, ktory kraj i system edukacji najlepiej odpowiada Twoim oczekiwaniom.",
+              "Podczas pierwszej bezpłatnej konsultacji przeanalizujemy Twój profil i doradzimy, który kraj i system edukacji najlepiej odpowiada Twoim oczekiwaniom.",
               "During a free first consultation, we can review your profile and advise which country and education system fit your goals best.",
             )}
           </p>
           <Link href={localizePath("/umow-spotkanie")}>
             <Button size="lg" className="rounded-full px-8">
-              {t("Umow darmowa konsultacje", "Book a free consultation")}
+              {t("Umów darmową konsultację", "Book a free consultation")}
             </Button>
           </Link>
         </div>

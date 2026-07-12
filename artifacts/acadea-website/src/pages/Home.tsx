@@ -235,7 +235,7 @@ export default function Home() {
                   <>
                     Twoje miejsce
                     <br />
-                    na <span className="text-primary">swiatowej</span>
+                    na <span className="text-primary">światowej</span>
                     <br />
                     uczelni czeka.
                   </>
@@ -256,7 +256,7 @@ export default function Home() {
                     data-testid="button-hero-cta-primary"
                     className="h-14 px-8 text-base rounded-full bg-primary text-white hover:bg-primary/90 font-bold border-none shadow-lg shadow-primary/20"
                   >
-                    {t("Umow bezplatna konsultacje", "Book a free consultation")}
+                    {t("Umów bezpłatną konsultację", "Book a free consultation")}
                   </Button>
                 </Link>
               </div>
@@ -266,21 +266,21 @@ export default function Home() {
                   <MapPin size={16} className="text-primary" />
                   <span>
                     <strong className="text-gray-700 font-semibold">25+</strong>{" "}
-                    {t("krajow w ofercie", "countries covered")}
+                    {t("krajów w ofercie", "countries covered")}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-primary" />
                   <span>
                     <strong className="text-gray-700 font-semibold">99%+</strong>{" "}
-                    {t("skutecznosc", "success rate")}
+                    {t("skuteczność", "success rate")}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Heart size={16} className="text-accent fill-accent" />
                   <span>
                     <strong className="text-gray-700 font-semibold">0 PLN</strong>{" "}
-                    {t("dla stypendystow", "for scholarship recipients")}
+                    {t("dla stypendystów", "for scholarship recipients")}
                   </span>
                 </div>
               </div>
@@ -304,11 +304,11 @@ export default function Home() {
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-3xl mx-auto text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold text-primary mb-6">
-              {t("W czym pomozemy Tobie lub Twojemu Dziecku?", "How can we help you or your child?")}
+              {t("W czym pomożemy Tobie lub Twojemu Dziecku?", "How can we help you or your child?")}
             </h2>
             <p className="text-lg text-gray-500">
               {t(
-                "Aplikacja na studia to proces, ktory wymaga strategii. Przeprowadzimy Cie przez niego krok po kroku.",
+                "Aplikacja na studia to proces, który wymaga strategii. Przeprowadzimy Cię przez niego krok po kroku.",
                 "University applications require a strategy. We guide you through the process step by step.",
               )}
             </p>
@@ -360,15 +360,15 @@ export default function Home() {
                   </>
                 ) : (
                   <>
-                    Liczy sie Twoj <span className="text-accent">potencjal</span>,
+                    Liczy się Twój <span className="text-accent">potencjał</span>,
                     <br />
-                    nie budzet.
+                    nie budżet.
                   </>
                 )}
               </h2>
               <p className="text-lg text-gray-500 leading-relaxed mb-10">
                 {t(
-                  "Wybitny potencjal nie powinien napotykac barier finansowych. Dlatego stworzylismy Program Stypendialny ACADEA — dla kandydatow, ktorym zalezy, a potrzebuja wsparcia.",
+                  "Wybitny potencjał nie powinien napotykać barier finansowych. Dlatego stworzyliśmy Program Stypendialny ACADEA — dla kandydatów, którym zależy, a potrzebują wsparcia.",
                   "Outstanding potential should not run into financial barriers. That is why we created the ACADEA Scholarship Programme for candidates who are ambitious and need support.",
                 )}
               </p>
@@ -405,7 +405,7 @@ export default function Home() {
               </div>
               <div className="relative z-10 mt-2 flex items-center gap-2 px-2 text-sm text-primary/80">
                 <MapPin size={16} className="shrink-0 text-accent" />
-                <span>{t("wewnatrz Bodleian Library, University of Oxford", "inside the Bodleian Library, University of Oxford")}</span>
+                <span>{t("wewnątrz Bodleian Library, University of Oxford", "inside the Bodleian Library, University of Oxford")}</span>
               </div>
             </motion.div>
           </div>
@@ -422,17 +422,17 @@ export default function Home() {
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/8 border border-primary/15 text-primary text-sm font-semibold mb-6">
                 <Heart size={16} />
-                <span>{t("Dla Rodzicow", "For parents")}</span>
+                <span>{t("Dla Rodziców", "For parents")}</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-5">
                 {t(
-                  "Rodzicu, jestesmy tu rowniez dla Ciebie",
+                  "Rodzicu, jesteśmy tu również dla Ciebie",
                   "Parents, we are here for you too",
                 )}
               </h2>
               <p className="text-lg text-gray-500 leading-relaxed">
                 {t(
-                  "Decyzja o studiach za granica to wazny krok dla calej rodziny. Dbamy o to, zeby byl przejrzysty, bezpieczny i dobrze zaplanowany — takze z perspektywy Rodzica.",
+                  "Decyzja o studiach za granicą to ważny krok dla całej rodziny. Dbamy o to, żeby był przejrzysty, bezpieczny i dobrze zaplanowany — także z perspektywy Rodzica.",
                   "Studying abroad is a major decision for the whole family. We make sure the process is transparent, safe and well planned from a parent's perspective as well.",
                 )}
               </p>
@@ -463,7 +463,7 @@ export default function Home() {
                 className="h-14 px-8 rounded-full bg-primary text-white hover:bg-primary/90 font-bold"
               >
                 {t(
-                  "Umow rozmowe — rowniez jako Rodzic",
+                  "Umów rozmowę — również jako Rodzic",
                   "Book a consultation as a parent",
                 )}{" "}
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -488,13 +488,13 @@ export default function Home() {
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight mb-5">
                 {t(
-                  "Darmowa spolecznosc WhatsApp — aktualnosci o studiach za granica",
+                  "Darmowa społeczność WhatsApp — aktualności o studiach za granicą",
                   "Free WhatsApp community for study abroad updates",
                 )}
               </h2>
               <p className="text-gray-800/70 text-lg leading-relaxed mb-8">
                 {t(
-                  "Dolacz i otrzymuj bezplatne porady, terminy aplikacji i aktualnosci — prosto na telefon.",
+                  "Dołącz i otrzymuj bezpłatne porady, terminy aplikacji i aktualności — prosto na telefon.",
                   "Join and receive free tips, application deadlines and updates directly on your phone.",
                 )}
               </p>
@@ -515,7 +515,7 @@ export default function Home() {
               >
                 <MessageCircle size={20} />
                 {t(
-                  "Dolacz do spolecznosci — to bezplatne",
+                  "Dołącz do społeczności — to bezpłatne",
                   "Join the community for free",
                 )}
               </a>
@@ -538,7 +538,7 @@ export default function Home() {
               <p className="text-white font-bold text-lg mt-7">{t("Zeskanuj kod QR", "Scan the QR code")}</p>
               <p className="text-white/70 text-sm mt-2 max-w-xs">
                 {t(
-                  "Otworz aparat i dolacz do spolecznosci ACADEA na WhatsApp.",
+                  "Otwórz aparat i dołącz do społeczności ACADEA na WhatsApp.",
                   "Open your camera and join the ACADEA WhatsApp community.",
                 )}
               </p>
@@ -558,11 +558,12 @@ export default function Home() {
             className="max-w-3xl mx-auto"
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              {t("Zacznijmy Twoja droge.", "Let's start your journey.")}
+              {t("Zacznijmy Twoją drogę.", "Let's start your journey.")}
+              
             </h2>
             <p className="text-xl text-white/70 mb-10">
               {t(
-                "Umow bezplatna konsultacje — bez zobowiazan. Wybierz termin i porozmawiaj z naszym doradca.",
+                "Umów bezpłatną konsultację — bez zobowiązań. Wybierz termin i porozmawiaj z naszym doradcą.",
                 "Book a free consultation with no obligation. Choose a time and speak with our adviser.",
               )}
             </p>

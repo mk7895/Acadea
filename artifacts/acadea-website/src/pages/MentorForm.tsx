@@ -46,10 +46,10 @@ export default function MentorForm() {
   const roles = [
     {
       id: "paid" as const,
-      label: t("Platne sesje mentoringowe", "Paid mentoring sessions"),
+      label: t("Płatne sesje mentoringowe", "Paid mentoring sessions"),
       icon: <Briefcase size={18} />,
       desc: t(
-        "Chce pracowac z kandydatami i otrzymywac wynagrodzenie za sesje.",
+        "Chcę pracować z kandydatami i otrzymywać wynagrodzenie za sesje.",
         "I would like to work with applicants and be paid for mentoring sessions.",
       ),
     },
@@ -58,7 +58,7 @@ export default function MentorForm() {
       label: t("Wolontariat", "Volunteering"),
       icon: <Heart size={18} />,
       desc: t(
-        "Chce pomagac bezplatnie — z pasji i checi przekazania wiedzy.",
+        "Chcę pomagać bezpłatnie — z pasji i chęci przekazania wiedzy.",
         "I want to help without pay, out of passion and a desire to share experience.",
       ),
     },
@@ -74,28 +74,28 @@ export default function MentorForm() {
   ];
 
   useSeo({
-    title: t("Dolacz do zespolu mentorow | ACADEA", "Join the mentor team | ACADEA"),
+    title: t("Dołącz do zespołu mentorów | ACADEA", "Join the mentor team | ACADEA"),
     description: t(
-      "Aplikuj do zespolu ACADEA jako mentor lub wolontariusz i wspieraj kandydatow aplikujacych na studia za granica.",
+      "Aplikuj do zespołu ACADEA jako mentor lub wolontariusz i wspieraj kandydatów aplikujących na studia za granicą.",
       "Apply to join ACADEA as a mentor or volunteer and support students applying to universities abroad.",
     ),
     path: localizePath("/mentoruj"),
     keywords: isEnglish
       ? ["ACADEA mentor", "join mentor team", "study abroad mentoring"]
-      : ["mentor ACADEA", "dolacz do zespolu", "mentoring studia za granica"],
+      : ["mentor ACADEA", "dołącz do zespołu", "mentoring studia za granicą"],
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
       createWebPageSchema({
         path: localizePath("/mentoruj"),
-        title: t("Dolacz do zespolu mentorow | ACADEA", "Join the mentor team | ACADEA"),
+        title: t("Dołącz do zespołu mentorów | ACADEA", "Join the mentor team | ACADEA"),
         description: t(
-          "Formularz zgloszeniowy dla osob, ktore chca wspolpracowac z ACADEA jako mentorzy lub wolontariusze.",
+          "Formularz zgłoszeniowy dla osób, które chcą współpracować z ACADEA jako mentorzy lub wolontariusze.",
           "Application form for people who want to work with ACADEA as mentors or volunteers.",
         ),
       }),
       createBreadcrumbSchema([
-        { name: t("Strona Glowna", "Home"), path: localizePath("/") },
+        { name: t("Strona Główna", "Home"), path: localizePath("/") },
         { name: t("Mentoruj", "Become a mentor"), path: localizePath("/mentoruj") },
       ]),
     ],
@@ -119,16 +119,16 @@ export default function MentorForm() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.name.trim() || form.name.trim().length < 2) e.name = t("Podaj imie i nazwisko.", "Enter your full name.");
+    if (!form.name.trim() || form.name.trim().length < 2) e.name = t("Podaj imię i nazwisko.", "Enter your full name.");
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = t("Podaj poprawny e-mail.", "Enter a valid email address.");
-    if (!form.university.trim()) e.university = t("Podaj nazwe uczelni.", "Enter the university name.");
+    if (!form.university.trim()) e.university = t("Podaj nazwę uczelni.", "Enter the university name.");
     if (!form.country) e.country = t("Wybierz kraj.", "Choose a country.");
-    if (!form.field.trim()) e.field = t("Podaj kierunek studiow.", "Enter your degree programme.");
-    if (!form.role) e.role = t("Wybierz preferowany model wspolpracy.", "Choose your preferred cooperation model.");
+    if (!form.field.trim()) e.field = t("Podaj kierunek studiów.", "Enter your degree programme.");
+    if (!form.role) e.role = t("Wybierz preferowany model współpracy.", "Choose your preferred cooperation model.");
     if (!form.motivation.trim() || form.motivation.trim().length < 20) {
-      e.motivation = t("Napisz kilka zdan o sobie (min. 20 znakow).", "Write a few sentences about yourself (at least 20 characters).");
+      e.motivation = t("Napisz kilka zdań o sobie (min. 20 znaków).", "Write a few sentences about yourself (at least 20 characters).");
     }
-    if (!consent) e.consent = t("Zgoda na polityke prywatnosci jest wymagana.", "Privacy policy consent is required.");
+    if (!consent) e.consent = t("Zgoda na politykę prywatności jest wymagana.", "Privacy policy consent is required.");
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -136,7 +136,7 @@ export default function MentorForm() {
   const handleSubmit = async () => {
     if (!validate()) return;
     if (isTurnstileEnabled() && !turnstileToken) {
-      setSubmitError(t("Potwierdz zabezpieczenie formularza przed wyslaniem aplikacji.", "Complete the security check before submitting the application."));
+      setSubmitError(t("Potwierdź zabezpieczenie formularza przed wysłaniem aplikacji.", "Complete the security check before submitting the application."));
       return;
     }
     setSubmitting(true);
@@ -152,11 +152,11 @@ export default function MentorForm() {
           message: [
             `${t("Uczelnia", "University")}: ${form.university} (${form.country})`,
             `${t("Kierunek", "Degree programme")}: ${form.field}`,
-            form.graduationYear ? `${t("Rok ukonczenia", "Graduation year")}: ${form.graduationYear}` : null,
+            form.graduationYear ? `${t("Rok ukończenia", "Graduation year")}: ${form.graduationYear}` : null,
             `${t("Model", "Cooperation model")}: ${form.role}`,
-            form.hoursPerWeek ? `${t("Dostepnosc", "Availability")}: ${form.hoursPerWeek} ${t("h/tydzien", "hours/week")}` : null,
+            form.hoursPerWeek ? `${t("Dostępność", "Availability")}: ${form.hoursPerWeek} ${t("h/tydzień", "hours/week")}` : null,
             `${t("Motywacja", "Motivation")}: ${form.motivation}`,
-            `${t("Zgoda na polityke prywatnosci", "Privacy policy consent")}: yes`,
+            `${t("Zgoda na politykę prywatności", "Privacy policy consent")}: yes`,
           ].filter(Boolean).join("\n"),
           type: "mentor_application",
           language,
@@ -165,7 +165,7 @@ export default function MentorForm() {
       });
       const data = await res.json() as { id?: number; error?: string };
       if (!data.id) {
-        setSubmitError(data.error ?? t("Blad. Sprobuj ponownie.", "Something went wrong. Please try again."));
+        setSubmitError(data.error ?? t("Błąd. Spróbuj ponownie.", "Something went wrong. Please try again."));
         setTurnstileToken("");
         setTurnstileResetKey((value) => value + 1);
         return;
@@ -174,7 +174,7 @@ export default function MentorForm() {
       setTurnstileToken("");
       setTurnstileResetKey((value) => value + 1);
     } catch {
-      setSubmitError(t("Blad sieci. Sprawdz polaczenie i sprobuj ponownie.", "Network error. Check your connection and try again."));
+      setSubmitError(t("Błąd sieci. Sprawdź połączenie i spróbuj ponownie.", "Network error. Check your connection and try again."));
       setTurnstileToken("");
       setTurnstileResetKey((value) => value + 1);
     } finally {
@@ -184,7 +184,7 @@ export default function MentorForm() {
 
   const benefits = [
     { icon: <CheckCircle2 size={16} className="text-primary" />, text: t("Elastyczny grafik", "Flexible schedule") },
-    { icon: <Users size={16} className="text-primary" />, text: t("Realny wplyw", "Real impact") },
+    { icon: <Users size={16} className="text-primary" />, text: t("Realny wpływ", "Real impact") },
     { icon: <GraduationCap size={16} className="text-primary" />, text: t("Praca lub wolontariat", "Paid or volunteer") },
   ];
 
@@ -194,14 +194,14 @@ export default function MentorForm() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 text-primary text-xs font-semibold mb-5 uppercase tracking-widest">
             <Users size={13} />
-            {t("Dolacz do zespolu", "Join the team")}
+            {t("Dołącz do zespołu", "Join the team")}
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-3">
             {t("Mentoruj z ACADEA", "Mentor with ACADEA")}
           </h1>
           <p className="text-gray-500 text-lg max-w-lg mx-auto">
-            {t(
-              "Studiujesz za granica lub masz juz dyplom zagranicznej uczelni? Pomoz kolejnym rocznikom — jako mentor platny lub wolontariusz.",
+              {t(
+              "Studiujesz za granicą lub masz już dyplom zagranicznej uczelni? Pomóż kolejnym rocznikom — jako mentor płatny lub wolontariusz.",
               "Do you study abroad or already hold a degree from an international university? Support the next generation as a paid mentor or volunteer.",
             )}
           </p>
@@ -233,17 +233,17 @@ export default function MentorForm() {
                 <CheckCircle2 size={40} className="text-primary" />
               </div>
               <h2 className="text-2xl font-bold text-primary mb-2">
-                {t("Aplikacja wyslana!", "Application submitted!")}
+            {t("Aplikacja wysłana!", "Application submitted!")}
               </h2>
               <p className="text-gray-500 mb-8">
                 {t(
-                  `Dziekujemy, ${form.name.split(" ")[0]}! Skontaktujemy sie z Toba w ciagu kilku dni roboczych.`,
+                  `Dziękujemy, ${form.name.split(" ")[0]}! Skontaktujemy się z Tobą w ciągu kilku dni roboczych.`,
                   `Thank you, ${form.name.split(" ")[0]}! We will get back to you within a few working days.`,
                 )}
               </p>
               <Link href={localizePath("/")}>
                 <Button className="rounded-full bg-primary text-white hover:bg-primary/90 font-semibold px-8">
-                  {t("Wroc na strone glowna", "Back to home")}
+                  {t("Wróć na stronę główną", "Back to home")}
                 </Button>
               </Link>
             </motion.div>
@@ -281,7 +281,7 @@ export default function MentorForm() {
               <div>
                 <h2 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">2</span>
-                  {t("Studia za granica", "Study abroad background")}
+                  {t("Studia za granicą", "Study abroad background")}
                 </h2>
                 <div className="space-y-3">
                   <div>
@@ -304,11 +304,11 @@ export default function MentorForm() {
                   </div>
                   <div>
                     <Input value={form.field} onChange={(e) => set("field", e.target.value)}
-                      placeholder={t("Kierunek studiow *", "Degree programme *")} className={`rounded-xl ${errors.field ? "border-red-400" : ""}`} />
+                      placeholder={t("Kierunek studiów *", "Degree programme *")} className={`rounded-xl ${errors.field ? "border-red-400" : ""}`} />
                     {errors.field && <p className="text-red-500 text-xs mt-1">{errors.field}</p>}
                   </div>
                   <Input value={form.graduationYear} onChange={(e) => set("graduationYear", e.target.value)}
-                    placeholder={t("Rok ukonczenia lub planowany rok (opcjonalnie)", "Graduation year or expected year (optional)")} className="rounded-xl" />
+                    placeholder={t("Rok ukończenia lub planowany rok (opcjonalnie)", "Graduation year or expected year (optional)")} className="rounded-xl" />
                 </div>
               </div>
 
@@ -317,7 +317,7 @@ export default function MentorForm() {
               <div>
                 <h2 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">3</span>
-                  {t("Model wspolpracy *", "Cooperation model *")}
+                  {t("Model współpracy *", "Cooperation model *")}
                 </h2>
                 <div className="space-y-2">
                   {roles.map((r) => (
@@ -345,16 +345,16 @@ export default function MentorForm() {
               <div>
                 <h2 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">4</span>
-                  {t("Kilka slow o sobie", "A few words about you")}
+                  {t("Kilka słów o sobie", "A few words about you")}
                 </h2>
                 <div className="space-y-3">
                   <Input value={form.hoursPerWeek} onChange={(e) => set("hoursPerWeek", e.target.value)}
-                    placeholder={t("Ile godzin tygodniowo mozesz poswiecic? (opcjonalnie)", "How many hours per week can you commit? (optional)")} className="rounded-xl" />
+                    placeholder={t("Ile godzin tygodniowo możesz poświęcić? (opcjonalnie)", "How many hours per week can you commit? (optional)")} className="rounded-xl" />
                   <div>
                     <Textarea
                       value={form.motivation}
                       onChange={(e) => set("motivation", e.target.value)}
-                      placeholder={t("Dlaczego chcesz zostac mentorem ACADEA? Co mozesz wniesc? *", "Why would you like to mentor with ACADEA? What could you bring? *")}
+                      placeholder={t("Dlaczego chcesz zostać mentorem ACADEA? Co możesz wnieść? *", "Why would you like to mentor with ACADEA? What could you bring? *")}
                       className={`rounded-xl min-h-[120px] resize-none ${errors.motivation ? "border-red-400" : ""}`}
                     />
                     {errors.motivation && <p className="text-red-500 text-xs mt-1">{errors.motivation}</p>}
@@ -373,9 +373,9 @@ export default function MentorForm() {
                     className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
                   <span>
-                    {t("Wyrazam zgode na przetwarzanie moich danych osobowych zgodnie z", "I agree to the processing of my personal data in accordance with")}{" "}
+                    {t("Wyrażam zgodę na przetwarzanie moich danych osobowych zgodnie z", "I agree to the processing of my personal data in accordance with")}{" "}
                     <Link href={localizePath("/polityka-prywatnosci")} className="font-semibold text-primary hover:underline">
-                      {t("polityka prywatnosci", "the privacy policy")}
+                      {t("polityką prywatności", "the privacy policy")}
                     </Link>
                     .
                   </span>
@@ -399,13 +399,13 @@ export default function MentorForm() {
                 className="w-full h-14 rounded-full bg-primary text-white hover:bg-primary/90 font-bold text-base"
               >
                 {submitting ? (
-                  <><Loader2 size={18} className="animate-spin mr-2" /> {t("Wysylanie…", "Sending...")}</>
+                  <><Loader2 size={18} className="animate-spin mr-2" /> {t("Wysyłanie…", "Sending...")}</>
                 ) : (
-                  <>{t("Wyslij aplikacje", "Submit application")} <ArrowRight className="ml-2 h-5 w-5" /></>
+                  <>{t("Wyślij aplikację", "Submit application")} <ArrowRight className="ml-2 h-5 w-5" /></>
                 )}
               </Button>
               <p className="text-center text-xs text-gray-400">
-                {t("Skontaktujemy sie z Toba w ciagu kilku dni roboczych.", "We will get back to you within a few working days.")}
+                {t("Skontaktujemy się z Tobą w ciągu kilku dni roboczych.", "We will get back to you within a few working days.")}
               </p>
             </motion.div>
           )}
