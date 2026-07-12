@@ -16,6 +16,7 @@ import {
   createWebPageSchema,
   useSeo,
 } from "@/lib/seo";
+import { useLanguage } from "@/lib/i18n";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -39,29 +40,59 @@ const criteria = [
 ];
 
 export default function Scholarship() {
+  const { isEnglish, localizePath, t } = useLanguage();
+  const localizedCriteria = isEnglish
+    ? [
+        {
+          title: "Outstanding results and achievements",
+          desc: "We are looking for people with passion - grades matter, but your motivation, determination and what you do outside school matter just as much.",
+        },
+        {
+          title: "Big dreams and plans for the future",
+          desc: "Do you want to study abroad, fly planes, dance or develop in a completely different field? We will help you plan your own path.",
+        },
+      ]
+    : criteria;
   useSeo({
-    title: "Program Stypendialny ACADEA | Konkurs stypendialny",
-    description:
+    title: t(
+      "Program Stypendialny ACADEA | Konkurs stypendialny",
+      "ACADEA Scholarship Programme | Scholarship competition",
+    ),
+    description: t(
       "Poznaj Program Stypendialny ACADEA i sprawdź zasady konkursu dla ambitnych kandydatów, którzy potrzebują wsparcia mentoringowego i edukacyjnego.",
-    path: "/stypendium",
-    keywords: [
-      "stypendium ACADEA",
-      "konkurs stypendialny",
-      "program stypendialny",
-      "stypendium studia za granicą",
-    ],
+      "Explore the ACADEA Scholarship Programme and see the competition rules for ambitious candidates who need mentoring and educational support.",
+    ),
+    path: localizePath("/stypendium"),
+    keywords: isEnglish
+      ? [
+          "ACADEA scholarship",
+          "scholarship competition",
+          "scholarship programme",
+          "study abroad scholarship",
+        ]
+      : [
+          "stypendium ACADEA",
+          "konkurs stypendialny",
+          "program stypendialny",
+          "stypendium studia za granicą",
+        ],
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
       createWebPageSchema({
-        path: "/stypendium",
-        title: "Program Stypendialny ACADEA | Konkurs stypendialny",
-        description:
+        path: localizePath("/stypendium"),
+        title: t(
+          "Program Stypendialny ACADEA | Konkurs stypendialny",
+          "ACADEA Scholarship Programme | Scholarship competition",
+        ),
+        description: t(
           "Strona programu stypendialnego ACADEA z opisem konkursu, mentorów i formularza zgłoszeniowego.",
+          "ACADEA scholarship programme page with the competition description, mentors and application form.",
+        ),
       }),
       createBreadcrumbSchema([
-        { name: "Strona Główna", path: "/" },
-        { name: "Stypendia", path: "/stypendium" },
+        { name: t("Strona Główna", "Home"), path: localizePath("/") },
+        { name: t("Stypendia", "Scholarships"), path: localizePath("/stypendium") },
       ]),
     ],
   });
@@ -78,11 +109,15 @@ export default function Scholarship() {
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
               <h1 className="text-5xl md:text-7xl font-bold text-gray-900 leading-[1.05] tracking-tight mb-5">
-                Twoja pasja.<br />
-                <span className="text-primary">Nasze wsparcie.</span>
+                {t("Twoja pasja.", "Your passion.")}
+                <br />
+                <span className="text-primary">{t("Nasze wsparcie.", "Our support.")}</span>
               </h1>
               <p className="text-xl text-gray-500 leading-relaxed max-w-2xl mb-8 md:mb-10">
-                Program Stypendialny ACADEA to mentoring i wsparcie dla ambitnych, zmotywowanych osób, które chcą świadomie wybrać i podążać własną ścieżką.
+                {t(
+                  "Program Stypendialny ACADEA to mentoring i wsparcie dla ambitnych, zmotywowanych osób, które chcą świadomie wybrać i podążać własną ścieżką.",
+                  "The ACADEA Scholarship Programme offers mentoring and support for ambitious, motivated people who want to choose and follow their own path consciously.",
+                )}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <a href="#konkurs">
@@ -91,7 +126,7 @@ export default function Scholarship() {
                     data-testid="button-scholarship-hero-cta"
                     className="h-14 px-8 text-base bg-primary text-white hover:bg-gray-900 transition-colors border-none rounded-full font-bold"
                   >
-                    Zobacz konkurs stypendialny <ArrowRight className="ml-2 h-5 w-5" />
+                    {t("Zobacz konkurs stypendialny", "See the scholarship competition")} <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </a>
               </div>
@@ -135,7 +170,7 @@ export default function Scholarship() {
           >
             <div className="flex items-center gap-2 bg-primary/10 rounded-full px-5 py-2 font-bold text-base">
               <Clock size={18} className="shrink-0" />
-              <span>Rozpatrywane na bieżąco</span>
+              <span>{t("Rozpatrywane na bieżąco", "Reviewed on a rolling basis")}</span>
             </div>
             <div className="flex items-center gap-2 bg-primary/10 rounded-full px-5 py-2 font-bold text-base">
               <Calendar size={18} className="shrink-0" />
@@ -160,10 +195,16 @@ export default function Scholarship() {
                 <Heart size={32} className="text-accent" />
               </div>
               <div className="text-2xl md:text-3xl font-bold text-primary leading-snug mb-6">
-                Czasem potrzeba jednej osoby, marzenie zamieniło się w realny plan. Kogoś, kto pokaże pierwszy krok i pomoże uwierzyć, że ambitne cele są naprawdę osiągalne.
+                {t(
+                  "Czasem potrzeba jednej osoby, żeby marzenie zamieniło się w realny plan. Kogoś, kto pokaże pierwszy krok i pomoże uwierzyć, że ambitne cele są naprawdę osiągalne.",
+                  "Sometimes all it takes is one person for a dream to turn into a real plan. Someone who shows the first step and helps you believe that ambitious goals are truly achievable.",
+                )}
               </div>
               <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
-                Wierzymy w to każdego dnia. Dlatego stworzyliśmy program, który daje ambitnym, zmotywowanym osobom dostęp do mentoringu i wsparcia w realizacji ich marzeń i celów naukowych.
+                {t(
+                  "Wierzymy w to każdego dnia. Dlatego stworzyliśmy program, który daje ambitnym, zmotywowanym osobom dostęp do mentoringu i wsparcia w realizacji ich marzeń i celów naukowych.",
+                  "We believe this every day. That is why we created a programme that gives ambitious, motivated people access to mentoring and support in pursuing their dreams and academic goals.",
+                )}
               </p>
             </motion.div>
           </div>
@@ -184,10 +225,13 @@ export default function Scholarship() {
               className="text-center mb-14"
             >
               <h2 className="text-4xl md:text-5xl font-bold text-primary mb-6">
-                Konkurs Stypendialny ACADEA
+                {t("Konkurs Stypendialny ACADEA", "ACADEA Scholarship Competition")}
               </h2>
               <p className="text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
-                Szukamy ambitnych, zmotywowanych osób z pasją — niezależnie od tego, czy marzą o studiach za granicą, czy chcą rozwijać swoje zainteresowania, takie jak lotnictwo, taniec czy nauka. To program mentoringowy, w którym pomagamy świadomie wybrać i podążać własną ścieżką.
+                {t(
+                  "Szukamy ambitnych, zmotywowanych osób z pasją — niezależnie od tego, czy marzą o studiach za granicą, czy chcą rozwijać swoje zainteresowania, takie jak lotnictwo, taniec czy nauka. To program mentoringowy, w którym pomagamy świadomie wybrać i podążać własną ścieżką.",
+                  "We are looking for ambitious, motivated people with passion - whether they dream of studying abroad or want to develop interests such as aviation, dance or science. This is a mentoring programme in which we help people consciously choose and follow their own path.",
+                )}
               </p>
             </motion.div>
 
@@ -199,7 +243,7 @@ export default function Scholarship() {
               viewport={{ once: true }}
               className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
-              {criteria.map((c, i) => (
+              {localizedCriteria.map((c, i) => (
                 <motion.div
                   key={i}
                   variants={itemVariants}
@@ -219,10 +263,12 @@ export default function Scholarship() {
                 className="mt-12"
             >
               <div className="text-center mb-8">
-                <h3 className="text-2xl md:text-3xl font-bold text-primary mb-3">Nasi mentorzy</h3>
+                <h3 className="text-2xl md:text-3xl font-bold text-primary mb-3">{t("Nasi mentorzy", "Our mentors")}</h3>
                 <p className="text-gray-600 max-w-2xl mx-auto">
-                  Stypendium to nie tylko wsparcie finansowe, ale też ludzie, którzy pomagają przekuć potencjał w
-                  konkretny plan.
+                  {t(
+                    "Stypendium to nie tylko wsparcie finansowe, ale też ludzie, którzy pomagają przekuć potencjał w konkretny plan.",
+                    "A scholarship is not only financial support but also people who help turn potential into a concrete plan.",
+                  )}
                 </p>
               </div>
               <div className="flex flex-wrap justify-center gap-4">
@@ -236,7 +282,7 @@ export default function Scholarship() {
                         <GraduationCap size={20}/>
                       </div>
                       <h4 className="text-lg font-bold text-primary">{mentor.name}</h4>
-                      <p className="text-sm text-gray-600 leading-relaxed mt-3">{mentor.desc}</p>
+                      <p className="text-sm text-gray-600 leading-relaxed mt-3">{isEnglish ? mentor.descEn : mentor.desc}</p>
                     </div>
                 ))}
               </div>
@@ -247,7 +293,7 @@ export default function Scholarship() {
                     rel="noreferrer"
                     className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
                 >
-                  Dowiedz się więcej o Mentorach
+                  {t("Dowiedz się więcej o Mentorach", "Learn more about the mentors")}
                 </a>
               </div>
             </motion.div>
@@ -264,26 +310,29 @@ export default function Scholarship() {
               viewport={{once: true}}
               className="max-w-3xl mx-auto text-center"
           >
-            <h2 className="text-4xl font-bold text-primary mb-6">Aplikuj o stypendium</h2>
+            <h2 className="text-4xl font-bold text-primary mb-6">{t("Aplikuj o stypendium", "Apply for a scholarship")}</h2>
             <p className="text-lg text-gray-600 mb-10 leading-relaxed">
-              Jeśli masz wybitne wyniki, pasję i wielkie marzenia, ten konkurs jest dla Ciebie. Wypełnij formularz. Zgłoszenia rozpatrujemy z indywidualną uwagą dla każdej historii.
+              {t(
+                "Jeśli masz wybitne wyniki, pasję i wielkie marzenia, ten konkurs jest dla Ciebie. Wypełnij formularz. Zgłoszenia rozpatrujemy z indywidualną uwagą dla każdej historii.",
+                "If you have outstanding results, passion and big dreams, this competition is for you. Fill in the form. We review applications with individual attention to every story.",
+              )}
             </p>
             <div className="flex flex-col items-center gap-4">
-              <Link href="/stypendium/aplikacja">
+              <Link href={localizePath("/stypendium/aplikacja")}>
                 <Button
                   size="lg"
                   data-testid="button-apply-scholarship"
                   className="h-14 px-10 text-base bg-primary text-white hover:bg-primary/90 rounded-full font-bold shadow-lg"
                 >
-                  Wypełnij formularz <ArrowRight className="ml-2 h-5 w-5" />
+                  {t("Wypełnij formularz", "Fill in the form")} <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Link href="/stypendium/regulamin" className="text-sm font-semibold text-primary hover:underline">
-                Regulamin konkursu stypendialnego
+              <Link href={localizePath("/stypendium/regulamin")} className="text-sm font-semibold text-primary hover:underline">
+                {t("Regulamin konkursu stypendialnego", "Scholarship competition terms")}
               </Link>
             </div>
             <p className="text-sm text-gray-400 mt-5">
-              Wypełnienie formularza zajmuje kilka minut.
+              {t("Wypełnienie formularza zajmuje kilka minut.", "Completing the form takes a few minutes.")}
             </p>
           </motion.div>
         </div>

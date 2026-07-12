@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { countries } from "@/data/countries";
+import { countries, getLocalizedCountry } from "@/data/countries";
 import {
   createBreadcrumbSchema,
   createCollectionPageSchema,
@@ -18,35 +18,6 @@ const GlobeSection = lazy(() =>
   import("@/components/GlobeSection").then((module) => ({ default: module.GlobeSection })),
 );
 
-const countryContentEn: Record<string, { name: string; tagline: string }> = {
-  usa: { name: "USA", tagline: "The widest range of universities and generous scholarship opportunities." },
-  "wielka-brytania": { name: "United Kingdom", tagline: "Oxford, Cambridge and top Russell Group universities." },
-  holandia: { name: "Netherlands", tagline: "Practical, international education with many programmes in English." },
-  niemcy: { name: "Germany", tagline: "Top-quality education, often with little or no tuition." },
-  irlandia: { name: "Ireland", tagline: "An English-speaking EU destination with strong links to global tech." },
-  francja: { name: "France", tagline: "Elite Grandes Ecoles and a rich academic tradition." },
-  szwajcaria: { name: "Switzerland", tagline: "Prestige, safety and proximity to international organisations." },
-  szwecja: { name: "Sweden", tagline: "Innovation-driven education and strong outcomes for EU students." },
-  dania: { name: "Denmark", tagline: "Modern campuses, design culture and attractive scholarship options." },
-  hiszpania: { name: "Spain", tagline: "Excellent business schools and a warm Mediterranean lifestyle." },
-  wlochy: { name: "Italy", tagline: "Art, design and some of the world's oldest universities." },
-  austria: { name: "Austria", tagline: "Classical education in historic university cities." },
-  belgia: { name: "Belgium", tagline: "The heart of Europe with multilingual academic environments." },
-  norwegia: { name: "Norway", tagline: "High quality of life and tuition-friendly study options." },
-  czechy: { name: "Czech Republic", tagline: "Strong medicine and technical degrees close to Poland." },
-  portugalia: { name: "Portugal", tagline: "Accessible costs and a mild climate." },
-  finlandia: { name: "Finland", tagline: "A global leader in education and innovation." },
-  kanada: { name: "Canada", tagline: "Expansive campuses and strong post-study pathways." },
-  chiny: { name: "China", tagline: "A rising academic powerhouse with government scholarships." },
-  "korea-poludniowa": { name: "South Korea", tagline: "A technology leader with highly modern campuses." },
-  singapur: { name: "Singapore", tagline: "A global education hub in the heart of Asia." },
-  japonia: { name: "Japan", tagline: "Tradition, technology and MEXT scholarship opportunities." },
-  australia: { name: "Australia", tagline: "Strong student life, excellent universities and post-study work routes." },
-  malta: { name: "Malta", tagline: "An English-speaking EU country on the Mediterranean." },
-  zea: { name: "UAE", tagline: "Branch campuses of world universities and generous scholarships." },
-  hongkong: { name: "Hong Kong", tagline: "A British-style academic system with English-medium teaching." },
-};
-
 export default function Countries() {
   const { isEnglish, localizePath, t } = useLanguage();
 
@@ -54,7 +25,7 @@ export default function Countries() {
     title: t("Kraje i uczelnie za granicą | ACADEA", "Countries and universities abroad | ACADEA"),
     description: t(
       "Poznaj kraje i uczelnie, do których pomagamy aplikować. Sprawdź wymagania, kierunki i możliwości studiowania za granicą z ACADEA.",
-      "Explore the countries and universities we help students apply to. Compare systems, destinations and study abroad opportunities with ACADEA.",
+      "Discover the countries and universities we help students apply to. Explore requirements, degree options and opportunities for studying abroad with ACADEA.",
     ),
     path: localizePath("/kraje"),
     keywords: isEnglish
@@ -68,7 +39,7 @@ export default function Countries() {
         title: t("Kraje i uczelnie za granicą | ACADEA", "Countries and universities abroad | ACADEA"),
         description: t(
           "Przegląd krajów i uczelni, do których pomagamy aplikować w ramach doradztwa ACADEA.",
-          "An overview of the countries and universities ACADEA supports students with.",
+          "An overview of the countries and universities we help students apply to as part of ACADEA guidance.",
         ),
       }),
       createBreadcrumbSchema([
@@ -78,7 +49,7 @@ export default function Countries() {
       createItemListSchema({
         name: t("Kraje dostępne w ACADEA", "Countries available with ACADEA"),
         items: countries.map((country) => ({
-          name: isEnglish ? countryContentEn[country.slug]?.name ?? country.name : country.name,
+          name: getLocalizedCountry(country, isEnglish ? "en" : "pl").name,
           path: localizePath(`/kraje/${country.slug}`),
         })),
       }),
@@ -105,7 +76,7 @@ export default function Countries() {
             >
               {t(
                 "Pomagamy w aplikacji do ponad 25 krajów na świecie. Każdy z nich ma swój specyficzny system edukacji, wymagania i terminy. Obróć globus lub wybierz kraj poniżej, aby poznać uczelnie, na które możemy wspólnie zaaplikować.",
-                "We support applications to more than 25 countries worldwide. Each destination has its own admissions system, deadlines and expectations. Spin the globe or choose a country below to explore the universities we can apply to together.",
+                "We help with applications to more than 25 countries around the world. Each one has its own education system, requirements and deadlines. Rotate the globe or choose a country below to discover the universities we can apply to together.",
               )}
             </motion.p>
           </div>
@@ -131,9 +102,9 @@ export default function Countries() {
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
           {countries.map((country) => {
-            const translated = countryContentEn[country.slug];
-            const title = isEnglish ? translated?.name ?? country.name : country.name;
-            const tagline = isEnglish ? translated?.tagline ?? country.tagline : country.tagline;
+            const localizedCountry = getLocalizedCountry(country, isEnglish ? "en" : "pl");
+            const title = localizedCountry.name;
+            const tagline = localizedCountry.tagline;
             return (
               <motion.div
                 key={country.slug}
@@ -174,7 +145,7 @@ export default function Countries() {
           <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
             {t(
               "Podczas pierwszej bezpłatnej konsultacji przeanalizujemy Twój profil i doradzimy, który kraj i system edukacji najlepiej odpowiada Twoim oczekiwaniom.",
-              "During a free first consultation, we can review your profile and advise which country and education system fit your goals best.",
+              "During the first free consultation, we will analyse your profile and advise which country and education system best match your expectations.",
             )}
           </p>
           <Link href={localizePath("/umow-spotkanie")}>

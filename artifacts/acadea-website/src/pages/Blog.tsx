@@ -42,28 +42,39 @@ export default function Blog() {
   const cachedTaxonomy = getCachedArticleTaxonomy(language);
 
   useSeo({
-    title: "Baza wiedzy o studiach za granicą | ACADEA",
-    description:
+    title: t("Baza wiedzy o studiach za granicą | ACADEA", "Knowledge base about studying abroad | ACADEA"),
+    description: t(
       "Poradniki ACADEA o studiach za granicą: aplikacja, terminy, dokumenty, egzaminy, kierunki, kraje, uczelnie i stypendia.",
-    path: "/baza-wiedzy",
-    keywords: [
-      "baza wiedzy studia za granicą",
-      "poradniki studia za granicą",
-      "aplikacja na studia poradnik",
-      "ACADEA blog",
-    ],
+      "ACADEA guides about studying abroad: applications, deadlines, documents, exams, degree programmes, countries, universities and scholarships.",
+    ),
+    path: localizePath("/baza-wiedzy"),
+    keywords: language === "en"
+      ? [
+          "study abroad knowledge base",
+          "study abroad guides",
+          "university application guide",
+          "ACADEA blog",
+        ]
+      : [
+          "baza wiedzy studia za granicą",
+          "poradniki studia za granicą",
+          "aplikacja na studia poradnik",
+          "ACADEA blog",
+        ],
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
       createCollectionPageSchema({
-        path: "/baza-wiedzy",
-        title: "Baza wiedzy o studiach za granicą | ACADEA",
-        description:
+        path: localizePath("/baza-wiedzy"),
+        title: t("Baza wiedzy o studiach za granicą | ACADEA", "Knowledge base about studying abroad | ACADEA"),
+        description: t(
           "Artykuły i poradniki ACADEA o aplikacji na studia za granicą, uczelniach, krajach, egzaminach i finansowaniu.",
+          "ACADEA articles and guides about applying to universities abroad, countries, universities, exams and funding.",
+        ),
       }),
       createBreadcrumbSchema([
-        { name: "Strona Główna", path: "/" },
-        { name: "Baza Wiedzy", path: "/baza-wiedzy" },
+        { name: t("Strona Główna", "Home"), path: localizePath("/") },
+        { name: t("Baza Wiedzy", "Knowledge base"), path: localizePath("/baza-wiedzy") },
       ]),
     ],
   });

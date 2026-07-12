@@ -24,7 +24,7 @@ export default function HowItWorks() {
       ),
       desc: t(
         "Zaczynamy od dogłębnego poznania Twoich pasji, mocnych stron i oczekiwań. Analizujemy wyniki w nauce i budżet. Wspólnie tworzymy spersonalizowaną i optymalną listę uniwersytetów oraz harmonogram aplikacji.",
-        "We begin by understanding your interests, strengths and ambitions in depth. We review your academic profile and budget, then build a personalised and well-balanced university list together with an application timeline.",
+        "We start by getting to know your passions, strengths and expectations in depth. We analyse your academic results and budget. Together, we create a personalised and well-balanced list of universities and an application timeline.",
       ),
       color: "bg-blue-100 text-blue-600",
     },
@@ -37,7 +37,7 @@ export default function HowItWorks() {
       ),
       desc: t(
         "Pomagamy w przygotowaniu do egzaminów wymaganych przez uczelnie — IELTS, TOEFL, egzaminów Cambridge, SAT, GRE, GMAT oraz egzaminów maturalnych, w tym matury międzynarodowej IB. Ćwiczymy w zaplanowanym tempie, aby osiągnąć wymagane wyniki z wyprzedzeniem.",
-        "We support preparation for the exams required by universities, including IELTS, TOEFL, Cambridge exams, SAT, GRE, GMAT and school-leaving exams such as the IB. We work to a structured plan so target scores are reached early.",
+        "We help with preparation for the exams required by universities - IELTS, TOEFL, Cambridge exams, SAT, GRE, GMAT and school-leaving exams, including the International Baccalaureate. We practise at a planned pace so that you achieve the required scores in advance.",
       ),
       color: "bg-teal-100 text-teal-600",
     },
@@ -47,7 +47,7 @@ export default function HowItWorks() {
       title: t("3. Przygotowanie Dokumentów", "3. Document preparation"),
       desc: t(
         "Pomagamy w skompletowaniu niezbędnych dokumentów: transkryptów ocen, referencji/listów rekomendacyjnych, certyfikatów. Pracujemy nad Twoim CV tak, aby pokazać Cię z jak najlepszej strony. Służymy radą i pomocą również nauczycielom i innym osobom, które piszą dla Ciebie listy rekomendacyjne.",
-        "We help gather every required document, from transcripts and certificates to references and recommendation letters. We also refine your CV and support teachers or referees contributing to your application.",
+        "We help you gather the necessary documents: transcripts, references or recommendation letters, and certificates. We work on your CV so that it presents you in the best possible light. We also offer advice and support to teachers and other people writing recommendation letters for you.",
       ),
       color: "bg-emerald-100 text-emerald-600",
     },
@@ -57,7 +57,7 @@ export default function HowItWorks() {
       title: t("4. Eseje, CV i Listy Motywacyjne", "4. Essays, CVs and motivation letters"),
       desc: t(
         "To jeden z najważniejszych elementów aplikacji. Dokładnie analizujemy każdy zadany temat, przechodzimy przez burzę mózgów i tworzenie planów esejów. Następnie edytujemy teksty, aż będą perfekcyjne.",
-        "This is one of the most important parts of the application. We analyse every prompt carefully, brainstorm ideas with you, shape strong outlines and then edit each draft until it is genuinely ready to submit.",
+        "This is one of the most important elements of the application. We analyse each prompt carefully and go through brainstorming and essay planning. Then we edit the texts until they are perfect.",
       ),
       color: "bg-purple-100 text-purple-600",
     },
@@ -67,7 +67,7 @@ export default function HowItWorks() {
       title: t("5. Aplikacja i Stypendia", "5. Applications and scholarships"),
       desc: t(
         "Wspólnie wypełniamy portale i wnioski aplikacyjne (UCAS, Common App i inne). Dbamy o wszystkie terminy, opłaty aplikacyjne oraz ewentualne wnioski o stypendia.",
-        "We complete application portals and forms together, including UCAS, Common App and others. We keep track of deadlines, fees and any scholarship submissions.",
+        "Together we fill in application portals and forms (UCAS, Common App and others). We keep track of all deadlines, application fees and any scholarship applications.",
       ),
       color: "bg-orange-100 text-orange-600",
     },
@@ -77,7 +77,7 @@ export default function HowItWorks() {
       title: t("6. W oczekiwaniu na odpowiedzi i interviews", "6. Waiting for results and interviews"),
       desc: t(
         "Pozostajemy w kontakcie po wysłaniu aplikacji, pomagając w komunikacji z uczelnią, przygotowaniu się do rozmów wstępnych oraz dodając otuchy w oczekiwaniu na wyniki.",
-        "We stay close after submission, helping with communication from universities, interview preparation and the uncertainty that comes with waiting for decisions.",
+        "We stay in touch after the application is submitted, helping with communication with the university, preparation for interviews and offering reassurance while you wait for results.",
       ),
       color: "bg-yellow-100 text-yellow-600",
     },
@@ -87,7 +87,7 @@ export default function HowItWorks() {
       title: t("7. Po przyjęciu", "7. After admission"),
       desc: t(
         "Otrzymujesz oferty! Pomagamy podjąć ostateczną decyzję oraz dopełnić formalności. Wspieramy w organizacji wyjazdu, wyborze ubezpieczenia, procesie wizowym, aplikacji o miejsce w akademiku czy wyborze operatora w nowym kraju.",
-        "When offers arrive, we help you compare them, make the final choice and complete the next formal steps. That includes departure planning, insurance, visas, accommodation and settling into a new country.",
+        "You receive offers! We help you make the final decision and complete the formalities. We support you in organising your departure, choosing insurance, going through the visa process, applying for a place in a dormitory or even choosing a mobile operator in your new country.",
       ),
       color: "bg-rose-100 text-rose-600",
     },
@@ -100,7 +100,7 @@ export default function HowItWorks() {
     ),
     description: t(
       "Zobacz, jak wygląda współpraca z ACADEA krok po kroku: wybór uczelni, egzaminy, dokumenty, eseje, aplikacja, rozmowy i formalności po przyjęciu.",
-      "See how working with ACADEA looks step by step: university choice, exams, documents, essays, applications, interviews and post-offer formalities.",
+      "See what working with ACADEA looks like step by step: university choice, exams, documents, essays, applications, interviews and post-offer formalities.",
     ),
     path: localizePath("/jak-to-dziala"),
     keywords: isEnglish
@@ -122,7 +122,7 @@ export default function HowItWorks() {
         ),
         description: t(
           "Opis procesu współpracy z ACADEA przy aplikacji na studia za granicą od wyboru uczelni po wyjazd.",
-          "An overview of the ACADEA process for study abroad applications, from university selection to departure.",
+          "A description of the ACADEA process for applying to universities abroad, from choosing a university to departure.",
         ),
       }),
       createBreadcrumbSchema([
@@ -151,7 +151,7 @@ export default function HowItWorks() {
           >
             {t(
               "Aplikacja na studia za granicą to maraton, nie sprint. Zobacz, jak przeprowadzimy Cię przez cały proces — od pierwszego pomysłu aż po wyjazd.",
-              "Applying abroad is a marathon, not a sprint. Here is how we guide you through the whole process, from the first idea all the way to departure.",
+              "Applying to universities abroad is a marathon, not a sprint. See how we guide you through the whole process - from the first idea all the way to departure.",
             )}
           </motion.p>
         </div>
@@ -193,7 +193,7 @@ export default function HowItWorks() {
           <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
             {t(
               "Najlepszy czas na rozpoczęcie przygotowań jest na przynajmniej rok przed maturą. Nie czekaj do ostatniej chwili.",
-              "The best time to start preparing is at least a year before your final school exams. It is much easier when there is time to plan well.",
+              "The best time to start preparing is at least a year before your final school exams. Do not wait until the last minute.",
             )}
           </p>
           <Link href={localizePath("/kontakt")} className="inline-flex justify-center">

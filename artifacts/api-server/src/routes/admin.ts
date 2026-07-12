@@ -73,6 +73,7 @@ const adminImageSchema = z.object({
 const categoryGroupSchema = z.object({
   sortOrder: z.number().int().min(0).default(0),
   name: z.string().trim().min(1),
+  nameEn: z.string().trim().optional().or(z.literal("")),
   slug: z.string().trim().optional(),
 });
 
@@ -80,6 +81,7 @@ const categorySchema = z.object({
   groupId: z.number().int().positive(),
   sortOrder: z.number().int().min(0).default(0),
   name: z.string().trim().min(1),
+  nameEn: z.string().trim().optional().or(z.literal("")),
   slug: z.string().trim().optional(),
 });
 
@@ -199,6 +201,7 @@ async function loadArticleTaxonomy() {
   return groups.map((group) => ({
     id: group.id,
     name: group.name,
+    nameEn: group.nameEn,
     slug: group.slug,
     sortOrder: group.sortOrder,
     categories: categories
@@ -207,6 +210,7 @@ async function loadArticleTaxonomy() {
         id: category.id,
         groupId: category.groupId,
         name: category.name,
+        nameEn: category.nameEn,
         slug: category.slug,
         sortOrder: category.sortOrder,
       })),
@@ -368,6 +372,7 @@ router.post("/admin/article-category-groups", requireAdmin, async (req, res) => 
     .insert(articleCategoryGroupsTable)
     .values({
       name: parsed.data.name,
+      nameEn: parsed.data.nameEn?.trim() || null,
       slug,
       sortOrder: parsed.data.sortOrder,
     })
@@ -397,6 +402,7 @@ router.put("/admin/article-category-groups/:id", requireAdmin, async (req, res) 
     .update(articleCategoryGroupsTable)
     .set({
       name: parsed.data.name,
+      nameEn: parsed.data.nameEn?.trim() || null,
       slug,
       sortOrder: parsed.data.sortOrder,
       updatedAt: new Date(),
@@ -452,6 +458,7 @@ router.post("/admin/article-categories", requireAdmin, async (req, res) => {
     .values({
       groupId: parsed.data.groupId,
       name: parsed.data.name,
+      nameEn: parsed.data.nameEn?.trim() || null,
       slug,
       sortOrder: parsed.data.sortOrder,
     })
@@ -482,6 +489,7 @@ router.put("/admin/article-categories/:id", requireAdmin, async (req, res) => {
     .set({
       groupId: parsed.data.groupId,
       name: parsed.data.name,
+      nameEn: parsed.data.nameEn?.trim() || null,
       slug,
       sortOrder: parsed.data.sortOrder,
       updatedAt: new Date(),

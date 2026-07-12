@@ -13,6 +13,7 @@ export type ArticleTocItem = {
 export type ArticleCategoryGroup = {
   id: number;
   name: string;
+  nameEn?: string | null;
   slug: string;
   sortOrder: number;
   categories: ArticleCategory[];
@@ -22,6 +23,7 @@ export type ArticleCategory = {
   id: number;
   groupId: number;
   name: string;
+  nameEn?: string | null;
   slug: string;
   sortOrder: number;
 };

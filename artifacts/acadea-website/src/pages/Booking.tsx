@@ -308,8 +308,10 @@ export default function Booking() {
     try {
       const topicValue =
         form.topic === "Inne" && form.otherDetail.trim()
-          ? `Inne — ${form.otherDetail.trim()}`
-          : form.topic;
+          ? `${isEnglish ? "Other" : "Inne"} — ${form.otherDetail.trim()}`
+          : isEnglish
+            ? (topicLabelsEn[form.topic] ?? form.topic)
+            : form.topic;
       const res = await fetch(`${API_BASE}/booking/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -656,7 +658,7 @@ export default function Booking() {
                     {submitting ? (
                       <><Loader2 size={18} className="animate-spin mr-2" /> {t("Umawianie…", "Booking...")}</>
                     ) : (
-                      <>{t("Umów spotkanie", "Book meeting")} <ArrowRight className="ml-2 h-5 w-5" /></>
+                      <>{t("Umów spotkanie", "Book a meeting")} <ArrowRight className="ml-2 h-5 w-5" /></>
                     )}
                   </Button>
                   <p className="text-center text-xs text-gray-400">

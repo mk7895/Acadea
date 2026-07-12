@@ -165,9 +165,11 @@ export default function AdminArticles() {
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"articles" | "calendar">("articles");
   const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupNameEn, setNewGroupNameEn] = useState("");
   const [newGroupSlug, setNewGroupSlug] = useState("");
   const [newCategoryGroupId, setNewCategoryGroupId] = useState<number | "">("");
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryNameEn, setNewCategoryNameEn] = useState("");
   const [newCategorySlug, setNewCategorySlug] = useState("");
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
   const [googleConnection, setGoogleConnection] = useState<GoogleConnectionState | null>(null);
@@ -749,12 +751,14 @@ export default function AdminArticles() {
 
     await createArticleCategoryGroup(token, {
       name: newGroupName.trim(),
+      nameEn: newGroupNameEn.trim() || undefined,
       slug: newGroupSlug.trim() || normalizeCategorySlug(newGroupName),
       sortOrder: taxonomyGroups.length,
     });
     const taxonomy = await fetchAdminArticleTaxonomy(token);
     setTaxonomyGroups(taxonomy.groups);
     setNewGroupName("");
+    setNewGroupNameEn("");
     setNewGroupSlug("");
     setStatus("Dodano grupę kategorii.");
   }
@@ -791,6 +795,7 @@ export default function AdminArticles() {
     await createArticleCategory(token, {
       groupId: group.id,
       name: newCategoryName.trim(),
+      nameEn: newCategoryNameEn.trim() || undefined,
       slug: newCategorySlug.trim() || normalizeCategorySlug(newCategoryName),
       sortOrder: group.categories.length,
     });
@@ -799,6 +804,7 @@ export default function AdminArticles() {
     setTaxonomyGroups(taxonomy.groups);
     setNewCategoryGroupId("");
     setNewCategoryName("");
+    setNewCategoryNameEn("");
     setNewCategorySlug("");
     setStatus("Dodano kategorię.");
   }
@@ -1269,6 +1275,12 @@ export default function AdminArticles() {
                     className="h-11 w-full rounded-2xl border border-[#ded7c9] px-4"
                   />
                   <input
+                    value={newGroupNameEn}
+                    onChange={(e) => setNewGroupNameEn(e.target.value)}
+                    placeholder="English name, e.g. Countries"
+                    className="h-11 w-full rounded-2xl border border-[#ded7c9] px-4"
+                  />
+                  <input
                     value={newGroupSlug}
                     onChange={(e) => setNewGroupSlug(e.target.value)}
                     placeholder="Opcjonalny slug, np. kraj"
@@ -1300,6 +1312,12 @@ export default function AdminArticles() {
                     className="h-11 w-full rounded-2xl border border-[#ded7c9] px-4"
                   />
                   <input
+                    value={newCategoryNameEn}
+                    onChange={(e) => setNewCategoryNameEn(e.target.value)}
+                    placeholder="English name, e.g. Sweden"
+                    className="h-11 w-full rounded-2xl border border-[#ded7c9] px-4"
+                  />
+                  <input
                     value={newCategorySlug}
                     onChange={(e) => setNewCategorySlug(e.target.value)}
                     placeholder="Opcjonalny slug, np. szwecja"
@@ -1317,6 +1335,7 @@ export default function AdminArticles() {
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div>
                         <p className="font-semibold text-primary">{group.name}</p>
+                        {group.nameEn ? <p className="text-xs text-gray-500">EN: {group.nameEn}</p> : null}
                         <p className="text-xs text-gray-500">{group.slug}</p>
                       </div>
                       <button onClick={() => removeGroup(group.id)} className="text-sm font-semibold text-red-700">
@@ -1327,6 +1346,7 @@ export default function AdminArticles() {
                       {group.categories.map((category) => (
                         <span key={category.id} className="inline-flex items-center gap-2 rounded-full border border-[#e5ddcf] bg-[#faf7f1] px-3 py-1.5 text-sm text-primary">
                           {category.name}
+                          {category.nameEn ? <span className="text-xs text-gray-500">EN: {category.nameEn}</span> : null}
                           <button onClick={() => removeCategoryItem(category.id)} className="text-red-700">
                             ×
                           </button>

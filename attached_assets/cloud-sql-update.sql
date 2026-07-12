@@ -163,3 +163,57 @@ ON CONFLICT (key) DO UPDATE SET
   updated_at = now();
 
 COMMIT;
+
+BEGIN;
+
+ALTER TABLE article_category_groups
+  ADD COLUMN IF NOT EXISTS name_en text;
+
+ALTER TABLE article_categories
+  ADD COLUMN IF NOT EXISTS name_en text;
+
+UPDATE article_category_groups
+SET name_en = CASE slug
+  WHEN 'etap-aplikacji' THEN 'Application stage'
+  WHEN 'kraje' THEN 'Countries'
+  WHEN 'kierunki' THEN 'Subjects'
+  WHEN 'finansowanie' THEN 'Funding'
+  ELSE COALESCE(name_en, name)
+END
+WHERE name_en IS NULL OR btrim(name_en) = '';
+
+UPDATE article_categories
+SET name_en = CASE slug
+  WHEN 'strategia' THEN 'Strategy and fit'
+  WHEN 'dokumenty' THEN 'Documents'
+  WHEN 'terminy' THEN 'Deadlines'
+  WHEN 'eseje-i-listy' THEN 'Essays and letters'
+  WHEN 'egzaminy' THEN 'Exams'
+  WHEN 'rekomendacje' THEN 'Recommendations'
+  WHEN 'common-app' THEN 'Common App'
+  WHEN 'mentoring' THEN 'Mentoring'
+  WHEN 'dla-rodzicow' THEN 'For parents'
+  WHEN 'europa' THEN 'Europe'
+  WHEN 'usa' THEN 'USA'
+  WHEN 'wielka-brytania' THEN 'United Kingdom'
+  WHEN 'holandia' THEN 'Netherlands'
+  WHEN 'niemcy' THEN 'Germany'
+  WHEN 'hiszpania' THEN 'Spain'
+  WHEN 'wlochy' THEN 'Italy'
+  WHEN 'dania' THEN 'Denmark'
+  WHEN 'szwecja' THEN 'Sweden'
+  WHEN 'kanada' THEN 'Canada'
+  WHEN 'ekonomia' THEN 'Economics and business'
+  WHEN 'prawo' THEN 'Law'
+  WHEN 'psychologia' THEN 'Psychology'
+  WHEN 'medycyna' THEN 'Medicine'
+  WHEN 'informatyka' THEN 'Computer science'
+  WHEN 'koszty' THEN 'Tuition and costs'
+  WHEN 'stypendia' THEN 'Scholarships'
+  WHEN 'financial-aid' THEN 'Financial aid'
+  WHEN 'darmowe-studia' THEN 'Tuition-free study'
+  ELSE COALESCE(name_en, name)
+END
+WHERE name_en IS NULL OR btrim(name_en) = '';
+
+COMMIT;

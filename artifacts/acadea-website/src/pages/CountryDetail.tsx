@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link, useParams, useLocation } from "wouter";
 import { ArrowLeft, ArrowRight, Clock, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { countryBySlug, countryLocative, uniDomain } from "@/data/countries";
+import { countryBySlug, countryLocative, getLocalizedCountry, uniDomain } from "@/data/countries";
 import { fetchPublishedArticles, type ArticleSummary } from "@/lib/article-api";
 import NotFound from "@/pages/not-found";
 import {
@@ -68,7 +68,7 @@ function UniLogo({ slug, name }: { slug: string; name: string }) {
 }
 
 export default function CountryDetail() {
-  const { isEnglish, localizePath, t } = useLanguage();
+  const { language, isEnglish, localizePath, t } = useLanguage();
   const params = useParams();
   const [location] = useLocation();
   const slug = params.slug ?? "";
@@ -93,7 +93,7 @@ export default function CountryDetail() {
   useEffect(() => {
     let cancelled = false;
 
-    void fetchPublishedArticles().then((rows) => {
+    void fetchPublishedArticles(language).then((rows) => {
       if (!cancelled) {
         setArticleItems(rows);
       }
@@ -102,7 +102,7 @@ export default function CountryDetail() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [language]);
 
   const relatedCountryArticles = useMemo(() => {
     if (!country) {
@@ -117,19 +117,23 @@ export default function CountryDetail() {
   if (!country) return <NotFound />;
 
   const locative = countryLocative[country.slug] ?? country.name;
+  const localizedCountry = getLocalizedCountry(country, language);
+  const ctaTitle = isEnglish
+    ? `Thinking about studying in ${localizedCountry.name}?`
+    : `Myślisz o studiach ${locative}?`;
 
   useSeo({
     title: isEnglish
-      ? `Study in ${country.name} | Universities and applications | ACADEA`
+      ? `Study in ${localizedCountry.name} | Universities and applications | ACADEA`
       : `Studia w ${country.name} | Uczelnie i aplikacja | ACADEA`,
-    description: country.intro,
+    description: localizedCountry.intro,
     path: localizePath(`/kraje/${country.slug}`),
     keywords: isEnglish
       ? [
-          `study in ${country.name}`,
-          `${country.name} universities`,
-          `${country.name} applications`,
-          `study abroad ${country.name}`,
+          `study in ${localizedCountry.name}`,
+          `${localizedCountry.name} universities`,
+          `${localizedCountry.name} applications`,
+          `study abroad ${localizedCountry.name}`,
         ]
       : [
           `studia w ${country.name}`,
@@ -143,14 +147,14 @@ export default function CountryDetail() {
       createWebPageSchema({
         path: localizePath(`/kraje/${country.slug}`),
         title: isEnglish
-          ? `Study in ${country.name} | Universities and applications | ACADEA`
+          ? `Study in ${localizedCountry.name} | Universities and applications | ACADEA`
           : `Studia w ${country.name} | Uczelnie i aplikacja | ACADEA`,
-        description: country.intro,
+        description: localizedCountry.intro,
       }),
       createBreadcrumbSchema([
         { name: t("Strona Główna", "Home"), path: localizePath("/") },
         { name: t("Kraje i Uczelnie", "Countries and universities"), path: localizePath("/kraje") },
-        { name: country.name, path: localizePath(`/kraje/${country.slug}`) },
+        { name: localizedCountry.name, path: localizePath(`/kraje/${country.slug}`) },
       ]),
     ],
   });
@@ -173,14 +177,14 @@ export default function CountryDetail() {
         >
           <div className="flex items-center gap-4 mb-6">
             <span className="text-5xl leading-none">{country.flag}</span>
-            <h1 className="text-4xl md:text-6xl font-bold text-primary">{country.name}</h1>
+            <h1 className="text-4xl md:text-6xl font-bold text-primary">{localizedCountry.name}</h1>
           </div>
-          <p className="text-lg md:text-xl text-gray-600 leading-relaxed">{country.intro}</p>
+          <p className="text-lg md:text-xl text-gray-600 leading-relaxed">{localizedCountry.intro}</p>
         </motion.div>
 
         {/* Highlights */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-16 max-w-3xl">
-          {country.highlights.map((h, i) => (
+          {localizedCountry.highlights.map((h, i) => (
             <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
               <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-1">{h.label}</p>
               <p className="text-primary font-bold">{h.value}</p>
@@ -193,7 +197,7 @@ export default function CountryDetail() {
           {t("Uczelnie warte uwagi", "Universities worth considering")}
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-20">
-          {country.unis.map((uni) => (
+          {localizedCountry.unis.map((uni) => (
             <motion.div
               key={uni.slug}
               id={uni.slug}
@@ -252,7 +256,7 @@ export default function CountryDetail() {
           <div className="absolute top-0 right-0 w-72 h-72 bg-accent rounded-full blur-[120px] opacity-20 pointer-events-none" />
           <div className="relative z-10">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">
-              {t(`Myślisz o studiach ${locative}?`, `Thinking about studying in ${country.name}?`)}
+              {ctaTitle}
             </h2>
             <p className="text-white/70 mb-8 max-w-2xl mx-auto">
               {t(

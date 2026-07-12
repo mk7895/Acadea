@@ -53,7 +53,7 @@ export default function Home() {
       title: t("Doradztwo uczelni", "University advising"),
       desc: t(
         "Pomożemy wybrać uczelnię dopasowaną do Twoich celów, predyspozycji i budżetu.",
-        "We help you choose universities that fit your goals, strengths and budget.",
+        "We help you choose a university suited to your goals, strengths and budget.",
       ),
       icon: <GraduationCap size={22} className="text-primary" />,
     },
@@ -61,7 +61,7 @@ export default function Home() {
       title: t("Egzaminy i certyfikaty", "Exams and certificates"),
       desc: t(
         "Przygotowujemy do GRE, SAT, GMAT, Cambridge, IELTS, TOEFL i innych egzaminów wymaganych przez zagraniczne uczelnie.",
-        "We prepare students for GRE, SAT, GMAT, Cambridge, IELTS, TOEFL and other exams required by universities abroad.",
+        "We prepare students for GRE, SAT, GMAT, Cambridge, IELTS, TOEFL and other exams required by foreign universities.",
       ),
       icon: <BookOpen size={22} className="text-primary" />,
     },
@@ -69,7 +69,7 @@ export default function Home() {
       title: t("Przygotowanie dokumentów", "Document preparation"),
       desc: t(
         "Wspieramy przy każdym etapie aplikacji — od transkryptów po referencje.",
-        "We support every document stage of the application, from transcripts to references.",
+        "We support you at every stage of the application - from transcripts to references.",
       ),
       icon: <CheckCircle2 size={22} className="text-primary" />,
     },
@@ -77,7 +77,7 @@ export default function Home() {
       title: t("Eseje, listy motywacyjne i CV", "Essays, motivation letters and CVs"),
       desc: t(
         "Nieograniczona liczba wersji i stała informacja zwrotna — Twoje dokumenty w najlepszej możliwej formie.",
-        "Unlimited drafts and continuous feedback so your documents reach their strongest possible version.",
+        "An unlimited number of versions and steady feedback - your documents in the best possible form.",
       ),
       icon: <Users size={22} className="text-primary" />,
     },
@@ -85,7 +85,7 @@ export default function Home() {
       title: t("Tłumaczenia i formalności dokumentowe", "Translations and document formalities"),
       desc: t(
         "Pomagamy uporządkować tłumaczenia, dokumenty i kolejne kroki formalne, żeby cały proces był bardziej przejrzysty.",
-        "We help organise translations, paperwork and the next formal steps so the whole process stays clear and manageable.",
+        "We help organise translations, documents and the next formal steps so that the whole process is clearer.",
       ),
       icon: <Globe size={22} className="text-primary" />,
     },
@@ -93,7 +93,7 @@ export default function Home() {
       title: t("Formalności po przyjęciu i zakwaterowanie", "Post-offer formalities and accommodation"),
       desc: t(
         "Nie znikamy po przyjęciu — pomagamy odnaleźć się w kolejnych krokach po otrzymaniu oferty, organizacji zakwaterowania i kontakcie z uczelnią.",
-        "We stay with you after admission, helping with the next steps, accommodation planning and communication with the university.",
+        "We do not disappear after admission - we help you navigate the next steps after receiving an offer, arranging accommodation and staying in touch with the university.",
       ),
       icon: <MapPin size={22} className="text-primary" />,
     },
@@ -105,7 +105,7 @@ export default function Home() {
       title: t("Pełna przejrzystość", "Full transparency"),
       desc: t(
         "Jasne zasady współpracy i stały wgląd w postępy — wiecie, za co płacicie i na jakim etapie jest aplikacja.",
-        "Clear cooperation rules and ongoing visibility into progress, so you always know what you are paying for and where the application stands.",
+        "Clear rules of cooperation and steady insight into progress - you know what you are paying for and what stage the application is at.",
       ),
     },
     {
@@ -113,7 +113,7 @@ export default function Home() {
       title: t("Świadome decyzje finansowe", "Informed financial decisions"),
       desc: t(
         "Realnie pokazujemy koszty studiów, stypendia i opcje finansowania — bez ukrytych obietnic.",
-        "We present realistic tuition costs, scholarships and funding options, without inflated promises.",
+        "We show the real costs of studying, scholarships and funding options - without hidden promises.",
       ),
     },
     {
@@ -121,7 +121,7 @@ export default function Home() {
       title: t("Szczere doradztwo", "Honest advice"),
       desc: t(
         "Doradzamy najlepsze, a nie najdroższe rozwiązania. Mówimy wprost, jakie są realne szanse Twojego dziecka.",
-        "We recommend what is best, not what is most expensive, and we speak plainly about your child's real chances.",
+        "We advise on the best solutions, not the most expensive ones. We say plainly what your child's real chances are.",
       ),
     },
     {
@@ -129,7 +129,7 @@ export default function Home() {
       title: t("Kontakt na każdym etapie", "Support at every stage"),
       desc: t(
         "Jesteśmy dostępni dla rodziców i odpowiadamy na pytania przez całą drogę — od pierwszej rozmowy po wyjazd.",
-        "Parents can reach us throughout the whole journey, from the first conversation to departure.",
+        "We are available to parents and answer questions throughout the whole journey - from the first conversation to departure.",
       ),
     },
   ];
@@ -154,7 +154,7 @@ export default function Home() {
     ),
     description: t(
       "Pomagamy kandydatom dostać się na studia za granicą. ACADEA wspiera w wyborze uczelni, dokumentach, esejach, stypendiach, egzaminach i planowaniu całej aplikacji.",
-      "We help students get into universities abroad. ACADEA supports university choice, documents, essays, scholarships, exams and the full application strategy.",
+      "We help candidates get into universities abroad. ACADEA supports university choice, documents, essays, scholarships, exams and planning the whole application.",
     ),
     path: localizePath("/"),
     keywords: isEnglish
@@ -185,7 +185,7 @@ export default function Home() {
         ),
         description: t(
           "ACADEA pomaga w aplikacji na studia za granicą, wyborze uczelni, dokumentach, esejach, stypendiach i planowaniu całego procesu.",
-          "ACADEA helps with study abroad applications, university selection, essays, documents, scholarships and planning the whole process.",
+          "ACADEA helps with applications to universities abroad, university choice, documents, essays, scholarships and planning the whole process.",
         ),
       }),
       createFaqSchema(HOME_FAQ_ITEMS),
@@ -245,7 +245,7 @@ export default function Home() {
               <p className="text-lg text-gray-500 leading-relaxed mb-10 max-w-lg">
                 {t(
                   "Pomagamy dostać się na wymarzone uczelnie na całym świecie.",
-                  "We help students get into their dream universities around the world.",
+                  "We help students get into their dream universities all around the world.",
                 )}
               </p>
 
@@ -279,7 +279,7 @@ export default function Home() {
                 <div className="flex items-center gap-2">
                   <Heart size={16} className="text-accent fill-accent" />
                   <span>
-                    <strong className="text-gray-700 font-semibold">0 PLN</strong>{" "}
+                    <strong className="text-gray-700 font-semibold">{isEnglish ? "£0" : "0 zł"}</strong>{" "}
                     {t("dla stypendystów", "for scholarship recipients")}
                   </span>
                 </div>
@@ -309,7 +309,7 @@ export default function Home() {
             <p className="text-lg text-gray-500">
               {t(
                 "Aplikacja na studia to proces, który wymaga strategii. Przeprowadzimy Cię przez niego krok po kroku.",
-                "University applications require a strategy. We guide you through the process step by step.",
+                "Applying to university is a process that requires strategy. We guide you through it step by step.",
               )}
             </p>
           </div>
@@ -369,7 +369,7 @@ export default function Home() {
               <p className="text-lg text-gray-500 leading-relaxed mb-10">
                 {t(
                   "Wybitny potencjał nie powinien napotykać barier finansowych. Dlatego stworzyliśmy Program Stypendialny ACADEA — dla kandydatów, którym zależy, a potrzebują wsparcia.",
-                  "Outstanding potential should not run into financial barriers. That is why we created the ACADEA Scholarship Programme for candidates who are ambitious and need support.",
+                  "Outstanding potential should not face financial barriers. That is why we created the ACADEA Scholarship Programme - for candidates who truly care and need support.",
                 )}
               </p>
               <Link href={localizePath("/stypendium/aplikacja")}>
@@ -433,7 +433,7 @@ export default function Home() {
               <p className="text-lg text-gray-500 leading-relaxed">
                 {t(
                   "Decyzja o studiach za granicą to ważny krok dla całej rodziny. Dbamy o to, żeby był przejrzysty, bezpieczny i dobrze zaplanowany — także z perspektywy Rodzica.",
-                  "Studying abroad is a major decision for the whole family. We make sure the process is transparent, safe and well planned from a parent's perspective as well.",
+                  "The decision to study abroad is an important step for the whole family. We make sure it is transparent, safe and well planned - also from a parent's perspective.",
                 )}
               </p>
             </motion.div>
@@ -495,7 +495,7 @@ export default function Home() {
               <p className="text-gray-800/70 text-lg leading-relaxed mb-8">
                 {t(
                   "Dołącz i otrzymuj bezpłatne porady, terminy aplikacji i aktualności — prosto na telefon.",
-                  "Join and receive free tips, application deadlines and updates directly on your phone.",
+                  "Join and receive free advice, application deadlines and updates - straight to your phone.",
                 )}
               </p>
               <ul className="space-y-3 mb-10">
@@ -539,7 +539,7 @@ export default function Home() {
               <p className="text-white/70 text-sm mt-2 max-w-xs">
                 {t(
                   "Otwórz aparat i dołącz do społeczności ACADEA na WhatsApp.",
-                  "Open your camera and join the ACADEA WhatsApp community.",
+                  "Open your camera and join the ACADEA community on WhatsApp.",
                 )}
               </p>
             </div>
@@ -564,7 +564,7 @@ export default function Home() {
             <p className="text-xl text-white/70 mb-10">
               {t(
                 "Umów bezpłatną konsultację — bez zobowiązań. Wybierz termin i porozmawiaj z naszym doradcą.",
-                "Book a free consultation with no obligation. Choose a time and speak with our adviser.",
+                "Book a free consultation - with no obligation. Choose a time and speak with our adviser.",
               )}
             </p>
             <Link href={localizePath("/umow-spotkanie")}>

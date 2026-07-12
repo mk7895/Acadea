@@ -5,7 +5,7 @@ import {
   findArticle as findStaticArticle,
   type Article as StaticArticle,
 } from "@/data/articles";
-import { STATIC_ARTICLE_TAXONOMY } from "@/data/article-taxonomy";
+import { getStaticArticleTaxonomy } from "@/data/article-taxonomy";
 import {
   normalizeContactFormMarkers,
   type ArticleCategoryGroup,
@@ -243,7 +243,7 @@ export async function fetchArticleTaxonomy(language: "pl" | "en" = "pl") {
     return taxonomy;
   } catch {
     if (allowStaticArticleFallback) {
-      return { groups: STATIC_ARTICLE_TAXONOMY } satisfies ArticleTaxonomyResponse;
+      return { groups: getStaticArticleTaxonomy(language) } satisfies ArticleTaxonomyResponse;
     }
 
     throw new Error("Article taxonomy is unavailable");
@@ -292,7 +292,7 @@ export async function fetchAdminArticleTaxonomy(token: string) {
 
 export async function createArticleCategoryGroup(
   token: string,
-  payload: { name: string; slug?: string; sortOrder?: number },
+  payload: { name: string; nameEn?: string; slug?: string; sortOrder?: number },
 ) {
   const response = await fetch(`${API_BASE}/admin/article-category-groups`, {
     method: "POST",
@@ -325,7 +325,7 @@ export async function deleteArticleCategoryGroup(token: string, id: number) {
 
 export async function createArticleCategory(
   token: string,
-  payload: { groupId: number; name: string; slug?: string; sortOrder?: number },
+  payload: { groupId: number; name: string; nameEn?: string; slug?: string; sortOrder?: number },
 ) {
   const response = await fetch(`${API_BASE}/admin/article-categories`, {
     method: "POST",

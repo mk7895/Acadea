@@ -40,7 +40,7 @@ export default function MentorForm() {
     : [
         "Wielka Brytania", "Holandia", "Niemcy", "Francja", "Szwajcaria",
         "Szwecja", "Dania", "USA", "Kanada", "Australia", "Singapur", "Japonia",
-        "Korea Poludniowa", "Irlandia", "Belgia", "Austria", "Inne",
+        "Korea Południowa", "Irlandia", "Belgia", "Austria", "Inne",
       ];
 
   const roles = [
@@ -50,7 +50,7 @@ export default function MentorForm() {
       icon: <Briefcase size={18} />,
       desc: t(
         "Chcę pracować z kandydatami i otrzymywać wynagrodzenie za sesje.",
-        "I would like to work with applicants and be paid for mentoring sessions.",
+        "I want to work with candidates and receive payment for sessions.",
       ),
     },
     {
@@ -59,7 +59,7 @@ export default function MentorForm() {
       icon: <Heart size={18} />,
       desc: t(
         "Chcę pomagać bezpłatnie — z pasji i chęci przekazania wiedzy.",
-        "I want to help without pay, out of passion and a desire to share experience.",
+        "I want to help free of charge - out of passion and a wish to share knowledge.",
       ),
     },
     {
@@ -68,7 +68,7 @@ export default function MentorForm() {
       icon: <CheckCircle2 size={18} />,
       desc: t(
         "Jestem otwarty/a na oba modele.",
-        "I am open to both forms of cooperation.",
+        "I am open to both models.",
       ),
     },
   ];
@@ -77,7 +77,7 @@ export default function MentorForm() {
     title: t("Dołącz do zespołu mentorów | ACADEA", "Join the mentor team | ACADEA"),
     description: t(
       "Aplikuj do zespołu ACADEA jako mentor lub wolontariusz i wspieraj kandydatów aplikujących na studia za granicą.",
-      "Apply to join ACADEA as a mentor or volunteer and support students applying to universities abroad.",
+      "Apply to the ACADEA team as a mentor or volunteer and support candidates applying to study abroad.",
     ),
     path: localizePath("/mentoruj"),
     keywords: isEnglish
@@ -91,7 +91,7 @@ export default function MentorForm() {
         title: t("Dołącz do zespołu mentorów | ACADEA", "Join the mentor team | ACADEA"),
         description: t(
           "Formularz zgłoszeniowy dla osób, które chcą współpracować z ACADEA jako mentorzy lub wolontariusze.",
-          "Application form for people who want to work with ACADEA as mentors or volunteers.",
+          "Application form for people who want to cooperate with ACADEA as mentors or volunteers.",
         ),
       }),
       createBreadcrumbSchema([
@@ -156,7 +156,7 @@ export default function MentorForm() {
             `${t("Model", "Cooperation model")}: ${form.role}`,
             form.hoursPerWeek ? `${t("Dostępność", "Availability")}: ${form.hoursPerWeek} ${t("h/tydzień", "hours/week")}` : null,
             `${t("Motywacja", "Motivation")}: ${form.motivation}`,
-            `${t("Zgoda na politykę prywatności", "Privacy policy consent")}: yes`,
+            `${t("Zgoda na politykę prywatności", "Privacy policy consent")}: ${t("tak", "yes")}`,
           ].filter(Boolean).join("\n"),
           type: "mentor_application",
           language,
@@ -202,7 +202,7 @@ export default function MentorForm() {
           <p className="text-gray-500 text-lg max-w-lg mx-auto">
               {t(
               "Studiujesz za granicą lub masz już dyplom zagranicznej uczelni? Pomóż kolejnym rocznikom — jako mentor płatny lub wolontariusz.",
-              "Do you study abroad or already hold a degree from an international university? Support the next generation as a paid mentor or volunteer.",
+              "Do you study abroad or already have a degree from a foreign university? Help the next year groups - as a paid mentor or as a volunteer.",
             )}
           </p>
         </motion.div>

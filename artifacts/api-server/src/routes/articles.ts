@@ -40,6 +40,10 @@ function getArticleLanguage(req: Request) {
   return req.query.language === "en" ? "en" : "pl";
 }
 
+function getLocalizedName<T extends { name: string; nameEn?: string | null }>(row: T, language: "pl" | "en") {
+  return language === "en" ? row.nameEn?.trim() || row.name : row.name;
+}
+
 function shapeSummary(
   req: Request,
   row: {
@@ -73,7 +77,7 @@ function shapeSummary(
   };
 }
 
-async function loadPublicArticleTaxonomy() {
+async function loadPublicArticleTaxonomy(language: "pl" | "en") {
   const { db, articleCategoriesTable, articleCategoryGroupsTable } = await import("@workspace/db");
   const [groups, categories] = await Promise.all([
     db.select().from(articleCategoryGroupsTable).orderBy(asc(articleCategoryGroupsTable.sortOrder), asc(articleCategoryGroupsTable.name)),
@@ -82,7 +86,8 @@ async function loadPublicArticleTaxonomy() {
 
   return groups.map((group) => ({
     id: group.id,
-    name: group.name,
+    name: getLocalizedName(group, language),
+    nameEn: group.nameEn,
     slug: group.slug,
     sortOrder: group.sortOrder,
     categories: categories
@@ -90,7 +95,8 @@ async function loadPublicArticleTaxonomy() {
       .map((category) => ({
         id: category.id,
         groupId: category.groupId,
-        name: category.name,
+        name: getLocalizedName(category, language),
+        nameEn: category.nameEn,
         slug: category.slug,
         sortOrder: category.sortOrder,
       })),
@@ -138,12 +144,12 @@ router.get("/articles", async (req, res) => {
   return res.json(rows.filter((row) => row.language === language).map((row) => shapeSummary(req, row)));
 });
 
-router.get("/article-taxonomy", async (_req, res) => {
+router.get("/article-taxonomy", async (req, res) => {
   if (!hasDatabaseConfig()) {
     return res.status(503).json({ error: "Database not configured." });
   }
 
-  return res.json({ groups: await loadPublicArticleTaxonomy() });
+  return res.json({ groups: await loadPublicArticleTaxonomy(getArticleLanguage(req)) });
 });
 
 router.get("/articles/:slug", async (req, res) => {

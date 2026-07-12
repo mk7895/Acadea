@@ -21,7 +21,7 @@ const translations: Record<string, string> = {
   "Umów bezpłatną konsultację": "Book a free consultation",
   "25+ krajów w ofercie": "25+ countries covered",
   "99%+ skuteczność": "99%+ success rate",
-  "0 zł dla stypendystów": "PLN 0 for scholarship recipients",
+  "0 zł dla stypendystów": "£0 for scholarship recipients",
   "W czym pomożemy Tobie lub Twojemu Dziecku?": "How can we help you or your child?",
   "Aplikacja na studia to proces, który wymaga strategii. Przeprowadzimy Cię przez niego krok po kroku.": "University applications require a strategy. We guide you through the process step by step.",
   "Doradztwo uczelni": "University advising",

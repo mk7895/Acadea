@@ -8,7 +8,7 @@ import {
 import { feature } from "topojson-client";
 import topologyJson from "world-atlas/countries-110m.json";
 import { Link, useLocation } from "wouter";
-import { countryByIso } from "@/data/countries";
+import { countryByIso, getLocalizedCountry } from "@/data/countries";
 import { useLanguage } from "@/lib/i18n";
 
 type CountryFeature = {
@@ -71,7 +71,7 @@ function isFrontHemisphere(
 }
 
 export function GlobeSection() {
-  const { localizePath, t } = useLanguage();
+  const { language, localizePath, t } = useLanguage();
   const [rotation, setRotation] = useState<Rotation>(INITIAL_ROT);
   const [hovered, setHovered] = useState<string | null>(null);
 
@@ -193,6 +193,7 @@ export function GlobeSection() {
   );
 
   const hoveredData = hovered ? ACADEA[hovered] : null;
+  const localizedHoveredData = hoveredData ? getLocalizedCountry(hoveredData, language) : null;
 
   return (
     <div className="relative select-none w-full max-w-[500px] mx-auto pb-8">
@@ -295,7 +296,7 @@ export function GlobeSection() {
       </div>
 
       {/* Country hover card */}
-      {hoveredData && (
+      {localizedHoveredData && hoveredData && (
         <div
           className="absolute top-5 left-5 bg-white/96 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 p-4 min-w-[230px] z-20"
           onMouseEnter={cancelClear}
@@ -306,10 +307,10 @@ export function GlobeSection() {
             className="flex items-center gap-2.5 mb-3 group"
           >
             <span className="text-2xl leading-none">{hoveredData.flag}</span>
-            <h3 className="font-bold text-primary text-sm leading-tight group-hover:text-accent transition-colors">{hoveredData.name}</h3>
+            <h3 className="font-bold text-primary text-sm leading-tight group-hover:text-accent transition-colors">{localizedHoveredData.name}</h3>
           </Link>
           <ul className="space-y-0.5">
-            {hoveredData.unis.map((uni) => (
+            {localizedHoveredData.unis.map((uni) => (
               <li key={uni.slug}>
                 <Link
                   href={localizePath(`/kraje/${hoveredData.slug}#${uni.slug}`)}

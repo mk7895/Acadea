@@ -203,7 +203,7 @@ export default function ArticlePage() {
           keywords: [
             article.category,
             article.title,
-            "studia za granicą",
+            t("studia za granicą", "studying abroad"),
             "ACADEA",
           ],
           schemas: [
@@ -216,27 +216,30 @@ export default function ArticlePage() {
               image: article.image,
               updatedAt: article.updatedAt,
               category: article.category,
-              keywords: [article.category, article.title, "studia za granicą", "ACADEA"],
+              keywords: [article.category, article.title, t("studia za granicą", "studying abroad"), "ACADEA"],
               wordCount,
             }),
             createBreadcrumbSchema([
-              { name: "Strona Główna", path: "/" },
-              { name: "Baza Wiedzy", path: "/baza-wiedzy" },
+              { name: t("Strona Główna", "Home"), path: localizePath("/") },
+              { name: t("Baza Wiedzy", "Knowledge base"), path: localizePath("/baza-wiedzy") },
               { name: article.title, path: articlePath },
             ]),
           ],
         }
       : {
-          title: "Baza Wiedzy | ACADEA",
-          description: "Artykuły i poradniki o studiach za granicą od ACADEA.",
+          title: t("Baza Wiedzy | ACADEA", "Knowledge base | ACADEA"),
+          description: t(
+            "Artykuły i poradniki o studiach za granicą od ACADEA.",
+            "Articles and guides about studying abroad from ACADEA.",
+          ),
           path: articlePath,
           noindex: true,
           schemas: [
             createOrganizationSchema(),
             createLocalBusinessSchema(),
             createBreadcrumbSchema([
-              { name: "Strona Główna", path: "/" },
-              { name: "Baza Wiedzy", path: "/baza-wiedzy" },
+              { name: t("Strona Główna", "Home"), path: localizePath("/") },
+              { name: t("Baza Wiedzy", "Knowledge base"), path: localizePath("/baza-wiedzy") },
             ]),
           ],
         },

@@ -1,4 +1,5 @@
 export type Uni = { name: string; slug: string; blurb: string };
+export type Highlight = { label: string; value: string };
 
 export type Country = {
   slug: string;
@@ -9,8 +10,16 @@ export type Country = {
   iso: string[]; // ISO 3166-1 numeric codes used by the globe topology
   tagline: string;
   intro: string;
-  highlights: { label: string; value: string }[];
+  highlights: Highlight[];
   unis: Uni[];
+};
+
+type CountryTranslationEn = {
+  name: string;
+  tagline: string;
+  intro: string;
+  highlights: Highlight[];
+  uniBlurbs: Record<string, string>;
 };
 
 export const countries: Country[] = [
@@ -666,6 +675,502 @@ export const countries: Country[] = [
     ],
   },
 ];
+
+export const countryTranslationsEn: Record<string, CountryTranslationEn> = {
+  "wielka-brytania": {
+    name: "United Kingdom",
+    tagline: "Oxford, Cambridge and prestigious Russell Group universities.",
+    intro:
+      "The United Kingdom is the cradle of the modern university and one of the most recognisable study destinations in the world. Three-year bachelor's degrees, a strong emphasis on independent work and the global reputation of the degree attract highly ambitious applicants.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English" },
+      { label: "Application", value: "UCAS (by January)" },
+    ],
+    uniBlurbs: {
+      oxford: "The oldest university in the English-speaking world, famous for its tutorial system and colleges.",
+      cambridge: "One of the world's most prestigious universities, renowned for science, mathematics and its collegiate system.",
+      imperial: "A top-tier institution in natural sciences, engineering, medicine and technology business.",
+      lse: "A global leader in social sciences, economics and political science in the heart of London.",
+      ucl: "A broad research university with strong programmes from medicine to the arts.",
+      kings: "A centrally located London university known for law, medicine and the humanities.",
+      qmul: "A Russell Group university with strength in engineering, law and life sciences.",
+      warwick: "One of the UK's most highly rated universities, especially valued for economics and computer science.",
+      durham: "A prestigious collegiate campus in the north of England with a rich academic tradition.",
+      bath: "A more intimate university with strong engineering and business programmes.",
+      "st-andrews": "Scotland's oldest university, known for research and a beautiful seaside campus.",
+      edinburgh: "One of the largest and most respected universities in Scotland.",
+      manchester: "A leading research centre with particular strength in physics and materials technologies.",
+    },
+  },
+  holandia: {
+    name: "Netherlands",
+    tagline: "A practical approach and innovative degree programmes in English.",
+    intro:
+      "The Netherlands offers some of Europe's strongest English-taught programmes and a practical, project-based approach to learning. It is very welcoming to international students and exceptionally well connected to the rest of the continent.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English" },
+      { label: "Application", value: "Studielink (by May)" },
+    ],
+    uniBlurbs: {
+      "tu-delft": "The country's leading technical university, especially respected for engineering and architecture.",
+      leiden: "The oldest Dutch university, strong in law, the humanities and the sciences.",
+      uva: "The largest university in Amsterdam with a broad English-taught offer.",
+      utrecht: "A leading research university with a strong reputation in life sciences and sustainability.",
+      groningen: "A broad-based institution in the north of the country with many programmes in English.",
+      "erasmus-rotterdam": "A leading European university for economics, business and health sciences.",
+      tilburg: "Specialises in economics, law, social sciences and the humanities.",
+      maastricht: "Known for problem-based learning and a strong European profile.",
+      "vu-amsterdam": "A broad research university in the south of Amsterdam.",
+      twente: "A campus-based technical and entrepreneurial university with strong engineering programmes.",
+    },
+  },
+  niemcy: {
+    name: "Germany",
+    tagline: "Top-quality education, often with little or no tuition.",
+    intro:
+      "Germany combines a very high standard of education with symbolic or zero tuition fees at public universities. It is especially strong in engineering and the sciences and offers close access to a major European labour market.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "German / English" },
+      { label: "Costs", value: "often little or no tuition" },
+    ],
+    uniBlurbs: {
+      "tu-munich": "Germany's leading technical university, closely linked with industry and start-ups.",
+      humboldt: "A historic Berlin university and the birthplace of the modern research model.",
+      heidelberg: "Germany's oldest university, especially known for medicine and natural sciences.",
+      kit: "A combination of university and research institute, placing it among the country's engineering leaders.",
+    },
+  },
+  irlandia: {
+    name: "Ireland",
+    tagline: "An English-speaking EU country and the European home of tech giants.",
+    intro:
+      "Ireland is an English-speaking EU country and the European base of many global technology companies. Students are drawn by its welcoming environment and strong university-business connections.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English" },
+      { label: "Application", value: "CAO" },
+    ],
+    uniBlurbs: {
+      ucd: "The largest university in Ireland with a strong international profile.",
+      trinity: "Ireland's most prestigious university with centuries of academic tradition.",
+      ucc: "A respected university in Cork, strong in life sciences and business.",
+      galway: "A beautifully located institution on Ireland's west coast, strong in the humanities and sciences.",
+    },
+  },
+  francja: {
+    name: "France",
+    tagline: "Elite Grandes Ecoles and a rich academic tradition.",
+    intro:
+      "France offers elite Grandes Ecoles and a deep academic tradition. The number of English-taught programmes is growing steadily, especially in business and the sciences.",
+    highlights: [
+      { label: "System", value: "Licence · Master's · Doctorate" },
+      { label: "Language", value: "French / English" },
+      { label: "Application", value: "Parcoursup / direct" },
+    ],
+    uniBlurbs: {
+      "sciences-po": "A leading school for political science and international affairs.",
+      hec: "One of the strongest business schools in continental Europe.",
+      psl: "A federation of elite Paris institutions that consistently ranks at the top.",
+      polytechnique: "France's most prestigious engineering school.",
+      sorbonne: "One of the oldest and most recognisable universities in the world.",
+    },
+  },
+  szwajcaria: {
+    name: "Switzerland",
+    tagline: "Prestige, safety and proximity to international corporations.",
+    intro:
+      "Switzerland combines global prestige with safety and close links to international business. Public universities offer an exceptional standard of education with relatively moderate tuition.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English / German / French" },
+      { label: "Costs", value: "moderate tuition" },
+    ],
+    uniBlurbs: {
+      eth: "The strongest technical university in continental Europe.",
+      epfl: "ETH's French-speaking counterpart and a top destination for engineering and computing.",
+      uzh: "The largest university in Switzerland, particularly strong in medicine and law.",
+      basel: "Switzerland's oldest university, highly regarded in the life sciences.",
+    },
+  },
+  szwecja: {
+    name: "Sweden",
+    tagline: "Innovation and tuition-free study for EU citizens.",
+    intro:
+      "Sweden emphasises teamwork, innovation and sustainability. Studies are free for EU citizens and the range of English-taught programmes is very wide.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English" },
+      { label: "Costs", value: "tuition-free for EU citizens" },
+    ],
+    uniBlurbs: {
+      kth: "Sweden's leading technical university in Stockholm.",
+      lund: "One of the region's oldest and most comprehensive universities.",
+      uppsala: "The oldest university in Scandinavia, with a strong research tradition.",
+    },
+  },
+  dania: {
+    name: "Denmark",
+    tagline: "Modernity, design and generous scholarship opportunities.",
+    intro:
+      "Denmark stands for modernity, design and one of the highest standards of living in the world. Study is free for EU citizens and the English-taught offer is broad.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English" },
+      { label: "Costs", value: "tuition-free for EU citizens" },
+    ],
+    uniBlurbs: {
+      dtu: "A leading Danish technical university with strong ties to industry and energy.",
+      copenhagen: "The largest and oldest university in Denmark.",
+      aarhus: "A modern research university with a broad English-taught offer.",
+      cbs: "A leading Scandinavian business school in the centre of Copenhagen.",
+    },
+  },
+  hiszpania: {
+    name: "Spain",
+    tagline: "Excellent business schools and a warm climate.",
+    intro:
+      "Spain combines excellent business schools, rich culture and a welcoming climate. Each year, more programmes are offered in English.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "Spanish / English" },
+      { label: "Advantage", value: "warm climate" },
+    ],
+    uniBlurbs: {
+      ie: "An international university known for business and innovation.",
+      complutense: "One of the largest and oldest universities in Spain.",
+      ub: "A leading research university in one of Europe's most attractive cities.",
+      esade: "An elite business and law school in Barcelona, consistently among Europe's best.",
+    },
+  },
+  wlochy: {
+    name: "Italy",
+    tagline: "Art, design and some of the oldest universities in the world.",
+    intro:
+      "Italy combines some of the world's oldest universities with art, design and extraordinary culture. Competitive tuition and regional scholarships make it a comparatively accessible choice.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "Italian / English" },
+      { label: "Costs", value: "lower tuition + scholarships" },
+    ],
+    uniBlurbs: {
+      bologna: "The oldest university in the world, operating continuously since 1088.",
+      polimi: "Italy's top technical university and a leader in design and engineering.",
+      sapienza: "One of Europe's largest universities, strong in the sciences.",
+      padua: "One of Italy's oldest and most prestigious research universities.",
+      bocconi: "Italy's leading university for business and economics in Milan.",
+      torino: "A broad research university with a wide range of programmes in Turin.",
+      polito: "A leading technical university in northern Italy, especially strong in engineering and architecture.",
+    },
+  },
+  austria: {
+    name: "Austria",
+    tagline: "Classical education in historic cities.",
+    intro:
+      "Austria offers classical higher education in beautiful, historic cities and relatively low tuition fees. It combines a strong quality of life with a central European location.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "German / English" },
+      { label: "Costs", value: "lower tuition" },
+    ],
+    uniBlurbs: {
+      "uni-wien": "The oldest and largest university in the German-speaking world.",
+      "tu-wien": "Austria's leading technical university.",
+      "wu-wien": "One of the largest business schools in Europe.",
+      mci: "A modern university in Innsbruck with English-taught business and technology programmes.",
+      klagenfurt: "A campus-based university in Carinthia with strong computing and science programmes.",
+    },
+  },
+  belgia: {
+    name: "Belgium",
+    tagline: "The heart of Europe and multilingual campuses.",
+    intro:
+      "Belgium offers multilingualism, strong education and moderate costs in the heart of Europe. It is an excellent option for students interested in EU institutions and international careers.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English / Dutch / French" },
+      { label: "Advantage", value: "EU hub" },
+    ],
+    uniBlurbs: {
+      "ku-leuven": "The world's oldest Catholic university and one of Europe's research leaders.",
+      ulb: "A French-speaking university in Brussels with a strong research profile.",
+      ghent: "A broad university with particular strength in the life sciences.",
+      vub: "A Dutch-speaking university in Brussels, close to European institutions.",
+    },
+  },
+  norwegia: {
+    name: "Norway",
+    tagline: "Very low tuition and an outstanding quality of life.",
+    intro:
+      "Norway offers an exceptional quality of life and strong technical and maritime programmes. Many public options remain tuition-free or very affordable.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English / Norwegian" },
+      { label: "Costs", value: "low / often tuition-free" },
+    ],
+    uniBlurbs: {
+      oslo: "The largest and oldest university in Norway.",
+      ntnu: "The country's leading technical university in Trondheim.",
+      bi: "Norway's best-known business school.",
+    },
+  },
+  czechy: {
+    name: "Czech Republic",
+    tagline: "Strong medicine and technical degrees close to Poland.",
+    intro:
+      "The Czech Republic offers strong medicine and technical education at accessible costs, all very close to Poland. Cultural proximity can also make the transition easier.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English / Czech" },
+      { label: "Costs", value: "accessible" },
+    ],
+    uniBlurbs: {
+      charles: "The oldest university in Central Europe, especially respected in medicine.",
+      ctu: "The leading Czech technical university in Prague.",
+    },
+  },
+  portugalia: {
+    name: "Portugal",
+    tagline: "Accessible costs and a mild climate.",
+    intro:
+      "Portugal combines accessible living costs, a mild climate and a growing number of English-taught programmes. It is also one of Europe's safest countries.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "Portuguese / English" },
+      { label: "Advantage", value: "mild climate" },
+    ],
+    uniBlurbs: {
+      lisboa: "Portugal's largest university with a wide range of degree options.",
+      porto: "A leading research institution in the north of the country.",
+      nova: "A modern university known for business and the sciences.",
+    },
+  },
+  finlandia: {
+    name: "Finland",
+    tagline: "A global leader in education and innovation.",
+    intro:
+      "Finland is a world leader in education, innovation and quality of life. Modern campuses and strong English-taught programmes make it an increasingly popular destination.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English" },
+      { label: "Advantage", value: "top-tier education" },
+    ],
+    uniBlurbs: {
+      aalto: "A powerful combination of technology, business and design - a true start-up powerhouse.",
+      helsinki: "Finland's largest and most comprehensive university.",
+      tampere: "Strong in technology and health sciences.",
+    },
+  },
+  kanada: {
+    name: "Canada",
+    tagline: "Expansive campuses and strong research opportunities.",
+    intro:
+      "Canada offers expansive campuses, major research opportunities and a multicultural academic environment. It is a strong choice for students looking for a global education in North America.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English / French" },
+      { label: "Environment", value: "multicultural campuses" },
+    ],
+    uniBlurbs: {
+      toronto: "Canada's highest-ranked university and a research leader.",
+      mcgill: "Montreal's globally recognised English-language flagship.",
+      ubc: "A leading west-coast university in Vancouver.",
+      waterloo: "Famous for computer science, engineering and co-op programmes.",
+      york: "Toronto's second-largest university, strong in business, law and the arts.",
+    },
+  },
+  usa: {
+    name: "USA",
+    tagline: "The widest university choice and generous scholarships.",
+    intro:
+      "The United States offers the widest range of universities in the world, generous scholarships and flexible liberal arts structures. An American degree opens doors globally.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English" },
+      { label: "Application", value: "Common App + SAT/ACT" },
+    ],
+    uniBlurbs: {
+      mit: "A world leader in technology, science and entrepreneurship.",
+      harvard: "The most recognisable university in the world.",
+      stanford: "At the heart of Silicon Valley and global innovation.",
+      columbia: "An Ivy League university in the heart of New York City.",
+      nyu: "A global university with campuses around the world.",
+      yale: "One of the oldest Ivy League institutions, especially strong in law and the humanities.",
+      upenn: "An Ivy League university and home of the legendary Wharton School.",
+      dartmouth: "A close-knit Ivy League college known for liberal arts and Tuck MBA.",
+      princeton: "A top Ivy League institution with strong STEM and humanities programmes.",
+      caltech: "A small, elite technical university with outsized impact on science and technology.",
+      cmu: "A leading centre for computer science, robotics and fine arts in Pittsburgh.",
+      ucla: "The flagship UC campus in Los Angeles, strong in business, law and the arts.",
+      ucb: "The highest-ranked public university in the world.",
+      "georgia-tech": "A leading public technical university with strong engineering and computing.",
+      jhu: "A leader in medical, biomedical and scientific research in Baltimore.",
+      northwestern: "A prestigious private university with strong business and law schools.",
+    },
+  },
+  chiny: {
+    name: "China",
+    tagline: "A rising academic power and government scholarships.",
+    intro:
+      "China continues to climb in global rankings and offers generous government scholarships for international students. It provides direct exposure to one of the world's most dynamic economies.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English / Chinese" },
+      { label: "Scholarships", value: "government-funded (CSC)" },
+    ],
+    uniBlurbs: {
+      peking: "China's most prestigious university, located in Beijing.",
+      tsinghua: "A world-class leader in engineering and computing.",
+      fudan: "A leading Shanghai university, strong in social sciences and medicine.",
+      zhejiang: "One of China's best and most comprehensive universities.",
+    },
+  },
+  "korea-poludniowa": {
+    name: "South Korea",
+    tagline: "A technological powerhouse with modern campuses.",
+    intro:
+      "South Korea is a technological powerhouse with modern campuses and a growing number of English-taught programmes. It attracts more and more students interested in innovation, games, media and engineering.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English / Korean" },
+      { label: "Scholarships", value: "many options" },
+    ],
+    uniBlurbs: {
+      snu: "The most prestigious university in South Korea.",
+      kaist: "The country's leading science and technology university.",
+      yonsei: "A respected private university in Seoul.",
+      skku: "One of Korea's top private institutions, with a long tradition and strong ties to Samsung.",
+      hanyang: "Well known for engineering, architecture and strong industry links.",
+      inha: "A technical university in Incheon with extensive engineering and aviation programmes.",
+    },
+  },
+  singapur: {
+    name: "Singapore",
+    tagline: "A global education hub in the heart of Asia.",
+    intro:
+      "Singapore is a global centre for education and business, combining Western academic standards with Asian dynamism. It is safe, English-speaking and remarkably modern.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English" },
+      { label: "Reputation", value: "top-tier in Asia" },
+    ],
+    uniBlurbs: {
+      nus: "The highest-ranked university in Asia.",
+      ntu: "A leading institution for engineering and the sciences.",
+      smu: "A business-oriented university built more in the American style.",
+    },
+  },
+  japonia: {
+    name: "Japan",
+    tagline: "Tradition, technology and MEXT scholarships.",
+    intro:
+      "Japan combines deep tradition with technological modernity and offers generous MEXT government scholarships. It is a distinctive academic and cultural experience.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English / Japanese" },
+      { label: "Scholarships", value: "MEXT" },
+    ],
+    uniBlurbs: {
+      tokyo: "Japan's most prestigious university.",
+      kyoto: "A home of Nobel laureates with particular strength in fundamental sciences.",
+      waseda: "A leading private university with a large international student body.",
+      osaka: "A major research university in western Japan.",
+      "temple-japan": "Temple University's English-language campus in Tokyo, popular with international students.",
+    },
+  },
+  australia: {
+    name: "Australia",
+    tagline: "High quality of life and world-class universities.",
+    intro:
+      "Australia combines a high quality of life with globally respected universities and a very international student environment. It is a strong option for students looking for academic quality, English-language study and a lifestyle built around balance and openness.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English" },
+      { label: "Environment", value: "international campuses" },
+    ],
+    uniBlurbs: {
+      melbourne: "Australia's highest-ranked university.",
+      sydney: "A prestigious university with a strong international profile.",
+      anu: "A leading research institution in the national capital.",
+      unsw: "Strong in engineering, business and the sciences.",
+      monash: "One of Australia's largest research universities, based in Melbourne.",
+    },
+  },
+  malta: {
+    name: "Malta",
+    tagline: "An English-speaking EU country on the Mediterranean.",
+    intro:
+      "Malta is an English-speaking EU country with a warm climate and a compact, welcoming academic environment. It can be a good option for students looking for a calmer start abroad.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English" },
+      { label: "Advantage", value: "Mediterranean climate" },
+    ],
+    uniBlurbs: {
+      "uni-malta": "The island's main and oldest university.",
+      mcast: "A practice-oriented institution with a vocational profile.",
+      mbs: "A school focused on business and management.",
+    },
+  },
+  zea: {
+    name: "UAE",
+    tagline: "Branches of global universities and generous scholarships.",
+    intro:
+      "The United Arab Emirates offer modern campuses, branches of global universities and generous scholarship opportunities. The country is a dynamic international hub at the crossroads of regions and cultures.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English" },
+      { label: "Advantage", value: "global university branches" },
+    ],
+    uniBlurbs: {
+      nyuad: "A highly selective NYU campus known for full scholarships.",
+      khalifa: "A leading technical and research university in the region.",
+      aus: "An American-style university based in Sharjah.",
+    },
+  },
+  hongkong: {
+    name: "Hong Kong",
+    tagline: "A British-style system with teaching in English.",
+    intro:
+      "Hong Kong combines Asian dynamism with a British-style education system and teaching in English. It remains one of Asia's most important academic and financial hubs.",
+    highlights: [
+      { label: "System", value: "Bachelor · Master's · Doctorate" },
+      { label: "Language", value: "English" },
+      { label: "Reputation", value: "top-tier in Asia" },
+    ],
+    uniBlurbs: {
+      hku: "The oldest and most prestigious university in Hong Kong.",
+      hkust: "A younger institution that ranks at the top in science, technology and business.",
+      cuhk: "A broad university with a strong research profile.",
+      cityu: "A modern institution with strengths in engineering and media.",
+    },
+  },
+};
+
+export function getLocalizedCountry(country: Country, language: "pl" | "en"): Country {
+  if (language !== "en") {
+    return country;
+  }
+
+  const translation = countryTranslationsEn[country.slug];
+  if (!translation) {
+    return country;
+  }
+
+  return {
+    ...country,
+    name: translation.name,
+    tagline: translation.tagline,
+    intro: translation.intro,
+    highlights: translation.highlights,
+    unis: country.unis.map((uni) => ({
+      ...uni,
+      blurb: translation.uniBlurbs[uni.slug] ?? uni.blurb,
+    })),
+  };
+}
 
 // Locative phrase used in CTAs, e.g. "Myślisz o studiach w Holandii?"
 export const countryLocative: Record<string, string> = {

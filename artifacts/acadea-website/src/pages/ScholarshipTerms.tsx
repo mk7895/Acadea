@@ -115,7 +115,7 @@ export default function ScholarshipTerms() {
                   <li>The Organiser may request confirmation of parent or guardian consent, especially before awarding or starting support. Failure to provide confirmation by the deadline may result in the application being disregarded or support not being awarded.</li>
                   <li>
                     Applications are submitted through the form available at{" "}
-                    <Link href="/en/scholarship/application" className="font-semibold text-primary hover:underline">
+                    <Link href={localizePath("/stypendium/aplikacja")} className="font-semibold text-primary hover:underline">
                       acadea.org/en/scholarship/application
                     </Link>.
                   </li>
@@ -260,7 +260,7 @@ export default function ScholarshipTerms() {
                 </li>
                 <li>
                   Zgłoszenia są przyjmowane przez formularz dostępny na stronie{" "}
-                  <Link href="/stypendium/aplikacja" className="font-semibold text-primary hover:underline">
+                  <Link href={localizePath("/stypendium/aplikacja")} className="font-semibold text-primary hover:underline">
                     acadea.org/stypendium/aplikacja
                   </Link>.
                 </li>

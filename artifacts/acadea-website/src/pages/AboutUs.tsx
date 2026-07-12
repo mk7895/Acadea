@@ -21,7 +21,7 @@ const featuredFounders = [
     description:
       "Studentka University College London, od ponad 10 lat pierwszego na świecie uniwersytetu z Nauk o Edukacji. Założycielka Fundacji Acadea, pasjonatka implementowania nowych technologii, szczególnie w edukacji. W 2025 roku z wyróżnieniem ukończyła Bachelor of Science na Uniwersytecie Nowojorskim (NYU), w trakcie którego w aż pięciu krajach studiowała Finanse, Ekonomię oraz Język Chiński. Swoje prace prezentowała na międzynarodowych konferencjach naukowych. Wyróżniona w programach takich jak Liderzy Innowacji Kancelarii Prezesa Rady Ministrów, Krajowy Fundusz na rzecz Dzieci oraz ADAMED SmartUP. Ma na koncie liczne sukcesy w olimpiadach i konkursach, działała w Radzie Dzieci i Młodzieży przy Ministrze Edukacji i Nauki oraz Radzie Młodzieżowej Województwa Zachodniopomorskiego. Wspierając małe ojczyzny i początkujących dziennikarzy, współprzewodniczyła Ogólnopolskiej Federacji Młodych i Fundacji Polemika. Od pięciu lat Marlena pomaga innym dostać się na ich wymarzone studia - ma za sobą udane współprace z setkami aplikantów, a jej podopieczni otrzymali oferty z topowych uczelni na całym świecie.",
     descriptionEn:
-      "A student at University College London and founder of the Acadea Foundation, Marlena combines a passion for education with a strong interest in how technology can improve access to it. In 2025 she graduated with distinction from New York University, where she studied finance, economics and Chinese across five countries. She has presented her work at international academic conferences and has been recognised by programmes such as Liderzy Innowacji, Krajowy Fundusz na rzecz Dzieci and ADAMED SmartUP. For the past five years, she has helped applicants build strong strategies and gain admission to ambitious universities worldwide.",
+      "A student at University College London, for over 10 years the world's leading university in Education. Founder of the Acadea Foundation, she is passionate about implementing new technologies, especially in education. In 2025 she graduated with distinction with a Bachelor of Science from New York University (NYU), during which she studied Finance, Economics and Chinese across as many as five countries. She has presented her work at international academic conferences. She has been recognised in programmes such as the Chancellery of the Prime Minister's Leaders of Innovation, the National Children's Fund and ADAMED SmartUP. She has achieved numerous successes in olympiads and competitions, served on the Children and Youth Council to the Minister of Education and Science and on the Youth Council of the West Pomeranian Voivodeship. While supporting local communities and early-career journalists, she co-chaired the Polish Federation of Youth and the Polemika Foundation. For five years Marlena has been helping others get into their dream universities - she has successfully worked with hundreds of applicants, and her mentees have received offers from top universities around the world.",
   },
   {
     name: "Mateusz Klepacki",
@@ -32,7 +32,7 @@ const featuredFounders = [
     description:
       "Absolwent London School of Economics, gdzie ukończył MSc Econometrics and Mathematical Economics, oraz New York University, na którym studiował Business and Finance oraz Economics. Alumn I.S.E.O. Summer School i Akademii Liderów Rynku Kapitałowego, w trakcie swojej ścieżki akademickiej i zawodowej zdobywał doświadczenie na styku analizy, strategii i finansów, był pracownikiem zarówno Boston Consulting Group (BCG), jak i zeb Consulting. Za swoje wyniki był wielokrotnie wyróżniany akademicko, a wcześniej odnosił liczne sukcesy w olimpiadach i konkursach, w tym jako podwójny laureat Olimpiady Statystycznej, zajmując 3. i 8. miejsce w Polsce, oraz finalista Olimpiady Wiedzy Ekonomicznej. Angażował się również społecznie, między innymi jako członek Rady Krajowej Ogólnopolskiej Federacji Młodych. Od pięciu lat pomaga kandydatom dostawać się na studia w bardzo różnych systemach edukacyjnych - od Stanów Zjednoczonych po Koreę Południową i od Finlandii po Maltę. Ma za sobą tysiące godzin pracy z aplikantami i wspiera ich w budowaniu strategii, profilu oraz decyzji, które realnie otwierają drzwi do światowych uczelni.",
     descriptionEn:
-      "Mateusz is a graduate of the London School of Economics, where he completed an MSc in Econometrics and Mathematical Economics, and of New York University, where he studied business, finance and economics. Across his academic and professional path he has worked at the intersection of analytics, strategy and finance, including experience at Boston Consulting Group and zeb Consulting. For five years he has supported applicants across very different education systems, from the United States to South Korea and from Finland to Malta, helping them build strong profiles, realistic strategies and smart application decisions.",
+      "A graduate of the London School of Economics, where he completed an MSc in Econometrics and Mathematical Economics, and of New York University, where he studied Business and Finance as well as Economics. An alumnus of I.S.E.O. Summer School and the Capital Market Leaders Academy, throughout his academic and professional path he gained experience at the intersection of analytics, strategy and finance, working at both Boston Consulting Group (BCG) and zeb Consulting. He was recognised multiple times for his academic performance and earlier achieved numerous successes in olympiads and competitions, including as a double laureate of the Polish Statistics Olympiad, placing 3rd and 8th in Poland, and as a finalist of the Economics Olympiad. He was also socially engaged, including as a member of the National Council of the Polish Federation of Youth. For five years he has been helping candidates gain admission in very different education systems - from the United States to South Korea and from Finland to Malta. He has spent thousands of hours working with applicants and supports them in building strategy, profile and decisions that genuinely open doors to world-class universities.",
   },
 ];
 
@@ -44,21 +44,21 @@ export default function AboutUs() {
       title: t("Szczerość", "Honesty"),
       desc: t(
         "Nie obiecujemy gruszek na wierzbie. Realnie oceniamy Twoje szanse i doradzamy najlepsze, a nie najdroższe rozwiązania.",
-        "We do not sell fantasies. We assess your chances realistically and recommend what is best, not what is most expensive.",
+        "We do not promise the impossible. We assess your chances realistically and recommend the best solutions, not the most expensive ones.",
       ),
     },
     {
       title: t("Indywidualność", "Individuality"),
       desc: t(
         "Nie pracujemy na szablonach. Każdy uczeń to inna historia, inne pasje i inne cele. Twój profil będzie w 100% Twój.",
-        "We do not work from templates. Every student has a different story, different interests and different goals, so your profile should feel fully your own.",
+        "We do not work from templates. Every student has a different story, different passions and different goals. Your profile will be 100% your own.",
       ),
     },
     {
       title: t("Wsparcie 360°", "360° support"),
       desc: t(
         "Jesteśmy z Tobą od pierwszego pomysłu aż po wniesienie walizek do akademika. Nie zostawiamy Cię z problemami samemu sobie.",
-        "We stay with you from the first idea to moving into your accommodation. We do not disappear once the hard part begins.",
+        "We are with you from the first idea all the way to carrying your suitcases into the dorm. We do not leave you alone with problems.",
       ),
     },
   ];
@@ -67,7 +67,7 @@ export default function AboutUs() {
     title: t("Poznajmy się | Zespół ACADEA", "About us | The ACADEA team"),
     description: t(
       "Poznaj zespół ACADEA i historię osób, które same przeszły proces aplikacji na studia za granicą, a dziś wspierają kolejnych kandydatów.",
-      "Meet the ACADEA team and the people who went through international applications themselves and now support the next generation of candidates.",
+      "Meet the ACADEA team and the stories of the people who went through the process of applying abroad themselves and today support the next generation of candidates.",
     ),
     path: localizePath("/o-nas"),
     keywords: isEnglish
@@ -81,7 +81,7 @@ export default function AboutUs() {
         title: t("Poznajmy się | Zespół ACADEA", "About us | The ACADEA team"),
         description: t(
           "Strona o zespole ACADEA, jego wartościach i doświadczeniu w aplikacji na studia za granicą.",
-          "A page about the ACADEA team, its values and its experience in study abroad applications.",
+          "A page about the ACADEA team, its values and its experience in applying to universities abroad.",
         ),
       }),
       createBreadcrumbSchema([
@@ -110,19 +110,19 @@ export default function AboutUs() {
               <p>
                 {t(
                   "Założyliśmy ACADEA, ponieważ sami kiedyś przeszliśmy przez stresujący i skomplikowany proces aplikacji na zagraniczne uczelnie.",
-                  "We founded ACADEA because we had gone through the stressful, complicated process of applying to universities abroad ourselves.",
+                  "We founded ACADEA because we ourselves once went through the stressful and complicated process of applying to foreign universities.",
                 )}
               </p>
               <p>
                 {t(
                   "Sami gubiliśmy się w gąszczu wymagań, portali aplikacyjnych, egzaminów językowych i terminów. Z biegiem lat nauczyliśmy się, co naprawdę znaczy doskonały esej, a wymagania kolejnych uczelni przestały mieć przed nami jakiekolwiek tajemnice.",
-                  "We remember the confusion of requirements, portals, language tests and deadlines. Over the years we learned what truly makes an essay work and how different universities evaluate applicants in practice.",
+                  "We ourselves got lost in the maze of requirements, application portals, language exams and deadlines. Over the years we learned what a truly excellent essay means, and the requirements of successive universities stopped holding any secrets for us.",
                 )}
               </p>
               <p className="font-semibold text-primary">
                 {t(
                   "Od ponad 5 lat prowadzimy kolejne roczniki ambitnych uczniów za rękę — dokładnie tak, jak sami chcielibyśmy zostać wtedy poprowadzeni.",
-                  "For more than five years, we have guided ambitious students in the exact way we once wished someone had guided us.",
+                  "For more than 5 years, we have been guiding successive cohorts of ambitious students by the hand - exactly the way we ourselves would have wanted to be guided back then.",
                 )}
               </p>
             </div>
@@ -151,7 +151,7 @@ export default function AboutUs() {
             <p className="text-gray-500 max-w-2xl mx-auto">
               {t(
                 "Tym kierujemy sie w codziennej pracy z naszymi podopiecznymi.",
-                "These principles shape the way we work with students every day.",
+                "These are the principles that guide our everyday work with our mentees.",
               )}
             </p>
           </div>
@@ -181,7 +181,7 @@ export default function AboutUs() {
             <p className="max-w-3xl mx-auto text-gray-500 leading-relaxed">
               {t(
                 "Poznaj osoby, które zbudowały ACADEA na własnych doświadczeniach aplikacyjnych i od lat prowadzą kolejnych uczniów przez ten proces.",
-                "Meet the people who built ACADEA from their own admissions experience and have spent years guiding students through the same journey.",
+                "Meet the people who built ACADEA on their own application experience and who have been guiding successive students through this process for years.",
               )}
             </p>
           </div>
@@ -231,7 +231,7 @@ export default function AboutUs() {
             <p className="text-lg text-gray-500 leading-relaxed max-w-2xl mx-auto mb-8">
               {t(
                 "Jeśli studiujesz za granicą albo masz już ten etap za sobą i chcesz pomagać kolejnym osobom przejść przez aplikację spokojniej i mądrzej, chętnie Cię poznamy.",
-                "If you study abroad or have already gone through the process yourself and want to help the next generation navigate applications more calmly and intelligently, we would love to hear from you.",
+                "If you study abroad or already have this stage behind you and want to help other people go through the application process more calmly and more wisely, we would be glad to get to know you.",
               )}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

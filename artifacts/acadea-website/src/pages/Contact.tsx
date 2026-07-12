@@ -28,20 +28,30 @@ const CONTACT_WHATSAPP = "+48 799 831 204";
 const CONTACT_WHATSAPP_HREF = "+48799831204";
 const API_BASE = getApiBase();
 
-const contactSchema = z.object({
-  name: z.string().min(2, "Imię jest wymagane"),
-  email: z.string().email("Niepoprawny adres email"),
-  phone: z.string().min(9, "Numer telefonu jest za krótki").optional().or(z.literal("")),
-  message: z.string().min(10, "Wiadomość musi mieć minimum 10 znaków"),
-  consent: z.boolean().refine((value) => value, {
-    message: "Zgoda na politykę prywatności jest wymagana",
-  }),
-});
+function createContactSchema(t: (pl: string, en: string) => string) {
+  return z.object({
+    name: z.string().min(2, t("Imię jest wymagane", "Name is required")),
+    email: z.string().email(t("Niepoprawny adres email", "Invalid email address")),
+    phone: z
+      .string()
+      .min(9, t("Numer telefonu jest za krótki", "Phone number is too short"))
+      .optional()
+      .or(z.literal("")),
+    message: z.string().min(10, t("Wiadomość musi mieć minimum 10 znaków", "Message must be at least 10 characters")),
+    consent: z.boolean().refine((value) => value, {
+      message: t(
+        "Zgoda na politykę prywatności jest wymagana",
+        "Privacy policy consent is required",
+      ),
+    }),
+  });
+}
 
-type ContactFormValues = z.infer<typeof contactSchema>;
+type ContactFormValues = z.infer<ReturnType<typeof createContactSchema>>;
 
 export default function Contact() {
   const { language, isEnglish, localizePath, t } = useLanguage();
+  const contactSchema = createContactSchema(t);
   useSeo({
     title: t("Kontakt i bezpłatna konsultacja | ACADEA", "Contact and free consultation | ACADEA"),
     description: t(
