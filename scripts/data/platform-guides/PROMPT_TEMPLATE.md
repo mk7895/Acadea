@@ -1,4 +1,4 @@
-Return only valid JSON matching `scripts/data/platform-guides/schema.json`.
+Return only valid JSON matching `.local-work/scripts-data/platform-guides/schema.json`.
 
 Goal:
 Create an ACADEA platform university guide blueprint that can be imported into the admin panel ecosystem.
