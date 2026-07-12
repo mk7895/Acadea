@@ -21,6 +21,7 @@ import {
   createOrganizationSchema,
   useSeo,
 } from "@/lib/seo";
+import { useLanguage } from "@/lib/i18n";
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -40,6 +41,7 @@ function estimateWordCount(markdown: string) {
 export default function ArticlePage() {
   const params = useParams<{ slug: string }>();
   const [, setLocation] = useLocation();
+  const { language, localizePath, t } = useLanguage();
   const slug = `/${params.slug}`;
   const [article, setArticle] = useState<ArticleDetail | null | undefined>(undefined);
   const [articleError, setArticleError] = useState(false);
@@ -52,7 +54,7 @@ export default function ArticlePage() {
     setArticle(undefined);
     setArticleError(false);
 
-    void fetchArticleDetail(slug)
+    void fetchArticleDetail(slug, language)
       .then((value) => {
         if (!cancelled) {
           setArticle(value);
@@ -68,7 +70,7 @@ export default function ArticlePage() {
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, language]);
 
   useEffect(() => {
     function updateProgress() {
@@ -185,7 +187,7 @@ export default function ArticlePage() {
     [article?.tocItems, articleBody],
   );
 
-  const articlePath = `/baza-wiedzy${slug}`;
+  const articlePath = `${localizePath("/baza-wiedzy")}${slug}`;
   const wordCount = estimateWordCount(articleBody);
 
   useSeo(
@@ -273,7 +275,7 @@ export default function ArticlePage() {
   if (article === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center pt-28">
-        <div className="text-center text-gray-500">Ładowanie artykułu…</div>
+        <div className="text-center text-gray-500">{t("Ładowanie artykułu…", "Loading article...")}</div>
       </div>
     );
   }
@@ -283,18 +285,26 @@ export default function ArticlePage() {
       <div className="min-h-screen flex items-center justify-center pt-28">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-primary mb-4">
-            {articleError ? "Artykuł jest chwilowo niedostępny" : "Artykuł nie znaleziony"}
+            {articleError
+              ? t("Artykuł jest chwilowo niedostępny", "Article is temporarily unavailable")
+              : t("Artykuł nie znaleziony", "Article not found")}
           </h1>
           <p className="mb-6 max-w-md text-gray-500">
             {articleError
-              ? "Nie udało się pobrać aktualnej wersji artykułu z bazy danych. Spróbuj ponownie za chwilę."
-              : "Ten adres nie prowadzi już do opublikowanego artykułu."}
+              ? t(
+                  "Nie udało się pobrać aktualnej wersji artykułu z bazy danych. Spróbuj ponownie za chwilę.",
+                  "We could not fetch the current version of this article from the database. Try again in a moment.",
+                )
+              : t(
+                  "Ten adres nie prowadzi już do opublikowanego artykułu.",
+                  "This address no longer points to a published article.",
+                )}
           </p>
           <button
-            onClick={() => setLocation("/baza-wiedzy")}
+            onClick={() => setLocation(localizePath("/baza-wiedzy"))}
             className="inline-flex items-center rounded-full bg-primary px-6 py-3 font-semibold text-white"
           >
-            Wróć do Bazy Wiedzy
+            {t("Wróć do Bazy Wiedzy", "Back to Knowledge Base")}
           </button>
         </div>
       </div>
@@ -318,14 +328,14 @@ export default function ArticlePage() {
       <div className="container mx-auto max-w-7xl px-4 md:px-6">
         <div className="mb-8 flex items-center justify-between gap-4">
           <Link
-            href="/baza-wiedzy"
+            href={localizePath("/baza-wiedzy")}
             className="inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-primary"
           >
             <ChevronLeft size={16} />
-            Wróć do Bazy Wiedzy
+            {t("Wróć do Bazy Wiedzy", "Back to Knowledge Base")}
           </Link>
           <div className="text-xs font-semibold uppercase tracking-[0.24em] text-[#b7aa8d]">
-            Baza Wiedzy
+            {t("Baza Wiedzy", "Knowledge Base")}
           </div>
         </div>
 
@@ -338,7 +348,7 @@ export default function ArticlePage() {
                 </span>
                 <span className="flex items-center gap-1 text-xs text-gray-400">
                   <Clock size={13} />
-                  {article.readMin} min czytania
+                  {article.readMin} {t("min czytania", "min read")}
                 </span>
               </div>
               <h1 className="mb-6 text-3xl font-bold leading-tight text-primary md:text-5xl">
@@ -391,12 +401,12 @@ export default function ArticlePage() {
 
             {related.length > 0 && (
               <section className="mt-12 border-t border-gray-100 pt-10 md:mt-16">
-                <h3 className="mb-6 text-xl font-bold text-primary">Czytaj również</h3>
+                <h3 className="mb-6 text-xl font-bold text-primary">{t("Czytaj również", "Read also")}</h3>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   {related.map((r) => (
                     <Link
                       key={r.slug}
-                      href={`/baza-wiedzy${r.slug}`}
+                      href={`${localizePath("/baza-wiedzy")}${r.slug}`}
                       className="group block overflow-hidden rounded-xl border border-gray-100 transition-shadow hover:shadow-md"
                     >
                       <div className="h-28 overflow-hidden bg-gray-100">
@@ -412,7 +422,7 @@ export default function ArticlePage() {
                       <div className="p-4">
                         <p className="mb-1.5 flex items-center gap-1 text-xs text-gray-400">
                           <Clock size={11} />
-                          {r.readMin} min
+                          {r.readMin} {t("min", "min")}
                         </p>
                         <p className="text-sm font-semibold leading-snug text-primary transition-colors group-hover:text-primary/75">
                           {r.title}
@@ -425,22 +435,25 @@ export default function ArticlePage() {
             )}
 
             <div id="article-cta-box" className="mt-12 rounded-3xl bg-gradient-to-br from-primary to-primary/85 p-8 text-center text-white md:mt-16 md:p-10">
-              <h3 className="mb-3 text-2xl font-bold">Chcesz porozmawiać o swojej aplikacji?</h3>
+              <h3 className="mb-3 text-2xl font-bold">{t("Chcesz porozmawiać o swojej aplikacji?", "Want to talk about your application?")}</h3>
               <p className="mx-auto mb-8 max-w-md text-base text-white/75">
-                Bezpłatna konsultacja z doradcą ACADEA. Odpowiemy na Twoje pytania i pomożemy zaplanować kolejne kroki.
+                {t(
+                  "Bezpłatna konsultacja z doradcą ACADEA. Odpowiemy na Twoje pytania i pomożemy zaplanować kolejne kroki.",
+                  "A free consultation with an ACADEA adviser. We will answer your questions and help you plan the next steps.",
+                )}
               </p>
               <div className="flex flex-col justify-center gap-4 sm:flex-row">
                 <Link
-                  href="/umow-spotkanie"
+                  href={localizePath("/umow-spotkanie")}
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-accent px-8 py-4 text-base font-bold text-primary transition-colors hover:bg-white"
                 >
-                  Umów bezpłatną konsultację <ArrowRight size={18} />
+                  {t("Umów bezpłatną konsultację", "Book a free consultation")} <ArrowRight size={18} />
                 </Link>
                 <Link
-                  href="/jak-to-dziala"
+                  href={localizePath("/jak-to-dziala")}
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-white/15 px-8 py-4 text-base font-semibold text-white transition-colors hover:bg-white/25"
                 >
-                  Zapoznaj się z naszą ofertą
+                  {t("Zapoznaj się z naszą ofertą", "See how we help")}
                 </Link>
               </div>
             </div>
@@ -458,7 +471,7 @@ export default function ArticlePage() {
             >
               <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#f5f1e8] px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[#8d7b5c]">
                 <List size={12} />
-                Spis treści
+                {t("Spis treści", "Contents")}
               </div>
 
               {renderedTocItems.length > 0 ? (
@@ -476,7 +489,7 @@ export default function ArticlePage() {
                   ))}
                 </nav>
               ) : (
-                <p className="text-sm text-gray-500">Dla tego artykułu nie dodano jeszcze spisu treści.</p>
+                <p className="text-sm text-gray-500">{t("Dla tego artykułu nie dodano jeszcze spisu treści.", "No contents have been added for this article yet.")}</p>
               )}
             </div>
           </aside>

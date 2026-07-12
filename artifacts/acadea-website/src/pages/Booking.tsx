@@ -27,6 +27,7 @@ import {
   createWebPageSchema,
   useSeo,
 } from "@/lib/seo";
+import { useLanguage } from "@/lib/i18n";
 
 const API_BASE = getApiBase();
 type Slot = { start: string; end: string; label: string };
@@ -47,9 +48,31 @@ const TOPICS = [
 ];
 
 const steps = ["Termin", "Godzina", "Rezerwacja", "Potwierdzenie"];
+const stepsEn = ["Date", "Time", "Details", "Confirmation"];
 
-function formatDayLabel(value: string, timezone: string) {
-  return new Date(value).toLocaleDateString("pl-PL", {
+const topicLabelsEn: Record<string, string> = {
+  "Wybór uczelni i kierunku": "University and course choice",
+  "Przygotowanie dokumentów": "Document preparation",
+  "Esej motywacyjny": "Personal statement / essay",
+  "Formalności po przyjęciu i zakwaterowanie": "Post-offer formalities and accommodation",
+  "Inne": "Other",
+};
+
+const timezoneLabelsEn: Record<string, string> = {
+  "Polska": "Poland",
+  "Wielka Brytania": "United Kingdom",
+  "Włochy": "Italy",
+  "USA Wschód": "US East",
+  "Kanada Wschód": "Canada East",
+  "USA Central": "US Central",
+  "USA Góry Skaliste": "US Mountain",
+  "USA Zachód": "US West",
+  "Kanada Zachód": "Canada West",
+  "Korea Południowa": "South Korea",
+};
+
+function formatDayLabel(value: string, timezone: string, locale: string) {
+  return new Date(value).toLocaleDateString(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -72,15 +95,15 @@ function formatDayKey(value: string, timezone: string) {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
-function formatTimeLabel(value: string, timezone: string) {
-  return new Date(value).toLocaleTimeString("pl-PL", {
+function formatTimeLabel(value: string, timezone: string, locale: string) {
+  return new Date(value).toLocaleTimeString(locale, {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: timezone,
   });
 }
 
-function buildDayGroups(slots: Slot[], timezone: string) {
+function buildDayGroups(slots: Slot[], timezone: string, locale: string) {
   const grouped = new Map<string, DayGroup>();
 
   for (const slot of slots) {
@@ -88,7 +111,7 @@ function buildDayGroups(slots: Slot[], timezone: string) {
     if (!grouped.has(dateKey)) {
       grouped.set(dateKey, {
         dateKey,
-        label: formatDayLabel(slot.start, timezone),
+        label: formatDayLabel(slot.start, timezone, locale),
         slots: [],
       });
     }
@@ -96,7 +119,7 @@ function buildDayGroups(slots: Slot[], timezone: string) {
     grouped.get(dateKey)!.slots.push({
       start: slot.start,
       end: slot.end,
-      label: formatTimeLabel(slot.start, timezone),
+      label: formatTimeLabel(slot.start, timezone, locale),
     });
   }
 
@@ -108,24 +131,30 @@ function findTimezoneOption(value: string) {
 }
 
 export default function Booking() {
+  const { language, isEnglish, localizePath, t } = useLanguage();
+  const locale = isEnglish ? "en-GB" : "pl-PL";
   useSeo({
-    title: "Umów bezpłatną konsultację | ACADEA",
-    description:
+    title: t("Umów bezpłatną konsultację | ACADEA", "Book a free consultation | ACADEA"),
+    description: t(
       "Wybierz termin i umów bezpłatną konsultację z ACADEA dotyczącą studiów za granicą, wyboru uczelni i planu aplikacji.",
-    path: "/umow-spotkanie",
-    keywords: ["umów konsultację", "bezpłatna konsultacja ACADEA", "spotkanie studia za granicą"],
+      "Choose a time and book a free ACADEA consultation about studying abroad, university choice and your application plan.",
+    ),
+    path: localizePath("/umow-spotkanie"),
+    keywords: isEnglish ? ["book consultation", "free ACADEA consultation", "study abroad meeting"] : ["umów konsultację", "bezpłatna konsultacja ACADEA", "spotkanie studia za granicą"],
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
       createWebPageSchema({
-        path: "/umow-spotkanie",
-        title: "Umów bezpłatną konsultację | ACADEA",
-        description:
+        path: localizePath("/umow-spotkanie"),
+        title: t("Umów bezpłatną konsultację | ACADEA", "Book a free consultation | ACADEA"),
+        description: t(
           "Strona rezerwacji bezpłatnej konsultacji ACADEA dla kandydatów zainteresowanych studiami za granicą.",
+          "Free ACADEA consultation booking page for candidates interested in studying abroad.",
+        ),
       }),
       createBreadcrumbSchema([
-        { name: "Strona Główna", path: "/" },
-        { name: "Umów spotkanie", path: "/umow-spotkanie" },
+        { name: t("Strona Główna", "Home"), path: localizePath("/") },
+        { name: t("Umów spotkanie", "Book a consultation"), path: localizePath("/umow-spotkanie") },
       ]),
     ],
   });
@@ -185,9 +214,9 @@ export default function Booking() {
           return nextMentors[0]?.email ?? "";
         });
       })
-      .catch(() => setSlotsError("Nie udało się pobrać terminów. Spróbuj ponownie."))
+      .catch(() => setSlotsError(t("Nie udało się pobrać terminów. Spróbuj ponownie.", "Could not load available times. Please try again.")))
       .finally(() => setLoadingSlots(false));
-  }, [selectedMentorEmail]);
+  }, [selectedMentorEmail, t]);
 
   useEffect(() => {
     if (canUsePreferencesCookies) {
@@ -217,7 +246,7 @@ export default function Booking() {
     }
   }, [timezone, selectedMentorEmail]);
 
-  const days = useMemo(() => buildDayGroups(rawSlots, timezone), [rawSlots, timezone]);
+  const days = useMemo(() => buildDayGroups(rawSlots, timezone, locale), [rawSlots, timezone, locale]);
   const selectedDay = useMemo(
     () => days.find((day) => day.dateKey === selectedDayKey) ?? null,
     [days, selectedDayKey],
@@ -228,11 +257,11 @@ export default function Booking() {
   );
   const validateForm = () => {
     const err: Record<string, string> = {};
-    if (!form.name.trim() || form.name.trim().length < 2) err.name = "Wpisz imię i nazwisko.";
-    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) err.email = "Podaj poprawny adres e-mail.";
-    if (!form.topic) err.topic = "Wybierz temat.";
-    if (form.topic === "Inne" && !form.otherDetail.trim()) err.otherDetail = "Napisz, w czym możemy pomóc.";
-    if (!consentChecked) err.consent = "Zaznacz zgodę, aby umówić spotkanie.";
+    if (!form.name.trim() || form.name.trim().length < 2) err.name = t("Wpisz imię i nazwisko.", "Enter your full name.");
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) err.email = t("Podaj poprawny adres e-mail.", "Enter a valid email address.");
+    if (!form.topic) err.topic = t("Wybierz temat.", "Choose a topic.");
+    if (form.topic === "Inne" && !form.otherDetail.trim()) err.otherDetail = t("Napisz, w czym możemy pomóc.", "Tell us how we can help.");
+    if (!consentChecked) err.consent = t("Zaznacz zgodę, aby umówić spotkanie.", "Tick the consent box to book the meeting.");
     setFormErrors(err);
     return Object.keys(err).length === 0;
   };
@@ -241,7 +270,7 @@ export default function Booking() {
     if (!validateForm()) return;
     if (!selectedSlot) return;
     if (isTurnstileEnabled() && !turnstileToken) {
-      setSubmitError("Potwierdź zabezpieczenie formularza przed rezerwacją.");
+      setSubmitError(t("Potwierdź zabezpieczenie formularza przed rezerwacją.", "Complete the form security check before booking."));
       return;
     }
 
@@ -262,6 +291,7 @@ export default function Booking() {
           topic: topicValue,
           mentorEmail: selectedMentorEmail || undefined,
           consent: consentChecked,
+          language,
           turnstileToken,
         }),
       });
@@ -272,7 +302,7 @@ export default function Booking() {
         error?: string;
       };
       if (!data.success) {
-        setSubmitError(data.error ?? "Błąd. Spróbuj ponownie.");
+        setSubmitError(data.error ?? t("Błąd. Spróbuj ponownie.", "Something went wrong. Please try again."));
         setTurnstileToken("");
         setTurnstileResetKey((value) => value + 1);
         return;
@@ -282,7 +312,7 @@ export default function Booking() {
       setTurnstileToken("");
       setTurnstileResetKey((value) => value + 1);
     } catch {
-      setSubmitError("Błąd sieci. Sprawdź połączenie i spróbuj ponownie.");
+      setSubmitError(t("Błąd sieci. Sprawdź połączenie i spróbuj ponownie.", "Network error. Check your connection and try again."));
       setTurnstileToken("");
       setTurnstileResetKey((value) => value + 1);
     } finally {
@@ -291,7 +321,7 @@ export default function Booking() {
   };
 
   const confirmedDate = confirmed
-    ? new Date(confirmed.start).toLocaleString("pl-PL", {
+    ? new Date(confirmed.start).toLocaleString(locale, {
         weekday: "long",
         day: "numeric",
         month: "long",
@@ -307,13 +337,13 @@ export default function Booking() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 text-primary text-xs font-semibold mb-5 uppercase tracking-widest">
             <Calendar size={13} />
-            Pierwsza rozmowa jest bezpłatna
+            {t("Pierwsza rozmowa jest bezpłatna", "The first conversation is free")}
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-3">
-            Umów konsultację
+            {t("Umów konsultację", "Book a consultation")}
           </h1>
           <p className="text-gray-500 text-lg">
-            Wybierz termin, a nasz doradca skontaktuje się z Tobą.
+            {t("Wybierz termin, a nasz doradca skontaktuje się z Tobą.", "Choose a time and our adviser will contact you.")}
           </p>
         </motion.div>
 
@@ -323,7 +353,7 @@ export default function Booking() {
               <div>
                 <div className="mb-2 flex items-center gap-2 text-base font-semibold text-primary">
                   <Globe2 size={18} />
-                  <span>Wybierz strefę czasową</span>
+                  <span>{t("Wybierz strefę czasową", "Choose your time zone")}</span>
                 </div>
                 <select
                   value={timezone}
@@ -332,7 +362,7 @@ export default function Booking() {
                 >
                   {TIMEZONE_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
-                      {option.label}
+                      {isEnglish ? timezoneLabelsEn[option.label] ?? option.label : option.label}
                     </option>
                   ))}
                 </select>
@@ -340,7 +370,7 @@ export default function Booking() {
               <div>
                 <div className="mb-2 flex items-center gap-2 text-base font-semibold text-primary">
                   <User size={18} />
-                  <span>Wybierz mentora</span>
+                  <span>{t("Wybierz mentora", "Choose a mentor")}</span>
                 </div>
                 <select
                   value={selectedMentorEmail}
@@ -354,7 +384,7 @@ export default function Booking() {
                       </option>
                     ))
                   ) : (
-                    <option value="">Brak mentorów do wyboru</option>
+                    <option value="">{t("Brak mentorów do wyboru", "No mentors available")}</option>
                   )}
                 </select>
               </div>
@@ -364,7 +394,7 @@ export default function Booking() {
 
         {step < 3 && (
           <div className="flex items-center justify-center gap-2 mb-10">
-            {steps.slice(0, 3).map((s, i) => (
+            {(isEnglish ? stepsEn : steps).slice(0, 3).map((s, i) => (
               <div key={s} className="flex items-center gap-2">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                   i < step ? "bg-primary text-white" : i === step ? "bg-primary text-white ring-4 ring-primary/20" : "bg-gray-200 text-gray-400"
@@ -389,12 +419,12 @@ export default function Booking() {
             {step === 0 && (
               <div>
                 <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
-                  <Calendar size={20} /> Wybierz dzień
+                  <Calendar size={20} /> {t("Wybierz dzień", "Choose a day")}
                 </h2>
                 {loadingSlots && (
                   <div className="flex items-center justify-center py-16 text-gray-400 gap-3">
                     <Loader2 size={24} className="animate-spin" />
-                    Ładowanie dostępnych terminów…
+                    {t("Ładowanie dostępnych terminów…", "Loading available times...")}
                   </div>
                 )}
                 {slotsError && <div className="text-red-500 text-center py-8">{slotsError}</div>}
@@ -402,7 +432,7 @@ export default function Booking() {
                   <div className="space-y-5">
                     {!days.length ? (
                       <div className="text-gray-400 text-center py-6">
-                        Na najbliższe dni nie ma już wolnych terminów.
+                        {t("Na najbliższe dni nie ma już wolnych terminów.", "There are no free times available in the next few days.")}
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -420,7 +450,7 @@ export default function Booking() {
                               <div>
                                 <div className="font-semibold text-primary capitalize">{day.label}</div>
                                 <div className="mt-1 text-sm text-gray-400">
-                                  {day.slots.length} {day.slots.length === 1 ? "termin" : day.slots.length < 5 ? "terminy" : "terminów"}
+                                  {day.slots.length} {isEnglish ? (day.slots.length === 1 ? "slot" : "slots") : day.slots.length === 1 ? "termin" : day.slots.length < 5 ? "terminy" : "terminów"}
                                 </div>
                               </div>
                               <ArrowRight size={18} className="shrink-0 text-primary" />
@@ -437,10 +467,10 @@ export default function Booking() {
             {step === 1 && selectedDay && (
               <div>
                 <button onClick={() => setStep(0)} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-primary mb-6 transition-colors">
-                  <ArrowLeft size={15} /> Zmień dzień
+                  <ArrowLeft size={15} /> {t("Zmień dzień", "Change day")}
                 </button>
                 <h2 className="text-xl font-bold text-primary mb-2 flex items-center gap-2">
-                  <Clock size={20} /> Wybierz godzinę
+                  <Clock size={20} /> {t("Wybierz godzinę", "Choose a time")}
                 </h2>
                 <p className="text-sm text-gray-400 mb-6 capitalize">{selectedDay.label}</p>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
@@ -467,7 +497,7 @@ export default function Booking() {
             {step === 2 && selectedSlot && selectedDay && (
               <div>
                 <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-primary mb-6 transition-colors">
-                  <ArrowLeft size={15} /> Zmień godzinę
+                  <ArrowLeft size={15} /> {t("Zmień godzinę", "Change time")}
                 </button>
 
                 <div className="flex items-center gap-3 bg-primary/6 rounded-xl px-4 py-3 mb-6">
@@ -478,13 +508,13 @@ export default function Booking() {
                 </div>
 
                 <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
-                  <User size={20} /> Twoje dane
+                  <User size={20} /> {t("Twoje dane", "Your details")}
                 </h2>
 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      <span className="flex items-center gap-1.5"><User size={14} /> Imię i nazwisko *</span>
+                      <span className="flex items-center gap-1.5"><User size={14} /> {t("Imię i nazwisko", "Full name")} *</span>
                     </label>
                     <Input
                       value={form.name}
@@ -511,7 +541,7 @@ export default function Booking() {
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      <span className="flex items-center gap-1.5"><Phone size={14} /> Telefon (opcjonalnie)</span>
+                      <span className="flex items-center gap-1.5"><Phone size={14} /> {t("Telefon (opcjonalnie)", "Phone (optional)")}</span>
                     </label>
                     <Input
                       type="tel"
@@ -523,20 +553,20 @@ export default function Booking() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Temat konsultacji *</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t("Temat konsultacji", "Consultation topic")} *</label>
                     <div className="grid grid-cols-2 gap-2">
-                      {TOPICS.map((t) => (
+                      {TOPICS.map((topic) => (
                         <button
-                          key={t}
+                          key={topic}
                           type="button"
-                          onClick={() => setForm({ ...form, topic: t })}
+                          onClick={() => setForm({ ...form, topic })}
                           className={`text-left px-3 py-2.5 rounded-xl text-sm border-2 transition-all ${
-                            form.topic === t
+                            form.topic === topic
                               ? "border-primary bg-primary/6 text-primary font-semibold"
                               : "border-gray-100 text-gray-600 hover:border-primary/40"
                           }`}
                         >
-                          {t}
+                          {isEnglish ? topicLabelsEn[topic] : topic}
                         </button>
                       ))}
                     </div>
@@ -546,12 +576,12 @@ export default function Booking() {
                   {form.topic === "Inne" && (
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                        Napisz, w czym możemy pomóc *
+                        {t("Napisz, w czym możemy pomóc", "Tell us how we can help")} *
                       </label>
                       <Textarea
                         value={form.otherDetail}
                         onChange={(e) => setForm({ ...form, otherDetail: e.target.value })}
-                        placeholder="Opisz krótko, czego dotyczy konsultacja…"
+                        placeholder={t("Opisz krótko, czego dotyczy konsultacja…", "Briefly describe what you would like to discuss...")}
                         rows={3}
                         className={`rounded-xl ${formErrors.otherDetail ? "border-red-400" : ""}`}
                       />
@@ -568,8 +598,10 @@ export default function Booking() {
                         className="mt-0.5 h-4 w-4 shrink-0 accent-primary cursor-pointer"
                       />
                       <span className="text-xs text-gray-500 leading-relaxed">
-                        Umawiając spotkanie, zgadzam się na otrzymywanie informacji handlowych od Fundacji
-                        Acadea. Nigdy nie przekażemy Twoich danych dalej, zawsze możesz się wypisać.
+                        {t(
+                          "Umawiając spotkanie, zgadzam się na otrzymywanie informacji handlowych od Fundacji Acadea. Nigdy nie przekażemy Twoich danych dalej, zawsze możesz się wypisać.",
+                          "By booking a meeting, I agree to receive commercial information from Fundacja Acadea. We will never pass your data on and you can unsubscribe at any time.",
+                        )}
                       </span>
                     </label>
                     {formErrors.consent && <p className="text-red-500 text-xs mt-1">{formErrors.consent}</p>}
@@ -594,13 +626,13 @@ export default function Booking() {
                     className="w-full h-14 rounded-full bg-primary text-white hover:bg-primary/90 font-bold text-base mt-2"
                   >
                     {submitting ? (
-                      <><Loader2 size={18} className="animate-spin mr-2" /> Umawianie…</>
+                      <><Loader2 size={18} className="animate-spin mr-2" /> {t("Umawianie…", "Booking...")}</>
                     ) : (
-                      <>Umów spotkanie <ArrowRight className="ml-2 h-5 w-5" /></>
+                      <>{t("Umów spotkanie", "Book meeting")} <ArrowRight className="ml-2 h-5 w-5" /></>
                     )}
                   </Button>
                   <p className="text-center text-xs text-gray-400">
-                    Otrzymasz potwierdzenie na podany adres e-mail.
+                    {t("Otrzymasz potwierdzenie na podany adres e-mail.", "You will receive a confirmation at the email address provided.")}
                   </p>
                 </div>
               </div>
@@ -611,17 +643,17 @@ export default function Booking() {
                 <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                   <CheckCircle2 size={40} className="text-primary" />
                 </div>
-                <h2 className="text-2xl font-bold text-primary mb-2">Spotkanie zarezerwowane!</h2>
+                <h2 className="text-2xl font-bold text-primary mb-2">{t("Spotkanie zarezerwowane!", "Meeting booked!")}</h2>
                 <p className="text-gray-500 mb-6">
-                  Cześć <strong>{form.name.split(" ")[0]}</strong>! Zarezerwowano spotkanie na:
+                  {t("Cześć", "Hi")} <strong>{form.name.split(" ")[0]}</strong>! {t("Zarezerwowano spotkanie na:", "Your meeting is booked for:")}
                 </p>
                 <div className="bg-primary/6 rounded-2xl px-6 py-4 mb-6 inline-block">
                   <p className="font-bold text-primary capitalize text-lg">{confirmedDate}</p>
-                  <p className="text-sm text-gray-500 mt-1">Konsultacja z doradcą ACADEA</p>
+                  <p className="text-sm text-gray-500 mt-1">{t("Konsultacja z doradcą ACADEA", "Consultation with an ACADEA adviser")}</p>
                 </div>
                 <p className="text-sm text-gray-400 mb-8">
-                  Potwierdzenie zostało wysłane na <strong>{form.email}</strong>.<br />
-                  Link do spotkania znajdziesz w zaproszeniu kalendarzowym.
+                  {t("Potwierdzenie zostało wysłane na", "The confirmation has been sent to")} <strong>{form.email}</strong>.<br />
+                  {t("Link do spotkania znajdziesz w zaproszeniu kalendarzowym.", "You will find the meeting link in the calendar invitation.")}
                 </p>
                 {confirmed?.calendarLink && (
                   <a
@@ -630,7 +662,7 @@ export default function Booking() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 bg-white border-2 border-primary text-primary font-semibold px-6 py-3 rounded-full hover:bg-primary hover:text-white transition-all text-sm"
                   >
-                    <Calendar size={16} /> Otwórz w Google Calendar
+                    <Calendar size={16} /> {t("Otwórz w Google Calendar", "Open in Google Calendar")}
                   </a>
                 )}
               </motion.div>
@@ -645,9 +677,9 @@ export default function Booking() {
               onClick={() => window.dispatchEvent(new Event("acadea:booking-reset"))}
               className="flex items-center gap-2 transition-colors hover:text-primary"
             >
-              <CheckCircle2 size={14} className="text-primary" /> Bezpłatna konsultacja
+              <CheckCircle2 size={14} className="text-primary" /> {t("Bezpłatna konsultacja", "Free consultation")}
             </button>
-            {["Zoom", "Bez zobowiązań"].map((item) => (
+            {["Zoom", t("Bez zobowiązań", "No obligation")].map((item) => (
               <span key={item} className="flex items-center gap-2">
                 <CheckCircle2 size={14} className="text-primary" /> {item}
               </span>

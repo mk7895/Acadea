@@ -20,6 +20,7 @@ import {
   createOrganizationSchema,
   useSeo,
 } from "@/lib/seo";
+import { useLanguage } from "@/lib/i18n";
 
 const API_BASE = getApiBase();
 
@@ -36,8 +37,9 @@ const itemVariants: Variants = {
 type SelectedFilters = Record<string, string[]>;
 
 export default function Blog() {
-  const cachedArticles = getCachedPublishedArticles();
-  const cachedTaxonomy = getCachedArticleTaxonomy();
+  const { language, localizePath, t } = useLanguage();
+  const cachedArticles = getCachedPublishedArticles(language);
+  const cachedTaxonomy = getCachedArticleTaxonomy(language);
 
   useSeo({
     title: "Baza wiedzy o studiach za granicą | ACADEA",
@@ -87,8 +89,8 @@ export default function Blog() {
     void (async () => {
       try {
         const [rows, taxonomy] = await Promise.all([
-          fetchPublishedArticles(),
-          fetchArticleTaxonomy(),
+          fetchPublishedArticles(language),
+          fetchArticleTaxonomy(language),
         ]);
 
         if (!cancelled) {
@@ -108,7 +110,7 @@ export default function Blog() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [language]);
 
   const visible = useMemo(() => {
     return articleItems.filter((article) => {
@@ -162,8 +164,12 @@ export default function Blog() {
         body: JSON.stringify({
           name: "Newsletter ACADEA",
           email: trimmed,
-          message: `Zapis do newslettera ACADEA z adresu ${trimmed}.`,
+          message:
+            language === "en"
+              ? `ACADEA newsletter signup from ${trimmed}.`
+              : `Zapis do newslettera ACADEA z adresu ${trimmed}.`,
           type: "newsletter",
+          language,
           turnstileToken,
         }),
       });
@@ -188,14 +194,17 @@ export default function Blog() {
           >
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/8 px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary">
               <BookOpen size={13} />
-              <span>Baza Wiedzy</span>
+              <span>{t("Baza Wiedzy", "Knowledge Base")}</span>
             </div>
             <h1 className="mb-4 text-5xl font-bold leading-tight text-gray-900 md:text-6xl">
-              Wszystko, co musisz wiedzieć
-              <br className="hidden md:block" /> o <span className="text-primary">studiach za granicą</span>
+              {t("Wszystko, co musisz wiedzieć", "Everything you need to know")}
+              <br className="hidden md:block" /> {t("o", "about")} <span className="text-primary">{t("studiach za granicą", "studying abroad")}</span>
             </h1>
             <p className="max-w-2xl text-lg leading-relaxed text-gray-500">
-              Stworzyliśmy miejsce, którego sami kiedyś szukaliśmy — konkretne, spokojne i oparte na doświadczeniu ludzi, którzy tę drogę naprawdę przeszli.
+              {t(
+                "Stworzyliśmy miejsce, którego sami kiedyś szukaliśmy — konkretne, spokojne i oparte na doświadczeniu ludzi, którzy tę drogę naprawdę przeszli.",
+                "We built the kind of place we once wished existed: practical, calm and grounded in the experience of people who have actually gone through the process.",
+              )}
             </p>
           </motion.div>
         </div>
@@ -206,7 +215,7 @@ export default function Blog() {
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-xs font-semibold uppercase tracking-[0.22em] text-[#9f8f74]">
-                Filtry
+                {t("Filtry", "Filters")}
               </span>
               {taxonomyGroups.map((group) => {
                 const hasSelectedInGroup = (selectedFilters[group.slug] ?? []).length > 0;
@@ -239,7 +248,7 @@ export default function Blog() {
                     : "border-gray-200 text-gray-600 hover:border-primary hover:text-primary"
                 }`}
               >
-                Resetuj filtry
+                {t("Resetuj filtry", "Reset filters")}
               </button>
             </div>
 
@@ -273,7 +282,10 @@ export default function Blog() {
         <div className="container mx-auto px-4 md:px-6">
           {articleLoadError ? (
             <div className="mb-6 rounded-[28px] border border-amber-200 bg-amber-50 px-6 py-5 text-sm leading-relaxed text-amber-900">
-              Nie udało się teraz wczytać aktualnych artykułów z bazy danych. Odśwież stronę za chwilę albo wróć później.
+              {t(
+                "Nie udało się teraz wczytać aktualnych artykułów z bazy danych. Odśwież stronę za chwilę albo wróć później.",
+                "We could not load the latest articles from the database right now. Refresh the page in a moment or come back later.",
+              )}
             </div>
           ) : null}
           {articleIndexLoading && visible.length === 0 ? (
@@ -297,12 +309,20 @@ export default function Blog() {
           ) : visible.length === 0 ? (
             <div className="rounded-[28px] border border-dashed border-[#d8d0c1] bg-white px-6 py-12 text-center">
               <h2 className="text-2xl font-bold text-primary">
-                {articleLoadError ? "Artykuły są chwilowo niedostępne" : "Brak artykułów dla wybranych filtrów"}
+                {articleLoadError
+                  ? t("Artykuły są chwilowo niedostępne", "Articles are temporarily unavailable")
+                  : t("Brak artykułów dla wybranych filtrów", "No articles match the selected filters")}
               </h2>
               <p className="mt-3 text-gray-500">
                 {articleLoadError
-                  ? "To wygląda na problem z połączeniem z API artykułów, a nie na brak treści."
-                  : "Odznacz część kategorii albo wróć do widoku wszystkich artykułów."}
+                  ? t(
+                      "To wygląda na problem z połączeniem z API artykułów, a nie na brak treści.",
+                      "This looks like an article API connection issue, not missing content.",
+                    )
+                  : t(
+                      "Odznacz część kategorii albo wróć do widoku wszystkich artykułów.",
+                      "Remove some categories or return to all articles.",
+                    )}
               </p>
             </div>
           ) : (
@@ -341,15 +361,15 @@ export default function Blog() {
                     <div className="flex flex-1 flex-col p-6">
                       <div className="mb-3 flex items-center gap-2 text-xs text-gray-400">
                         <Clock size={12} />
-                        <span>{article.readMin} min czytania</span>
+                        <span>{article.readMin} {t("min czytania", "min read")}</span>
                       </div>
                       <h3 className="mb-3 text-lg font-bold leading-snug text-primary">{article.title}</h3>
                       <p className="line-clamp-3 flex-1 text-sm leading-relaxed text-gray-500">{article.excerpt}</p>
                       <Link
-                        href={`/baza-wiedzy${article.slug}`}
+                        href={`${localizePath("/baza-wiedzy")}${article.slug}`}
                         className="group/btn mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:text-primary/80"
                       >
-                        Czytaj więcej
+                        {t("Czytaj więcej", "Read more")}
                         <ArrowRight size={14} className="transition-transform group-hover/btn:translate-x-0.5" />
                       </Link>
                     </div>
@@ -373,13 +393,16 @@ export default function Blog() {
               <div className="absolute right-0 top-0 h-80 w-80 rounded-full bg-accent blur-[80px]" />
             </div>
             <div className="relative z-10 mx-auto max-w-2xl">
-              <h2 className="mb-4 text-3xl font-bold text-white md:text-4xl">Nie przegap nowych artykułów</h2>
+              <h2 className="mb-4 text-3xl font-bold text-white md:text-4xl">{t("Nie przegap nowych artykułów", "Do not miss new articles")}</h2>
               <p className="mb-8 text-gray-300">
-                Zapisz się na newsletter i otrzymuj nowe poradniki, aktualności o uczelniach i informacje o stypendiach prosto na skrzynkę.
+                {t(
+                  "Zapisz się na newsletter i otrzymuj nowe poradniki, aktualności o uczelniach i informacje o stypendiach prosto na skrzynkę.",
+                  "Sign up for the newsletter and get new guides, university updates and scholarship information straight to your inbox.",
+                )}
               </p>
 
               {newsStatus === "ok" ? (
-                <p className="text-lg font-semibold text-accent">Zapisano! Wkrótce dostaniesz pierwszy e-mail.</p>
+                <p className="text-lg font-semibold text-accent">{t("Zapisano! Wkrótce dostaniesz pierwszy e-mail.", "You are subscribed. Your first email will arrive soon.")}</p>
               ) : (
                 <>
                   <div className="mx-auto flex max-w-xl flex-col gap-3 sm:flex-row sm:items-center">
@@ -388,7 +411,7 @@ export default function Blog() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSubscribe()}
-                      placeholder="Twój adres e-mail"
+                      placeholder={t("Twój adres e-mail", "Your email address")}
                       data-testid="input-newsletter-email"
                       className="h-14 flex-1 rounded-full border border-white/20 bg-white/10 px-5 text-base text-white placeholder-white/50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-accent"
                     />
@@ -398,7 +421,7 @@ export default function Blog() {
                       data-testid="button-newsletter-subscribe"
                       className="h-14 shrink-0 rounded-full bg-accent px-8 text-base font-bold text-primary transition-colors hover:bg-white disabled:opacity-60"
                     >
-                      {newsStatus === "loading" ? "Zapisywanie…" : "Zapisz się"}
+                      {newsStatus === "loading" ? t("Zapisywanie…", "Saving...") : t("Zapisz się", "Sign up")}
                     </button>
                   </div>
                   <div className="mt-4 flex justify-center">
@@ -411,8 +434,14 @@ export default function Blog() {
                   {newsStatus === "error" && (
                     <p className="mt-3 text-sm text-red-300">
                       {isTurnstileEnabled() && !turnstileToken
-                        ? "Potwierdź zabezpieczenie formularza i spróbuj ponownie."
-                        : "Coś poszło nie tak. Spróbuj ponownie lub napisz do nas bezpośrednio."}
+                        ? t(
+                            "Potwierdź zabezpieczenie formularza i spróbuj ponownie.",
+                            "Complete the form security check and try again.",
+                          )
+                        : t(
+                            "Coś poszło nie tak. Spróbuj ponownie lub napisz do nas bezpośrednio.",
+                            "Something went wrong. Try again or contact us directly.",
+                          )}
                     </p>
                   )}
                 </>

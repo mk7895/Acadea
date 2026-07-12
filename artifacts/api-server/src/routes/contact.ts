@@ -32,6 +32,7 @@ const contactRequestSchema = SubmitContactBody.and(
     isAdultDeclared: z.boolean().optional(),
     parentEmail: z.string().email().optional(),
     parentFullName: z.string().trim().min(2).optional(),
+    language: z.enum(["pl", "en"]).optional().default("pl"),
     privacyPolicyAcknowledged: z.boolean().optional(),
     termsAccepted: z.boolean().optional(),
     turnstileToken: z.string().min(1).optional(),
@@ -68,7 +69,18 @@ function getRequestOrigin(req: Parameters<typeof verifyTurnstileToken>[0]) {
 function buildParentConsentStatement(input: {
   applicantName: string;
   applicantEmail: string;
+  language: "pl" | "en";
 }) {
+  if (input.language === "en") {
+    return [
+      "I declare that I am the parent or legal guardian of the candidate named below.",
+      `Candidate: ${input.applicantName}`,
+      `Candidate email: ${input.applicantEmail}`,
+      "I consent to the minor's participation in the ACADEA Scholarship Competition 2026, submission of the application and processing of personal data necessary to run the competition and, if applicable, deliver support.",
+      "I also confirm that I have read the competition terms and the ACADEA Privacy Policy.",
+    ].join("\n");
+  }
+
   return [
     "Oświadczam, że jestem rodzicem lub opiekunem prawnym kandydata wskazanego poniżej.",
     `Kandydat(ka): ${input.applicantName}`,
@@ -376,6 +388,7 @@ router.post("/contact", async (req, res) => {
       const consentStatementText = buildParentConsentStatement({
         applicantEmail: row.email,
         applicantName: row.name,
+        language: parsed.data.language,
       });
 
       await db.insert(scholarshipParentConsentsTable).values({
@@ -393,12 +406,17 @@ router.post("/contact", async (req, res) => {
 
       const origin =
         process.env.PUBLIC_SITE_URL?.trim().replace(/\/$/, "") ?? getRequestOrigin(req);
-      const consentUrl = `${origin}/stypendium/zgoda-rodzica?token=${encodeURIComponent(token)}`;
+      const consentPath =
+        parsed.data.language === "en"
+          ? "/en/scholarship/parent-consent"
+          : "/stypendium/zgoda-rodzica";
+      const consentUrl = `${origin}${consentPath}?token=${encodeURIComponent(token)}`;
 
       void sendScholarshipParentConsentEmail({
         applicantName: row.name,
         consentUrl,
         expiresAt: tokenExpiresAt,
+        language: parsed.data.language,
         parentEmail: parsed.data.parentEmail,
         parentFullName: parsed.data.parentFullName,
       });
@@ -410,6 +428,7 @@ router.post("/contact", async (req, res) => {
       phone: parsed.data.phone ?? null,
       message: row.message,
       type: parsed.data.type,
+      language: parsed.data.language,
     });
 
     return res.status(201).json({
@@ -452,6 +471,7 @@ router.post("/contact", async (req, res) => {
     phone: row.phone,
     message: row.message,
     type: row.type,
+    language: parsed.data.language,
   });
 
   return res.status(201).json(row);

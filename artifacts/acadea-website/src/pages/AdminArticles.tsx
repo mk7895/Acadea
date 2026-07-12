@@ -33,6 +33,7 @@ type EditorState = {
   sortOrder: number;
   category: string;
   categorySlugs: string[];
+  language: "pl" | "en";
   title: string;
   slug: string;
   excerpt: string;
@@ -79,6 +80,7 @@ const emptyEditor: EditorState = {
   sortOrder: 0,
   category: "Artykuł",
   categorySlugs: [],
+  language: "pl",
   title: "",
   slug: "",
   excerpt: "",
@@ -116,6 +118,7 @@ function toEditorState(article: ArticleEditorRecord): EditorState {
     sortOrder: article.sortOrder,
     category: article.category,
     categorySlugs: article.categorySlugs,
+    language: article.language ?? "pl",
     title: article.title,
     slug: article.slug,
     excerpt: article.excerpt,
@@ -904,7 +907,9 @@ export default function AdminArticles() {
                   }`}
                 >
                   <div className="mb-1 flex items-center justify-between gap-3">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-[#998b73]">{article.category}</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-[#998b73]">
+                      {article.language === "en" ? "EN" : "PL"} · {article.category}
+                    </span>
                     <span className={`text-[11px] font-semibold ${article.isPublished ? "text-green-700" : "text-amber-700"}`}>
                       {article.isPublished ? "Opublikowany" : "Szkic"}
                     </span>
@@ -1369,6 +1374,22 @@ export default function AdminArticles() {
                   onChange={(e) => setEditor((current) => ({ ...current, sortOrder: Number(e.target.value || 0) }))}
                   className="mt-2 h-12 w-full rounded-2xl border border-[#ded7c9] px-4"
                 />
+              </label>
+              <label className="block">
+                <span className="text-sm font-semibold text-primary">Język artykułu</span>
+                <select
+                  value={editor.language}
+                  onChange={(e) =>
+                    setEditor((current) => ({
+                      ...current,
+                      language: e.target.value === "en" ? "en" : "pl",
+                    }))
+                  }
+                  className="mt-2 h-12 w-full rounded-2xl border border-[#ded7c9] bg-white px-4"
+                >
+                  <option value="pl">Polski</option>
+                  <option value="en">English</option>
+                </select>
               </label>
             </div>
 

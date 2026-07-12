@@ -5,28 +5,171 @@ import {
   createWebPageSchema,
   useSeo,
 } from "@/lib/seo";
+import { useLanguage } from "@/lib/i18n";
 
 export default function PlatformTerms() {
+  const { isEnglish } = useLanguage();
+
   useSeo({
-    title: "Regulamin platformy ACADEA",
-    description:
-      "Regulamin platformy ACADEA opisujący zasady korzystania z kont, materiałów, spotkań, danych i integracji zewnętrznych.",
-    path: "/regulamin-platformy",
+    title: isEnglish ? "ACADEA Platform Terms" : "Regulamin platformy ACADEA",
+    description: isEnglish
+      ? "ACADEA Platform Terms covering accounts, materials, meetings, data and external integrations."
+      : "Regulamin platformy ACADEA opisujący zasady korzystania z kont, materiałów, spotkań, danych i integracji zewnętrznych.",
+    path: isEnglish ? "/en/platform-terms" : "/regulamin-platformy",
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
       createWebPageSchema({
-        path: "/regulamin-platformy",
-        title: "Regulamin platformy ACADEA",
-        description:
-          "Regulamin korzystania z platformy ACADEA, w tym kont, dokumentów, materiałów i integracji zewnętrznych.",
+        path: isEnglish ? "/en/platform-terms" : "/regulamin-platformy",
+        title: isEnglish ? "ACADEA Platform Terms" : "Regulamin platformy ACADEA",
+        description: isEnglish
+          ? "Terms for using the ACADEA platform, including accounts, documents, materials and external integrations."
+          : "Regulamin korzystania z platformy ACADEA, w tym kont, dokumentów, materiałów i integracji zewnętrznych.",
       }),
       createBreadcrumbSchema([
-        { name: "Strona Główna", path: "/" },
-        { name: "Regulamin Platformy", path: "/regulamin-platformy" },
+        { name: isEnglish ? "Home" : "Strona Główna", path: isEnglish ? "/en" : "/" },
+        { name: isEnglish ? "Platform Terms" : "Regulamin Platformy", path: isEnglish ? "/en/platform-terms" : "/regulamin-platformy" },
       ]),
     ],
   });
+
+  if (isEnglish) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-24 pb-20">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 md:p-12">
+            <h1 className="text-3xl md:text-4xl font-bold text-primary mb-2">ACADEA Platform Terms</h1>
+            <p className="text-gray-400 text-sm mb-10">Last updated: June 2026</p>
+
+            <div className="prose prose-gray max-w-none space-y-8 text-gray-600 text-sm leading-relaxed">
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-4 mb-4">I. Definitions</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li><strong>Platform Terms</strong> means this document setting out the rules for using the ACADEA Platform.</li>
+                  <li><strong>Platform</strong> means the ACADEA web application available at https://app.acadea.org and its related functions, accounts, materials, forms and communication or organisational tools.</li>
+                  <li><strong>Service Provider</strong> means Fundacja Acadea, KRS: 0001240540, NIP: 8982333798, REGON: 544715960, registered at Jedności Narodowej 55-57 / 15, 50-262 Wroclaw, Poland.</li>
+                  <li><strong>User</strong> means any person using the Platform, including a Mentee, Mentor or Administrator.</li>
+                  <li><strong>Mentee</strong> means a person using the Platform to organise their educational, application or mentoring process.</li>
+                  <li><strong>Mentor</strong> means a person granted a mentor account by the Service Provider to support Mentees within the agreed Platform functions.</li>
+                  <li><strong>Materials</strong> means content, checklists, tips, files, links, notes, documents, forms, comments and other information made available or processed in the Platform.</li>
+                  <li><strong>External integrations</strong> means third-party services, in particular Google Drive, Google Calendar, Google Meet, Zoom, Microsoft Teams, WhatsApp, Cloudflare, Render and email services.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">II. General provisions</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>The Platform Terms define rules for providing electronic services through the Platform, including accounts, materials, meetings, documents and external integrations.</li>
+                  <li>Use of the Platform is voluntary. Creating an account or continuing to use the Platform means accepting these Platform Terms and reading the Privacy Policy.</li>
+                  <li>The Platform is organisational, educational and supportive. It does not guarantee university admission, a scholarship, a visa, a positive recruitment result or any specific educational, financial, administrative or legal outcome.</li>
+                  <li>Materials available in the Platform are not legal, tax, immigration, financial, psychological or other licensed professional advice unless a separate written agreement states otherwise.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">III. Account and access</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>A Mentee account may be created through the registration form. A Mentor account is created or approved by the Service Provider.</li>
+                  <li>The User undertakes to provide true, current data concerning themselves unless they have a proper basis to act on behalf of another person.</li>
+                  <li>The User is responsible for keeping passwords, access codes, meeting links and other access data confidential.</li>
+                  <li>The Service Provider may refuse to create an account, limit access, suspend or delete an account if the User breaches these Platform Terms, the law, third-party rights, security rules or standards of proper conduct.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">IV. Documents, files and data</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>The User remains responsible for the content, legality, completeness, accuracy and currency of documents and data entered into the Platform.</li>
+                  <li>The User should not upload documents or data of third parties unless they have the required legal basis or consent.</li>
+                  <li>The Platform and External integrations are supporting tools. The User should keep their own backups of documents, files, application data and other important materials.</li>
+                  <li>To the fullest extent permitted by law, the Service Provider is not liable for loss, damage, synchronisation delay, unavailability, accidental deletion or incompleteness of documents, files or data caused by the User, a Mentor, an external integration provider, technical failure, force majeure, an independent security incident or circumstances outside the Service Provider's reasonable control.</li>
+                  <li>The Service Provider may delete data and files connected with an account after account closure, expiry of cooperation, withdrawal of access to a material or expiry of the retention period set out in the Privacy Policy, unless law requires longer storage.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">V. Meetings and mentoring</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>The Platform may allow Users to schedule, cancel, describe and mark the status of meetings.</li>
+                  <li>Meeting times, Mentor availability, meeting links and communication methods may depend on External integrations. The Service Provider does not guarantee uninterrupted operation of those tools.</li>
+                  <li>Mentors are responsible for their own availability, the reliability of information they provide from their experience and content they independently add to the Platform. The Service Provider may moderate or remove such content if it breaches these Platform Terms or the law.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">VI. Platform use rules</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>The Platform must not be used unlawfully, in a way that infringes third-party rights, disrupts the Platform or circumvents security measures.</li>
+                  <li>Uploading malware, unlawful content, content infringing personal rights, confidential third-party data without a legal basis or materials for which the User lacks rights is prohibited.</li>
+                  <li>The User may not share their account with third parties or use the Platform for mass data extraction, spam, automated scraping or competitive activity contrary to the Platform's purpose.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">VII. Availability and integrations</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>The Service Provider takes reasonable steps to keep the Platform stable but does not guarantee constant, uninterrupted or error-free availability.</li>
+                  <li>The Platform may be temporarily unavailable due to maintenance, updates, failures, overload, infrastructure provider decisions or events outside the Service Provider's control.</li>
+                  <li>External integrations are subject to their providers' terms and privacy policies. The Service Provider is not liable for changes, limits, failures, fees, account deletion or other actions of external providers.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">VIII. Liability</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>To the fullest extent permitted by law, the Service Provider is not liable for indirect loss, lost profits, lost opportunities, data loss, delays, application failure, refusal of admission, refusal of scholarship, visa refusal or decisions of third parties.</li>
+                  <li>The User uses Materials, checklists, tips, recommendations, comments and Platform content at their own responsibility and should independently verify requirements of universities, institutions, authorities and scholarship organisations.</li>
+                  <li>Nothing in these Platform Terms excludes or limits liability where exclusion or limitation is prohibited by mandatory law, in particular liability for intentional damage.</li>
+                  <li>If the User is a consumer, these Platform Terms do not restrict rights granted under mandatory consumer law.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">IX. Personal data</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>Personal data processing rules, including account data, form data, data entered into the Platform, technical data and cookie-related data, are described in the Privacy Policy at https://acadea.org/en/privacy-policy.</li>
+                  <li>The User acknowledges that using the Platform may involve processing private or confidential data. The User should enter only data necessary to use the Platform.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">X. Complaints and contact</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>Complaints concerning Platform operation may be sent to <a href="mailto:contact@acadea.org" className="text-primary hover:underline">contact@acadea.org</a>.</li>
+                  <li>A complaint should include contact details, a description of the issue and, where possible, information allowing us to reproduce the error.</li>
+                  <li>The Service Provider reviews complaints within a reasonable time, no longer than 30 days after receiving a complete report, unless the matter requires more time.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">XI. Changes to the Platform Terms</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>The Service Provider may change these Platform Terms, in particular due to legal changes, Platform functionality changes, organisational or security changes, external integrations or service delivery methods.</li>
+                  <li>The amended Platform Terms will be published on the Service Provider's website. If a change materially affects the User's rights or obligations, the Service Provider may require renewed acceptance at the next login or when using selected functions.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">XII. Governing law and disputes</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>Polish law applies to matters not regulated by these Platform Terms.</li>
+                  <li>Disputes connected with the Platform will be resolved by the competent common courts in Poland and, for Users who are not consumers, by the court competent for the Service Provider's registered office, unless mandatory law provides otherwise.</li>
+                </ol>
+              </section>
+
+              <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 mt-8">
+                <p className="font-bold text-primary mb-1">Fundacja Acadea</p>
+                <p>KRS: 0001240540 | NIP: 8982333798 | REGON: 544715960</p>
+                <p>Jedności Narodowej 55-57 / 15, 50-262 Wroclaw, Poland</p>
+                <p>E-mail: <a href="mailto:contact@acadea.org" className="text-primary hover:underline">contact@acadea.org</a></p>
+                <p>Phone: <a href="tel:+48728492936" className="text-primary hover:underline">+48 728 492 936</a></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-20">

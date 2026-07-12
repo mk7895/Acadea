@@ -50,6 +50,7 @@ const adminArticleSchema = z.object({
   sortOrder: z.number().int().min(0).default(0),
   category: z.string().trim().default(""),
   categorySlugs: z.array(z.string().trim().min(1)).default([]),
+  language: z.enum(["pl", "en"]).default("pl"),
   title: z.string().trim().min(1),
   slug: z.string().trim().min(1),
   excerpt: z.string().trim().min(1),
@@ -133,6 +134,7 @@ function shapeAdminSummary(
     sortOrder: number;
     category: string;
     categorySlugs: string[];
+    language: string;
     title: string;
     slug: string;
     excerpt: string;
@@ -160,6 +162,7 @@ function shapeAdminSummary(
     sortOrder: row.sortOrder,
     category: row.category,
     categorySlugs: row.categorySlugs,
+    language: row.language,
     title: row.title,
     slug: row.slug,
     excerpt: row.excerpt,
@@ -569,6 +572,7 @@ router.post("/admin/articles", requireAdmin, async (req, res) => {
       sortOrder: parsed.data.sortOrder,
       category: primaryCategory,
       categorySlugs,
+      language: parsed.data.language,
       title: parsed.data.title,
       slug,
       excerpt: parsed.data.excerpt,
@@ -626,6 +630,7 @@ router.put("/admin/articles/:id", requireAdmin, async (req, res) => {
       sortOrder: parsed.data.sortOrder,
       category: primaryCategory,
       categorySlugs,
+      language: parsed.data.language,
       title: parsed.data.title,
       slug,
       excerpt: parsed.data.excerpt,

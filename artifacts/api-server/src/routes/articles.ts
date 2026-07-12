@@ -36,6 +36,10 @@ function resolveAssetUrl(req: Request, value: string) {
   return value;
 }
 
+function getArticleLanguage(req: Request) {
+  return req.query.language === "en" ? "en" : "pl";
+}
+
 function shapeSummary(
   req: Request,
   row: {
@@ -43,6 +47,7 @@ function shapeSummary(
     sortOrder: number;
     category: string;
     categorySlugs: string[];
+    language: string;
     title: string;
     slug: string;
     excerpt: string;
@@ -57,6 +62,7 @@ function shapeSummary(
     order: row.sortOrder,
     category: row.category,
     categorySlugs: row.categorySlugs,
+    language: row.language,
     title: row.title,
     slug: row.slug,
     excerpt: row.excerpt,
@@ -122,13 +128,14 @@ router.get("/articles", async (req, res) => {
   }
 
   const { db, articlesTable } = await import("@workspace/db");
+  const language = getArticleLanguage(req);
   const rows = await db
     .select()
     .from(articlesTable)
     .where(eq(articlesTable.isPublished, true))
     .orderBy(asc(articlesTable.sortOrder), asc(articlesTable.id));
 
-  return res.json(rows.map((row) => shapeSummary(req, row)));
+  return res.json(rows.filter((row) => row.language === language).map((row) => shapeSummary(req, row)));
 });
 
 router.get("/article-taxonomy", async (_req, res) => {
@@ -145,6 +152,7 @@ router.get("/articles/:slug", async (req, res) => {
   }
 
   const { db, articlesTable } = await import("@workspace/db");
+  const language = getArticleLanguage(req);
   const slug = `/${req.params.slug}`;
   const [article] = await db
     .select()
@@ -152,7 +160,7 @@ router.get("/articles/:slug", async (req, res) => {
     .where(eq(articlesTable.slug, slug))
     .limit(1);
 
-  if (!article || !article.isPublished) {
+  if (!article || !article.isPublished || article.language !== language) {
     return res.status(404).json({ error: "Article not found." });
   }
 
@@ -177,7 +185,7 @@ router.get("/articles/:slug", async (req, res) => {
         .where(inArray(articleCategoriesTable.slug, referencedCategorySlugs))
     : [];
 
-  const relatedBySlug = new Map(related.map((row) => [row.slug, row]));
+  const relatedBySlug = new Map(related.filter((row) => row.language === language).map((row) => [row.slug, row]));
   const relatedArticles = article.relatedSlugs
     .map((relatedSlug: string) => relatedBySlug.get(relatedSlug))
     .filter((row): row is NonNullable<typeof row> => Boolean(row))
@@ -197,12 +205,13 @@ router.get("/content/sitemap.xml", async (_req, res) => {
   try {
     const staticRoutes = (await loadStaticRoutesForSitemap()).filter((route) => route.includeInSitemap);
 
-    let dynamicArticles: Array<{ slug: string; updatedAt: Date }> = [];
+    let dynamicArticles: Array<{ slug: string; language: string; updatedAt: Date }> = [];
     if (hasDatabaseConfig()) {
       const { db, articlesTable } = await import("@workspace/db");
       dynamicArticles = await db
         .select({
           slug: articlesTable.slug,
+          language: articlesTable.language,
           updatedAt: articlesTable.updatedAt,
         })
         .from(articlesTable)
@@ -214,7 +223,12 @@ router.get("/content/sitemap.xml", async (_req, res) => {
       staticRoutes.map(async (route) => toSitemapEntry(route.path, await getStaticRouteLastmod(route.source))),
     );
     const articleEntries = dynamicArticles.map((article) =>
-      toSitemapEntry(`/baza-wiedzy${article.slug}`, article.updatedAt.toISOString().slice(0, 10)),
+      toSitemapEntry(
+        article.language === "en"
+          ? `/en/knowledge-base${article.slug}`
+          : `/baza-wiedzy${article.slug}`,
+        article.updatedAt.toISOString().slice(0, 10),
+      ),
     );
 
     const xml = [

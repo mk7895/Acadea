@@ -25,29 +25,35 @@ import {
   createWebPageSchema,
   useSeo,
 } from "@/lib/seo";
+import { useLanguage } from "@/lib/i18n";
 
 const API_BASE = getApiBase();
 
 export default function ScholarshipForm() {
+  const { language, isEnglish, localizePath, t } = useLanguage();
   useSeo({
-    title: "Aplikacja do konkursu stypendialnego | ACADEA",
-    description:
+    title: t("Aplikacja do konkursu stypendialnego | ACADEA", "Scholarship competition application | ACADEA"),
+    description: t(
       "Wypełnij formularz zgłoszeniowy do Konkursu Stypendialnego ACADEA i opowiedz o swoich planach, osiągnięciach oraz motywacji.",
-    path: "/stypendium/aplikacja",
-    keywords: ["formularz stypendium", "aplikacja stypendialna", "konkurs stypendialny ACADEA"],
+      "Complete the ACADEA Scholarship Competition application form and tell us about your plans, achievements and motivation.",
+    ),
+    path: localizePath("/stypendium/aplikacja"),
+    keywords: isEnglish ? ["scholarship application form", "scholarship competition application", "ACADEA scholarship"] : ["formularz stypendium", "aplikacja stypendialna", "konkurs stypendialny ACADEA"],
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
       createWebPageSchema({
-        path: "/stypendium/aplikacja",
-        title: "Aplikacja do konkursu stypendialnego | ACADEA",
-        description:
+        path: localizePath("/stypendium/aplikacja"),
+        title: t("Aplikacja do konkursu stypendialnego | ACADEA", "Scholarship competition application | ACADEA"),
+        description: t(
           "Formularz zgłoszeniowy do programu stypendialnego ACADEA dla kandydatów aplikujących o wsparcie.",
+          "Application form for candidates applying for ACADEA scholarship support.",
+        ),
       }),
       createBreadcrumbSchema([
-        { name: "Strona Główna", path: "/" },
-        { name: "Stypendia", path: "/stypendium" },
-        { name: "Aplikacja", path: "/stypendium/aplikacja" },
+        { name: t("Strona Główna", "Home"), path: localizePath("/") },
+        { name: t("Stypendia", "Scholarship"), path: localizePath("/stypendium") },
+        { name: t("Aplikacja", "Application"), path: localizePath("/stypendium/aplikacja") },
       ]),
     ],
   });
@@ -84,38 +90,40 @@ export default function ScholarshipForm() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.name.trim() || form.name.trim().length < 2) e.name = "Podaj imię i nazwisko.";
-    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Podaj poprawny e-mail.";
+    if (!form.name.trim() || form.name.trim().length < 2) e.name = t("Podaj imię i nazwisko.", "Enter your full name.");
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = t("Podaj poprawny e-mail.", "Enter a valid email address.");
     if (!form.isAdultDeclared) {
-      e.isAdultDeclared = "Wskaż, czy masz ukończone 18 lat.";
+      e.isAdultDeclared = t("Wskaż, czy masz ukończone 18 lat.", "Tell us whether you are 18 or older.");
     }
     if (form.isAdultDeclared === "minor") {
       if (!form.parentFullName.trim() || form.parentFullName.trim().length < 2) {
-        e.parentFullName = "Podaj imię i nazwisko rodzica lub opiekuna prawnego.";
+        e.parentFullName = t("Podaj imię i nazwisko rodzica lub opiekuna prawnego.", "Enter the parent or legal guardian's full name.");
       }
       if (
         !form.parentEmail.trim() ||
         !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.parentEmail)
       ) {
-        e.parentEmail = "Podaj poprawny e-mail rodzica lub opiekuna prawnego.";
+        e.parentEmail = t("Podaj poprawny e-mail rodzica lub opiekuna prawnego.", "Enter a valid parent or legal guardian email address.");
       }
     }
-    if (!form.school.trim()) e.school = "Podaj nazwę szkoły lub liceum.";
-    if (!form.field.trim()) e.field = "Napisz, co chcesz studiować.";
+    if (!form.school.trim()) e.school = t("Podaj nazwę szkoły lub liceum.", "Enter your school name.");
+    if (!form.field.trim()) e.field = t("Napisz, co chcesz studiować.", "Tell us what you want to study.");
     if (!form.noMentorPreference) {
-      if (!form.firstMentor) e.firstMentor = "Wybierz mentora pierwszego wyboru.";
-      if (!form.secondMentor) e.secondMentor = "Wybierz mentora drugiego wyboru.";
-      if (!form.thirdMentor) e.thirdMentor = "Wybierz mentora trzeciego wyboru.";
+      if (!form.firstMentor) e.firstMentor = t("Wybierz mentora pierwszego wyboru.", "Choose your first-choice mentor.");
+      if (!form.secondMentor) e.secondMentor = t("Wybierz mentora drugiego wyboru.", "Choose your second-choice mentor.");
+      if (!form.thirdMentor) e.thirdMentor = t("Wybierz mentora trzeciego wyboru.", "Choose your third-choice mentor.");
       const picks = [form.firstMentor, form.secondMentor, form.thirdMentor].filter(Boolean);
       if (new Set(picks).size !== picks.length) {
-        e.firstMentor = "Każdy mentor w rankingu powinien być inny.";
+        e.firstMentor = t("Każdy mentor w rankingu powinien być inny.", "Each mentor in your ranking should be different.");
       }
     }
-    if (!form.achievements.trim() || form.achievements.trim().length < 10) e.achievements = "Opisz swoje osiągnięcia (min. 10 znaków).";
-    if (!form.motivation.trim() || form.motivation.trim().length < 20) e.motivation = "Napisz kilka zdań o sobie (min. 20 znaków).";
+    if (!form.achievements.trim() || form.achievements.trim().length < 10) e.achievements = t("Opisz swoje osiągnięcia (min. 10 znaków).", "Describe your achievements (minimum 10 characters).");
+    if (!form.motivation.trim() || form.motivation.trim().length < 20) e.motivation = t("Napisz kilka zdań o sobie (min. 20 znaków).", "Write a few sentences about yourself (minimum 20 characters).");
     if (!termsAccepted) {
-      e.termsAccepted =
-        "Akceptacja regulaminu i potwierdzenie zapoznania się z polityką prywatności są wymagane.";
+      e.termsAccepted = t(
+        "Akceptacja regulaminu i potwierdzenie zapoznania się z polityką prywatności są wymagane.",
+        "Accepting the terms and confirming that you have read the privacy policy is required.",
+      );
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -125,7 +133,7 @@ export default function ScholarshipForm() {
     e.preventDefault();
     if (!validate()) return;
     if (isTurnstileEnabled() && !turnstileToken) {
-      setSubmitError("Potwierdź zabezpieczenie formularza przed wysłaniem zgłoszenia.");
+      setSubmitError(t("Potwierdź zabezpieczenie formularza przed wysłaniem zgłoszenia.", "Complete the form security check before submitting your application."));
       return;
     }
     setSubmitting(true);
@@ -176,12 +184,13 @@ export default function ScholarshipForm() {
           privacyPolicyAcknowledged: true,
           termsAccepted: true,
           type: "scholarship",
+          language,
           turnstileToken,
         }),
       });
       const data = (await res.json()) as { id?: number; error?: string };
       if (!data.id) {
-        setSubmitError(data.error ?? "Błąd. Spróbuj ponownie.");
+        setSubmitError(data.error ?? t("Błąd. Spróbuj ponownie.", "Something went wrong. Please try again."));
         setTurnstileToken("");
         setTurnstileResetKey((value) => value + 1);
         return;
@@ -190,7 +199,7 @@ export default function ScholarshipForm() {
       setTurnstileToken("");
       setTurnstileResetKey((value) => value + 1);
     } catch {
-      setSubmitError("Błąd sieci. Sprawdź połączenie i spróbuj ponownie.");
+      setSubmitError(t("Błąd sieci. Sprawdź połączenie i spróbuj ponownie.", "Network error. Check your connection and try again."));
       setTurnstileToken("");
       setTurnstileResetKey((value) => value + 1);
     } finally {
@@ -205,13 +214,16 @@ export default function ScholarshipForm() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/20 text-primary text-xs font-semibold mb-5 uppercase tracking-widest border border-accent/40">
             <Heart size={13} className="fill-accent text-accent" />
-            Konkurs Stypendialny ACADEA 2026
+            {t("Konkurs Stypendialny ACADEA 2026", "ACADEA Scholarship Competition 2026")}
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-3">
-            Aplikuj o stypendium
+            {t("Aplikuj o stypendium", "Apply for a scholarship")}
           </h1>
           <p className="text-gray-500 text-lg max-w-lg mx-auto">
-            Formularz jest przeznaczony dla osób, które w roku szkolnym 2026/2027 będą uczniami szkół średnich. Zgłoszenia rozpatrujemy z indywidualną uwagą dla każdej historii.
+            {t(
+              "Formularz jest przeznaczony dla osób, które w roku szkolnym 2026/2027 będą uczniami szkół średnich. Zgłoszenia rozpatrujemy z indywidualną uwagą dla każdej historii.",
+              "This form is for people who will be upper-secondary school students in the 2026/2027 school year. We review every application with individual attention.",
+            )}
           </p>
         </motion.div>
 
@@ -226,17 +238,17 @@ export default function ScholarshipForm() {
               <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle2 size={40} className="text-primary" />
               </div>
-              <h2 className="text-2xl font-bold text-primary mb-2">Zgłoszenie wysłane!</h2>
+              <h2 className="text-2xl font-bold text-primary mb-2">{t("Zgłoszenie wysłane!", "Application sent!")}</h2>
               <p className="text-gray-500 mb-8">
-                Dziękujemy, <strong>{form.name.split(" ")[0]}</strong>! Zgłoszenie otrzymaliśmy
+                {t("Dziękujemy,", "Thank you,")} <strong>{form.name.split(" ")[0]}</strong>! {t("Zgłoszenie otrzymaliśmy", "We have received your application")}
                 {form.isAdultDeclared === "minor"
-                  ? `, a na adres ${form.parentEmail} wysłaliśmy link do zgody rodzica lub opiekuna prawnego.`
+                  ? t(`, a na adres ${form.parentEmail} wysłaliśmy link do zgody rodzica lub opiekuna prawnego.`, ` and we have sent a parent/legal guardian consent link to ${form.parentEmail}.`)
                   : "."}{" "}
-                Odezwiemy się do Ciebie po przejrzeniu aplikacji.
+                {t("Odezwiemy się do Ciebie po przejrzeniu aplikacji.", "We will contact you after reviewing your application.")}
               </p>
-              <Link href="/">
+              <Link href={localizePath("/")}>
                 <Button className="rounded-full bg-primary text-white hover:bg-primary/90 font-semibold px-8">
-                  Wróć na stronę główną
+                  {t("Wróć na stronę główną", "Back to home")}
                 </Button>
               </Link>
             </motion.div>
@@ -253,12 +265,12 @@ export default function ScholarshipForm() {
               <div>
                 <h2 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">1</span>
-                  Twoje dane
+                  {t("Twoje dane", "Your details")}
                 </h2>
                 <div className="space-y-3">
                   <div>
                     <Input value={form.name} onChange={(e) => set("name", e.target.value)}
-                      placeholder="Imię i nazwisko *" className={`rounded-xl ${errors.name ? "border-red-400" : ""}`} />
+                      placeholder={`${t("Imię i nazwisko", "Full name")} *`} className={`rounded-xl ${errors.name ? "border-red-400" : ""}`} />
                     {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                   </div>
                   <div>
@@ -267,15 +279,15 @@ export default function ScholarshipForm() {
                     {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                   </div>
                   <Input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)}
-                    placeholder="Telefon" className="rounded-xl" />
+                    placeholder={t("Telefon", "Phone")} className="rounded-xl" />
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Czy w dniu wysłania zgłoszenia masz ukończone 18 lat? *
+                      {t("Czy w dniu wysłania zgłoszenia masz ukończone 18 lat?", "On the day you submit this application, are you 18 or older?")} *
                     </label>
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       {[
-                        { value: "adult", label: "Tak, mam ukończone 18 lat" },
-                        { value: "minor", label: "Nie, mam mniej niż 18 lat" },
+                        { value: "adult", label: t("Tak, mam ukończone 18 lat", "Yes, I am 18 or older") },
+                        { value: "minor", label: t("Nie, mam mniej niż 18 lat", "No, I am under 18") },
                       ].map((option) => (
                         <label
                           key={option.value}
@@ -317,15 +329,16 @@ export default function ScholarshipForm() {
                   {form.isAdultDeclared === "minor" ? (
                     <div className="rounded-2xl border border-accent/40 bg-accent/10 p-4 space-y-3">
                       <p className="text-sm text-gray-700 leading-relaxed">
-                        Dla osoby niepełnoletniej potrzebujemy kontaktu do rodzica lub opiekuna
-                        prawnego. Po wysłaniu zgłoszenia wyślemy na ten adres bezpieczny link do
-                        podpisania formularza zgody.
+                        {t(
+                          "Dla osoby niepełnoletniej potrzebujemy kontaktu do rodzica lub opiekuna prawnego. Po wysłaniu zgłoszenia wyślemy na ten adres bezpieczny link do podpisania formularza zgody.",
+                          "For a minor, we need contact details for a parent or legal guardian. After the application is submitted, we will send a secure consent form link to this address.",
+                        )}
                       </p>
                       <div>
                         <Input
                           value={form.parentFullName}
                           onChange={(e) => set("parentFullName", e.target.value)}
-                          placeholder="Imię i nazwisko rodzica / opiekuna prawnego *"
+                          placeholder={`${t("Imię i nazwisko rodzica / opiekuna prawnego", "Parent / legal guardian full name")} *`}
                           className={`rounded-xl ${errors.parentFullName ? "border-red-400" : ""}`}
                         />
                         {errors.parentFullName ? (
@@ -337,7 +350,7 @@ export default function ScholarshipForm() {
                           type="email"
                           value={form.parentEmail}
                           onChange={(e) => set("parentEmail", e.target.value)}
-                          placeholder="E-mail rodzica / opiekuna prawnego *"
+                          placeholder={`${t("E-mail rodzica / opiekuna prawnego", "Parent / legal guardian email")} *`}
                           className={`rounded-xl ${errors.parentEmail ? "border-red-400" : ""}`}
                         />
                         {errors.parentEmail ? (
@@ -355,23 +368,23 @@ export default function ScholarshipForm() {
               <div>
                 <h2 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">2</span>
-                  Edukacja i plany
+                  {t("Edukacja i plany", "Education and plans")}
                 </h2>
                 <div className="space-y-3">
                   <div>
                     <Input value={form.school} onChange={(e) => set("school", e.target.value)}
-                      placeholder="Szkoła / liceum *" className={`rounded-xl ${errors.school ? "border-red-400" : ""}`} />
+                      placeholder={`${t("Szkoła / liceum", "School")} *`} className={`rounded-xl ${errors.school ? "border-red-400" : ""}`} />
                     {errors.school && <p className="text-red-500 text-xs mt-1">{errors.school}</p>}
                   </div>
                   <Input value={form.averageGrade} onChange={(e) => set("averageGrade", e.target.value)}
-                    placeholder="Średnia ocen za ostatni rok szkolny, np. 5.17" className="rounded-xl" />
+                    placeholder={t("Średnia ocen za ostatni rok szkolny, np. 5.17", "Average grade for the last school year, e.g. 5.17")} className="rounded-xl" />
                   <Input value={form.gradeYear} onChange={(e) => set("gradeYear", e.target.value)}
-                    placeholder="Klasa lub planowany rok matury" className="rounded-xl" />
+                    placeholder={t("Klasa lub planowany rok matury", "Year group or planned graduation year")} className="rounded-xl" />
                   <Input value={form.targetCountry} onChange={(e) => set("targetCountry", e.target.value)}
-                    placeholder="Docelowy kraj studiów" className="rounded-xl" />
+                    placeholder={t("Docelowy kraj studiów", "Target study country")} className="rounded-xl" />
                   <div>
                     <Input value={form.field} onChange={(e) => set("field", e.target.value)}
-                      placeholder="Co chcesz studiować? *" className={`rounded-xl ${errors.field ? "border-red-400" : ""}`} />
+                      placeholder={`${t("Co chcesz studiować?", "What do you want to study?")} *`} className={`rounded-xl ${errors.field ? "border-red-400" : ""}`} />
                     {errors.field && <p className="text-red-500 text-xs mt-1">{errors.field}</p>}
                   </div>
                 </div>
@@ -383,17 +396,20 @@ export default function ScholarshipForm() {
               <div>
                 <h2 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">3</span>
-                  Uszereguj 3 mentorów w kolejności preferencji
+                  {t("Uszereguj 3 mentorów w kolejności preferencji", "Rank 3 mentors in order of preference")}
                 </h2>
                 <p className="text-sm text-gray-500 mb-4">
-                  Dzięki temu łatwiej dopasujemy Ci osobę, która najlepiej odpowiada Twoim planom i stylowi pracy.
+                  {t(
+                    "Dzięki temu łatwiej dopasujemy Ci osobę, która najlepiej odpowiada Twoim planom i stylowi pracy.",
+                    "This helps us match you with someone who best fits your plans and working style.",
+                  )}
                 </p>
 
                 <div className="space-y-4">
                   {[
-                    { key: "firstMentor", label: "1. wybór *" },
-                    { key: "secondMentor", label: "2. wybór *" },
-                    { key: "thirdMentor", label: "3. wybór *" },
+                    { key: "firstMentor", label: t("1. wybór *", "1st choice *") },
+                    { key: "secondMentor", label: t("2. wybór *", "2nd choice *") },
+                    { key: "thirdMentor", label: t("3. wybór *", "3rd choice *") },
                   ].map((field) => (
                     <div key={field.key}>
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">{field.label}</label>
@@ -404,7 +420,7 @@ export default function ScholarshipForm() {
                           disabled={form.noMentorPreference}
                           className={`flex h-12 w-full appearance-none rounded-xl border bg-gray-50 px-4 pr-10 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${errors[field.key] ? "border-red-400" : "border-gray-200"} ${form.noMentorPreference ? "opacity-60" : ""}`}
                         >
-                          <option value="">Wybierz mentora</option>
+                          <option value="">{t("Wybierz mentora", "Choose a mentor")}</option>
                           {SCHOLARSHIP_MENTOR_NAMES.map((mentorName) => (
                             <option key={mentorName} value={mentorName}>
                               {mentorName}
@@ -433,7 +449,7 @@ export default function ScholarshipForm() {
                       }}
                       className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                     />
-                    <span>Nie mam preferencji co do mentora lub mentorki.</span>
+                    <span>{t("Nie mam preferencji co do mentora lub mentorki.", "I do not have a mentor preference.")}</span>
                   </label>
                 </div>
 
@@ -444,7 +460,7 @@ export default function ScholarshipForm() {
                         <GraduationCap size={16} />
                         <span>{mentor.name}</span>
                       </div>
-                      <p className="text-sm text-gray-500 leading-relaxed">{mentor.desc}</p>
+                      <p className="text-sm text-gray-500 leading-relaxed">{isEnglish ? mentor.descEn : mentor.desc}</p>
                     </div>
                   ))}
                 </div>
@@ -456,29 +472,35 @@ export default function ScholarshipForm() {
               <div>
                 <h2 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">4</span>
-                  Osiągnięcia i projekty
+                  {t("Osiągnięcia i projekty", "Achievements and projects")}
                 </h2>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Konkursy, nagrody, olimpiady lub publikacje *
+                      {t("Konkursy, nagrody, olimpiady lub publikacje", "Competitions, awards, olympiads or publications")} *
                     </label>
                     <Textarea
                       value={form.achievements}
                       onChange={(e) => set("achievements", e.target.value)}
-                      placeholder="Wymień swoje najważniejsze osiągnięcia — konkursy, nagrody, olimpiady, publikacje naukowe itp."
+                      placeholder={t(
+                        "Wymień swoje najważniejsze osiągnięcia — konkursy, nagrody, olimpiady, publikacje naukowe itp.",
+                        "List your most important achievements: competitions, awards, olympiads, scientific publications, etc.",
+                      )}
                       className={`rounded-xl min-h-[100px] resize-none ${errors.achievements ? "border-red-400" : ""}`}
                     />
                     {errors.achievements && <p className="text-red-500 text-xs mt-1">{errors.achievements}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Najciekawsze rzeczy, które udało Ci się stworzyć w wolnym czasie
+                      {t("Najciekawsze rzeczy, które udało Ci się stworzyć w wolnym czasie", "The most interesting things you have created in your free time")}
                     </label>
                     <Textarea
                       value={form.projects}
                       onChange={(e) => set("projects", e.target.value)}
-                      placeholder="Projekty, strony, aplikacje, inicjatywy, organizacje… Dodaj linki, jeśli możesz."
+                      placeholder={t(
+                        "Projekty, strony, aplikacje, inicjatywy, organizacje… Dodaj linki, jeśli możesz.",
+                        "Projects, websites, apps, initiatives, organisations... Add links if you can.",
+                      )}
                       className="rounded-xl min-h-[100px] resize-none"
                     />
                   </div>
@@ -491,13 +513,16 @@ export default function ScholarshipForm() {
               <div>
                 <h2 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">5</span>
-                  Dlaczego aplikujesz?
+                  {t("Dlaczego aplikujesz?", "Why are you applying?")}
                 </h2>
                 <div>
                   <Textarea
                     value={form.motivation}
                     onChange={(e) => set("motivation", e.target.value)}
-                    placeholder="Opowiedz nam o sobie, swoich marzeniach i o tym, dlaczego stypendium ACADEA mogłoby zmienić Twoją sytuację. *"
+                    placeholder={`${t(
+                      "Opowiedz nam o sobie, swoich marzeniach i o tym, dlaczego stypendium ACADEA mogłoby zmienić Twoją sytuację.",
+                      "Tell us about yourself, your dreams and why an ACADEA scholarship could change your situation.",
+                    )} *`}
                     className={`rounded-xl min-h-[140px] resize-none ${errors.motivation ? "border-red-400" : ""}`}
                   />
                   {errors.motivation && <p className="text-red-500 text-xs mt-1">{errors.motivation}</p>}
@@ -515,22 +540,24 @@ export default function ScholarshipForm() {
                     className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
                   <span>
-                    Oświadczam, że zapoznałem(-am) się z{" "}
+                    {t("Oświadczam, że zapoznałem(-am) się z", "I declare that I have read the")}{" "}
                     <Link
-                      href="/stypendium/regulamin"
+                      href={localizePath("/stypendium/regulamin")}
                       className="font-semibold text-primary hover:underline"
                     >
-                      Regulaminem Konkursu Stypendialnego ACADEA 2026
+                      {t("Regulaminem Konkursu Stypendialnego ACADEA 2026", "ACADEA Scholarship Competition Terms 2026")}
                     </Link>{" "}
-                    i akceptuję jego postanowienia oraz zapoznałem(-am) się z{" "}
+                    {t("i akceptuję jego postanowienia oraz zapoznałem(-am) się z", "and accept its provisions and have read the")}{" "}
                     <Link
-                      href="/polityka-prywatnosci"
+                      href={localizePath("/polityka-prywatnosci")}
                       className="font-semibold text-primary hover:underline"
                     >
-                      Polityką Prywatności
+                      {t("Polityką Prywatności", "Privacy Policy")}
                     </Link>
-                    . Jeżeli jestem osobą niepełnoletnią, potwierdzam, że zgłoszenie składam za
-                    uprzednią zgodą rodzica lub opiekuna prawnego. *
+                    . {t(
+                      "Jeżeli jestem osobą niepełnoletnią, potwierdzam, że zgłoszenie składam za uprzednią zgodą rodzica lub opiekuna prawnego.",
+                      "If I am a minor, I confirm that I submit this application with prior consent of my parent or legal guardian.",
+                    )} *
                   </span>
                 </label>
                 {errors.termsAccepted ? (
@@ -557,15 +584,16 @@ export default function ScholarshipForm() {
                 className="w-full h-14 rounded-full bg-primary text-white hover:bg-primary/90 font-bold text-base"
               >
                 {submitting ? (
-                  <><Loader2 size={18} className="animate-spin mr-2" /> Wysyłanie…</>
+                  <><Loader2 size={18} className="animate-spin mr-2" /> {t("Wysyłanie…", "Sending...")}</>
                 ) : (
-                  <>Wyślij zgłoszenie <ArrowRight className="ml-2 h-5 w-5" /></>
+                  <>{t("Wyślij zgłoszenie", "Send application")} <ArrowRight className="ml-2 h-5 w-5" /></>
                 )}
               </Button>
               <p className="text-center text-xs text-gray-400">
-                Zgłoszenia rozpatrujemy indywidualnie. W przypadku osoby niepełnoletniej pełna
-                aktywacja zgłoszenia wymaga podpisu rodzica lub opiekuna prawnego z linku
-                wysłanego e-mailem.
+                {t(
+                  "Zgłoszenia rozpatrujemy indywidualnie. W przypadku osoby niepełnoletniej pełna aktywacja zgłoszenia wymaga podpisu rodzica lub opiekuna prawnego z linku wysłanego e-mailem.",
+                  "We review applications individually. For a minor, full activation of the application requires a parent or legal guardian signature through the link sent by email.",
+                )}
               </p>
             </motion.form>
           )}

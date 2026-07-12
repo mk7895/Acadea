@@ -4,23 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "@/lib/i18n";
 
 const links = [
-  { href: "/", label: "Strona Główna" },
-  { href: "/jak-to-dziala", label: "Jak pomagamy" },
-  { href: "/kraje", label: "Kraje i Uczelnie" },
-  { href: "/baza-wiedzy", label: "Baza Wiedzy" },
-  { href: "/stypendium", label: "Stypendia", highlight: true },
-  { href: "/o-nas", label: "Poznajmy się" },
+  { href: "/", label: "Strona Główna", labelEn: "Home" },
+  { href: "/jak-to-dziala", label: "Jak pomagamy", labelEn: "How we help" },
+  { href: "/kraje", label: "Kraje i Uczelnie", labelEn: "Countries and universities" },
+  { href: "/baza-wiedzy", label: "Baza Wiedzy", labelEn: "Knowledge base" },
+  { href: "/stypendium", label: "Stypendia", labelEn: "Scholarships", highlight: true },
+  { href: "/o-nas", label: "Poznajmy się", labelEn: "About us" },
 ];
 
 export function Navbar() {
   const [location] = useLocation();
+  const { isEnglish, localizePath, switchLanguagePath, setPreferredLanguage, t } = useLanguage();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const resetBookingIfCurrentPage = () => {
-    if (location === "/umow-spotkanie") {
+    if (location === "/umow-spotkanie" || location === "/en/book-consultation") {
       window.dispatchEvent(new Event("acadea:booking-reset"));
     }
   };
@@ -47,7 +49,7 @@ export function Navbar() {
       }`}
     >
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
-        <Link href="/" className="flex cursor-pointer items-center gap-2 z-50 relative">
+        <Link href={localizePath("/")} className="flex cursor-pointer items-center gap-2 z-50 relative">
           <img
             src={isScrolled ? logoGreen : logoGreen}
             alt="ACADEA Logo"
@@ -61,33 +63,51 @@ export function Navbar() {
             link.highlight ? (
               <Link
                 key={link.href}
-                href={link.href}
+                href={localizePath(link.href)}
                 className={`cursor-pointer text-sm font-semibold transition-colors px-3 py-1 rounded-full border ${
-                  location === link.href
+                  location === localizePath(link.href)
                     ? "bg-accent text-primary border-accent"
                     : "text-accent border-accent/40 hover:bg-accent hover:text-primary"
                 }`}
               >
-                {link.label}
+                {isEnglish ? link.labelEn : link.label}
               </Link>
             ) : (
               <Link
                 key={link.href}
-                href={link.href}
+                href={localizePath(link.href)}
                 className={`cursor-pointer text-sm font-medium transition-colors hover:text-accent ${
-                  location === link.href ? "text-primary" : "text-gray-600"
+                  location === localizePath(link.href) ? "text-primary" : "text-gray-600"
                 }`}
               >
-                {link.label}
+                {isEnglish ? link.labelEn : link.label}
               </Link>
             )
           ))}
         </nav>
 
         <div className="hidden md:flex items-center gap-4 md:translate-y-[0.65rem]">
-          <Link href="/umow-spotkanie" onClick={resetBookingIfCurrentPage}>
+          <div className="flex items-center rounded-full border border-primary/15 bg-white/80 p-1">
+            <Link
+              href={switchLanguagePath("pl")}
+              onClick={() => setPreferredLanguage("pl")}
+              className={`rounded-full px-2.5 py-1 text-sm ${!isEnglish ? "bg-primary text-white" : "text-primary"}`}
+              aria-label="Przełącz na język polski"
+            >
+              🇵🇱
+            </Link>
+            <Link
+              href={switchLanguagePath("en")}
+              onClick={() => setPreferredLanguage("en")}
+              className={`rounded-full px-2.5 py-1 text-sm ${isEnglish ? "bg-primary text-white" : "text-primary"}`}
+              aria-label="Switch to English"
+            >
+              🇬🇧
+            </Link>
+          </div>
+          <Link href={localizePath("/umow-spotkanie")} onClick={resetBookingIfCurrentPage}>
             <Button className="rounded-full px-6 bg-primary text-white hover:bg-primary/90 transition-all font-semibold">
-              Bezpłatna konsultacja
+              {t("Bezpłatna konsultacja", "Free consultation")}
             </Button>
           </Link>
         </div>
@@ -96,7 +116,7 @@ export function Navbar() {
         <button
           className="md:hidden z-50 relative cursor-pointer p-2 text-primary"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle Menu"
+          aria-label={t("Otwórz menu", "Open menu")}
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -115,22 +135,38 @@ export function Navbar() {
                 {links.map((link) => (
                   <Link
                     key={link.href}
-                    href={link.href}
+                    href={localizePath(link.href)}
                     className={`cursor-pointer text-2xl font-semibold transition-colors ${
                       link.highlight
                         ? "text-accent"
-                        : location === link.href
+                        : location === localizePath(link.href)
                         ? "text-primary"
                         : "text-gray-600"
                     }`}
                   >
-                    {link.label}
+                    {isEnglish ? link.labelEn : link.label}
                   </Link>
                 ))}
+                <div className="flex justify-center gap-3">
+                  <Link
+                    href={switchLanguagePath("pl")}
+                    onClick={() => setPreferredLanguage("pl")}
+                    className={`rounded-full border px-4 py-2 text-lg ${!isEnglish ? "border-primary bg-primary text-white" : "border-primary/15 text-primary"}`}
+                  >
+                    🇵🇱 Polski
+                  </Link>
+                  <Link
+                    href={switchLanguagePath("en")}
+                    onClick={() => setPreferredLanguage("en")}
+                    className={`rounded-full border px-4 py-2 text-lg ${isEnglish ? "border-primary bg-primary text-white" : "border-primary/15 text-primary"}`}
+                  >
+                    🇬🇧 English
+                  </Link>
+                </div>
                 <div className="mt-8 border-t border-gray-100 pt-8">
-                  <Link href="/umow-spotkanie" onClick={resetBookingIfCurrentPage}>
+                  <Link href={localizePath("/umow-spotkanie")} onClick={resetBookingIfCurrentPage}>
                     <Button className="w-full rounded-full h-14 text-lg bg-primary text-white">
-                      Bezpłatna konsultacja
+                      {t("Bezpłatna konsultacja", "Free consultation")}
                     </Button>
                   </Link>
                 </div>

@@ -13,6 +13,7 @@ import {
 } from "@/lib/seo";
 import { getApiBase } from "@/lib/api-base";
 import { TurnstileWidget, isTurnstileEnabled } from "@/components/TurnstileWidget";
+import { useLanguage } from "@/lib/i18n";
 
 const API_BASE = getApiBase();
 
@@ -30,6 +31,8 @@ type ParentConsentPayload = {
 
 export default function ScholarshipParentConsent() {
   const [location] = useLocation();
+  const { isEnglish, localizePath, t } = useLanguage();
+  const locale = isEnglish ? "en-GB" : "pl-PL";
   const token = useMemo(() => {
     const query = location.includes("?") ? location.slice(location.indexOf("?")) : "";
     const params = new URLSearchParams(query);
@@ -37,23 +40,27 @@ export default function ScholarshipParentConsent() {
   }, [location]);
 
   useSeo({
-    title: "Zgoda rodzica lub opiekuna | ACADEA",
-    description:
+    title: t("Zgoda rodzica lub opiekuna | ACADEA", "Parent or guardian consent | ACADEA"),
+    description: t(
       "Bezpieczny formularz potwierdzenia zgody rodzica lub opiekuna prawnego na udział osoby niepełnoletniej w Konkursie Stypendialnym ACADEA.",
-    path: "/stypendium/zgoda-rodzica",
+      "Secure form for confirming parent or legal guardian consent for a minor's participation in the ACADEA Scholarship Competition.",
+    ),
+    path: localizePath("/stypendium/zgoda-rodzica"),
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
       createWebPageSchema({
-        path: "/stypendium/zgoda-rodzica",
-        title: "Zgoda rodzica lub opiekuna | ACADEA",
-        description:
+        path: localizePath("/stypendium/zgoda-rodzica"),
+        title: t("Zgoda rodzica lub opiekuna | ACADEA", "Parent or guardian consent | ACADEA"),
+        description: t(
           "Formularz potwierdzenia zgody rodzica lub opiekuna prawnego dla zgłoszenia stypendialnego ACADEA.",
+          "Parent or legal guardian consent form for an ACADEA scholarship application.",
+        ),
       }),
       createBreadcrumbSchema([
-        { name: "Strona Główna", path: "/" },
-        { name: "Stypendia", path: "/stypendium" },
-        { name: "Zgoda rodzica lub opiekuna", path: "/stypendium/zgoda-rodzica" },
+        { name: t("Strona Główna", "Home"), path: localizePath("/") },
+        { name: t("Stypendia", "Scholarship"), path: localizePath("/stypendium") },
+        { name: t("Zgoda rodzica lub opiekuna", "Parent or guardian consent"), path: localizePath("/stypendium/zgoda-rodzica") },
       ]),
     ],
   });
@@ -76,7 +83,7 @@ export default function ScholarshipParentConsent() {
 
   useEffect(() => {
     if (!token) {
-      setLoadError("Brak tokenu formularza zgody.");
+      setLoadError(t("Brak tokenu formularza zgody.", "Missing consent form token."));
       setLoading(false);
       return;
     }
@@ -91,7 +98,7 @@ export default function ScholarshipParentConsent() {
           | ParentConsentPayload
           | { error?: string };
         if (!response.ok) {
-          throw new Error("error" in payload ? payload.error ?? "Nie udało się wczytać formularza." : "Nie udało się wczytać formularza.");
+          throw new Error("error" in payload ? payload.error ?? t("Nie udało się wczytać formularza.", "Could not load the form.") : t("Nie udało się wczytać formularza.", "Could not load the form."));
         }
         return payload as ParentConsentPayload;
       })
@@ -117,7 +124,7 @@ export default function ScholarshipParentConsent() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, t]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -129,11 +136,11 @@ export default function ScholarshipParentConsent() {
       !form.confirmedAuthority ||
       !form.confirmedContestParticipation
     ) {
-      setSubmitError("Uzupełnij wszystkie wymagane pola i potwierdzenia.");
+      setSubmitError(t("Uzupełnij wszystkie wymagane pola i potwierdzenia.", "Complete all required fields and confirmations."));
       return;
     }
     if (isTurnstileEnabled() && !turnstileToken) {
-      setSubmitError("Potwierdź zabezpieczenie formularza przed podpisaniem zgody.");
+      setSubmitError(t("Potwierdź zabezpieczenie formularza przed podpisaniem zgody.", "Complete the form security check before signing the consent."));
       return;
     }
 
@@ -154,7 +161,7 @@ export default function ScholarshipParentConsent() {
       );
       const payload = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
-        throw new Error(payload.error ?? "Nie udało się podpisać formularza.");
+        throw new Error(payload.error ?? t("Nie udało się podpisać formularza.", "Could not sign the form."));
       }
       setSubmitted(true);
       setData((current) =>
@@ -170,7 +177,7 @@ export default function ScholarshipParentConsent() {
       setTurnstileResetKey((current) => current + 1);
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : "Nie udało się podpisać formularza.",
+        error instanceof Error ? error.message : t("Nie udało się podpisać formularza.", "Could not sign the form."),
       );
       setTurnstileToken("");
       setTurnstileResetKey((current) => current + 1);
@@ -186,27 +193,29 @@ export default function ScholarshipParentConsent() {
           <div className="mb-8 text-center">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary">
               <ShieldCheck size={14} className="text-accent" />
-              Konkurs Stypendialny ACADEA 2026
+              {t("Konkurs Stypendialny ACADEA 2026", "ACADEA Scholarship Competition 2026")}
             </div>
             <h1 className="mb-3 text-4xl font-bold text-primary md:text-5xl">
-              Zgoda rodzica lub opiekuna
+              {t("Zgoda rodzica lub opiekuna", "Parent or guardian consent")}
             </h1>
             <p className="mx-auto max-w-lg text-lg text-gray-500">
-              To bezpieczny formularz potwierdzenia udziału osoby niepełnoletniej w konkursie
-              stypendialnym ACADEA.
+              {t(
+                "To bezpieczny formularz potwierdzenia udziału osoby niepełnoletniej w konkursie stypendialnym ACADEA.",
+                "This secure form confirms a minor's participation in the ACADEA Scholarship Competition.",
+              )}
             </p>
           </div>
 
           <div className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
             {loading ? (
               <div className="flex items-center justify-center py-16 text-gray-500">
-                <Loader2 size={18} className="mr-2 animate-spin" /> Ładowanie formularza…
+                <Loader2 size={18} className="mr-2 animate-spin" /> {t("Ładowanie formularza…", "Loading form...")}
               </div>
             ) : loadError ? (
               <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
                 <div className="mb-2 flex items-center gap-2 font-semibold">
                   <AlertTriangle size={16} />
-                  Nie udało się otworzyć formularza
+                  {t("Nie udało się otworzyć formularza", "Could not open the form")}
                 </div>
                 <p>{loadError}</p>
               </div>
@@ -214,11 +223,13 @@ export default function ScholarshipParentConsent() {
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">
                 <div className="mb-2 flex items-center gap-2 font-semibold">
                   <AlertTriangle size={16} />
-                  Link wygasł
+                  {t("Link wygasł", "The link has expired")}
                 </div>
                 <p>
-                  Ten link do formularza zgody wygasł. Jeśli zgoda nadal jest potrzebna, prosimy o
-                  kontakt z zespołem ACADEA pod adresem{" "}
+                  {t(
+                    "Ten link do formularza zgody wygasł. Jeśli zgoda nadal jest potrzebna, prosimy o kontakt z zespołem ACADEA pod adresem",
+                    "This consent form link has expired. If consent is still needed, please contact the ACADEA team at",
+                  )}{" "}
                   <a className="font-semibold text-primary hover:underline" href="mailto:contact@acadea.org">
                     contact@acadea.org
                   </a>
@@ -230,43 +241,43 @@ export default function ScholarshipParentConsent() {
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
                   <CheckCircle2 size={40} className="text-primary" />
                 </div>
-                <h2 className="mb-2 text-2xl font-bold text-primary">Zgoda została podpisana</h2>
+                <h2 className="mb-2 text-2xl font-bold text-primary">{t("Zgoda została podpisana", "Consent has been signed")}</h2>
                 <p className="mb-8 text-gray-500">
-                  Dziękujemy. Zgoda rodzica lub opiekuna prawnego dla aplikacji{" "}
-                  <strong>{data?.applicantName}</strong> została zapisana.
+                  {t("Dziękujemy. Zgoda rodzica lub opiekuna prawnego dla aplikacji", "Thank you. Parent or legal guardian consent for the application of")}{" "}
+                  <strong>{data?.applicantName}</strong> {t("została zapisana.", "has been saved.")}
                 </p>
-                <Link href="/">
+                <Link href={localizePath("/")}>
                   <Button className="rounded-full bg-primary px-8 font-semibold text-white hover:bg-primary/90">
-                    Wróć na stronę główną
+                    {t("Wróć na stronę główną", "Back to home")}
                   </Button>
                 </Link>
               </div>
             ) : data ? (
               <form className="space-y-6" onSubmit={handleSubmit}>
                 <div className="rounded-2xl border border-gray-100 bg-gray-50 p-5 text-sm text-gray-700">
-                  <div className="mb-2 font-semibold text-primary">Dane zgłoszenia</div>
+                  <div className="mb-2 font-semibold text-primary">{t("Dane zgłoszenia", "Application details")}</div>
                   <p>
-                    Kandydat(ka): <strong>{data.applicantName}</strong>
+                    {t("Kandydat(ka):", "Candidate:")} <strong>{data.applicantName}</strong>
                   </p>
                   <p>
-                    E-mail kandydata: <strong>{data.applicantEmail}</strong>
+                    {t("E-mail kandydata:", "Candidate email:")} <strong>{data.applicantEmail}</strong>
                   </p>
                   <p>
-                    Formularz wysłano:{" "}
-                    <strong>{new Date(data.applicationCreatedAt).toLocaleString("pl-PL")}</strong>
+                    {t("Formularz wysłano:", "Form submitted:")}{" "}
+                    <strong>{new Date(data.applicationCreatedAt).toLocaleString(locale)}</strong>
                   </p>
                   <p>
-                    Link został wysłany na adres: <strong>{data.parentEmailMasked}</strong>
+                    {t("Link został wysłany na adres:", "Link sent to:")} <strong>{data.parentEmailMasked}</strong>
                   </p>
                   <p>
-                    Link ważny do:{" "}
-                    <strong>{new Date(data.expiresAt).toLocaleString("pl-PL")}</strong>
+                    {t("Link ważny do:", "Link valid until:")}{" "}
+                    <strong>{new Date(data.expiresAt).toLocaleString(locale)}</strong>
                   </p>
                 </div>
 
                 <div className="rounded-2xl border border-gray-100 bg-gray-50 p-5">
                   <h2 className="mb-3 text-base font-bold text-primary">
-                    Treść oświadczenia
+                    {t("Treść oświadczenia", "Consent statement")}
                   </h2>
                   <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
                     {data.consentStatementText}
@@ -282,7 +293,7 @@ export default function ScholarshipParentConsent() {
                         relationshipToApplicant: event.target.value,
                       }))
                     }
-                    placeholder="Relacja do kandydata, np. mama, tata, opiekunka prawna *"
+                    placeholder={`${t("Relacja do kandydata, np. mama, tata, opiekunka prawna", "Relationship to the candidate, e.g. mother, father, legal guardian")} *`}
                     className="rounded-xl"
                   />
                   <Input
@@ -293,7 +304,7 @@ export default function ScholarshipParentConsent() {
                         signatureName: event.target.value,
                       }))
                     }
-                    placeholder="Imię i nazwisko składającego oświadczenie *"
+                    placeholder={`${t("Imię i nazwisko składającego oświadczenie", "Full name of the person signing")} *`}
                     className="rounded-xl"
                   />
                 </div>
@@ -303,17 +314,17 @@ export default function ScholarshipParentConsent() {
                     {
                       key: "confirmedAuthority",
                       label:
-                        "Potwierdzam, że jestem rodzicem lub opiekunem prawnym osoby wskazanej w formularzu. *",
+                        t("Potwierdzam, że jestem rodzicem lub opiekunem prawnym osoby wskazanej w formularzu. *", "I confirm that I am the parent or legal guardian of the person named in the form. *"),
                     },
                     {
                       key: "confirmedContestParticipation",
                       label:
-                        "Wyrażam zgodę na udział osoby niepełnoletniej w Konkursie Stypendialnym ACADEA 2026 oraz na przetwarzanie danych niezbędnych do przeprowadzenia konkursu. *",
+                        t("Wyrażam zgodę na udział osoby niepełnoletniej w Konkursie Stypendialnym ACADEA 2026 oraz na przetwarzanie danych niezbędnych do przeprowadzenia konkursu. *", "I consent to the minor's participation in the ACADEA Scholarship Competition 2026 and to the processing of data required to run the competition. *"),
                     },
                     {
                       key: "acknowledgedPrivacyPolicy",
                       label:
-                        "Potwierdzam, że zapoznałem(-am) się z polityką prywatności ACADEA. *",
+                        t("Potwierdzam, że zapoznałem(-am) się z polityką prywatności ACADEA. *", "I confirm that I have read the ACADEA Privacy Policy. *"),
                     },
                   ].map((entry) => (
                     <label
@@ -334,12 +345,12 @@ export default function ScholarshipParentConsent() {
                       <span>
                         {entry.key === "acknowledgedPrivacyPolicy" ? (
                           <>
-                            Potwierdzam, że zapoznałem(-am) się z{" "}
+                            {t("Potwierdzam, że zapoznałem(-am) się z", "I confirm that I have read the")}{" "}
                             <Link
-                              href="/polityka-prywatnosci"
+                              href={localizePath("/polityka-prywatnosci")}
                               className="font-semibold text-primary hover:underline"
                             >
-                              polityką prywatności ACADEA
+                              {t("polityką prywatności ACADEA", "ACADEA Privacy Policy")}
                             </Link>
                             . *
                           </>
@@ -369,11 +380,11 @@ export default function ScholarshipParentConsent() {
                 >
                   {submitting ? (
                     <>
-                      <Loader2 size={18} className="mr-2 animate-spin" /> Zapisywanie podpisu…
+                      <Loader2 size={18} className="mr-2 animate-spin" /> {t("Zapisywanie podpisu…", "Saving signature...")}
                     </>
                   ) : (
                     <>
-                      Podpisz zgodę <ArrowRight className="ml-2 h-5 w-5" />
+                      {t("Podpisz zgodę", "Sign consent")} <ArrowRight className="ml-2 h-5 w-5" />
                     </>
                   )}
                 </Button>

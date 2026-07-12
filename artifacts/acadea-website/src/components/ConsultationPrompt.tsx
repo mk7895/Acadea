@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { ArrowRight, X } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
 
 const PROMPT_DELAY_MS = 150_000;
 const PROMPT_SESSION_KEY = "acadea_consultation_prompt_seen_v1";
@@ -17,6 +18,14 @@ const excludedPathPrefixes = [
   "/regulamin",
   "/regulamin-platformy",
   "/polityka-prywatnosci",
+  "/en/contact",
+  "/en/book-consultation",
+  "/en/scholarship/application",
+  "/en/scholarship/terms",
+  "/en/become-a-mentor",
+  "/en/terms",
+  "/en/platform-terms",
+  "/en/privacy-policy",
 ];
 
 function hasSeenPrompt() {
@@ -53,6 +62,7 @@ function storeAccumulatedActiveTime(value: number) {
 
 export function ConsultationPrompt() {
   const [location] = useLocation();
+  const { localizePath, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const pageEnteredAtRef = useRef<number>(Date.now());
   const shouldShowOnPath = useMemo(
@@ -133,29 +143,35 @@ export function ConsultationPrompt() {
         <button
           type="button"
           onClick={closePrompt}
-          aria-label="Zamknij popup"
+          aria-label={t("Zamknij popup", "Close popup")}
           className="absolute right-4 top-4 rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-primary"
         >
           <X size={18} />
         </button>
 
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-accent">
-          Czy wiesz, że?
+          {t("Czy wiesz, że?", "Did you know?")}
         </p>
         <h2 className="pr-8 text-2xl font-bold leading-tight text-primary md:text-3xl">
-          Eksperci ACADEA setki razy z sukcesem przeszli proces aplikacji na studia.
+          {t(
+            "Eksperci ACADEA setki razy z sukcesem przeszli proces aplikacji na studia.",
+            "ACADEA experts have successfully gone through university application processes hundreds of times.",
+          )}
         </h2>
         <p className="mt-4 text-sm leading-relaxed text-gray-600 md:text-base">
-          Daj sobie pomóc. Wypełnij formularz, a skontaktujemy się z Tobą i pomożemy zaplanować kolejne kroki.
+          {t(
+            "Daj sobie pomóc. Wypełnij formularz, a skontaktujemy się z Tobą i pomożemy zaplanować kolejne kroki.",
+            "Let us help. Fill in the form and we will contact you to plan the next steps.",
+          )}
         </p>
 
         <div className="mt-7 flex flex-col gap-3 sm:flex-row">
           <Link
-            href="/umow-spotkanie"
+            href={localizePath("/umow-spotkanie")}
             onClick={closePrompt}
             className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-bold text-white transition-colors hover:bg-primary/90"
           >
-            Wypełnij formularz
+            {t("Wypełnij formularz", "Fill in the form")}
             <ArrowRight size={16} />
           </Link>
           <button
@@ -163,7 +179,7 @@ export function ConsultationPrompt() {
             onClick={closePrompt}
             className="h-12 rounded-full border border-primary/15 px-6 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
           >
-            Może później
+            {t("Może później", "Maybe later")}
           </button>
         </div>
       </div>

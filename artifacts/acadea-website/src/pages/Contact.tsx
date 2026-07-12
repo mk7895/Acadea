@@ -19,6 +19,7 @@ import {
   createWebPageSchema,
   useSeo,
 } from "@/lib/seo";
+import { useLanguage } from "@/lib/i18n";
 
 const CONTACT_EMAIL = "contact@acadea.org";
 const CONTACT_PHONE = "+48 728 492 936";
@@ -40,24 +41,29 @@ const contactSchema = z.object({
 type ContactFormValues = z.infer<typeof contactSchema>;
 
 export default function Contact() {
+  const { language, isEnglish, localizePath, t } = useLanguage();
   useSeo({
-    title: "Kontakt i bezpłatna konsultacja | ACADEA",
-    description:
+    title: t("Kontakt i bezpłatna konsultacja | ACADEA", "Contact and free consultation | ACADEA"),
+    description: t(
       "Skontaktuj się z ACADEA i umów bezpłatną konsultację dotyczącą studiów za granicą, wyboru uczelni i procesu aplikacyjnego.",
-    path: "/kontakt",
-    keywords: ["kontakt ACADEA", "bezpłatna konsultacja studia za granicą", "doradztwo kontakt"],
+      "Contact ACADEA and book a free consultation about studying abroad, choosing universities and planning your application.",
+    ),
+    path: localizePath("/kontakt"),
+    keywords: isEnglish ? ["contact ACADEA", "free study abroad consultation", "admissions advising contact"] : ["kontakt ACADEA", "bezpłatna konsultacja studia za granicą", "doradztwo kontakt"],
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
       createWebPageSchema({
-        path: "/kontakt",
-        title: "Kontakt i bezpłatna konsultacja | ACADEA",
-        description:
+        path: localizePath("/kontakt"),
+        title: t("Kontakt i bezpłatna konsultacja | ACADEA", "Contact and free consultation | ACADEA"),
+        description: t(
           "Dane kontaktowe ACADEA oraz formularz kontaktowy dla kandydatów zainteresowanych studiami za granicą.",
+          "ACADEA contact details and contact form for candidates interested in studying abroad.",
+        ),
       }),
       createBreadcrumbSchema([
-        { name: "Strona Główna", path: "/" },
-        { name: "Kontakt", path: "/kontakt" },
+        { name: t("Strona Główna", "Home"), path: localizePath("/") },
+        { name: t("Kontakt", "Contact"), path: localizePath("/kontakt") },
       ]),
     ],
   });
@@ -81,8 +87,8 @@ export default function Contact() {
   async function onSubmit(data: ContactFormValues) {
     if (isTurnstileEnabled() && !turnstileToken) {
       toast({
-        title: "Potwierdź zabezpieczenie",
-        description: "Zaznacz weryfikację antybotową przed wysłaniem formularza.",
+        title: t("Potwierdź zabezpieczenie", "Complete the security check"),
+        description: t("Zaznacz weryfikację antybotową przed wysłaniem formularza.", "Complete the anti-bot verification before sending the form."),
         variant: "destructive",
       });
       return;
@@ -100,8 +106,12 @@ export default function Contact() {
           name: data.name,
           email: data.email,
           phone: data.phone || undefined,
-          message: `${data.message}\n\nZgoda na politykę prywatności: tak`,
+          message:
+            language === "en"
+              ? `${data.message}\n\nPrivacy policy consent: yes`
+              : `${data.message}\n\nZgoda na politykę prywatności: tak`,
           type: "consultation",
+          language,
           turnstileToken,
         }),
       });
@@ -111,18 +121,22 @@ export default function Contact() {
       }
 
       toast({
-        title: "Wiadomość wysłana!",
-        description:
+        title: t("Wiadomość wysłana!", "Message sent!"),
+        description: t(
           "Dziękujemy za kontakt. Odezwiemy się najszybciej jak to możliwe.",
+          "Thank you for getting in touch. We will reply as soon as possible.",
+        ),
       });
       form.reset();
       setTurnstileToken("");
       setTurnstileResetKey((value) => value + 1);
     } catch {
       toast({
-        title: "Błąd wysyłania",
-        description:
+        title: t("Błąd wysyłania", "Sending failed"),
+        description: t(
           `Nie udało się wysłać wiadomości. Spróbuj ponownie lub napisz bezpośrednio na ${CONTACT_EMAIL}.`,
+          `We could not send your message. Please try again or email us directly at ${CONTACT_EMAIL}.`,
+        ),
         variant: "destructive",
       });
       setTurnstileToken("");
@@ -142,7 +156,7 @@ export default function Contact() {
               animate={{ opacity: 1, y: 0 }}
               className="text-4xl md:text-5xl font-bold text-primary mb-4"
             >
-              Zróbmy pierwszy krok
+              {t("Zróbmy pierwszy krok", "Let's take the first step")}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -150,9 +164,10 @@ export default function Contact() {
               transition={{ delay: 0.1 }}
               className="text-lg text-gray-600 max-w-2xl mx-auto"
             >
-              Wypełnij formularz, aby umówić się na bezpłatną, niezobowiązującą
-              konsultację, podczas której ocenimy Twoje szanse i przedstawimy plan
-              działania.
+              {t(
+                "Wypełnij formularz, aby umówić się na bezpłatną, niezobowiązującą konsultację, podczas której ocenimy Twoje szanse i przedstawimy plan działania.",
+                "Fill in the form to book a free, no-obligation consultation where we will discuss your chances and outline an action plan.",
+              )}
             </motion.p>
           </div>
 
@@ -160,9 +175,9 @@ export default function Contact() {
             {/* Contact Info Sidebar */}
             <div className="bg-primary text-white p-10 lg:col-span-1 flex flex-col justify-between">
               <div>
-                <h3 className="text-2xl font-bold mb-6">Dane kontaktowe</h3>
+                <h3 className="text-2xl font-bold mb-6">{t("Dane kontaktowe", "Contact details")}</h3>
                 <p className="text-gray-300 mb-10 leading-relaxed">
-                  Odpowiadamy zazwyczaj w ciągu kilku godzin.
+                  {t("Odpowiadamy zazwyczaj w ciągu kilku godzin.", "We usually reply within a few hours.")}
                 </p>
 
                 <div className="space-y-8">
@@ -182,7 +197,7 @@ export default function Contact() {
                   <div className="flex items-start gap-4">
                     <Phone className="text-accent shrink-0 mt-1" />
                     <div>
-                      <p className="font-semibold mb-1">Telefon</p>
+                      <p className="font-semibold mb-1">{t("Telefon", "Phone")}</p>
                       <a
                         href={`tel:${CONTACT_PHONE_HREF}`}
                         className="text-gray-300 hover:text-white transition-colors"
@@ -213,7 +228,7 @@ export default function Contact() {
 
             {/* Form */}
             <div className="p-10 lg:col-span-2">
-              <h3 className="text-2xl font-bold text-primary mb-6">Napisz do nas</h3>
+              <h3 className="text-2xl font-bold text-primary mb-6">{t("Napisz do nas", "Write to us")}</h3>
 
               <Form {...form}>
                 <form
@@ -227,7 +242,7 @@ export default function Contact() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-gray-700">
-                            Imię i nazwisko
+                            {t("Imię i nazwisko", "Full name")}
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -247,7 +262,7 @@ export default function Contact() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-gray-700">
-                            Adres email
+                            {t("Adres email", "Email address")}
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -269,8 +284,8 @@ export default function Contact() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-gray-700">
-                          Numer telefonu{" "}
-                          <span className="text-gray-400 font-normal">(opcjonalnie)</span>
+                          {t("Numer telefonu", "Phone number")}{" "}
+                          <span className="text-gray-400 font-normal">{t("(opcjonalnie)", "(optional)")}</span>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -300,9 +315,9 @@ export default function Contact() {
                             />
                           </FormControl>
                           <div className="text-sm text-gray-600 leading-relaxed">
-                            Wyrażam zgodę na przetwarzanie moich danych osobowych zgodnie z{" "}
-                            <Link href="/polityka-prywatnosci" className="font-semibold text-primary hover:underline">
-                              polityką prywatności
+                            {t("Wyrażam zgodę na przetwarzanie moich danych osobowych zgodnie z", "I consent to the processing of my personal data in accordance with")}{" "}
+                            <Link href={localizePath("/polityka-prywatnosci")} className="font-semibold text-primary hover:underline">
+                              {t("polityką prywatności", "the privacy policy")}
                             </Link>
                             .
                           </div>
@@ -318,11 +333,14 @@ export default function Contact() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-gray-700">
-                          Wiadomość / Jakie kraje Cię interesują?
+                          {t("Wiadomość / Jakie kraje Cię interesują?", "Message / Which countries are you interested in?")}
                         </FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Cześć! Myślę o studiowaniu medycyny w Wielkiej Brytanii lub Irlandii..."
+                            placeholder={t(
+                              "Cześć! Myślę o studiowaniu medycyny w Wielkiej Brytanii lub Irlandii...",
+                              "Hi! I am thinking about studying medicine in the United Kingdom or Ireland...",
+                            )}
                             className="bg-gray-50 border-gray-200 min-h-[150px] resize-y"
                             {...field}
                           />
@@ -348,10 +366,10 @@ export default function Contact() {
                     {isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Wysyłanie…
+                        {t("Wysyłanie…", "Sending...")}
                       </>
                     ) : (
-                      "Wyślij wiadomość"
+                      t("Wyślij wiadomość", "Send message")
                     )}
                   </Button>
                 </form>

@@ -9,12 +9,15 @@ import { CookieConsentProvider } from "@/components/CookieConsent";
 import { useCookieConsent } from "@/components/CookieConsent";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { ConsultationPrompt } from "@/components/ConsultationPrompt";
+import { LanguageSuggestionPrompt } from "@/components/LanguageSuggestionPrompt";
+import { EnglishTextRewriter } from "@/components/EnglishTextRewriter";
 import {
   ARTICLE_PREFETCH_SESSION_COOKIE_NAME,
   getCookie,
   setSessionCookie,
 } from "@/lib/cookies";
 import { prefetchPublicArticleIndex } from "@/lib/article-api";
+import { LanguageProvider, useLanguage } from "@/lib/i18n";
 
 const queryClient = new QueryClient();
 const Home = lazy(() => import("@/pages/Home"));
@@ -97,22 +100,39 @@ function Router() {
       >
         <Switch>
           <Route path="/" component={Home} />
+          <Route path="/en" component={Home} />
           <Route path="/jak-to-dziala" component={HowItWorks} />
+          <Route path="/en/how-it-works" component={HowItWorks} />
           <Route path="/kraje" component={Countries} />
+          <Route path="/en/countries" component={Countries} />
           <Route path="/kraje/:slug" component={CountryDetail} />
+          <Route path="/en/countries/:slug" component={CountryDetail} />
           <Route path="/o-nas" component={AboutUs} />
+          <Route path="/en/about-us" component={AboutUs} />
           <Route path="/kontakt" component={Contact} />
+          <Route path="/en/contact" component={Contact} />
           <Route path="/baza-wiedzy" component={Blog} />
+          <Route path="/en/knowledge-base" component={Blog} />
           <Route path="/baza-wiedzy/:slug" component={ArticlePage} />
+          <Route path="/en/knowledge-base/:slug" component={ArticlePage} />
           <Route path="/stypendium" component={Scholarship} />
+          <Route path="/en/scholarship" component={Scholarship} />
           <Route path="/stypendium/aplikacja" component={ScholarshipForm} />
+          <Route path="/en/scholarship/application" component={ScholarshipForm} />
           <Route path="/stypendium/zgoda-rodzica" component={ScholarshipParentConsent} />
+          <Route path="/en/scholarship/parent-consent" component={ScholarshipParentConsent} />
           <Route path="/stypendium/regulamin" component={ScholarshipTerms} />
+          <Route path="/en/scholarship/terms" component={ScholarshipTerms} />
           <Route path="/umow-spotkanie" component={Booking} />
+          <Route path="/en/book-consultation" component={Booking} />
           <Route path="/mentoruj" component={MentorForm} />
+          <Route path="/en/become-a-mentor" component={MentorForm} />
           <Route path="/polityka-prywatnosci" component={PrivacyPolicy} />
+          <Route path="/en/privacy-policy" component={PrivacyPolicy} />
           <Route path="/regulamin" component={Regulamin} />
+          <Route path="/en/terms" component={Regulamin} />
           <Route path="/regulamin-platformy" component={PlatformTerms} />
+          <Route path="/en/platform-terms" component={PlatformTerms} />
           <Route path="/panel" component={AdminArticles} />
           <Route component={NotFound} />
         </Switch>
@@ -123,6 +143,7 @@ function Router() {
 
 function PublicArticlePrefetch() {
   const { canUsePreferencesCookies } = useCookieConsent();
+  const { language } = useLanguage();
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -145,7 +166,7 @@ function PublicArticlePrefetch() {
     const prefetch = () => {
       // Mark the session before the network call so route changes do not trigger duplicate preloads.
       setSessionCookie(ARTICLE_PREFETCH_SESSION_COOKIE_NAME, "1");
-      void prefetchPublicArticleIndex();
+      void prefetchPublicArticleIndex(language);
     };
 
     if (browserWindow.requestIdleCallback) {
@@ -155,7 +176,7 @@ function PublicArticlePrefetch() {
 
     const timeoutId = globalThis.setTimeout(prefetch, 1200);
     return () => globalThis.clearTimeout(timeoutId);
-  }, [canUsePreferencesCookies]);
+  }, [canUsePreferencesCookies, language]);
 
   return null;
 }
@@ -163,18 +184,22 @@ function PublicArticlePrefetch() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <CookieConsentProvider>
-        <GoogleAnalytics />
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <PublicArticlePrefetch />
-            <ScrollManager />
-            <Router />
-            <ConsultationPrompt />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </CookieConsentProvider>
+      <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+        <LanguageProvider>
+          <CookieConsentProvider>
+            <GoogleAnalytics />
+            <TooltipProvider>
+              <PublicArticlePrefetch />
+              <EnglishTextRewriter />
+              <ScrollManager />
+              <Router />
+              <ConsultationPrompt />
+              <LanguageSuggestionPrompt />
+              <Toaster />
+            </TooltipProvider>
+          </CookieConsentProvider>
+        </LanguageProvider>
+      </WouterRouter>
     </QueryClientProvider>
   );
 }

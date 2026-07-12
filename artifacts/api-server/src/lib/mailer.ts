@@ -12,6 +12,8 @@ type MailRecipient = {
   name?: string;
 };
 
+type MailLanguage = "pl" | "en";
+
 const BRAND_LOGO_URL = "https://acadea.org/images/logo-dark.png";
 const BRAND_PRIMARY = "#166534";
 const BRAND_ACCENT = "#FCBC1E";
@@ -54,12 +56,14 @@ function renderEmailShell({
   summaryRows,
   bodyHtml,
   closing,
+  language = "pl",
 }: {
   title: string;
   intro: string;
   summaryRows?: Array<{ label: string; value: string | null | undefined }>;
   bodyHtml?: string;
   closing?: string;
+  language?: MailLanguage;
 }) {
   const summaryHtml = (summaryRows ?? [])
     .filter((row) => row.value)
@@ -79,7 +83,7 @@ function renderEmailShell({
           <td style="padding:28px 32px 20px; background:linear-gradient(135deg, #ffffff 0%, #f5fbf7 100%); border-bottom:1px solid #e5efe9;">
             <img src="${BRAND_LOGO_URL}" alt="ACADEA" style="display:block; width:180px; max-width:100%; height:auto; margin-bottom:22px;" />
             <div style="display:inline-block; padding:6px 12px; border-radius:999px; background:rgba(252,188,30,0.16); color:${BRAND_PRIMARY}; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:16px;">
-              EDUKACJA BEZ GRANIC
+              ${language === "en" ? "EDUCATION WITHOUT BORDERS" : "EDUKACJA BEZ GRANIC"}
             </div>
             <h1 style="margin:0 0 10px; font-size:28px; line-height:1.2; color:${BRAND_PRIMARY};">${escapeHtml(title)}</h1>
             <p style="margin:0; font-size:16px; line-height:1.6; color:#4b5563;">${escapeHtml(intro)}</p>
@@ -97,12 +101,12 @@ function renderEmailShell({
         }
         <tr>
           <td style="padding:24px 32px 30px;">
-            <p style="margin:0; font-size:14px; line-height:1.7; color:#4b5563;">${escapeHtml(closing ?? "Pozdrawiamy,")}<br /><strong style="color:${BRAND_PRIMARY};">Zespół ACADEA</strong></p>
+            <p style="margin:0; font-size:14px; line-height:1.7; color:#4b5563;">${escapeHtml(closing ?? (language === "en" ? "Best regards," : "Pozdrawiamy,"))}<br /><strong style="color:${BRAND_PRIMARY};">${language === "en" ? "The ACADEA Team" : "Zespół ACADEA"}</strong></p>
           </td>
         </tr>
         <tr>
           <td style="padding:18px 32px; background:${BRAND_PRIMARY}; color:#ffffff; font-size:12px; line-height:1.6;">
-            ACADEA • wsparcie w aplikacji na studia za granicą
+            ${language === "en" ? "ACADEA • support with university applications abroad" : "ACADEA • wsparcie w aplikacji na studia za granicą"}
           </td>
         </tr>
       </table>
@@ -241,6 +245,7 @@ async function resolveOrganizationMailbox() {
 export async function sendBookingEmails(input: {
   email: string;
   end: string;
+  language?: MailLanguage;
   name: string;
   phone?: string | null;
   start: string;
@@ -248,6 +253,7 @@ export async function sendBookingEmails(input: {
   zoomLink: string;
 }) {
   const { senderEmail, notifyEmail } = await resolveOrganizationMailbox();
+  const language = input.language ?? "pl";
 
   if (!notifyEmail || !senderEmail || !(await hasGoogleGmailCredentials())) {
     logger.warn(
@@ -256,7 +262,8 @@ export async function sendBookingEmails(input: {
     return { organizerSent: false, guestSent: false };
   }
 
-  const startLabel = new Date(input.start).toLocaleString("pl-PL", {
+  const locale = language === "en" ? "en-GB" : "pl-PL";
+  const startLabel = new Date(input.start).toLocaleString(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -264,7 +271,7 @@ export async function sendBookingEmails(input: {
     minute: "2-digit",
     timeZone: "Europe/Warsaw",
   });
-  const endLabel = new Date(input.end).toLocaleTimeString("pl-PL", {
+  const endLabel = new Date(input.end).toLocaleTimeString(locale, {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "Europe/Warsaw",
@@ -277,25 +284,25 @@ export async function sendBookingEmails(input: {
     `Email: ${input.email}`,
     input.phone ? `Telefon: ${input.phone}` : null,
     `Temat: ${input.topic}`,
-    `Termin: ${startLabel} - ${endLabel} (czas polski)`,
+    `${language === "en" ? "Time" : "Termin"}: ${startLabel} - ${endLabel} (${language === "en" ? "Polish time" : "czas polski"})`,
     `Zoom: ${input.zoomLink}`,
   ]
     .filter(Boolean)
     .join("\n");
 
   const guestBody = [
-    `Cześć ${input.name},`,
+    language === "en" ? `Hi ${input.name},` : `Cześć ${input.name},`,
     "",
-    "potwierdzamy rezerwację konsultacji ACADEA.",
+    language === "en" ? "we confirm your ACADEA consultation booking." : "potwierdzamy rezerwację konsultacji ACADEA.",
     "",
-    `Termin: ${startLabel} - ${endLabel} (czas polski)`,
-    `Temat: ${input.topic}`,
-    `Link do spotkania: ${input.zoomLink}`,
+    `${language === "en" ? "Time" : "Termin"}: ${startLabel} - ${endLabel} (${language === "en" ? "Polish time" : "czas polski"})`,
+    `${language === "en" ? "Topic" : "Temat"}: ${input.topic}`,
+    `${language === "en" ? "Meeting link" : "Link do spotkania"}: ${input.zoomLink}`,
     "",
-    "Dodatkowo Google Calendar powinien wysłać Ci zaproszenie kalendarzowe.",
+    language === "en" ? "Google Calendar should also send you a calendar invitation." : "Dodatkowo Google Calendar powinien wysłać Ci zaproszenie kalendarzowe.",
     "",
-    "Pozdrawiamy,",
-    "Zespół ACADEA",
+    language === "en" ? "Best regards," : "Pozdrawiamy,",
+    language === "en" ? "The ACADEA Team" : "Zespół ACADEA",
   ].join("\n");
 
   const organizerHtml = renderEmailShell({
@@ -312,15 +319,21 @@ export async function sendBookingEmails(input: {
   });
 
   const guestHtml = renderEmailShell({
-    title: "Potwierdzenie rezerwacji konsultacji",
-    intro: `Cześć ${input.name}, potwierdzamy rezerwację konsultacji ACADEA.`,
+    title: language === "en" ? "Consultation booking confirmation" : "Potwierdzenie rezerwacji konsultacji",
+    intro:
+      language === "en"
+        ? `Hi ${input.name}, we confirm your ACADEA consultation booking.`
+        : `Cześć ${input.name}, potwierdzamy rezerwację konsultacji ACADEA.`,
     summaryRows: [
-      { label: "Termin", value: `${startLabel} - ${endLabel} (czas polski)` },
-      { label: "Temat", value: input.topic },
-      { label: "Link do spotkania", value: input.zoomLink },
+      { label: language === "en" ? "Time" : "Termin", value: `${startLabel} - ${endLabel} (${language === "en" ? "Polish time" : "czas polski"})` },
+      { label: language === "en" ? "Topic" : "Temat", value: input.topic },
+      { label: language === "en" ? "Meeting link" : "Link do spotkania", value: input.zoomLink },
     ],
     bodyHtml:
-      "<p style=\"margin:0;\">Dodatkowo Google Calendar powinien wysłać Ci zaproszenie kalendarzowe.</p>",
+      language === "en"
+        ? "<p style=\"margin:0;\">Google Calendar should also send you a calendar invitation.</p>"
+        : "<p style=\"margin:0;\">Dodatkowo Google Calendar powinien wysłać Ci zaproszenie kalendarzowe.</p>",
+    language,
   });
 
   let organizerSent = false;
@@ -343,7 +356,7 @@ export async function sendBookingEmails(input: {
     guestSent = await sendGmailMessage({
       from: senderEmail,
       to: { email: input.email, name: input.name },
-      subject: "ACADEA: potwierdzenie rezerwacji konsultacji",
+      subject: language === "en" ? "ACADEA: consultation booking confirmation" : "ACADEA: potwierdzenie rezerwacji konsultacji",
       text: guestBody,
       html: guestHtml,
     });
@@ -356,14 +369,18 @@ export async function sendBookingEmails(input: {
 
 export async function sendContactEmails(input: {
   email: string;
+  language?: MailLanguage;
   message: string;
   name: string;
   phone?: string | null;
   type: string;
 }) {
   const { senderEmail, notifyEmail } = await resolveOrganizationMailbox();
+  const language = input.language ?? "pl";
   const normalizedGreeting =
-    input.type === "newsletter" ? "Cześć," : `Cześć ${input.name},`;
+    input.type === "newsletter"
+      ? language === "en" ? "Hi," : "Cześć,"
+      : language === "en" ? `Hi ${input.name},` : `Cześć ${input.name},`;
 
   if (!notifyEmail || !senderEmail || !(await hasGoogleGmailCredentials())) {
     logger.warn(
@@ -393,7 +410,15 @@ export async function sendContactEmails(input: {
         : `Nowe zgłoszenie kontaktowe: ${input.name}`;
 
   const autoresponseSubject =
-    input.type === "mentor_application" || input.type === "mentor"
+    language === "en"
+      ? input.type === "mentor_application" || input.type === "mentor"
+        ? "ACADEA: thank you for your mentor application"
+        : input.type === "scholarship"
+          ? "ACADEA: thank you for your scholarship application"
+          : input.type === "newsletter"
+            ? "ACADEA: newsletter signup confirmation"
+            : "ACADEA: we received your message"
+      : input.type === "mentor_application" || input.type === "mentor"
       ? "ACADEA: dziękujemy za zgłoszenie mentorskie"
       : input.type === "scholarship"
         ? "ACADEA: dziękujemy za zgłoszenie do programu stypendialnego"
@@ -414,7 +439,15 @@ export async function sendContactEmails(input: {
   ].filter(Boolean).join("\n");
 
   const autoresponseIntro =
-    input.type === "mentor_application" || input.type === "mentor"
+    language === "en"
+      ? input.type === "mentor_application" || input.type === "mentor"
+        ? "thank you for sending your mentor application to ACADEA."
+        : input.type === "scholarship"
+          ? "thank you for sending your application to the ACADEA Scholarship Programme."
+          : input.type === "newsletter"
+            ? "thank you for joining the ACADEA newsletter."
+            : "thank you for contacting ACADEA."
+      : input.type === "mentor_application" || input.type === "mentor"
       ? "dziękujemy za przesłanie aplikacji mentorskiej do ACADEA."
       : input.type === "scholarship"
         ? "dziękujemy za przesłanie zgłoszenia do programu stypendialnego ACADEA."
@@ -423,7 +456,15 @@ export async function sendContactEmails(input: {
         : "dziękujemy za wiadomość do ACADEA.";
 
   const autoresponseNextStep =
-    input.type === "mentor_application" || input.type === "mentor"
+    language === "en"
+      ? input.type === "mentor_application" || input.type === "mentor"
+        ? "We will review your application and get back to you after going through the submissions."
+        : input.type === "scholarship"
+          ? "We have received your application and will get back to you after reviewing it."
+          : input.type === "newsletter"
+            ? "We will send you new guides, study-abroad updates and scholarship information."
+            : "We have received your message and will get back to you as soon as possible."
+      : input.type === "mentor_application" || input.type === "mentor"
       ? "Zapoznaliśmy się z Twoją aplikacją i wrócimy do Ciebie, gdy przejdziemy przez zgłoszenia."
       : input.type === "scholarship"
         ? "Otrzymaliśmy Twoje zgłoszenie i wrócimy do Ciebie po zakończeniu analizy aplikacji."
@@ -443,8 +484,8 @@ export async function sendContactEmails(input: {
     "",
     input.type === "newsletter" ? null : input.message,
     "",
-    "Pozdrawiamy,",
-    "Zespół ACADEA",
+    language === "en" ? "Best regards," : "Pozdrawiamy,",
+    language === "en" ? "The ACADEA Team" : "Zespół ACADEA",
   ].filter(Boolean).join("\n");
 
   const organizerHtml = renderEmailShell({
@@ -468,7 +509,15 @@ export async function sendContactEmails(input: {
 
   const autoresponseHtml = renderEmailShell({
     title:
-      input.type === "mentor_application" || input.type === "mentor"
+      language === "en"
+        ? input.type === "mentor_application" || input.type === "mentor"
+          ? "Thank you for your mentor application"
+          : input.type === "scholarship"
+            ? "Thank you for your scholarship application"
+            : input.type === "newsletter"
+              ? "Newsletter signup confirmation"
+              : "Message received"
+        : input.type === "mentor_application" || input.type === "mentor"
         ? "Dziękujemy za zgłoszenie mentorskie"
         : input.type === "scholarship"
           ? "Dziękujemy za zgłoszenie do programu stypendialnego"
@@ -477,12 +526,15 @@ export async function sendContactEmails(input: {
             : "Potwierdzenie otrzymania wiadomości",
     intro:
       input.type === "newsletter"
-        ? `Cześć, ${autoresponseIntro} ${autoresponseNextStep}`
-        : `Cześć ${input.name}, ${autoresponseIntro} ${autoresponseNextStep}`,
+        ? `${language === "en" ? "Hi" : "Cześć"}, ${autoresponseIntro} ${autoresponseNextStep}`
+        : `${language === "en" ? `Hi ${input.name}` : `Cześć ${input.name}`}, ${autoresponseIntro} ${autoresponseNextStep}`,
     bodyHtml:
       input.type === "newsletter"
-        ? "<p style=\"margin:0;\">Jeśli chcesz kiedyś zrezygnować, po prostu odpisz na wiadomość lub napisz do nas na contact@acadea.org.</p>"
-        : `<strong>Treść Twojego zgłoszenia:</strong><br /><br />${nl2br(input.message)}`,
+        ? language === "en"
+          ? "<p style=\"margin:0;\">If you ever want to unsubscribe, simply reply to this message or write to contact@acadea.org.</p>"
+          : "<p style=\"margin:0;\">Jeśli chcesz kiedyś zrezygnować, po prostu odpisz na wiadomość lub napisz do nas na contact@acadea.org.</p>"
+        : `<strong>${language === "en" ? "Your submission:" : "Treść Twojego zgłoszenia:"}</strong><br /><br />${nl2br(input.message)}`,
+    language,
   });
 
   let organizerSent = false;
@@ -522,8 +574,10 @@ export async function sendScholarshipParentConsentEmail(input: {
   parentFullName: string;
   consentUrl: string;
   expiresAt: Date;
+  language?: MailLanguage;
 }) {
   const { senderEmail, notifyEmail } = await resolveOrganizationMailbox();
+  const language = input.language ?? "pl";
 
   if (!notifyEmail || !senderEmail || !(await hasGoogleGmailCredentials())) {
     logger.warn(
@@ -532,47 +586,57 @@ export async function sendScholarshipParentConsentEmail(input: {
     return { parentSent: false, organizerSent: false };
   }
 
-  const expiresAtLabel = input.expiresAt.toLocaleString("pl-PL", {
+  const expiresAtLabel = input.expiresAt.toLocaleString(language === "en" ? "en-GB" : "pl-PL", {
     dateStyle: "medium",
     timeStyle: "short",
   });
 
   const parentText = [
-    `Cześć ${input.parentFullName},`,
+    language === "en" ? `Hi ${input.parentFullName},` : `Cześć ${input.parentFullName},`,
     "",
-    `${input.applicantName} wskazał(a) ten adres jako kontakt do rodzica lub opiekuna prawnego w zgłoszeniu do Konkursu Stypendialnego ACADEA 2026.`,
-    "Aby potwierdzić zgodę na udział osoby niepełnoletniej w konkursie, otwórz poniższy link i podpisz formularz:",
+    language === "en"
+      ? `${input.applicantName} listed this address as the parent or legal guardian contact in an application to the ACADEA 2026 Scholarship Competition.`
+      : `${input.applicantName} wskazał(a) ten adres jako kontakt do rodzica lub opiekuna prawnego w zgłoszeniu do Konkursu Stypendialnego ACADEA 2026.`,
+    language === "en"
+      ? "To confirm consent for a minor to participate in the competition, open the link below and sign the form:"
+      : "Aby potwierdzić zgodę na udział osoby niepełnoletniej w konkursie, otwórz poniższy link i podpisz formularz:",
     input.consentUrl,
     "",
-    `Link wygaśnie: ${expiresAtLabel}.`,
+    `${language === "en" ? "The link expires" : "Link wygaśnie"}: ${expiresAtLabel}.`,
     "",
-    "Jeżeli to zgłoszenie nie dotyczy Twojego dziecka lub podopiecznego, zignoruj tę wiadomość.",
+    language === "en"
+      ? "If this application does not concern your child or ward, please ignore this message."
+      : "Jeżeli to zgłoszenie nie dotyczy Twojego dziecka lub podopiecznego, zignoruj tę wiadomość.",
     "",
-    "Pozdrawiamy,",
-    "Zespół ACADEA",
+    language === "en" ? "Best regards," : "Pozdrawiamy,",
+    language === "en" ? "The ACADEA Team" : "Zespół ACADEA",
   ].join("\n");
 
   const parentHtml = renderEmailShell({
-    title: "Prośba o zgodę rodzica lub opiekuna prawnego",
-    intro: `${input.applicantName} wskazał(a) ten adres jako kontakt do rodzica lub opiekuna prawnego w zgłoszeniu do Konkursu Stypendialnego ACADEA 2026.`,
+    title: language === "en" ? "Parent or legal guardian consent request" : "Prośba o zgodę rodzica lub opiekuna prawnego",
+    intro:
+      language === "en"
+        ? `${input.applicantName} listed this address as the parent or legal guardian contact in an application to the ACADEA 2026 Scholarship Competition.`
+        : `${input.applicantName} wskazał(a) ten adres jako kontakt do rodzica lub opiekuna prawnego w zgłoszeniu do Konkursu Stypendialnego ACADEA 2026.`,
     summaryRows: [
-      { label: "Kandydat(ka)", value: input.applicantName },
-      { label: "Rodzic / opiekun", value: input.parentFullName },
-      { label: "Link ważny do", value: expiresAtLabel },
+      { label: language === "en" ? "Applicant" : "Kandydat(ka)", value: input.applicantName },
+      { label: language === "en" ? "Parent / guardian" : "Rodzic / opiekun", value: input.parentFullName },
+      { label: language === "en" ? "Link valid until" : "Link ważny do", value: expiresAtLabel },
     ],
     bodyHtml: `
-      <p style="margin:0 0 14px;">Aby potwierdzić zgodę na udział osoby niepełnoletniej w konkursie, otwórz bezpieczny formularz pod tym adresem:</p>
+      <p style="margin:0 0 14px;">${language === "en" ? "To confirm consent for a minor to participate in the competition, open the secure form here:" : "Aby potwierdzić zgodę na udział osoby niepełnoletniej w konkursie, otwórz bezpieczny formularz pod tym adresem:"}</p>
       <p style="margin:0 0 18px;">
         <a href="${escapeHtml(input.consentUrl)}" style="display:inline-block; padding:12px 18px; border-radius:999px; background:${BRAND_PRIMARY}; color:#ffffff; text-decoration:none; font-weight:700;">
-          Otwórz formularz zgody
+          ${language === "en" ? "Open consent form" : "Otwórz formularz zgody"}
         </a>
       </p>
       <p style="margin:0 0 18px;">
-        Jeśli przycisk nie działa, skopiuj ten adres do przeglądarki:<br />
+        ${language === "en" ? "If the button does not work, copy this address into your browser:" : "Jeśli przycisk nie działa, skopiuj ten adres do przeglądarki:"}<br />
         <span style="word-break:break-all;">${escapeHtml(input.consentUrl)}</span>
       </p>
-      <p style="margin:0;">Jeżeli to zgłoszenie nie dotyczy Twojego dziecka lub podopiecznego, zignoruj tę wiadomość.</p>
+      <p style="margin:0;">${language === "en" ? "If this application does not concern your child or ward, please ignore this message." : "Jeżeli to zgłoszenie nie dotyczy Twojego dziecka lub podopiecznego, zignoruj tę wiadomość."}</p>
     `,
+    language,
   });
 
   const organizerText = [
@@ -605,7 +669,7 @@ export async function sendScholarshipParentConsentEmail(input: {
     parentSent = await sendGmailMessage({
       from: senderEmail,
       to: { email: input.parentEmail, name: input.parentFullName },
-      subject: "ACADEA: potwierdź zgodę rodzica lub opiekuna prawnego",
+      subject: language === "en" ? "ACADEA: confirm parent or legal guardian consent" : "ACADEA: potwierdź zgodę rodzica lub opiekuna prawnego",
       text: parentText,
       html: parentHtml,
     });

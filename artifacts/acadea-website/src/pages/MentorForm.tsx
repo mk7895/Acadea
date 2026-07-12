@@ -22,6 +22,7 @@ import {
   createWebPageSchema,
   useSeo,
 } from "@/lib/seo";
+import { useLanguage } from "@/lib/i18n";
 
 const API_BASE = getApiBase();
 
@@ -40,6 +41,7 @@ const ROLES = [
 type Role = "paid" | "volunteer" | "both" | "";
 
 export default function MentorForm() {
+  const { language } = useLanguage();
   useSeo({
     title: "Dołącz do zespołu mentorów | ACADEA",
     description:
@@ -118,6 +120,7 @@ export default function MentorForm() {
             "Zgoda na politykę prywatności: tak",
           ].filter(Boolean).join("\n"),
           type: "mentor_application",
+          language,
           turnstileToken,
         }),
       });

@@ -32,6 +32,7 @@ export interface ArticleSummary {
   order: number;
   category: string;
   categorySlugs: string[];
+  language?: "pl" | "en";
   title: string;
   slug: string;
   excerpt: string;
@@ -53,6 +54,7 @@ export type ArticleEditorRecord = {
   sortOrder: number;
   category: string;
   categorySlugs: string[];
+  language: "pl" | "en";
   title: string;
   slug: string;
   excerpt: string;
@@ -141,6 +143,10 @@ export function clearPublicArticleCache() {
   try {
     window.localStorage.removeItem(PUBLIC_ARTICLES_CACHE_KEY);
     window.localStorage.removeItem(PUBLIC_ARTICLE_TAXONOMY_CACHE_KEY);
+    window.localStorage.removeItem(articleCacheKey("pl"));
+    window.localStorage.removeItem(articleCacheKey("en"));
+    window.localStorage.removeItem(articleTaxonomyCacheKey("pl"));
+    window.localStorage.removeItem(articleTaxonomyCacheKey("en"));
   } catch {
     // Ignore browser storage errors while clearing optional cache.
   }
@@ -161,18 +167,26 @@ function toSummary(article: StaticArticle): ArticleSummary {
   };
 }
 
-export async function fetchPublishedArticles() {
+function articleCacheKey(language: "pl" | "en") {
+  return `${PUBLIC_ARTICLES_CACHE_KEY}-${language}`;
+}
+
+function articleTaxonomyCacheKey(language: "pl" | "en") {
+  return `${PUBLIC_ARTICLE_TAXONOMY_CACHE_KEY}-${language}`;
+}
+
+export async function fetchPublishedArticles(language: "pl" | "en" = "pl") {
   try {
-    const response = await fetch(`${API_BASE}/articles`);
+    const response = await fetch(`${API_BASE}/articles?language=${language}`);
     if (!response.ok) {
       throw new Error("Failed to fetch articles");
     }
 
     const articles = (await response.json()) as ArticleSummary[];
-    writeCache(PUBLIC_ARTICLES_CACHE_KEY, articles);
+    writeCache(articleCacheKey(language), articles);
     return articles;
   } catch {
-    if (allowStaticArticleFallback) {
+    if (allowStaticArticleFallback && language === "pl") {
       return staticArticles.map(toSummary);
     }
 
@@ -180,9 +194,9 @@ export async function fetchPublishedArticles() {
   }
 }
 
-export async function fetchArticleDetail(slug: string) {
+export async function fetchArticleDetail(slug: string, language: "pl" | "en" = "pl") {
   try {
-    const response = await fetch(`${API_BASE}/articles/${encodeURIComponent(slug.replace(/^\//, ""))}`);
+    const response = await fetch(`${API_BASE}/articles/${encodeURIComponent(slug.replace(/^\//, ""))}?language=${language}`);
     if (!response.ok) {
       throw new Error("Failed to fetch article");
     }
@@ -193,7 +207,7 @@ export async function fetchArticleDetail(slug: string) {
       markdown: normalizeContactFormMarkers(article.markdown),
     } satisfies ArticleDetail;
   } catch {
-    if (!allowStaticArticleFallback) {
+    if (!allowStaticArticleFallback || language !== "pl") {
       throw new Error("Article detail is unavailable");
     }
 
@@ -217,15 +231,15 @@ export async function fetchArticleDetail(slug: string) {
   }
 }
 
-export async function fetchArticleTaxonomy() {
+export async function fetchArticleTaxonomy(language: "pl" | "en" = "pl") {
   try {
-    const response = await fetch(`${API_BASE}/article-taxonomy`);
+    const response = await fetch(`${API_BASE}/article-taxonomy?language=${language}`);
     if (!response.ok) {
       throw new Error("Failed to fetch article taxonomy");
     }
 
     const taxonomy = (await response.json()) as ArticleTaxonomyResponse;
-    writeCache(PUBLIC_ARTICLE_TAXONOMY_CACHE_KEY, taxonomy);
+    writeCache(articleTaxonomyCacheKey(language), taxonomy);
     return taxonomy;
   } catch {
     if (allowStaticArticleFallback) {
@@ -236,16 +250,16 @@ export async function fetchArticleTaxonomy() {
   }
 }
 
-export function getCachedPublishedArticles() {
-  return readCache<ArticleSummary[]>(PUBLIC_ARTICLES_CACHE_KEY);
+export function getCachedPublishedArticles(language: "pl" | "en" = "pl") {
+  return readCache<ArticleSummary[]>(articleCacheKey(language));
 }
 
-export function getCachedArticleTaxonomy() {
-  return readCache<ArticleTaxonomyResponse>(PUBLIC_ARTICLE_TAXONOMY_CACHE_KEY);
+export function getCachedArticleTaxonomy(language: "pl" | "en" = "pl") {
+  return readCache<ArticleTaxonomyResponse>(articleTaxonomyCacheKey(language));
 }
 
-export async function prefetchPublicArticleIndex() {
-  await Promise.allSettled([fetchPublishedArticles(), fetchArticleTaxonomy()]);
+export async function prefetchPublicArticleIndex(language: "pl" | "en" = "pl") {
+  await Promise.allSettled([fetchPublishedArticles(language), fetchArticleTaxonomy(language)]);
 }
 
 export async function fetchAdminArticles(token: string) {

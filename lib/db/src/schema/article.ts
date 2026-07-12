@@ -50,6 +50,7 @@ export const articlesTable = pgTable(
     sortOrder: integer("sort_order").notNull().default(0),
     category: text("category").notNull(),
     categorySlugs: jsonb("category_slugs").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    language: text("language").notNull().default("pl"),
     title: text("title").notNull(),
     slug: text("slug").notNull(),
     excerpt: text("excerpt").notNull(),

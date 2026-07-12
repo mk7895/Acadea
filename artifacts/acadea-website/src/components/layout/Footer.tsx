@@ -3,25 +3,27 @@ import { Link } from "wouter";
 import logo from "@/assets/logo-white.webp";
 import { Facebook, Instagram, Linkedin, Mail, Phone, Heart, MessageCircle } from "lucide-react";
 import { useCookieConsent } from "@/components/CookieConsent";
+import { useLanguage } from "@/lib/i18n";
 
 const serviceLinks = [
-  { label: "Doradztwo w Wyborze Uczelni", href: "/jak-to-dziala#wybor-uczelni" },
-  { label: "Egzaminy i Certyfikaty", href: "/jak-to-dziala#egzaminy-i-certyfikaty" },
-  { label: "Przygotowanie Dokumentów", href: "/jak-to-dziala#przygotowanie-dokumentow" },
-  { label: "Eseje, CV i Listy Motywacyjne", href: "/jak-to-dziala#eseje-cv-i-listy-motywacyjne" },
-  { label: "Aplikacja i Stypendia", href: "/jak-to-dziala#aplikacja-i-stypendia" },
-  { label: "Przygotowanie do Rozmów Wstępnych", href: "/jak-to-dziala#oczekiwanie" },
-  { label: "Formalności po Przyjęciu i Zakwaterowanie", href: "/jak-to-dziala#po-przyjeciu" },
+  { label: "Doradztwo w Wyborze Uczelni", labelEn: "University selection advising", href: "/jak-to-dziala#wybor-uczelni" },
+  { label: "Egzaminy i Certyfikaty", labelEn: "Exams and certificates", href: "/jak-to-dziala#egzaminy-i-certyfikaty" },
+  { label: "Przygotowanie Dokumentów", labelEn: "Document preparation", href: "/jak-to-dziala#przygotowanie-dokumentow" },
+  { label: "Eseje, CV i Listy Motywacyjne", labelEn: "Essays, CVs and motivation letters", href: "/jak-to-dziala#eseje-cv-i-listy-motywacyjne" },
+  { label: "Aplikacja i Stypendia", labelEn: "Applications and scholarships", href: "/jak-to-dziala#aplikacja-i-stypendia" },
+  { label: "Przygotowanie do Rozmów Wstępnych", labelEn: "Interview preparation", href: "/jak-to-dziala#oczekiwanie" },
+  { label: "Formalności po Przyjęciu i Zakwaterowanie", labelEn: "Post-offer formalities and accommodation", href: "/jak-to-dziala#po-przyjeciu" },
 ];
 
 export function Footer() {
   const { openPreferences } = useCookieConsent();
+  const { isEnglish, localizePath, t } = useLanguage();
   const handleServiceClick = (
     event: MouseEvent<HTMLAnchorElement>,
     href: string,
   ) => {
     const [path, hash] = href.split("#");
-    if (window.location.pathname !== path || !hash) return;
+    if (window.location.pathname !== localizePath(path).split("#")[0] || !hash) return;
 
     event.preventDefault();
     const target = document.getElementById(hash);
@@ -34,17 +36,22 @@ export function Footer() {
   return (
     <footer className="bg-primary text-white pt-16 pb-8">
       <div className="sr-only" aria-hidden="true">
-        Fundacja Acadea, Jedności Narodowej 55-57 / 15, 50-262 Wrocław, Polska.
-        Kontakt: contact@acadea.org, telefon +48 728 492 936.
+        {t(
+          "Fundacja Acadea, Jedności Narodowej 55-57 / 15, 50-262 Wrocław, Polska. Kontakt: contact@acadea.org, telefon +48 728 492 936.",
+          "Fundacja Acadea, Jedności Narodowej 55-57 / 15, 50-262 Wroclaw, Poland. Contact: contact@acadea.org, phone +48 728 492 936.",
+        )}
       </div>
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           <div className="space-y-6">
-            <Link href="/">
+            <Link href={localizePath("/")}>
               <img src={logo} alt="ACADEA Logo" className="h-20 md:h-24 w-auto shrink-0 mb-2" />
             </Link>
             <p className="text-gray-300 text-sm leading-relaxed max-w-sm">
-              Aplikacja na studia za granicą — z nami to proste. Pomagamy uczniom dostać się na wymarzone uczelnie w ponad 25 krajach.
+              {t(
+                "Aplikacja na studia za granicą — z nami to proste. Pomagamy uczniom dostać się na wymarzone uczelnie w ponad 25 krajach.",
+                "Applying to university abroad, made simpler. We help students get into dream universities in more than 25 countries.",
+              )}
             </p>
             <div className="flex items-center gap-4 text-white">
               <a
@@ -78,57 +85,57 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold mb-6">Nawigacja</h4>
+            <h4 className="text-lg font-semibold mb-6">{t("Nawigacja", "Navigation")}</h4>
             <ul className="space-y-4">
               <li>
-                <Link href="/" className="text-gray-300 hover:text-white transition-colors">
-                  Strona Główna
+                <Link href={localizePath("/")} className="text-gray-300 hover:text-white transition-colors">
+                  {t("Strona Główna", "Home")}
                 </Link>
               </li>
               <li>
-                <Link href="/jak-to-dziala" className="text-gray-300 hover:text-white transition-colors">
-                  Jak pomagamy
+                <Link href={localizePath("/jak-to-dziala")} className="text-gray-300 hover:text-white transition-colors">
+                  {t("Jak pomagamy", "How we help")}
                 </Link>
               </li>
               <li>
-                <Link href="/kraje" className="text-gray-300 hover:text-white transition-colors">
-                  Kraje i Uczelnie
+                <Link href={localizePath("/kraje")} className="text-gray-300 hover:text-white transition-colors">
+                  {t("Kraje i Uczelnie", "Countries and universities")}
                 </Link>
               </li>
               <li>
-                <Link href="/baza-wiedzy" className="text-gray-300 hover:text-white transition-colors">
-                  Baza Wiedzy
+                <Link href={localizePath("/baza-wiedzy")} className="text-gray-300 hover:text-white transition-colors">
+                  {t("Baza Wiedzy", "Knowledge base")}
                 </Link>
               </li>
               <li>
-                <Link href="/stypendium" className="inline-flex items-center gap-1.5 text-accent hover:text-white transition-colors font-medium">
-                  <Heart size={14} className="fill-accent" /> Program Stypendialny
+                <Link href={localizePath("/stypendium")} className="inline-flex items-center gap-1.5 text-accent hover:text-white transition-colors font-medium">
+                  <Heart size={14} className="fill-accent" /> {t("Program Stypendialny", "Scholarship programme")}
                 </Link>
               </li>
               <li>
-                <Link href="/o-nas" className="text-gray-300 hover:text-white transition-colors">
-                  Poznajmy się
+                <Link href={localizePath("/o-nas")} className="text-gray-300 hover:text-white transition-colors">
+                  {t("Poznajmy się", "About us")}
                 </Link>
               </li>
               <li>
-                <Link href="/kontakt" className="text-gray-300 hover:text-white transition-colors">
-                  Kontakt
+                <Link href={localizePath("/kontakt")} className="text-gray-300 hover:text-white transition-colors">
+                  {t("Kontakt", "Contact")}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold mb-6">Usługi</h4>
+            <h4 className="text-lg font-semibold mb-6">{t("Usługi", "Services")}</h4>
             <ul className="space-y-4">
               {serviceLinks.map((svc) => (
                 <li key={svc.href}>
                   <a
-                    href={svc.href}
+                    href={localizePath(svc.href)}
                     onClick={(event) => handleServiceClick(event, svc.href)}
                     className="text-gray-300 hover:text-white transition-colors"
                   >
-                    {svc.label}
+                    {isEnglish ? svc.labelEn : svc.label}
                   </a>
                 </li>
               ))}
@@ -136,7 +143,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold mb-6">Kontakt</h4>
+            <h4 className="text-lg font-semibold mb-6">{t("Kontakt", "Contact")}</h4>
             <ul className="space-y-4">
               <li className="flex items-start gap-3 text-gray-300">
                 <Mail size={20} className="text-accent shrink-0 mt-0.5" />
@@ -169,7 +176,7 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="hover:text-white transition-colors"
                 >
-                  Grupa na WhatsApp
+                  {t("Grupa na WhatsApp", "WhatsApp group")}
                 </a>
               </li>
             </ul>
@@ -177,14 +184,14 @@ export function Footer() {
         </div>
 
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
-          <p>&copy; {new Date().getFullYear()} ACADEA. Wszelkie prawa zastrzeżone.</p>
+          <p>&copy; {new Date().getFullYear()} ACADEA. {t("Wszelkie prawa zastrzeżone.", "All rights reserved.")}</p>
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6">
-            <Link href="/polityka-prywatnosci" className="hover:text-white transition-colors">Polityka Prywatności</Link>
-            <Link href="/regulamin" className="hover:text-white transition-colors">Regulamin</Link>
-            <Link href="/stypendium/regulamin" className="hover:text-white transition-colors">Regulamin Stypendium</Link>
-            <Link href="/regulamin-platformy" className="hover:text-white transition-colors">Regulamin Platformy</Link>
+            <Link href={localizePath("/polityka-prywatnosci")} className="hover:text-white transition-colors">{t("Polityka Prywatności", "Privacy Policy")}</Link>
+            <Link href={localizePath("/regulamin")} className="hover:text-white transition-colors">{t("Regulamin", "Terms")}</Link>
+            <Link href={localizePath("/stypendium/regulamin")} className="hover:text-white transition-colors">{t("Regulamin Stypendium", "Scholarship Terms")}</Link>
+            <Link href={localizePath("/regulamin-platformy")} className="hover:text-white transition-colors">{t("Regulamin Platformy", "Platform Terms")}</Link>
             <button onClick={openPreferences} className="hover:text-white transition-colors">
-              Ustawienia cookies
+              {t("Ustawienia cookies", "Cookie settings")}
             </button>
           </div>
         </div>

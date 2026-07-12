@@ -2,11 +2,11 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://acadea.org</loc>
-    <lastmod>2026-07-03</lastmod>
+    <lastmod>2026-07-06</lastmod>
   </url>
   <url>
     <loc>https://acadea.org/baza-wiedzy</loc>
-    <lastmod>2026-07-03</lastmod>
+    <lastmod>2026-07-06</lastmod>
   </url>
   <url>
     <loc>https://acadea.org/baza-wiedzy/bezplatne-studia-w-niemczech</loc>
@@ -173,12 +173,68 @@
     <lastmod>2026-07-02</lastmod>
   </url>
   <url>
-    <loc>https://acadea.org/jak-to-dziala</loc>
+    <loc>https://acadea.org/en</loc>
+    <lastmod>2026-07-06</lastmod>
+  </url>
+  <url>
+    <loc>https://acadea.org/en/about-us</loc>
     <lastmod>2026-07-02</lastmod>
   </url>
   <url>
-    <loc>https://acadea.org/kontakt</loc>
+    <loc>https://acadea.org/en/become-a-mentor</loc>
     <lastmod>2026-07-02</lastmod>
+  </url>
+  <url>
+    <loc>https://acadea.org/en/book-consultation</loc>
+    <lastmod>2026-07-09</lastmod>
+  </url>
+  <url>
+    <loc>https://acadea.org/en/contact</loc>
+    <lastmod>2026-07-06</lastmod>
+  </url>
+  <url>
+    <loc>https://acadea.org/en/countries</loc>
+    <lastmod>2026-07-02</lastmod>
+  </url>
+  <url>
+    <loc>https://acadea.org/en/how-it-works</loc>
+    <lastmod>2026-07-08</lastmod>
+  </url>
+  <url>
+    <loc>https://acadea.org/en/knowledge-base</loc>
+    <lastmod>2026-07-06</lastmod>
+  </url>
+  <url>
+    <loc>https://acadea.org/en/platform-terms</loc>
+    <lastmod>2026-07-06</lastmod>
+  </url>
+  <url>
+    <loc>https://acadea.org/en/privacy-policy</loc>
+    <lastmod>2026-07-10</lastmod>
+  </url>
+  <url>
+    <loc>https://acadea.org/en/scholarship</loc>
+    <lastmod>2026-07-08</lastmod>
+  </url>
+  <url>
+    <loc>https://acadea.org/en/scholarship/application</loc>
+    <lastmod>2026-07-10</lastmod>
+  </url>
+  <url>
+    <loc>https://acadea.org/en/scholarship/terms</loc>
+    <lastmod>2026-07-10</lastmod>
+  </url>
+  <url>
+    <loc>https://acadea.org/en/terms</loc>
+    <lastmod>2026-07-06</lastmod>
+  </url>
+  <url>
+    <loc>https://acadea.org/jak-to-dziala</loc>
+    <lastmod>2026-07-08</lastmod>
+  </url>
+  <url>
+    <loc>https://acadea.org/kontakt</loc>
+    <lastmod>2026-07-06</lastmod>
   </url>
   <url>
     <loc>https://acadea.org/kraje</loc>
@@ -298,30 +354,30 @@
   </url>
   <url>
     <loc>https://acadea.org/polityka-prywatnosci</loc>
-    <lastmod>2026-07-02</lastmod>
+    <lastmod>2026-07-10</lastmod>
   </url>
   <url>
     <loc>https://acadea.org/regulamin</loc>
-    <lastmod>2026-07-02</lastmod>
+    <lastmod>2026-07-06</lastmod>
   </url>
   <url>
     <loc>https://acadea.org/regulamin-platformy</loc>
-    <lastmod>2026-07-02</lastmod>
+    <lastmod>2026-07-06</lastmod>
   </url>
   <url>
     <loc>https://acadea.org/stypendium</loc>
-    <lastmod>2026-07-02</lastmod>
+    <lastmod>2026-07-08</lastmod>
   </url>
   <url>
     <loc>https://acadea.org/stypendium/aplikacja</loc>
-    <lastmod>2026-07-02</lastmod>
+    <lastmod>2026-07-10</lastmod>
   </url>
   <url>
     <loc>https://acadea.org/stypendium/regulamin</loc>
-    <lastmod>2026-07-02</lastmod>
+    <lastmod>2026-07-10</lastmod>
   </url>
   <url>
     <loc>https://acadea.org/umow-spotkanie</loc>
-    <lastmod>2026-07-02</lastmod>
+    <lastmod>2026-07-09</lastmod>
   </url>
 </urlset>

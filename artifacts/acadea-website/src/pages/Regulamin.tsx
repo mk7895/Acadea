@@ -5,28 +5,157 @@ import {
   createWebPageSchema,
   useSeo,
 } from "@/lib/seo";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Regulamin() {
+  const { isEnglish } = useLanguage();
+
   useSeo({
-    title: "Regulamin serwisu | ACADEA",
-    description:
-      "Regulamin serwisu ACADEA określający zasady korzystania z witryny, formularzy, rezerwacji spotkań i komunikacji elektronicznej.",
-    path: "/regulamin",
+    title: isEnglish ? "Website Terms | ACADEA" : "Regulamin serwisu | ACADEA",
+    description: isEnglish
+      ? "ACADEA Website Terms covering the website, forms, booking system and electronic communication."
+      : "Regulamin serwisu ACADEA określający zasady korzystania z witryny, formularzy, rezerwacji spotkań i komunikacji elektronicznej.",
+    path: isEnglish ? "/en/terms" : "/regulamin",
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
       createWebPageSchema({
-        path: "/regulamin",
-        title: "Regulamin serwisu | ACADEA",
-        description:
-          "Regulamin korzystania z serwisu ACADEA wraz z zasadami formularzy, rezerwacji i odpowiedzialności.",
+        path: isEnglish ? "/en/terms" : "/regulamin",
+        title: isEnglish ? "Website Terms | ACADEA" : "Regulamin serwisu | ACADEA",
+        description: isEnglish
+          ? "Terms of use for the ACADEA website, including forms, bookings and liability rules."
+          : "Regulamin korzystania z serwisu ACADEA wraz z zasadami formularzy, rezerwacji i odpowiedzialności.",
       }),
       createBreadcrumbSchema([
-        { name: "Strona Główna", path: "/" },
-        { name: "Regulamin", path: "/regulamin" },
+        { name: isEnglish ? "Home" : "Strona Główna", path: isEnglish ? "/en" : "/" },
+        { name: isEnglish ? "Terms" : "Regulamin", path: isEnglish ? "/en/terms" : "/regulamin" },
       ]),
     ],
   });
+
+  if (isEnglish) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-24 pb-20">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 md:p-12">
+            <h1 className="text-3xl md:text-4xl font-bold text-primary mb-2">Website Terms</h1>
+            <p className="text-gray-400 text-sm mb-10">Last updated: January 2025</p>
+
+            <div className="prose prose-gray max-w-none space-y-8 text-gray-600 text-sm leading-relaxed">
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-4 mb-4">I. General definitions</h2>
+                <ul className="space-y-2">
+                  <li><strong>Terms</strong> — these website terms.</li>
+                  <li><strong>Website</strong> — the ACADEA website available at https://acadea.org.</li>
+                  <li><strong>Service Provider</strong> — Fundacja Acadea, KRS: 0001240540, NIP: 8982333798, REGON: 544715960, registered at Jedności Narodowej 55-57 / 15, 50-262 Wroclaw, Poland.</li>
+                  <li><strong>Service User</strong> — any individual accessing the Website and using services provided through it.</li>
+                  <li><strong>Electronic Communication</strong> — communication between parties by email and website forms.</li>
+                </ul>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">II. General provisions</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>These Terms define the operation and use of the Website and the rights and obligations of Users and the Service Provider.</li>
+                  <li>The Website provides free online tools, content, articles, audiovisual materials and electronic forms.</li>
+                  <li>Content, articles and information published on the Website are general information only and are not individual advice addressed to a specific User.</li>
+                  <li>The User is fully responsible for how they use materials made available through the Website.</li>
+                  <li>The Service Provider is not liable for damage suffered by Users or third parties in connection with use of the Website, except where liability cannot be excluded under mandatory law.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">III. Conditions for using the Website</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>Use of the Website is free and voluntary.</li>
+                  <li>Users should read and accept these Terms before continuing to use the Website.</li>
+                  <li>Users may not use personal data obtained through the Website for marketing purposes.</li>
+                  <li>Technical requirements:
+                    <ul className="list-disc pl-5 mt-2 space-y-1">
+                      <li>a device with a display capable of showing web pages;</li>
+                      <li>internet access;</li>
+                      <li>a web browser supporting HTML5;</li>
+                      <li>JavaScript enabled;</li>
+                      <li>cookies enabled where required for specific functions.</li>
+                    </ul>
+                  </li>
+                  <li>Actions that disrupt the Website are prohibited, including decompiling source code without written consent, attempting to detect security vulnerabilities or uploading harmful code.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">IV. Forms and booking conditions</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>Using contact forms and the meeting booking system is free and voluntary.</li>
+                  <li>By sending an enquiry or booking a meeting, the User agrees to the processing of personal data for the purpose of handling the request.</li>
+                  <li>The Service Provider may refuse to provide a service without giving a reason.</li>
+                  <li>Consultations are held via Zoom or another tool indicated by the Service Provider. The Service Provider is not responsible for third-party tools.</li>
+                  <li>A free consultation is an introductory information meeting. Any further cooperation is agreed individually.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">V. Newsletter and WhatsApp group terms</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>Joining a WhatsApp group or subscribing to a newsletter is voluntary and free.</li>
+                  <li>The User may leave the group or unsubscribe from the newsletter at any time.</li>
+                  <li>The Service Provider may remove a User from a group or mailing list if the User breaches standards of respectful communication or these Terms.</li>
+                </ol>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">VI. Website communication</h2>
+                <p>The Website provides tools for User interaction:</p>
+                <ul className="list-disc pl-5 mt-2 space-y-1">
+                  <li>contact form;</li>
+                  <li>online meeting booking system;</li>
+                  <li>mentor application form.</li>
+                </ul>
+                <p className="mt-3">Contact details:</p>
+                <ul className="list-disc pl-5 mt-2 space-y-1">
+                  <li>Email: <a href="mailto:contact@acadea.org" className="text-primary hover:underline">contact@acadea.org</a></li>
+                  <li>Phone: <a href="tel:+48728492936" className="text-primary hover:underline">+48 728 492 936</a></li>
+                </ul>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">VII. Collection of User data</h2>
+                <p>To provide services properly, the Website collects and processes User data in accordance with the Privacy Policy, which forms part of these Terms.</p>
+                <p className="mt-3">Automatically collected data may include IP address, browser type, screen resolution, approximate location, visited pages, time spent on the Website and operating system.</p>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">VIII. Copyright</h2>
+                <p>The Website and copyright to the Website are owned by the Service Provider. Copying, reproducing or using content, graphics, video or audio from the Website without written permission is prohibited unless permitted by mandatory law.</p>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">IX. Changes to the Terms</h2>
+                <p>The Service Provider may amend these Terms at any time. Changes apply from the moment they are published on the Website. Continued use after publication means acceptance of the changes.</p>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-bold text-primary mt-8 mb-4">X. Final provisions</h2>
+                <ol className="list-decimal pl-5 space-y-3">
+                  <li>Polish law applies to matters not regulated by these Terms.</li>
+                  <li>Disputes arising from use of the Website will be resolved by the competent common court.</li>
+                  <li>These Terms enter into force on the date of publication on the Website.</li>
+                </ol>
+              </section>
+
+              <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 mt-8">
+                <p className="font-bold text-primary mb-1">Fundacja Acadea</p>
+                <p>KRS: 0001240540 | NIP: 8982333798 | REGON: 544715960</p>
+                <p>Jedności Narodowej 55-57 / 15, 50-262 Wroclaw, Poland</p>
+                <p>E-mail: <a href="mailto:contact@acadea.org" className="text-primary hover:underline">contact@acadea.org</a></p>
+                <p>Phone: <a href="tel:+48728492936" className="text-primary hover:underline">+48 728 492 936</a></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-20">

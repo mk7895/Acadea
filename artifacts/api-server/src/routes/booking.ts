@@ -432,6 +432,7 @@ const CreateSchema = z.object({
   phone: z.string().optional(),
   topic: z.string().min(2),
   mentorEmail: z.string().email().optional(),
+  language: z.enum(["pl", "en"]).optional().default("pl"),
   turnstileToken: z.string().min(1).optional(),
 });
 
@@ -442,7 +443,7 @@ router.post("/create", async (req, res) => {
       .status(400)
       .json({ error: "Nieprawidłowe dane", details: parsed.error.flatten() });
   }
-  const { start, end, name, email, phone, topic, mentorEmail } = parsed.data;
+  const { start, end, name, email, phone, topic, mentorEmail, language } = parsed.data;
   const startDate = new Date(start);
   const endDate = new Date(end);
 
@@ -593,6 +594,7 @@ router.post("/create", async (req, res) => {
       start,
       end,
       zoomLink: ZOOM_LINK,
+      language,
     });
 
     return res.json({

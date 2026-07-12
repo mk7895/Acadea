@@ -9,6 +9,7 @@ import {
   setLongLivedCookie,
 } from "@/lib/cookies";
 import { clearPublicArticleCache } from "@/lib/article-api";
+import { useLanguage } from "@/lib/i18n";
 
 type CookieConsentPreferences = {
   necessary: true;
@@ -161,6 +162,7 @@ export function useCookieConsent() {
 
 function CookieConsentBanner() {
   const { isBannerVisible, acceptAll, rejectOptional, openPreferences } = useCookieConsent();
+  const { t } = useLanguage();
 
   if (!isBannerVisible) {
     return null;
@@ -172,16 +174,14 @@ function CookieConsentBanner() {
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#8d806b] mb-2">
-              Ustawienia cookies
+              {t("Ustawienia cookies", "Cookie settings")}
             </p>
-            <h2 className="text-2xl font-bold text-primary mb-2">Szanujemy Twoją prywatność</h2>
+            <h2 className="text-2xl font-bold text-primary mb-2">{t("Szanujemy Twoją prywatność", "We respect your privacy")}</h2>
             <p className="text-sm text-gray-600 leading-relaxed">
-              Używamy plików cookies niezbędnych do działania serwisu oraz, za Twoją zgodą,
-              plików cookies preferencji, analitycznych i marketingowych. Możemy też zapamiętać
-              w trakcie sesji zamknięcie komunikatów wyświetlanych na stronie. Do kategorii
-              preferencji zaliczamy też szybsze wczytywanie listy artykułów w Bazie Wiedzy oraz
-              tymczasowy cache tej listy w przeglądarce.
-              Więcej informacji znajdziesz w polityce prywatności.
+              {t(
+                "Używamy plików cookies niezbędnych do działania serwisu oraz, za Twoją zgodą, plików cookies preferencji, analitycznych i marketingowych. Możemy też zapamiętać w trakcie sesji zamknięcie komunikatów wyświetlanych na stronie. Do kategorii preferencji zaliczamy też szybsze wczytywanie listy artykułów w Bazie Wiedzy oraz tymczasowy cache tej listy w przeglądarce. Więcej informacji znajdziesz w polityce prywatności.",
+                "We use cookies that are necessary for the website to work and, with your consent, preference, analytics and marketing cookies. We may also remember during a session that you closed website messages. Preference cookies also cover faster loading of the Knowledge Base article list and temporary browser caching of that list. You can find more information in the privacy policy.",
+              )}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
@@ -189,19 +189,19 @@ function CookieConsentBanner() {
               onClick={rejectOptional}
               className="h-11 px-4 rounded-full border border-[#ddd3c1] text-primary text-sm leading-tight font-semibold hover:bg-[#f6f1e7] transition-colors"
             >
-              Odrzuć opcjonalne
+              {t("Odrzuć opcjonalne", "Reject optional")}
             </button>
             <button
               onClick={openPreferences}
               className="h-11 px-4 rounded-full border border-[#ddd3c1] text-primary text-sm leading-tight font-semibold hover:bg-[#f6f1e7] transition-colors"
             >
-              Dostosuj
+              {t("Dostosuj", "Customise")}
             </button>
             <button
               onClick={acceptAll}
               className="h-11 px-5 rounded-full bg-primary text-white text-sm leading-tight font-semibold hover:bg-primary/90 transition-colors"
             >
-              Akceptuj wszystkie
+              {t("Akceptuj wszystkie", "Accept all")}
             </button>
           </div>
         </div>
@@ -220,6 +220,7 @@ function CookiePreferencesModal() {
     rejectOptional,
     acceptAll,
   } = useCookieConsent();
+  const { t } = useLanguage();
 
   if (!isPreferencesOpen) {
     return null;
@@ -231,41 +232,53 @@ function CookiePreferencesModal() {
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#8d806b] mb-2">
-              Centrum preferencji
+              {t("Centrum preferencji", "Preference centre")}
             </p>
-            <h2 className="text-2xl font-bold text-primary">Wybierz kategorie cookies</h2>
+            <h2 className="text-2xl font-bold text-primary">{t("Wybierz kategorie cookies", "Choose cookie categories")}</h2>
           </div>
           <button
             onClick={closePreferences}
             className="text-sm text-gray-500 hover:text-primary transition-colors"
           >
-            Zamknij
+            {t("Zamknij", "Close")}
           </button>
         </div>
 
         <div className="space-y-4">
           <CookieRow
-            title="Niezbędne"
-            description="Odpowiadają za podstawowe działanie strony, zgody cookies, zabezpieczenia formularzy oraz zapamiętanie zamknięcia komunikatów w trakcie sesji. Są zawsze aktywne."
+            title={t("Niezbędne", "Necessary")}
+            description={t(
+              "Odpowiadają za podstawowe działanie strony, zgody cookies, zabezpieczenia formularzy oraz zapamiętanie zamknięcia komunikatów w trakcie sesji. Są zawsze aktywne.",
+              "They support the basic operation of the website, cookie consent, form security and remembering closed messages during a session. They are always active.",
+            )}
             checked
             disabled
             onChange={() => undefined}
           />
           <CookieRow
-            title="Preferencje"
-            description="Pozwalają zapamiętać ustawienia strony, takie jak wybrana strefa czasowa, uruchomić jednorazowe przyspieszenie wczytywania listy artykułów w Bazie Wiedzy podczas bieżącej sesji oraz przechować tymczasowy cache tej listy w przeglądarce."
+            title={t("Preferencje", "Preferences")}
+            description={t(
+              "Pozwalają zapamiętać ustawienia strony, takie jak wybrana strefa czasowa, uruchomić jednorazowe przyspieszenie wczytywania listy artykułów w Bazie Wiedzy podczas bieżącej sesji oraz przechować tymczasowy cache tej listy w przeglądarce.",
+              "They remember website preferences such as the selected time zone, allow one-off faster loading of the Knowledge Base article list during the current session, and store a temporary cache of that list in the browser.",
+            )}
             checked={draft.preferences}
             onChange={(checked) => updateDraft({ preferences: checked })}
           />
           <CookieRow
-            title="Analityczne"
-            description="Będą używane po wdrożeniu narzędzi analitycznych, aby mierzyć ruch i ulepszać stronę."
+            title={t("Analityczne", "Analytics")}
+            description={t(
+              "Będą używane po wdrożeniu narzędzi analitycznych, aby mierzyć ruch i ulepszać stronę.",
+              "They will be used after analytics tools are enabled to measure traffic and improve the website.",
+            )}
             checked={draft.analytics}
             onChange={(checked) => updateDraft({ analytics: checked })}
           />
           <CookieRow
-            title="Marketingowe"
-            description="Będą używane po wdrożeniu narzędzi reklamowych, remarketingowych i pomiaru skuteczności komunikatów zachęcających do kontaktu."
+            title={t("Marketingowe", "Marketing")}
+            description={t(
+              "Będą używane po wdrożeniu narzędzi reklamowych, remarketingowych i pomiaru skuteczności komunikatów zachęcających do kontaktu.",
+              "They will be used after advertising, remarketing and contact-message performance tools are enabled.",
+            )}
             checked={draft.marketing}
             onChange={(checked) => updateDraft({ marketing: checked })}
           />
@@ -276,19 +289,19 @@ function CookiePreferencesModal() {
             onClick={rejectOptional}
             className="h-11 px-5 rounded-full border border-[#ddd3c1] text-primary font-semibold hover:bg-[#f6f1e7] transition-colors"
           >
-            Tylko niezbędne
+            {t("Tylko niezbędne", "Necessary only")}
           </button>
           <button
             onClick={acceptAll}
             className="h-11 px-5 rounded-full border border-[#ddd3c1] text-primary font-semibold hover:bg-[#f6f1e7] transition-colors"
           >
-            Wszystkie
+            {t("Wszystkie", "All")}
           </button>
           <button
             onClick={saveDraft}
             className="h-11 px-6 rounded-full bg-primary text-white font-semibold hover:bg-primary/90 transition-colors"
           >
-            Zapisz wybór
+            {t("Zapisz wybór", "Save choices")}
           </button>
         </div>
       </div>
