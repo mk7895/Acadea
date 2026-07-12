@@ -55,7 +55,7 @@ const scoringRowsEn = [
 ];
 
 export default function ScholarshipTerms() {
-  const { isEnglish } = useLanguage();
+  const { isEnglish, localizePath } = useLanguage();
 
   useSeo({
     title: isEnglish ? "ACADEA Scholarship Competition Terms" : "Regulamin Konkursu Stypendialnego ACADEA",
@@ -371,7 +371,7 @@ export default function ScholarshipTerms() {
                 </li>
                 <li>
                   Szczegółowe informacje o zasadach, podstawach prawnych i okresach przetwarzania danych znajdują się w{" "}
-                  <Link href="/polityka-prywatnosci" className="font-semibold text-primary hover:underline">
+                  <Link href={localizePath("/polityka-prywatnosci")} className="font-semibold text-primary hover:underline">
                     Polityce Prywatności
                   </Link>.
                 </li>

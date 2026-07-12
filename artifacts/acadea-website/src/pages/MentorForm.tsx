@@ -26,40 +26,77 @@ import { useLanguage } from "@/lib/i18n";
 
 const API_BASE = getApiBase();
 
-const COUNTRIES = [
-  "Wielka Brytania", "Holandia", "Niemcy", "Francja", "Szwajcaria",
-  "Szwecja", "Dania", "USA", "Kanada", "Australia", "Singapur", "Japonia",
-  "Korea Południowa", "Irlandia", "Belgia", "Austria", "Inne",
-];
-
-const ROLES = [
-  { id: "paid", label: "Płatne sesje mentoringowe", icon: <Briefcase size={18} />, desc: "Chcę pracować z kandydatami i otrzymywać wynagrodzenie za sesje." },
-  { id: "volunteer", label: "Wolontariat", icon: <Heart size={18} />, desc: "Chcę pomagać bezpłatnie — z pasji i chęci przekazania wiedzy." },
-  { id: "both", label: "Jedno i drugie", icon: <CheckCircle2 size={18} />, desc: "Jestem otwarty/a na oba modele." },
-];
-
 type Role = "paid" | "volunteer" | "both" | "";
 
 export default function MentorForm() {
-  const { language } = useLanguage();
+  const { language, isEnglish, localizePath, t } = useLanguage();
+
+  const countries = isEnglish
+    ? [
+        "United Kingdom", "Netherlands", "Germany", "France", "Switzerland",
+        "Sweden", "Denmark", "USA", "Canada", "Australia", "Singapore", "Japan",
+        "South Korea", "Ireland", "Belgium", "Austria", "Other",
+      ]
+    : [
+        "Wielka Brytania", "Holandia", "Niemcy", "Francja", "Szwajcaria",
+        "Szwecja", "Dania", "USA", "Kanada", "Australia", "Singapur", "Japonia",
+        "Korea Poludniowa", "Irlandia", "Belgia", "Austria", "Inne",
+      ];
+
+  const roles = [
+    {
+      id: "paid" as const,
+      label: t("Platne sesje mentoringowe", "Paid mentoring sessions"),
+      icon: <Briefcase size={18} />,
+      desc: t(
+        "Chce pracowac z kandydatami i otrzymywac wynagrodzenie za sesje.",
+        "I would like to work with applicants and be paid for mentoring sessions.",
+      ),
+    },
+    {
+      id: "volunteer" as const,
+      label: t("Wolontariat", "Volunteering"),
+      icon: <Heart size={18} />,
+      desc: t(
+        "Chce pomagac bezplatnie — z pasji i checi przekazania wiedzy.",
+        "I want to help without pay, out of passion and a desire to share experience.",
+      ),
+    },
+    {
+      id: "both" as const,
+      label: t("Jedno i drugie", "Both"),
+      icon: <CheckCircle2 size={18} />,
+      desc: t(
+        "Jestem otwarty/a na oba modele.",
+        "I am open to both forms of cooperation.",
+      ),
+    },
+  ];
+
   useSeo({
-    title: "Dołącz do zespołu mentorów | ACADEA",
-    description:
-      "Aplikuj do zespołu ACADEA jako mentor lub wolontariusz i wspieraj kandydatów aplikujących na studia za granicą.",
-    path: "/mentoruj",
-    keywords: ["mentor ACADEA", "dołącz do zespołu", "mentoring studia za granicą"],
+    title: t("Dolacz do zespolu mentorow | ACADEA", "Join the mentor team | ACADEA"),
+    description: t(
+      "Aplikuj do zespolu ACADEA jako mentor lub wolontariusz i wspieraj kandydatow aplikujacych na studia za granica.",
+      "Apply to join ACADEA as a mentor or volunteer and support students applying to universities abroad.",
+    ),
+    path: localizePath("/mentoruj"),
+    keywords: isEnglish
+      ? ["ACADEA mentor", "join mentor team", "study abroad mentoring"]
+      : ["mentor ACADEA", "dolacz do zespolu", "mentoring studia za granica"],
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
       createWebPageSchema({
-        path: "/mentoruj",
-        title: "Dołącz do zespołu mentorów | ACADEA",
-        description:
-          "Formularz zgłoszeniowy dla osób, które chcą współpracować z ACADEA jako mentorzy lub wolontariusze.",
+        path: localizePath("/mentoruj"),
+        title: t("Dolacz do zespolu mentorow | ACADEA", "Join the mentor team | ACADEA"),
+        description: t(
+          "Formularz zgloszeniowy dla osob, ktore chca wspolpracowac z ACADEA jako mentorzy lub wolontariusze.",
+          "Application form for people who want to work with ACADEA as mentors or volunteers.",
+        ),
       }),
       createBreadcrumbSchema([
-        { name: "Strona Główna", path: "/" },
-        { name: "Mentoruj", path: "/mentoruj" },
+        { name: t("Strona Glowna", "Home"), path: localizePath("/") },
+        { name: t("Mentoruj", "Become a mentor"), path: localizePath("/mentoruj") },
       ]),
     ],
   });
@@ -78,18 +115,20 @@ export default function MentorForm() {
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.name.trim() || form.name.trim().length < 2) e.name = "Podaj imię i nazwisko.";
-    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Podaj poprawny e-mail.";
-    if (!form.university.trim()) e.university = "Podaj nazwę uczelni.";
-    if (!form.country) e.country = "Wybierz kraj.";
-    if (!form.field.trim()) e.field = "Podaj kierunek studiów.";
-    if (!form.role) e.role = "Wybierz preferowany model współpracy.";
-    if (!form.motivation.trim() || form.motivation.trim().length < 20) e.motivation = "Napisz kilka zdań o sobie (min. 20 znaków).";
-    if (!consent) e.consent = "Zgoda na politykę prywatności jest wymagana.";
+    if (!form.name.trim() || form.name.trim().length < 2) e.name = t("Podaj imie i nazwisko.", "Enter your full name.");
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = t("Podaj poprawny e-mail.", "Enter a valid email address.");
+    if (!form.university.trim()) e.university = t("Podaj nazwe uczelni.", "Enter the university name.");
+    if (!form.country) e.country = t("Wybierz kraj.", "Choose a country.");
+    if (!form.field.trim()) e.field = t("Podaj kierunek studiow.", "Enter your degree programme.");
+    if (!form.role) e.role = t("Wybierz preferowany model wspolpracy.", "Choose your preferred cooperation model.");
+    if (!form.motivation.trim() || form.motivation.trim().length < 20) {
+      e.motivation = t("Napisz kilka zdan o sobie (min. 20 znakow).", "Write a few sentences about yourself (at least 20 characters).");
+    }
+    if (!consent) e.consent = t("Zgoda na polityke prywatnosci jest wymagana.", "Privacy policy consent is required.");
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -97,7 +136,7 @@ export default function MentorForm() {
   const handleSubmit = async () => {
     if (!validate()) return;
     if (isTurnstileEnabled() && !turnstileToken) {
-      setSubmitError("Potwierdź zabezpieczenie formularza przed wysłaniem aplikacji.");
+      setSubmitError(t("Potwierdz zabezpieczenie formularza przed wyslaniem aplikacji.", "Complete the security check before submitting the application."));
       return;
     }
     setSubmitting(true);
@@ -111,13 +150,13 @@ export default function MentorForm() {
           email: form.email,
           phone: form.phone || undefined,
           message: [
-            `Uczelnia: ${form.university} (${form.country})`,
-            `Kierunek: ${form.field}`,
-            form.graduationYear ? `Rok ukończenia: ${form.graduationYear}` : null,
-            `Model: ${form.role}`,
-            form.hoursPerWeek ? `Dostępność: ${form.hoursPerWeek} h/tydzień` : null,
-            `Motywacja: ${form.motivation}`,
-            "Zgoda na politykę prywatności: tak",
+            `${t("Uczelnia", "University")}: ${form.university} (${form.country})`,
+            `${t("Kierunek", "Degree programme")}: ${form.field}`,
+            form.graduationYear ? `${t("Rok ukonczenia", "Graduation year")}: ${form.graduationYear}` : null,
+            `${t("Model", "Cooperation model")}: ${form.role}`,
+            form.hoursPerWeek ? `${t("Dostepnosc", "Availability")}: ${form.hoursPerWeek} ${t("h/tydzien", "hours/week")}` : null,
+            `${t("Motywacja", "Motivation")}: ${form.motivation}`,
+            `${t("Zgoda na polityke prywatnosci", "Privacy policy consent")}: yes`,
           ].filter(Boolean).join("\n"),
           type: "mentor_application",
           language,
@@ -126,7 +165,7 @@ export default function MentorForm() {
       });
       const data = await res.json() as { id?: number; error?: string };
       if (!data.id) {
-        setSubmitError(data.error ?? "Błąd. Spróbuj ponownie.");
+        setSubmitError(data.error ?? t("Blad. Sprobuj ponownie.", "Something went wrong. Please try again."));
         setTurnstileToken("");
         setTurnstileResetKey((value) => value + 1);
         return;
@@ -135,7 +174,7 @@ export default function MentorForm() {
       setTurnstileToken("");
       setTurnstileResetKey((value) => value + 1);
     } catch {
-      setSubmitError("Błąd sieci. Sprawdź połączenie i spróbuj ponownie.");
+      setSubmitError(t("Blad sieci. Sprawdz polaczenie i sprobuj ponownie.", "Network error. Check your connection and try again."));
       setTurnstileToken("");
       setTurnstileResetKey((value) => value + 1);
     } finally {
@@ -143,36 +182,38 @@ export default function MentorForm() {
     }
   };
 
+  const benefits = [
+    { icon: <CheckCircle2 size={16} className="text-primary" />, text: t("Elastyczny grafik", "Flexible schedule") },
+    { icon: <Users size={16} className="text-primary" />, text: t("Realny wplyw", "Real impact") },
+    { icon: <GraduationCap size={16} className="text-primary" />, text: t("Praca lub wolontariat", "Paid or volunteer") },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 pt-28 md:pt-32 pb-20">
       <div className="container mx-auto px-4 max-w-2xl">
-
-        {/* Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 text-primary text-xs font-semibold mb-5 uppercase tracking-widest">
             <Users size={13} />
-            Dołącz do zespołu
+            {t("Dolacz do zespolu", "Join the team")}
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-3">
-            Mentoruj z ACADEA
+            {t("Mentoruj z ACADEA", "Mentor with ACADEA")}
           </h1>
           <p className="text-gray-500 text-lg max-w-lg mx-auto">
-            Studiujesz za granicą lub masz już dyplom zagranicznej uczelni? Pomóż kolejnym rocznikom — jako mentor płatny lub wolontariusz.
+            {t(
+              "Studiujesz za granica lub masz juz dyplom zagranicznej uczelni? Pomoz kolejnym rocznikom — jako mentor platny lub wolontariusz.",
+              "Do you study abroad or already hold a degree from an international university? Support the next generation as a paid mentor or volunteer.",
+            )}
           </p>
         </motion.div>
 
-        {/* Benefits */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="grid grid-cols-3 gap-3 mb-8"
         >
-          {[
-            { icon: <CheckCircle2 size={16} className="text-primary" />, text: "Elastyczny grafik" },
-            { icon: <Users size={16} className="text-primary" />, text: "Realny wpływ" },
-            { icon: <GraduationCap size={16} className="text-primary" />, text: "Praca lub wolontariat" },
-          ].map((b) => (
+          {benefits.map((b) => (
             <div key={b.text} className="bg-white rounded-xl border border-gray-100 px-3 py-3 flex flex-col items-center gap-1.5 text-center shadow-sm">
               {b.icon}
               <span className="text-xs font-semibold text-gray-700">{b.text}</span>
@@ -191,13 +232,18 @@ export default function MentorForm() {
               <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle2 size={40} className="text-primary" />
               </div>
-              <h2 className="text-2xl font-bold text-primary mb-2">Aplikacja wysłana!</h2>
+              <h2 className="text-2xl font-bold text-primary mb-2">
+                {t("Aplikacja wyslana!", "Application submitted!")}
+              </h2>
               <p className="text-gray-500 mb-8">
-                Dziękujemy, <strong>{form.name.split(" ")[0]}</strong>! Skontaktujemy się z Tobą w ciągu kilku dni roboczych.
+                {t(
+                  `Dziekujemy, ${form.name.split(" ")[0]}! Skontaktujemy sie z Toba w ciagu kilku dni roboczych.`,
+                  `Thank you, ${form.name.split(" ")[0]}! We will get back to you within a few working days.`,
+                )}
               </p>
-              <Link href="/">
+              <Link href={localizePath("/")}>
                 <Button className="rounded-full bg-primary text-white hover:bg-primary/90 font-semibold px-8">
-                  Wróć na stronę główną
+                  {t("Wroc na strone glowna", "Back to home")}
                 </Button>
               </Link>
             </motion.div>
@@ -209,83 +255,78 @@ export default function MentorForm() {
               transition={{ delay: 0.15 }}
               className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 space-y-6"
             >
-              {/* Personal info */}
               <div>
                 <h2 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">1</span>
-                  Twoje dane
+                  {t("Twoje dane", "Your details")}
                 </h2>
                 <div className="space-y-3">
                   <div>
-                    <Input value={form.name} onChange={e => set("name", e.target.value)}
-                      placeholder="Imię i nazwisko *" className={`rounded-xl ${errors.name ? "border-red-400" : ""}`} />
+                    <Input value={form.name} onChange={(e) => set("name", e.target.value)}
+                      placeholder={t("Imie i nazwisko *", "Full name *")} className={`rounded-xl ${errors.name ? "border-red-400" : ""}`} />
                     {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                   </div>
                   <div>
-                    <Input type="email" value={form.email} onChange={e => set("email", e.target.value)}
-                      placeholder="E-mail *" className={`rounded-xl ${errors.email ? "border-red-400" : ""}`} />
+                    <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)}
+                      placeholder={t("E-mail *", "Email *")} className={`rounded-xl ${errors.email ? "border-red-400" : ""}`} />
                     {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                   </div>
-                  <Input type="tel" value={form.phone} onChange={e => set("phone", e.target.value)}
-                    placeholder="Telefon (opcjonalnie)" className="rounded-xl" />
+                  <Input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)}
+                    placeholder={t("Telefon (opcjonalnie)", "Phone (optional)")} className="rounded-xl" />
                 </div>
               </div>
 
               <div className="border-t border-gray-100" />
 
-              {/* Academic background */}
               <div>
                 <h2 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">2</span>
-                  Studia za granicą
+                  {t("Studia za granica", "Study abroad background")}
                 </h2>
                 <div className="space-y-3">
                   <div>
-                    <Input value={form.university} onChange={e => set("university", e.target.value)}
-                      placeholder="Nazwa uczelni *" className={`rounded-xl ${errors.university ? "border-red-400" : ""}`} />
+                    <Input value={form.university} onChange={(e) => set("university", e.target.value)}
+                      placeholder={t("Nazwa uczelni *", "University name *")} className={`rounded-xl ${errors.university ? "border-red-400" : ""}`} />
                     {errors.university && <p className="text-red-500 text-xs mt-1">{errors.university}</p>}
                   </div>
                   <div>
                     <select
                       value={form.country}
-                      onChange={e => set("country", e.target.value)}
+                      onChange={(e) => set("country", e.target.value)}
                       className={`flex h-9 w-full appearance-none rounded-xl border bg-transparent px-3 py-1 pr-10 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 md:text-sm ${
                         form.country ? "text-foreground" : "text-muted-foreground"
                       } ${errors.country ? "border-red-400" : "border-input"}`}
                     >
-                      <option value="">Kraj uczelni *</option>
-                      {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      <option value="">{t("Kraj uczelni *", "Country *")}</option>
+                      {countries.map((c) => <option key={c} value={c}>{c}</option>)}
                     </select>
                     {errors.country && <p className="text-red-500 text-xs mt-1">{errors.country}</p>}
                   </div>
                   <div>
-                    <Input value={form.field} onChange={e => set("field", e.target.value)}
-                      placeholder="Kierunek studiów *" className={`rounded-xl ${errors.field ? "border-red-400" : ""}`} />
+                    <Input value={form.field} onChange={(e) => set("field", e.target.value)}
+                      placeholder={t("Kierunek studiow *", "Degree programme *")} className={`rounded-xl ${errors.field ? "border-red-400" : ""}`} />
                     {errors.field && <p className="text-red-500 text-xs mt-1">{errors.field}</p>}
                   </div>
-                  <Input value={form.graduationYear} onChange={e => set("graduationYear", e.target.value)}
-                    placeholder="Rok ukończenia lub planowany rok (opcjonalnie)" className="rounded-xl" />
+                  <Input value={form.graduationYear} onChange={(e) => set("graduationYear", e.target.value)}
+                    placeholder={t("Rok ukonczenia lub planowany rok (opcjonalnie)", "Graduation year or expected year (optional)")} className="rounded-xl" />
                 </div>
               </div>
 
               <div className="border-t border-gray-100" />
 
-              {/* Role preference */}
               <div>
                 <h2 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">3</span>
-                  Model współpracy *
+                  {t("Model wspolpracy *", "Cooperation model *")}
                 </h2>
                 <div className="space-y-2">
-                  {ROLES.map(r => (
+                  {roles.map((r) => (
                     <button
                       key={r.id}
                       type="button"
                       onClick={() => set("role", r.id)}
                       className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-start gap-3 ${
-                        form.role === r.id
-                          ? "border-primary bg-primary/6"
-                          : "border-gray-100 hover:border-primary/30"
+                        form.role === r.id ? "border-primary bg-primary/6" : "border-gray-100 hover:border-primary/30"
                       }`}
                     >
                       <span className={`mt-0.5 shrink-0 ${form.role === r.id ? "text-primary" : "text-gray-400"}`}>{r.icon}</span>
@@ -301,20 +342,19 @@ export default function MentorForm() {
 
               <div className="border-t border-gray-100" />
 
-              {/* Availability & motivation */}
               <div>
                 <h2 className="text-base font-bold text-primary mb-4 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">4</span>
-                  Kilka słów o sobie
+                  {t("Kilka slow o sobie", "A few words about you")}
                 </h2>
                 <div className="space-y-3">
-                  <Input value={form.hoursPerWeek} onChange={e => set("hoursPerWeek", e.target.value)}
-                    placeholder="Ile godzin tygodniowo możesz poświęcić? (opcjonalnie)" className="rounded-xl" />
+                  <Input value={form.hoursPerWeek} onChange={(e) => set("hoursPerWeek", e.target.value)}
+                    placeholder={t("Ile godzin tygodniowo mozesz poswiecic? (opcjonalnie)", "How many hours per week can you commit? (optional)")} className="rounded-xl" />
                   <div>
                     <Textarea
                       value={form.motivation}
-                      onChange={e => set("motivation", e.target.value)}
-                      placeholder="Dlaczego chcesz zostać mentorem ACADEA? Co możesz wnieść? *"
+                      onChange={(e) => set("motivation", e.target.value)}
+                      placeholder={t("Dlaczego chcesz zostac mentorem ACADEA? Co mozesz wniesc? *", "Why would you like to mentor with ACADEA? What could you bring? *")}
                       className={`rounded-xl min-h-[120px] resize-none ${errors.motivation ? "border-red-400" : ""}`}
                     />
                     {errors.motivation && <p className="text-red-500 text-xs mt-1">{errors.motivation}</p>}
@@ -333,9 +373,9 @@ export default function MentorForm() {
                     className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
                   <span>
-                    Wyrażam zgodę na przetwarzanie moich danych osobowych zgodnie z{" "}
-                    <Link href="/polityka-prywatnosci" className="font-semibold text-primary hover:underline">
-                      polityką prywatności
+                    {t("Wyrazam zgode na przetwarzanie moich danych osobowych zgodnie z", "I agree to the processing of my personal data in accordance with")}{" "}
+                    <Link href={localizePath("/polityka-prywatnosci")} className="font-semibold text-primary hover:underline">
+                      {t("polityka prywatnosci", "the privacy policy")}
                     </Link>
                     .
                   </span>
@@ -350,10 +390,7 @@ export default function MentorForm() {
               )}
 
               <div className="space-y-2">
-                <TurnstileWidget
-                  onTokenChange={setTurnstileToken}
-                  resetKey={turnstileResetKey}
-                />
+                <TurnstileWidget onTokenChange={setTurnstileToken} resetKey={turnstileResetKey} />
               </div>
 
               <Button
@@ -362,13 +399,13 @@ export default function MentorForm() {
                 className="w-full h-14 rounded-full bg-primary text-white hover:bg-primary/90 font-bold text-base"
               >
                 {submitting ? (
-                  <><Loader2 size={18} className="animate-spin mr-2" /> Wysyłanie…</>
+                  <><Loader2 size={18} className="animate-spin mr-2" /> {t("Wysylanie…", "Sending...")}</>
                 ) : (
-                  <>Wyślij aplikację <ArrowRight className="ml-2 h-5 w-5" /></>
+                  <>{t("Wyslij aplikacje", "Submit application")} <ArrowRight className="ml-2 h-5 w-5" /></>
                 )}
               </Button>
               <p className="text-center text-xs text-gray-400">
-                Skontaktujemy się z Tobą w ciągu kilku dni roboczych.
+                {t("Skontaktujemy sie z Toba w ciagu kilku dni roboczych.", "We will get back to you within a few working days.")}
               </p>
             </motion.div>
           )}

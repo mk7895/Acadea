@@ -13,6 +13,7 @@ import {
   createWebPageSchema,
   useSeo,
 } from "@/lib/seo";
+import { useLanguage } from "@/lib/i18n";
 
 const SKIP_CLEARBIT = new Set([
   "dtu.dk",
@@ -67,6 +68,7 @@ function UniLogo({ slug, name }: { slug: string; name: string }) {
 }
 
 export default function CountryDetail() {
+  const { isEnglish, localizePath, t } = useLanguage();
   const params = useParams();
   const [location] = useLocation();
   const slug = params.slug ?? "";
@@ -117,27 +119,38 @@ export default function CountryDetail() {
   const locative = countryLocative[country.slug] ?? country.name;
 
   useSeo({
-    title: `Studia w ${country.name} | Uczelnie i aplikacja | ACADEA`,
+    title: isEnglish
+      ? `Study in ${country.name} | Universities and applications | ACADEA`
+      : `Studia w ${country.name} | Uczelnie i aplikacja | ACADEA`,
     description: country.intro,
-    path: `/kraje/${country.slug}`,
-    keywords: [
-      `studia w ${country.name}`,
-      `${country.name} uczelnie`,
-      `${country.name} aplikacja`,
-      `studia za granicą ${country.name}`,
-    ],
+    path: localizePath(`/kraje/${country.slug}`),
+    keywords: isEnglish
+      ? [
+          `study in ${country.name}`,
+          `${country.name} universities`,
+          `${country.name} applications`,
+          `study abroad ${country.name}`,
+        ]
+      : [
+          `studia w ${country.name}`,
+          `${country.name} uczelnie`,
+          `${country.name} aplikacja`,
+          `studia za granicą ${country.name}`,
+        ],
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
       createWebPageSchema({
-        path: `/kraje/${country.slug}`,
-        title: `Studia w ${country.name} | Uczelnie i aplikacja | ACADEA`,
+        path: localizePath(`/kraje/${country.slug}`),
+        title: isEnglish
+          ? `Study in ${country.name} | Universities and applications | ACADEA`
+          : `Studia w ${country.name} | Uczelnie i aplikacja | ACADEA`,
         description: country.intro,
       }),
       createBreadcrumbSchema([
-        { name: "Strona Główna", path: "/" },
-        { name: "Kraje i Uczelnie", path: "/kraje" },
-        { name: country.name, path: `/kraje/${country.slug}` },
+        { name: t("Strona Główna", "Home"), path: localizePath("/") },
+        { name: t("Kraje i Uczelnie", "Countries and universities"), path: localizePath("/kraje") },
+        { name: country.name, path: localizePath(`/kraje/${country.slug}`) },
       ]),
     ],
   });
@@ -146,10 +159,10 @@ export default function CountryDetail() {
     <div className="w-full pt-36 md:pt-40 pb-20 bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 md:px-6">
         <Link
-          href="/kraje"
+          href={localizePath("/kraje")}
           className="inline-flex items-center gap-2 text-gray-500 hover:text-primary transition-colors mb-8 text-sm font-semibold"
         >
-          <ArrowLeft size={16} /> Wszystkie kraje
+          <ArrowLeft size={16} /> {t("Wszystkie kraje", "All countries")}
         </Link>
 
         {/* Header */}
@@ -177,7 +190,7 @@ export default function CountryDetail() {
 
         {/* Universities */}
         <h2 className="text-2xl md:text-3xl font-bold text-primary mb-8">
-          Uczelnie warte uwagi
+          {t("Uczelnie warte uwagi", "Universities worth considering")}
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-20">
           {country.unis.map((uni) => (
@@ -203,13 +216,13 @@ export default function CountryDetail() {
         {relatedCountryArticles.length > 0 ? (
           <section className="mb-20">
             <h2 className="text-2xl md:text-3xl font-bold text-primary mb-8">
-              Dowiedz się więcej
+              {t("Dowiedz się więcej", "Learn more")}
             </h2>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
               {relatedCountryArticles.map((article) => (
                 <Link
                   key={article.slug}
-                  href={`/baza-wiedzy${article.slug}`}
+                  href={localizePath(`/baza-wiedzy${article.slug}`)}
                   className="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all hover:shadow-md"
                 >
                   <div className="h-48 overflow-hidden bg-gray-100">
@@ -223,7 +236,7 @@ export default function CountryDetail() {
                   <div className="p-6">
                     <div className="mb-3 flex items-center gap-2 text-xs text-gray-400">
                       <Clock size={12} />
-                      <span>{article.readMin} min czytania</span>
+                      <span>{article.readMin} {t("min czytania", "min read")}</span>
                     </div>
                     <h3 className="text-lg font-bold text-primary mb-3">{article.title}</h3>
                     <p className="text-sm leading-relaxed text-gray-500">{article.excerpt}</p>
@@ -239,17 +252,20 @@ export default function CountryDetail() {
           <div className="absolute top-0 right-0 w-72 h-72 bg-accent rounded-full blur-[120px] opacity-20 pointer-events-none" />
           <div className="relative z-10">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">
-              Myślisz o studiach {locative}?
+              {t(`Myślisz o studiach ${locative}?`, `Thinking about studying in ${country.name}?`)}
             </h2>
             <p className="text-white/70 mb-8 max-w-2xl mx-auto">
-              Podczas bezpłatnej konsultacji sprawdzimy, które uczelnie pasują do Twojego profilu, i ułożymy plan aplikacji krok po kroku.
+              {t(
+                "Podczas bezpłatnej konsultacji sprawdzimy, które uczelnie pasują do Twojego profilu, i ułożymy plan aplikacji krok po kroku.",
+                "During a free consultation, we can review which universities match your profile and build an application plan step by step.",
+              )}
             </p>
-            <Link href="/umow-spotkanie">
+            <Link href={localizePath("/umow-spotkanie")}>
               <Button
                 size="lg"
                 className="h-14 px-8 rounded-full bg-accent text-primary hover:bg-white transition-colors font-bold border-none"
               >
-                Bezpłatna konsultacja <ArrowRight className="ml-2 h-5 w-5" />
+                {t("Bezpłatna konsultacja", "Free consultation")} <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
           </div>

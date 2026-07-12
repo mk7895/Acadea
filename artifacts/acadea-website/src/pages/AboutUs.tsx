@@ -9,16 +9,19 @@ import {
   createWebPageSchema,
   useSeo,
 } from "@/lib/seo";
+import { useLanguage } from "@/lib/i18n";
 
 const featuredFounders = [
   {
-    name: "Marlena Sołtysińska",
+    name: "Marlena Soltysinska",
     imageSrc: "/images/about-soltysinska.jpg",
     imagePosition: "object-[50%_35%]",
     imageOrder: "md:order-1",
     textOrder: "md:order-2",
-    description:
-      "Studentka University College London, od ponad 10 lat pierwszego na świecie uniwersytetu z Nauk o Edukacji. Założycielka Fundacji Acadea, pasjonatka implementowania nowych technologii, szczególnie w edukacji. W 2025 roku z wyróżnieniem ukończyła Bachelor of Science na Uniwersytecie Nowojorskim (NYU), w trakcie którego w aż pięciu krajach studiowała Finanse, Ekonomię oraz Język Chiński. Swoje prace prezentowała na międzynarodowych konferencjach naukowych. Wyróżniona w programach takich jak Liderzy Innowacji Kancelarii Prezesa Rady Ministrów, Krajowy Fundusz na rzecz Dzieci oraz ADAMED SmartUP. Ma na koncie liczne sukcesy w olimpiadach i konkursach, działała w Radzie Dzieci i Młodzieży przy Ministrze Edukacji i Nauki oraz Radzie Młodzieżowej Województwa Zachodniopomorskiego. Wspierając małe ojczyzny i początkujących dziennikarzy, współprzewodniczyła Ogólnopolskiej Federacji Młodych i Fundacji Polemika. Od pięciu lat Marlena pomaga innym dostać się na ich wymarzone studia - ma za sobą udane współprace z setkami aplikantów, a jej podopieczni otrzymali oferty z topowych uczelni na całym świecie.",
+    descriptionPl:
+      "Studentka University College London, od ponad 10 lat pierwszego na swiecie uniwersytetu z Nauk o Edukacji. Zalozycielka Fundacji Acadea, pasjonatka implementowania nowych technologii, szczegolnie w edukacji. W 2025 roku z wyroznieniem ukonczyla Bachelor of Science na Uniwersytecie Nowojorskim (NYU), w trakcie ktorego w az pieciu krajach studiowala Finanse, Ekonomie oraz Jezyk Chinski. Swoje prace prezentowala na miedzynarodowych konferencjach naukowych. Wyrozniona w programach takich jak Liderzy Innowacji Kancelarii Prezesa Rady Ministrow, Krajowy Fundusz na rzecz Dzieci oraz ADAMED SmartUP. Ma na koncie liczne sukcesy w olimpiadach i konkursach. Od pieciu lat Marlena pomaga innym dostac sie na ich wymarzone studia.",
+    descriptionEn:
+      "A student at University College London and founder of the Acadea Foundation, Marlena combines a passion for education with a strong interest in how technology can improve access to it. In 2025 she graduated with distinction from New York University, where she studied finance, economics and Chinese across five countries. She has presented her work at international academic conferences and has been recognised by programmes such as Liderzy Innowacji, Krajowy Fundusz na rzecz Dzieci and ADAMED SmartUP. For the past five years, she has helped applicants build strong strategies and gain admission to ambitious universities worldwide.",
   },
   {
     name: "Mateusz Klepacki",
@@ -26,30 +29,64 @@ const featuredFounders = [
     imagePosition: "object-center",
     imageOrder: "md:order-2",
     textOrder: "md:order-1",
-    description:
-      "Absolwent London School of Economics, gdzie ukończył MSc Econometrics and Mathematical Economics, oraz New York University, na którym studiował Business and Finance oraz Economics. Alumn I.S.E.O. Summer School i Akademii Liderów Rynku Kapitałowego, w trakcie swojej ścieżki akademickiej i zawodowej zdobywał doświadczenie na styku analizy, strategii i finansów, był pracownikiem zarówno Boston Consulting Group (BCG), jak i zeb Consulting. Za swoje wyniki był wielokrotnie wyróżniany akademicko, a wcześniej odnosił liczne sukcesy w olimpiadach i konkursach, w tym jako podwójny laureat Olimpiady Statystycznej, zajmując 3. i 8. miejsce w Polsce, oraz finalista Olimpiady Wiedzy Ekonomicznej. Angażował się również społecznie, między innymi jako członek Rady Krajowej Ogólnopolskiej Federacji Młodych. Od pięciu lat pomaga kandydatom dostawać się na studia w bardzo różnych systemach edukacyjnych - od Stanów Zjednoczonych po Koreę Południową i od Finlandii po Maltę. Ma za sobą tysiące godzin pracy z aplikantami i wspiera ich w budowaniu strategii, profilu oraz decyzji, które realnie otwierają drzwi do światowych uczelni.",
+    descriptionPl:
+      "Absolwent London School of Economics, gdzie ukonczyl MSc Econometrics and Mathematical Economics, oraz New York University, na ktorym studiowal Business and Finance oraz Economics. W trakcie swojej sciezki akademickiej i zawodowej zdobywal doswiadczenie na styku analizy, strategii i finansow, pracujac miedzy innymi w Boston Consulting Group (BCG) i zeb Consulting. Od pieciu lat pomaga kandydatom dostawac sie na studia w bardzo roznych systemach edukacyjnych — od Stanow Zjednoczonych po Koree Poludniowa i od Finlandii po Malte. Ma za soba tysiace godzin pracy z aplikantami i wspiera ich w budowaniu strategii, profilu oraz decyzji, ktore realnie otwieraja drzwi do swiatowych uczelni.",
+    descriptionEn:
+      "Mateusz is a graduate of the London School of Economics, where he completed an MSc in Econometrics and Mathematical Economics, and of New York University, where he studied business, finance and economics. Across his academic and professional path he has worked at the intersection of analytics, strategy and finance, including experience at Boston Consulting Group and zeb Consulting. For five years he has supported applicants across very different education systems, from the United States to South Korea and from Finland to Malta, helping them build strong profiles, realistic strategies and smart application decisions.",
   },
 ];
 
 export default function AboutUs() {
+  const { isEnglish, localizePath, t } = useLanguage();
+
+  const values = [
+    {
+      title: t("Szczerosc", "Honesty"),
+      desc: t(
+        "Nie obiecujemy gruszek na wierzbie. Realnie oceniamy Twoje szanse i doradzamy najlepsze, a nie najdrozsze rozwiazania.",
+        "We do not sell fantasies. We assess your chances realistically and recommend what is best, not what is most expensive.",
+      ),
+    },
+    {
+      title: t("Indywidualnosc", "Individuality"),
+      desc: t(
+        "Nie pracujemy na szablonach. Kazdy uczen to inna historia, inne pasje i inne cele. Twoj profil bedzie w 100% Twoj.",
+        "We do not work from templates. Every student has a different story, different interests and different goals, so your profile should feel fully your own.",
+      ),
+    },
+    {
+      title: t("Wsparcie 360°", "360° support"),
+      desc: t(
+        "Jestesmy z Toba od pierwszego pomyslu az po wniesienie walizek do akademika. Nie zostawiamy Cie z problemami samemu sobie.",
+        "We stay with you from the first idea to moving into your accommodation. We do not disappear once the hard part begins.",
+      ),
+    },
+  ];
+
   useSeo({
-    title: "Poznajmy się | Zespół ACADEA",
-    description:
-      "Poznaj zespół ACADEA i historię osób, które same przeszły proces aplikacji na studia za granicą, a dziś wspierają kolejnych kandydatów.",
-    path: "/o-nas",
-    keywords: ["o nas ACADEA", "zespół ACADEA", "mentorzy studia za granicą"],
+    title: t("Poznajmy sie | Zespol ACADEA", "About us | The ACADEA team"),
+    description: t(
+      "Poznaj zespol ACADEA i historie osob, ktore same przeszly proces aplikacji na studia za granica, a dzis wspieraja kolejnych kandydatow.",
+      "Meet the ACADEA team and the people who went through international applications themselves and now support the next generation of candidates.",
+    ),
+    path: localizePath("/o-nas"),
+    keywords: isEnglish
+      ? ["about ACADEA", "ACADEA team", "study abroad mentors"]
+      : ["o nas ACADEA", "zespol ACADEA", "mentorzy studia za granica"],
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
       createWebPageSchema({
-        path: "/o-nas",
-        title: "Poznajmy się | Zespół ACADEA",
-        description:
-          "Strona o zespole ACADEA, jego wartościach i doświadczeniu w aplikacji na studia za granicą.",
+        path: localizePath("/o-nas"),
+        title: t("Poznajmy sie | Zespol ACADEA", "About us | The ACADEA team"),
+        description: t(
+          "Strona o zespole ACADEA, jego wartosciach i doswiadczeniu w aplikacji na studia za granica.",
+          "A page about the ACADEA team, its values and its experience in study abroad applications.",
+        ),
       }),
       createBreadcrumbSchema([
-        { name: "Strona Główna", path: "/" },
-        { name: "Poznajmy się", path: "/o-nas" },
+        { name: t("Strona Glowna", "Home"), path: localizePath("/") },
+        { name: t("Poznajmy sie", "About us"), path: localizePath("/o-nas") },
       ]),
     ],
   });
@@ -57,69 +94,72 @@ export default function AboutUs() {
   return (
     <div className="w-full pt-28 pb-20">
       <div className="container mx-auto px-4 md:px-6">
-        
-        {/* Story Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
             <h1 className="text-4xl md:text-5xl font-bold text-primary mb-6">
-              Byliśmy tam, gdzie Ty jesteś teraz.
+              {t(
+                "Bylismy tam, gdzie Ty jestes teraz.",
+                "We have been where you are now.",
+              )}
             </h1>
             <div className="space-y-6 text-lg text-gray-600 leading-relaxed">
               <p>
-                Założyliśmy ACADEA, ponieważ sami kiedyś przeszliśmy przez stresujący i skomplikowany proces aplikacji na zagraniczne uczelnie.
+                {t(
+                  "Zalozylismy ACADEA, poniewaz sami kiedys przeszlismy przez stresujacy i skomplikowany proces aplikacji na zagraniczne uczelnie.",
+                  "We founded ACADEA because we had gone through the stressful, complicated process of applying to universities abroad ourselves.",
+                )}
               </p>
               <p>
-                Sami gubiliśmy się w gąszczu wymagań, portali aplikacyjnych, egzaminów językowych i terminów. Z biegiem lat nauczyliśmy się, co naprawdę znaczy doskonały esej, a wymagania kolejnych uczelni przestały mieć przed nami jakiekolwiek tajemnice.
+                {t(
+                  "Sami gubilismy sie w gaszczu wymagan, portali aplikacyjnych, egzaminow jezykowych i terminow. Z biegiem lat nauczylismy sie, co naprawde znaczy doskonaly esej, a wymagania kolejnych uczelni przestaly miec przed nami jakiekolwiek tajemnice.",
+                  "We remember the confusion of requirements, portals, language tests and deadlines. Over the years we learned what truly makes an essay work and how different universities evaluate applicants in practice.",
+                )}
               </p>
               <p className="font-semibold text-primary">
-                Od ponad 5 lat prowadzimy kolejne roczniki ambitnych uczniów za rękę — dokładnie tak, jak sami chcielibyśmy zostać wtedy poprowadzeni.
+                {t(
+                  "Od ponad 5 lat prowadzimy kolejne roczniki ambitnych uczniow za reke — dokladnie tak, jak sami chcielibysmy zostac wtedy poprowadzeni.",
+                  "For more than five years, we have guided ambitious students in the exact way we once wished someone had guided us.",
+                )}
               </p>
             </div>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="relative h-[500px] rounded-3xl overflow-hidden"
           >
-            <img 
-              src="/images/about-together.webp" 
-              alt="Zespół ACADEA" 
+            <img
+              src="/images/about-together.webp"
+              alt={t("Zespol ACADEA", "The ACADEA team")}
               className="w-full h-full object-cover object-[38%_center]"
             />
-            <div className="absolute inset-0 bg-primary/10 mix-blend-multiply"></div>
+            <div className="absolute inset-0 bg-primary/10 mix-blend-multiply" />
           </motion.div>
         </div>
 
-        {/* Values */}
         <div className="bg-gray-50 border border-gray-100 rounded-3xl p-10 md:p-16 mb-24">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">Nasze wartości</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto">Tym kierujemy się w codziennej pracy z naszymi podopiecznymi.</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">
+              {t("Nasze wartosci", "Our values")}
+            </h2>
+            <p className="text-gray-500 max-w-2xl mx-auto">
+              {t(
+                "Tym kierujemy sie w codziennej pracy z naszymi podopiecznymi.",
+                "These principles shape the way we work with students every day.",
+              )}
+            </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            {[
-              {
-                title: "Szczerość",
-                desc: "Nie obiecujemy gruszek na wierzbie. Realnie oceniamy Twoje szanse i doradzamy najlepsze, a nie najdroższe rozwiązania."
-              },
-              {
-                title: "Indywidualność",
-                desc: "Nie pracujemy na szablonach. Każdy uczeń to inna historia, inne pasje i inne cele. Twój profil będzie w 100% Twój."
-              },
-              {
-                title: "Wsparcie 360°",
-                desc: "Jesteśmy z Tobą od pierwszego pomysłu aż po wniesienie walizek do akademika. Nie zostawiamy Cię z problemami samemu sobie."
-              }
-            ].map((value, idx) => (
-              <motion.div 
-                key={idx}
+            {values.map((value, idx) => (
+              <motion.div
+                key={value.title}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -133,12 +173,16 @@ export default function AboutUs() {
           </div>
         </div>
 
-        {/* Team */}
         <div className="mb-20">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-primary mb-3">Nasz zespół</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary mb-3">
+              {t("Nasz zespol", "Our team")}
+            </h2>
             <p className="max-w-3xl mx-auto text-gray-500 leading-relaxed">
-              Poznaj osoby, które zbudowały ACADEA na własnych doświadczeniach aplikacyjnych i od lat prowadzą kolejnych uczniów przez ten proces.
+              {t(
+                "Poznaj osoby, ktore zbudowaly ACADEA na wlasnych doswiadczeniach aplikacyjnych i od lat prowadza kolejnych uczniow przez ten proces.",
+                "Meet the people who built ACADEA from their own admissions experience and have spent years guiding students through the same journey.",
+              )}
             </p>
           </div>
           <div className="space-y-16">
@@ -156,14 +200,16 @@ export default function AboutUs() {
                     <img
                       src={member.imageSrc}
                       alt={member.name}
-                      className={`h-full w-full object-cover ${member.imagePosition} ${"imageScale" in member ? member.imageScale : ""}`}
+                      className={`h-full w-full object-cover ${member.imagePosition}`}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-primary/12 via-transparent to-transparent" />
                   </div>
                 </div>
                 <div className={`${member.textOrder} flex w-full flex-col justify-center`}>
                   <h3 className="mb-5 text-3xl font-bold text-primary md:text-4xl">{member.name}</h3>
-                  <p className="text-base leading-8 text-gray-600 md:text-lg">{member.description}</p>
+                  <p className="text-base leading-8 text-gray-600 md:text-lg">
+                    {isEnglish ? member.descriptionEn : member.descriptionPl}
+                  </p>
                 </div>
               </motion.div>
             ))}
@@ -174,29 +220,34 @@ export default function AboutUs() {
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/8 border border-primary/15 text-primary text-sm font-semibold mb-6">
               <Users size={16} />
-              <span>Dołącz do zespołu</span>
+              <span>{t("Dolacz do zespolu", "Join the team")}</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">
-              Chcesz wspierać uczniów razem z ACADEA?
+              {t(
+                "Chcesz wspierac uczniow razem z ACADEA?",
+                "Would you like to support students with ACADEA?",
+              )}
             </h2>
             <p className="text-lg text-gray-500 leading-relaxed max-w-2xl mx-auto mb-8">
-              Jeśli studiujesz za granicą albo masz już ten etap za sobą i chcesz pomagać kolejnym osobom przejść przez aplikację spokojniej i mądrzej, chętnie Cię poznamy.
+              {t(
+                "Jesli studiujesz za granica albo masz juz ten etap za soba i chcesz pomagac kolejnym osobom przejsc przez aplikacje spokojniej i madrzej, chetnie Cie poznamy.",
+                "If you study abroad or have already gone through the process yourself and want to help the next generation navigate applications more calmly and intelligently, we would love to hear from you.",
+              )}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/mentoruj">
+              <Link href={localizePath("/mentoruj")}>
                 <Button size="lg" className="rounded-full px-8 h-14 text-base bg-primary text-white hover:bg-primary/90 font-bold">
-                  Aplikuj do zespołu <ArrowRight className="ml-2 h-5 w-5" />
+                  {t("Aplikuj do zespolu", "Apply to join the team")} <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Link href="/kontakt">
+              <Link href={localizePath("/kontakt")}>
                 <Button size="lg" variant="outline" className="rounded-full px-8 h-14 text-base">
-                  Poznajmy się
+                  {t("Poznajmy sie", "Get in touch")}
                 </Button>
               </Link>
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

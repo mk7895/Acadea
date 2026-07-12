@@ -9,6 +9,7 @@ import { feature } from "topojson-client";
 import topologyJson from "world-atlas/countries-110m.json";
 import { Link, useLocation } from "wouter";
 import { countryByIso } from "@/data/countries";
+import { useLanguage } from "@/lib/i18n";
 
 type CountryFeature = {
   id?: string | number;
@@ -70,6 +71,7 @@ function isFrontHemisphere(
 }
 
 export function GlobeSection() {
+  const { localizePath, t } = useLanguage();
   const [rotation, setRotation] = useState<Rotation>(INITIAL_ROT);
   const [hovered, setHovered] = useState<string | null>(null);
 
@@ -254,7 +256,7 @@ export function GlobeSection() {
                 onClick={() => {
                   if (!isAcadea || didDrag.current) return;
                   const c = ACADEA[resolvedId];
-                  if (c) navigate(`/kraje/${c.slug}`);
+                  if (c) navigate(localizePath(`/kraje/${c.slug}`));
                 }}
               />
             );
@@ -284,7 +286,7 @@ export function GlobeSection() {
                 onMouseLeave={scheduleClear}
                 onClick={() => {
                   if (didDrag.current) return;
-                  navigate(`/kraje/${marker.country.slug}`);
+                  navigate(localizePath(`/kraje/${marker.country.slug}`));
                 }}
               />
             );
@@ -300,7 +302,7 @@ export function GlobeSection() {
           onMouseLeave={scheduleClear}
         >
           <Link
-            href={`/kraje/${hoveredData.slug}`}
+            href={localizePath(`/kraje/${hoveredData.slug}`)}
             className="flex items-center gap-2.5 mb-3 group"
           >
             <span className="text-2xl leading-none">{hoveredData.flag}</span>
@@ -310,7 +312,7 @@ export function GlobeSection() {
             {hoveredData.unis.map((uni) => (
               <li key={uni.slug}>
                 <Link
-                  href={`/kraje/${hoveredData.slug}#${uni.slug}`}
+                  href={localizePath(`/kraje/${hoveredData.slug}#${uni.slug}`)}
                   className="text-xs text-gray-600 flex items-start gap-2 rounded-lg px-1.5 py-1 -mx-1.5 hover:bg-primary/5 hover:text-primary transition-colors"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-primary/60 inline-block shrink-0 mt-1.5" />
@@ -320,10 +322,10 @@ export function GlobeSection() {
             ))}
           </ul>
           <Link
-            href={`/kraje/${hoveredData.slug}`}
+            href={localizePath(`/kraje/${hoveredData.slug}`)}
             className="mt-2.5 inline-block text-xs font-semibold text-accent hover:text-primary transition-colors"
           >
-            Zobacz kraj →
+            {t("Zobacz kraj ->", "See country ->")}
           </Link>
         </div>
       )}
