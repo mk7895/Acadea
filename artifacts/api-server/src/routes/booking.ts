@@ -502,9 +502,11 @@ router.post("/create", async (req, res) => {
           (entry) => entry.email === mentorEmail.trim().toLowerCase(),
         ) ?? null
       : null;
-    const invitedAdditionalEmails = bookingSettings.additionalCalendars
-      .filter((entry) => entry.inviteToEvents)
-      .map((entry) => entry.email);
+    const invitedAdditionalEmails = selectedMentor
+      ? selectedMentor.inviteToEvents
+        ? [selectedMentor.email]
+        : []
+      : [];
     const attendeeEmails = Array.from(
       new Set(
         [email, organizerEmail, ...invitedAdditionalEmails]
