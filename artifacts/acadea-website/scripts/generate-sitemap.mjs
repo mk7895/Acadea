@@ -74,14 +74,11 @@ async function main() {
     readSource("data/countries.ts"),
   ]);
 
-  const articleSlugs = collectMatches(
-    articlesSource,
-    /slug:\s*"\/([^"]+)"/g,
-  ).map((slug) => `/baza-wiedzy/${slug}`);
   const articleUpdatedAtBySlug = collectSlugDatePairs(
     articlesSource,
     /slug:\s*"\/([^"]+)",\s*\n\s*updatedAt:\s*"([^"]+)"/g,
   );
+  const articleSlugs = Object.keys(articleUpdatedAtBySlug).map((slug) => `/baza-wiedzy/${slug}`);
 
   const countrySlugs = collectMatches(
     countriesSource,

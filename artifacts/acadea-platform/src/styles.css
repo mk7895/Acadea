@@ -212,6 +212,7 @@ textarea {
   border: 1px solid #d5e4d7;
   color: #2d513f;
   font-size: 14px;
+  white-space: pre-wrap;
 }
 
 .floating-status {
