@@ -246,7 +246,7 @@ router.post("/admin/auth/login", async (req, res) => {
   if (!credentials) {
     return res.status(503).json({
       error:
-        'Admin password not configured yet. Run `pnpm admin:set-password "..."` first.',
+        "Admin password is not configured yet. Configure it through your private deployment setup.",
     });
   }
 
