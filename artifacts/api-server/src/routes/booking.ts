@@ -22,6 +22,7 @@ const router = Router();
 
 const ZOOM_LINK = "https://nyu.zoom.us/j/5717075193";
 const SLOT_DURATION_MS = 20 * 60 * 1000;
+const QUICK_MENTOR_SLOT_DURATION_MS = 60 * 60 * 1000;
 const BUSY_SLOT_LEAD_BUFFER_MS = 30 * 60 * 1000;
 const BOOKING_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
 const BOOKING_WINDOW_DAYS = 90;
@@ -208,12 +209,14 @@ function isSlotInsideWorkingHours(
 function buildSlotsFromBusy(input: {
   busy: BusyWindow[];
   month?: { month: number; year: number } | null;
+  slotDurationMs?: number;
   weeklySchedule?: Array<{ weekday: number; startTime: string; endTime: string; isActive: boolean }>;
   timeZone?: string;
 }) {
   const now = new Date();
   const timeZone = input.timeZone ?? DEFAULT_MARKETING_BOOKING_TIMEZONE;
   const busy = input.busy;
+  const slotDurationMs = input.slotDurationMs ?? SLOT_DURATION_MS;
   const weeklySchedule = input.weeklySchedule?.length ? input.weeklySchedule : DEFAULT_WEEKLY_SCHEDULE;
   const slots: BookingSlot[] = [];
   const currentLocal = getZonedDateParts(now, timeZone);
@@ -259,7 +262,7 @@ function buildSlotsFromBusy(input: {
       }
 
       let cursorMinutes = startMinutes;
-      while (cursorMinutes + SLOT_DURATION_MS / 60000 <= endMinutes && slots.length < 300) {
+      while (cursorMinutes + slotDurationMs / 60000 <= endMinutes && slots.length < 300) {
         const slotStart = zonedDateTimeToUtc({
           year,
           month,
@@ -268,7 +271,7 @@ function buildSlotsFromBusy(input: {
           minute: cursorMinutes % 60,
           timeZone,
         });
-        const slotEnd = new Date(slotStart.getTime() + SLOT_DURATION_MS);
+        const slotEnd = new Date(slotStart.getTime() + slotDurationMs);
 
         if (!isOutsideLeadWindow(slotStart, now)) {
           cursorMinutes += 30;
@@ -371,6 +374,7 @@ router.get("/slots", async (req, res) => {
   if ((requestedMentorEmail || requestedMentorSlug) && !selectedMentor) {
     return res.status(404).json({ error: "Wybrany mentor nie jest dostępny." });
   }
+  const slotDurationMs = requestedMentorSlug ? QUICK_MENTOR_SLOT_DURATION_MS : SLOT_DURATION_MS;
 
   if (!(await hasGoogleOAuthCredentials())) {
     logger.warn(
@@ -380,6 +384,7 @@ router.get("/slots", async (req, res) => {
       slots: buildSlotsFromBusy({
         busy: [],
         month: requestedMonth,
+        slotDurationMs,
         timeZone: bookingSettings.timeZone,
         weeklySchedule: bookingSettings.weeklySchedule,
       }),
@@ -452,6 +457,7 @@ router.get("/slots", async (req, res) => {
     const slots = buildSlotsFromBusy({
       busy: [...busy, ...additionalBusyWindows.flat()],
       month: requestedMonth,
+      slotDurationMs,
       timeZone: bookingSettings.timeZone,
       weeklySchedule: bookingSettings.weeklySchedule,
     });
@@ -479,6 +485,7 @@ const CreateSchema = z.object({
   phone: z.string().optional(),
   topic: z.string().min(2),
   mentorEmail: z.string().email().optional(),
+  mentorSlug: z.string().trim().min(1).max(160).optional(),
   language: z.enum(["pl", "en"]).optional().default("pl"),
   turnstileToken: z.string().min(1).optional(),
 });
@@ -490,7 +497,7 @@ router.post("/create", async (req, res) => {
       .status(400)
       .json({ error: "Nieprawidłowe dane", details: parsed.error.flatten() });
   }
-  const { start, end, name, email, phone, topic, mentorEmail, language } = parsed.data;
+  const { start, end, name, email, phone, topic, mentorEmail, mentorSlug, language } = parsed.data;
   const startDate = new Date(start);
   const endDate = new Date(end);
 
@@ -512,12 +519,28 @@ router.post("/create", async (req, res) => {
     return res.status(500).json({ error: "Nie udało się odczytać ustawień rezerwacji. Spróbuj ponownie." });
   }
   const normalizedMentorEmail = mentorEmail?.trim().toLowerCase();
-  const selectedMentor = normalizedMentorEmail
-    ? bookingSettings.additionalCalendars.find((entry) => entry.email === normalizedMentorEmail) ?? null
+  const normalizedMentorSlug = mentorSlug?.trim().toLowerCase();
+  const selectedMentorFromSlug = normalizedMentorSlug
+    ? findBookingMentorBySlug(bookingSettings.additionalCalendars, normalizedMentorSlug)
     : null;
+  const selectedMentor = selectedMentorFromSlug ?? (normalizedMentorEmail
+    ? bookingSettings.additionalCalendars.find((entry) => entry.email === normalizedMentorEmail) ?? null
+    : null);
 
-  if (normalizedMentorEmail && !selectedMentor) {
+  if (normalizedMentorSlug && !selectedMentorFromSlug) {
+    return res.status(400).json({ error: "Link rezerwacji mentora jest nieaktualny." });
+  }
+
+  if ((normalizedMentorEmail || normalizedMentorSlug) && !selectedMentor) {
     return res.status(400).json({ error: "Wybrany mentor nie jest już dostępny. Wybierz inną osobę." });
+  }
+
+  if (selectedMentorFromSlug && normalizedMentorEmail && selectedMentorFromSlug.email !== normalizedMentorEmail) {
+    return res.status(400).json({ error: "Wybrany mentor nie odpowiada linkowi rezerwacji." });
+  }
+
+  if (normalizedMentorSlug && endDate.getTime() - startDate.getTime() !== QUICK_MENTOR_SLOT_DURATION_MS) {
+    return res.status(400).json({ error: "Spotkanie z linku mentora musi trwać godzinę." });
   }
 
   const zoomLink = selectedMentor?.zoomMeetingUrl ?? ZOOM_LINK;
@@ -580,19 +603,27 @@ router.post("/create", async (req, res) => {
           attendeeEmail === email ? name : attendeeEmail === organizerEmail ? "ACADEA" : attendeeEmail,
       })),
     ];
+    const eventDescription = language === "en"
+      ? [
+          `Topic: ${topic}`,
+          phone ? `Phone: ${phone}` : null,
+          selectedMentor ? `Selected mentor: ${selectedMentor.fullName?.trim() || selectedMentor.email}` : null,
+          "Candidate contact details are available in the event guest list.",
+          "The Zoom link is in the event location.",
+          "Booked through the ACADEA website.",
+        ]
+      : [
+          `Temat: ${topic}`,
+          phone ? `Telefon: ${phone}` : null,
+          selectedMentor ? `Wybrany mentor: ${selectedMentor.fullName?.trim() || selectedMentor.email}` : null,
+          "Dane kontaktowe osoby rezerwującej są dostępne na liście gości wydarzenia.",
+          "Link Zoom znajduje się w lokalizacji wydarzenia.",
+          "Spotkanie umówione przez stronę ACADEA.",
+        ];
 
     const event = {
       summary: `Konsultacja ACADEA — ${name}`,
-      description: [
-        `Temat: ${topic}`,
-        `Email: ${email}`,
-        phone ? `Telefon: ${phone}` : null,
-        selectedMentor ? `Wybrany mentor: ${selectedMentor.fullName?.trim() || selectedMentor.email}` : null,
-        "",
-        `Dołącz do spotkania przez Zoom: ${zoomLink}`,
-        "",
-        "Spotkanie umówione przez formularz na stronie acadea.org",
-      ]
+      description: eventDescription
         .filter(Boolean)
         .join("\n"),
       location: zoomLink,

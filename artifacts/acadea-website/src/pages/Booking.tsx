@@ -374,6 +374,7 @@ export default function Booking() {
           ...form,
           topic: topicValue,
           mentorEmail: selectedMentorEmail || undefined,
+          mentorSlug: mentorSlug || undefined,
           consent: consentChecked,
           language,
           turnstileToken,
