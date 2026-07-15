@@ -13,6 +13,7 @@ export type AdditionalCalendar = {
   fullName?: string;
   refreshToken: string;
   inviteToEvents: boolean;
+  zoomMeetingUrl?: string;
   connectedAt?: string;
 };
 
@@ -36,6 +37,30 @@ export const DEFAULT_WEEKLY_SCHEDULE: WeeklyRule[] = [
 ];
 
 const TIME_PATTERN = /^\d{2}:\d{2}$/;
+
+export function normalizeMarketingZoomMeetingUrl(input: unknown) {
+  const value = String(input ?? "").trim();
+  if (!value) {
+    return "";
+  }
+
+  try {
+    const url = new URL(value);
+    const isZoomHost = url.hostname === "zoom.us" || url.hostname.endsWith(".zoom.us");
+    if (url.protocol !== "https:" || !isZoomHost) {
+      return "";
+    }
+
+    return url.toString();
+  } catch {
+    return "";
+  }
+}
+
+export function isMarketingZoomMeetingUrl(input: unknown) {
+  const value = String(input ?? "").trim();
+  return !value || Boolean(normalizeMarketingZoomMeetingUrl(value));
+}
 
 function normalizeWeeklyScheduleValue(input: unknown): WeeklyRule[] {
   if (!Array.isArray(input)) {
@@ -87,6 +112,7 @@ function normalizeAdditionalCalendarsValue(input: unknown): AdditionalCalendar[]
     const fullName = String(candidate.fullName ?? "").trim();
     const refreshToken = String(candidate.refreshToken ?? "").trim();
     const inviteToEvents = Boolean(candidate.inviteToEvents);
+    const zoomMeetingUrl = normalizeMarketingZoomMeetingUrl(candidate.zoomMeetingUrl);
     const connectedAt = String(candidate.connectedAt ?? "").trim();
 
     if (!email || !refreshToken) {
@@ -98,6 +124,7 @@ function normalizeAdditionalCalendarsValue(input: unknown): AdditionalCalendar[]
       fullName: fullName || undefined,
       refreshToken,
       inviteToEvents,
+      zoomMeetingUrl: zoomMeetingUrl || undefined,
       connectedAt: connectedAt || undefined,
     });
   }
@@ -209,6 +236,7 @@ export async function upsertMarketingAdditionalCalendar(input: {
       fullName: input.fullName?.trim() || existingEntry?.fullName,
       refreshToken: input.refreshToken,
       inviteToEvents: input.inviteToEvents,
+      zoomMeetingUrl: existingEntry?.zoomMeetingUrl,
       connectedAt: new Date().toISOString(),
     },
   ].sort((left, right) => left.email.localeCompare(right.email));

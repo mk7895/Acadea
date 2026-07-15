@@ -28,6 +28,7 @@ import {
   useSeo,
 } from "@/lib/seo";
 import { useLanguage } from "@/lib/i18n";
+import { useRoute } from "wouter";
 
 const API_BASE = getApiBase();
 type Slot = { start: string; end: string; label: string };
@@ -158,23 +159,50 @@ function findTimezoneOption(value: string) {
   return TIMEZONE_OPTIONS.find((option) => option.value === value);
 }
 
+function getMentorEmailFromUrlHash() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    return decodeURIComponent(window.location.hash.slice(1)).trim().toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
 export default function Booking() {
+  const [isPolishMentorRoute, polishMentorParams] = useRoute("/umow-spotkanie/:mentorSlug");
+  const [isEnglishMentorRoute, englishMentorParams] = useRoute("/en/book-consultation/:mentorSlug");
+  const mentorSlug = (isPolishMentorRoute
+    ? polishMentorParams?.mentorSlug
+    : isEnglishMentorRoute
+      ? englishMentorParams?.mentorSlug
+      : "")?.trim().toLowerCase() ?? "";
+  const isMentorBooking = Boolean(mentorSlug);
   const { language, isEnglish, localizePath, t } = useLanguage();
   const locale = isEnglish ? "en-GB" : "pl-PL";
+  const bookingPath = isMentorBooking
+    ? `/umow-spotkanie/${encodeURIComponent(mentorSlug)}`
+    : "/umow-spotkanie";
   useSeo({
-    title: t("Umów bezpłatną konsultację | ACADEA", "Book a free consultation | ACADEA"),
+    title: isMentorBooking
+      ? t("Umów spotkanie | ACADEA", "Book a meeting | ACADEA")
+      : t("Umów bezpłatną konsultację | ACADEA", "Book a free consultation | ACADEA"),
     description: t(
       "Wybierz termin i umów bezpłatną konsultację z ACADEA dotyczącą studiów za granicą, wyboru uczelni i planu aplikacji.",
       "Choose a time and book a free ACADEA consultation about studying abroad, university choice and your application plan.",
     ),
-    path: localizePath("/umow-spotkanie"),
+    path: localizePath(bookingPath),
     keywords: isEnglish ? ["book consultation", "free ACADEA consultation", "study abroad meeting"] : ["umów konsultację", "bezpłatna konsultacja ACADEA", "spotkanie studia za granicą"],
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
       createWebPageSchema({
-        path: localizePath("/umow-spotkanie"),
-        title: t("Umów bezpłatną konsultację | ACADEA", "Book a free consultation | ACADEA"),
+        path: localizePath(bookingPath),
+        title: isMentorBooking
+          ? t("Umów spotkanie | ACADEA", "Book a meeting | ACADEA")
+          : t("Umów bezpłatną konsultację | ACADEA", "Book a free consultation | ACADEA"),
         description: t(
           "Strona rezerwacji bezpłatnej konsultacji ACADEA dla kandydatów zainteresowanych studiami za granicą.",
           "Free ACADEA consultation booking page for candidates interested in studying abroad.",
@@ -182,7 +210,7 @@ export default function Booking() {
       }),
       createBreadcrumbSchema([
         { name: t("Strona Główna", "Home"), path: localizePath("/") },
-        { name: t("Umów spotkanie", "Book a consultation"), path: localizePath("/umow-spotkanie") },
+        { name: t("Umów spotkanie", "Book a meeting"), path: localizePath(bookingPath) },
       ]),
     ],
   });
@@ -207,13 +235,34 @@ export default function Booking() {
     return saved && findTimezoneOption(saved) ? saved : DEFAULT_TIMEZONE;
   });
   const [mentors, setMentors] = useState<MentorOption[]>([]);
-  const [selectedMentorEmail, setSelectedMentorEmail] = useState("");
+  const [selectedBookingMentor, setSelectedBookingMentor] = useState<MentorOption | null>(null);
+  const [selectedMentorEmail, setSelectedMentorEmail] = useState(() =>
+    isMentorBooking ? "" : getMentorEmailFromUrlHash(),
+  );
+
+  useEffect(() => {
+    if (isMentorBooking) {
+      return;
+    }
+
+    const selectMentorFromUrlHash = () => {
+      const mentorEmail = getMentorEmailFromUrlHash();
+      if (mentorEmail) {
+        setSelectedMentorEmail(mentorEmail);
+      }
+    };
+
+    window.addEventListener("hashchange", selectMentorFromUrlHash);
+    return () => window.removeEventListener("hashchange", selectMentorFromUrlHash);
+  }, [isMentorBooking]);
 
   useEffect(() => {
     setLoadingSlots(true);
     setSlotsError("");
     const params = new URLSearchParams();
-    if (selectedMentorEmail) {
+    if (mentorSlug) {
+      params.set("mentorSlug", mentorSlug);
+    } else if (selectedMentorEmail) {
       params.set("mentorEmail", selectedMentorEmail);
     }
     fetch(`${API_BASE}/booking/slots${params.toString() ? `?${params.toString()}` : ""}`)
@@ -222,6 +271,7 @@ export default function Booking() {
         slots?: Slot[];
         mentors?: MentorOption[];
         selectedMentorEmail?: string | null;
+        selectedMentor?: MentorOption | null;
         error?: string;
       }) => {
         if (data.error) {
@@ -232,6 +282,7 @@ export default function Booking() {
         setRawSlots(data.slots ?? []);
         const nextMentors = Array.isArray(data.mentors) ? data.mentors : [];
         setMentors(nextMentors);
+        setSelectedBookingMentor(data.selectedMentor ?? null);
         setSelectedMentorEmail((current) => {
           if (data.selectedMentorEmail) {
             return data.selectedMentorEmail;
@@ -239,12 +290,15 @@ export default function Booking() {
           if (current && nextMentors.some((mentor) => mentor.email === current)) {
             return current;
           }
+          if (isMentorBooking) {
+            return current;
+          }
           return nextMentors[0]?.email ?? "";
         });
       })
       .catch(() => setSlotsError(t("Nie udało się pobrać terminów. Spróbuj ponownie.", "Could not load available times. Please try again.")))
       .finally(() => setLoadingSlots(false));
-  }, [selectedMentorEmail, t]);
+  }, [isMentorBooking, mentorSlug, selectedMentorEmail, t]);
 
   useEffect(() => {
     if (canUsePreferencesCookies) {
@@ -365,21 +419,27 @@ export default function Booking() {
     <div className="min-h-screen bg-gray-50 pt-28 md:pt-32 pb-20">
       <div className="container mx-auto px-4 max-w-2xl">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 text-primary text-xs font-semibold mb-5 uppercase tracking-widest">
-            <Calendar size={13} />
-            {t("Pierwsza rozmowa jest bezpłatna", "The first conversation is free")}
-          </div>
+          {!isMentorBooking && (
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 text-primary text-xs font-semibold mb-5 uppercase tracking-widest">
+              <Calendar size={13} />
+              {t("Pierwsza rozmowa jest bezpłatna", "The first conversation is free")}
+            </div>
+          )}
           <h1 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-3">
-            {t("Umów konsultację", "Book a consultation")}
+            {isMentorBooking && selectedBookingMentor
+              ? `${selectedBookingMentor.fullName} - ${t("Umów spotkanie", "Book a meeting")}`
+              : t("Umów konsultację", "Book a consultation")}
           </h1>
           <p className="text-gray-500 text-lg">
-            {t("Wybierz termin, a nasz doradca skontaktuje się z Tobą.", "Choose a time and our adviser will contact you.")}
+            {isMentorBooking
+              ? t("Wybierz pasujący Tobie termin.", "Choose a time that works for you.")
+              : t("Wybierz termin, a nasz doradca skontaktuje się z Tobą.", "Choose a time and our adviser will contact you.")}
           </p>
         </motion.div>
 
         {step < 3 && (
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 mb-6">
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className={`grid gap-3 ${isMentorBooking ? "" : "md:grid-cols-2"}`}>
               <div>
                 <div className="mb-2 flex items-center gap-2 text-base font-semibold text-primary">
                   <Globe2 size={18} />
@@ -397,6 +457,7 @@ export default function Booking() {
                   ))}
                 </select>
               </div>
+              {!isMentorBooking && (
               <div>
                 <div className="mb-2 flex items-center gap-2 text-base font-semibold text-primary">
                   <User size={18} />
@@ -418,6 +479,7 @@ export default function Booking() {
                   )}
                 </select>
               </div>
+              )}
             </div>
           </div>
         )}

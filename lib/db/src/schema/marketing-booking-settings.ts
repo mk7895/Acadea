@@ -13,6 +13,7 @@ export type MarketingBookingAdditionalCalendar = {
   fullName?: string;
   refreshToken: string;
   inviteToEvents: boolean;
+  zoomMeetingUrl?: string;
   connectedAt?: string;
 };
 

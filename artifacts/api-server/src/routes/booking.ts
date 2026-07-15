@@ -22,6 +22,7 @@ const router = Router();
 
 const ZOOM_LINK = "https://nyu.zoom.us/j/5717075193";
 const SLOT_DURATION_MS = 20 * 60 * 1000;
+const BUSY_SLOT_LEAD_BUFFER_MS = 30 * 60 * 1000;
 const BOOKING_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
 const BOOKING_WINDOW_DAYS = 90;
 const PUBLIC_BOOKING_WEEKDAYS = 14;
@@ -275,7 +276,11 @@ function buildSlotsFromBusy(input: {
         }
 
         const overlaps = busy.some(({ start, end }) => {
-          return slotStart < new Date(end) && slotEnd > new Date(start);
+          const busyStart = new Date(start);
+          const busyEnd = new Date(end);
+          const protectedStart = new Date(busyStart.getTime() - BUSY_SLOT_LEAD_BUFFER_MS);
+
+          return slotStart < busyEnd && slotEnd > protectedStart;
         });
         if (!overlaps) {
           slots.push({
@@ -308,6 +313,29 @@ function getBookingMentorOptions(
     .sort((left, right) => left.fullName.localeCompare(right.fullName, "pl"));
 }
 
+function getBookingMentorSlug(email: string) {
+  return email.trim().toLowerCase().split("@", 1)[0] ?? "";
+}
+
+function findBookingMentorBySlug<T extends { email: string }>(
+  additionalCalendars: T[],
+  slug: string,
+) {
+  const matches = additionalCalendars.filter((entry) => getBookingMentorSlug(entry.email) === slug);
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function toPublicBookingMentor(entry: { email: string; fullName?: string } | null): BookingMentorOption | null {
+  if (!entry) {
+    return null;
+  }
+
+  return {
+    email: entry.email,
+    fullName: entry.fullName?.trim() || entry.email,
+  };
+}
+
 // ─── GET /api/booking/slots ──────────────────────────────────────────────────
 // Returns available 1-hour slots for the next 14 weekdays (9:00–17:00 Warsaw)
 router.get("/slots", async (req, res) => {
@@ -318,14 +346,31 @@ router.get("/slots", async (req, res) => {
     return res.status(400).json({ error: "Nieprawidłowy miesiąc." });
   }
 
-  const bookingSettings = await loadMarketingBookingSettings();
+  let bookingSettings: Awaited<ReturnType<typeof loadMarketingBookingSettings>>;
+  try {
+    bookingSettings = await loadMarketingBookingSettings();
+  } catch (error) {
+    logger.error({ err: error }, "booking settings load failed");
+    return res.status(500).json({ error: "Nie udało się odczytać ustawień rezerwacji. Spróbuj ponownie." });
+  }
   const mentors = getBookingMentorOptions(bookingSettings.additionalCalendars);
   const requestedMentorEmail =
     typeof req.query.mentorEmail === "string" ? req.query.mentorEmail.trim().toLowerCase() : "";
+  const requestedMentorSlug =
+    typeof req.query.mentorSlug === "string" ? req.query.mentorSlug.trim().toLowerCase() : "";
+  if (requestedMentorEmail && requestedMentorSlug) {
+    return res.status(400).json({ error: "Wybierz mentora tylko w jeden sposób." });
+  }
   const selectedMentor =
     (requestedMentorEmail
       ? bookingSettings.additionalCalendars.find((entry) => entry.email === requestedMentorEmail)
+      : requestedMentorSlug
+        ? findBookingMentorBySlug(bookingSettings.additionalCalendars, requestedMentorSlug)
       : null) ?? null;
+
+  if ((requestedMentorEmail || requestedMentorSlug) && !selectedMentor) {
+    return res.status(404).json({ error: "Wybrany mentor nie jest dostępny." });
+  }
 
   if (!(await hasGoogleOAuthCredentials())) {
     logger.warn(
@@ -340,6 +385,7 @@ router.get("/slots", async (req, res) => {
       }),
       mentors,
       selectedMentorEmail: selectedMentor?.email ?? null,
+      selectedMentor: toPublicBookingMentor(selectedMentor),
       mode: "local",
       timezone: bookingSettings.timeZone,
     });
@@ -413,6 +459,7 @@ router.get("/slots", async (req, res) => {
       slots,
       mentors,
       selectedMentorEmail: selectedMentor?.email ?? null,
+      selectedMentor: toPublicBookingMentor(selectedMentor),
       timezone: bookingSettings.timeZone,
     });
   } catch (err) {
@@ -457,6 +504,24 @@ router.post("/create", async (req, res) => {
     });
   }
 
+  let bookingSettings: Awaited<ReturnType<typeof loadMarketingBookingSettings>>;
+  try {
+    bookingSettings = await loadMarketingBookingSettings();
+  } catch (error) {
+    logger.error({ err: error }, "booking settings load failed");
+    return res.status(500).json({ error: "Nie udało się odczytać ustawień rezerwacji. Spróbuj ponownie." });
+  }
+  const normalizedMentorEmail = mentorEmail?.trim().toLowerCase();
+  const selectedMentor = normalizedMentorEmail
+    ? bookingSettings.additionalCalendars.find((entry) => entry.email === normalizedMentorEmail) ?? null
+    : null;
+
+  if (normalizedMentorEmail && !selectedMentor) {
+    return res.status(400).json({ error: "Wybrany mentor nie jest już dostępny. Wybierz inną osobę." });
+  }
+
+  const zoomLink = selectedMentor?.zoomMeetingUrl ?? ZOOM_LINK;
+
   const turnstile = await verifyTurnstileToken(req, parsed.data.turnstileToken);
   if (!turnstile.ok) {
     return res.status(400).json({ error: turnstile.message });
@@ -464,7 +529,7 @@ router.post("/create", async (req, res) => {
 
   if (!(await hasGoogleOAuthCredentials())) {
     logger.warn(
-      { start, email, mentorEmail },
+      { start, email, mentorEmail: normalizedMentorEmail },
       "Calendar connector credentials unavailable; confirming local development booking without calendar sync",
     );
 
@@ -475,7 +540,7 @@ router.post("/create", async (req, res) => {
           name,
           email,
           phone: phone ?? null,
-          message: `Temat: ${topic}${mentorEmail ? `\nMentor: ${mentorEmail}` : ""}\nTryb: local-dev booking`,
+          message: `Temat: ${topic}${selectedMentor ? `\nMentor: ${selectedMentor.fullName?.trim() || selectedMentor.email}` : ""}\nTryb: local-dev booking`,
         });
       } catch (dbErr) {
         logger.warn({ err: dbErr }, "mailing list save failed (non-fatal)");
@@ -488,7 +553,7 @@ router.post("/create", async (req, res) => {
       start,
       end,
       calendarLink: undefined,
-      zoomLink: ZOOM_LINK,
+      zoomLink,
       mode: "local",
     });
   }
@@ -496,12 +561,6 @@ router.post("/create", async (req, res) => {
   try {
     const calendarId = getGoogleCalendarId();
     const organizerEmail = await getGoogleAccountEmail();
-    const bookingSettings = await loadMarketingBookingSettings();
-    const selectedMentor = mentorEmail
-      ? bookingSettings.additionalCalendars.find(
-          (entry) => entry.email === mentorEmail.trim().toLowerCase(),
-        ) ?? null
-      : null;
     const invitedAdditionalEmails = selectedMentor
       ? selectedMentor.inviteToEvents
         ? [selectedMentor.email]
@@ -530,13 +589,13 @@ router.post("/create", async (req, res) => {
         phone ? `Telefon: ${phone}` : null,
         selectedMentor ? `Wybrany mentor: ${selectedMentor.fullName?.trim() || selectedMentor.email}` : null,
         "",
-        `Dołącz do spotkania przez Zoom: ${ZOOM_LINK}`,
+        `Dołącz do spotkania przez Zoom: ${zoomLink}`,
         "",
         "Spotkanie umówione przez formularz na stronie acadea.org",
       ]
         .filter(Boolean)
         .join("\n"),
-      location: ZOOM_LINK,
+      location: zoomLink,
       start: { dateTime: start, timeZone: bookingSettings.timeZone },
       end: { dateTime: end, timeZone: bookingSettings.timeZone },
       attendees,
@@ -595,7 +654,7 @@ router.post("/create", async (req, res) => {
       topic,
       start,
       end,
-      zoomLink: ZOOM_LINK,
+      zoomLink,
       language,
     });
 
@@ -605,7 +664,7 @@ router.post("/create", async (req, res) => {
       start: created.start?.dateTime,
       end: created.end?.dateTime,
       calendarLink: created.htmlLink,
-      zoomLink: ZOOM_LINK,
+      zoomLink,
     });
   } catch (err) {
     logger.error({ err }, "booking/create error");

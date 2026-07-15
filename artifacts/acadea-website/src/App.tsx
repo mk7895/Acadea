@@ -123,6 +123,8 @@ function Router() {
           <Route path="/en/scholarship/parent-consent" component={ScholarshipParentConsent} />
           <Route path="/stypendium/regulamin" component={ScholarshipTerms} />
           <Route path="/en/scholarship/terms" component={ScholarshipTerms} />
+          <Route path="/umow-spotkanie/:mentorSlug" component={Booking} />
+          <Route path="/en/book-consultation/:mentorSlug" component={Booking} />
           <Route path="/umow-spotkanie" component={Booking} />
           <Route path="/en/book-consultation" component={Booking} />
           <Route path="/mentoruj" component={MentorForm} />

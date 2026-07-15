@@ -28,6 +28,12 @@ import { useSeo } from "@/lib/seo";
 const API_BASE = getApiBase();
 const ADMIN_TOKEN_KEY = "acadea-admin-session";
 
+function getMentorQuickBookingPath(email: string, language: "pl" | "en") {
+  const mentorSlug = email.trim().toLowerCase().split("@", 1)[0] ?? "";
+  const basePath = language === "en" ? "/en/book-consultation" : "/umow-spotkanie";
+  return `${basePath}/${encodeURIComponent(mentorSlug)}`;
+}
+
 type EditorState = {
   id?: number;
   sortOrder: number;
@@ -66,6 +72,7 @@ type AdminAdditionalCalendar = {
   email: string;
   fullName: string;
   inviteToEvents: boolean;
+  zoomMeetingUrl: string;
   connectedAt: string | null;
 };
 
@@ -267,6 +274,7 @@ export default function AdminArticles() {
           ? (data as BookingSettingsState).additionalCalendars.map((entry) => ({
               ...entry,
               fullName: entry.fullName ?? "",
+              zoomMeetingUrl: entry.zoomMeetingUrl ?? "",
             }))
           : [],
       });
@@ -1221,6 +1229,54 @@ export default function AdminArticles() {
                                   ? `Połączono: ${new Date(entry.connectedAt).toLocaleString("pl-PL")}`
                                   : "Połączono"}
                               </p>
+                              <label className="mt-3 block text-sm font-semibold text-primary">
+                                Osobny link Zoom do spotkań z tym mentorem
+                                <input
+                                  type="url"
+                                  value={entry.zoomMeetingUrl}
+                                  onChange={(e) =>
+                                    setBookingSettings((current) => ({
+                                      ...current,
+                                      additionalCalendars: current.additionalCalendars.map((calendar) =>
+                                        calendar.email === entry.email
+                                          ? { ...calendar, zoomMeetingUrl: e.target.value }
+                                          : calendar,
+                                      ),
+                                    }))
+                                  }
+                                  placeholder="https://twoja-organizacja.zoom.us/j/..."
+                                  className="mt-2 h-11 w-full rounded-2xl border border-[#ded7c9] px-4 font-normal"
+                                />
+                              </label>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Pozostaw puste, aby użyć domyślnego linku Zoom ACADEA.
+                              </p>
+                              <div className="mt-4 rounded-xl bg-[#f7f3ec] p-3 text-sm">
+                                <p className="font-semibold text-primary">Szybkie linki do spotkań z tym mentorem</p>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {(["pl", "en"] as const).map((language) => {
+                                    const path = getMentorQuickBookingPath(entry.email, language);
+                                    const label = language === "pl" ? "Polski" : "English";
+
+                                    return (
+                                      <button
+                                        key={language}
+                                        type="button"
+                                        onClick={() => {
+                                          const url = `${window.location.origin}${path}`;
+                                          void navigator.clipboard
+                                            .writeText(url)
+                                            .then(() => setStatus(`Skopiowano link ${label}: ${url}`))
+                                            .catch(() => setStatus(`Nie udało się skopiować linku. Otwórz: ${url}`));
+                                        }}
+                                        className="rounded-full border border-[#ded7c9] bg-white px-3 py-1.5 text-xs font-semibold text-primary hover:border-primary"
+                                      >
+                                        Kopiuj: {label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
                             </div>
                             <div className="flex flex-wrap items-center gap-3">
                               <label className="inline-flex items-center gap-2 text-sm font-semibold text-primary">

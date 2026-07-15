@@ -5,6 +5,7 @@ import { hasDatabaseConfig } from "../lib/databaseConfig";
 import {
   DEFAULT_MARKETING_BOOKING_TIMEZONE,
   DEFAULT_WEEKLY_SCHEDULE,
+  isMarketingZoomMeetingUrl,
   loadMarketingBookingSettings,
   MarketingBookingSettingsStorageError,
   saveMarketingBookingSettings,
@@ -96,6 +97,13 @@ const additionalCalendarSchema = z.object({
   email: z.email(),
   fullName: z.string().trim().max(160).optional().default(""),
   inviteToEvents: z.boolean().default(false),
+  zoomMeetingUrl: z
+    .string()
+    .trim()
+    .max(2048)
+    .optional()
+    .default("")
+    .refine(isMarketingZoomMeetingUrl, "Podaj poprawny link do spotkania Zoom (https://...zoom.us/...)."),
 });
 
 const bookingSettingsSchema = z.object({
@@ -288,6 +296,7 @@ router.get("/admin/booking-settings", requireAdmin, async (_req, res) => {
       email: entry.email,
       fullName: entry.fullName ?? "",
       inviteToEvents: entry.inviteToEvents,
+      zoomMeetingUrl: entry.zoomMeetingUrl ?? "",
       connectedAt: entry.connectedAt ?? null,
     })),
   });
@@ -310,6 +319,9 @@ router.put("/admin/booking-settings", requireAdmin, async (req, res) => {
   const fullNameByEmail = new Map(
     parsed.data.additionalCalendars.map((entry) => [entry.email.trim().toLowerCase(), entry.fullName?.trim() ?? ""]),
   );
+  const zoomMeetingUrlByEmail = new Map(
+    parsed.data.additionalCalendars.map((entry) => [entry.email.trim().toLowerCase(), entry.zoomMeetingUrl]),
+  );
 
   const nextAdditionalCalendars = current.additionalCalendars
     .filter((entry) => inviteByEmail.has(entry.email))
@@ -317,6 +329,7 @@ router.put("/admin/booking-settings", requireAdmin, async (req, res) => {
       ...entry,
       fullName: fullNameByEmail.get(entry.email) || undefined,
       inviteToEvents: inviteByEmail.get(entry.email) ?? false,
+      zoomMeetingUrl: zoomMeetingUrlByEmail.get(entry.email) || undefined,
     }));
 
   try {
@@ -334,6 +347,7 @@ router.put("/admin/booking-settings", requireAdmin, async (req, res) => {
         email: entry.email,
         fullName: entry.fullName ?? "",
         inviteToEvents: entry.inviteToEvents,
+        zoomMeetingUrl: entry.zoomMeetingUrl ?? "",
         connectedAt: entry.connectedAt ?? null,
       })),
     });

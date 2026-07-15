@@ -75,6 +75,9 @@ export function localizePathname(pathname: string, targetLanguage: Language) {
     if (normalized.startsWith("/kraje/")) {
       return normalized.replace(/^\/kraje/, "/en/countries");
     }
+    if (normalized.startsWith("/umow-spotkanie/")) {
+      return normalized.replace(/^\/umow-spotkanie/, "/en/book-consultation");
+    }
     return plToEnPath[normalized] ?? (normalized.startsWith("/en") ? normalized : "/en");
   }
 
@@ -84,6 +87,9 @@ export function localizePathname(pathname: string, targetLanguage: Language) {
   }
   if (englishNormalized.startsWith("/en/countries/")) {
     return englishNormalized.replace(/^\/en\/countries/, "/kraje");
+  }
+  if (englishNormalized.startsWith("/en/book-consultation/")) {
+    return englishNormalized.replace(/^\/en\/book-consultation/, "/umow-spotkanie");
   }
   return enToPlPath[englishNormalized] ?? (normalized.startsWith("/en") ? "/" : normalized);
 }
@@ -128,4 +134,3 @@ export function getStoredLanguagePreference(): Language | null {
   const stored = getCookie(LANGUAGE_COOKIE_NAME);
   return stored === "pl" || stored === "en" ? stored : null;
 }
-
