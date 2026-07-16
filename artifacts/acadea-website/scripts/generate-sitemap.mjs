@@ -12,6 +12,9 @@ const srcRoot = path.join(projectRoot, "src");
 const publicRoot = path.join(projectRoot, "public");
 
 const siteUrl = (process.env.SITE_URL ?? "https://acadea.org").replace(/\/+$/, "");
+const articleApiUrl = (
+  process.env.SITEMAP_ARTICLES_API_URL ?? "https://api.acadea.org/api/articles"
+).replace(/\/+$/, "");
 
 const staticRoutesConfig = JSON.parse(
   await readFile(path.join(srcRoot, "data", "static-routes.json"), "utf8"),
@@ -23,10 +26,6 @@ const staticRoutes = staticRoutesConfig
 const routeSourceMap = Object.fromEntries(
   staticRoutesConfig.map((route) => [route.path, route.source]),
 );
-
-async function readSource(relativePath) {
-  return readFile(path.join(srcRoot, relativePath), "utf8");
-}
 
 function collectMatches(source, regex) {
   return Array.from(source.matchAll(regex), (match) => match[1]);
@@ -58,7 +57,7 @@ async function getGitLastModified(relativePath) {
 }
 
 function toUrlEntry(route, lastmod) {
-  const normalizedRoute = route === "/" ? "" : route;
+  const normalizedRoute = route === "/" ? "" : `${route.replace(/\/+$/, "")}/`;
   const loc = `${siteUrl}${normalizedRoute}`;
   return [
     "  <url>",
@@ -68,17 +67,39 @@ function toUrlEntry(route, lastmod) {
   ].join("\n");
 }
 
-async function main() {
-  const [articlesSource, countriesSource] = await Promise.all([
-    readSource("data/articles.ts"),
-    readSource("data/countries.ts"),
-  ]);
+async function getPublishedArticleRoutes() {
+  try {
+    const responses = await Promise.all(
+      ["pl", "en"].map(async (language) => {
+        const response = await fetch(`${articleApiUrl}?language=${language}`);
+        if (!response.ok) {
+          throw new Error(`Article API responded with ${response.status} for ${language}`);
+        }
 
-  const articleUpdatedAtBySlug = collectSlugDatePairs(
-    articlesSource,
-    /slug:\s*"\/([^"]+)",\s*\n\s*updatedAt:\s*"([^"]+)"/g,
-  );
-  const articleSlugs = Object.keys(articleUpdatedAtBySlug).map((slug) => `/baza-wiedzy/${slug}`);
+        return response.json();
+      }),
+    );
+
+    return responses.flatMap((articles, index) => {
+      const language = index === 0 ? "pl" : "en";
+      return articles
+        .filter((article) => article?.isPublished && typeof article.slug === "string")
+        .map((article) => ({
+          path: language === "en" ? `/en/knowledge-base${article.slug}` : `/baza-wiedzy${article.slug}`,
+          lastmod: article.updatedAt || new Date().toISOString().slice(0, 10),
+        }));
+    });
+  } catch (error) {
+    // The static sitemap must never advertise the stale development article fixture.
+    // Articles remain discoverable through internal links and the live API sitemap.
+    console.warn(`Skipping live article URLs in sitemap: ${error.message}`);
+    return [];
+  }
+}
+
+async function main() {
+  const countriesSource = await readFile(path.join(srcRoot, "data", "countries.ts"), "utf8");
+  const liveArticleRoutes = await getPublishedArticleRoutes();
 
   const countrySlugs = collectMatches(
     countriesSource,
@@ -89,29 +110,26 @@ async function main() {
     /slug:\s*"([^"]+)",\s*\n\s*updatedAt:\s*"([^"]+)"/g,
   );
 
-  const routes = dedupe([
-    ...staticRoutes,
-    ...countrySlugs,
-    ...articleSlugs,
-  ]).sort((a, b) => a.localeCompare(b));
+  const staticAndCountryRoutes = dedupe([...staticRoutes, ...countrySlugs]);
+  const articleLastmodByPath = new Map(liveArticleRoutes.map((route) => [route.path, route.lastmod]));
+  const routes = dedupe([...staticAndCountryRoutes, ...liveArticleRoutes.map((route) => route.path)]).sort((a, b) =>
+    a.localeCompare(b),
+  );
 
   const routeEntries = await Promise.all(
     routes.map(async (route) => {
       let sourceFile = routeSourceMap[route];
       if (!sourceFile && route.startsWith("/kraje/")) {
         sourceFile = "data/countries.ts";
-      } else if (!sourceFile && route.startsWith("/baza-wiedzy/")) {
-        sourceFile = "data/articles.ts";
       }
 
       const updatedAt =
         route.startsWith("/kraje/")
           ? countryUpdatedAtBySlug[route.replace("/kraje/", "")]
-          : route.startsWith("/baza-wiedzy/")
-            ? articleUpdatedAtBySlug[route.replace("/baza-wiedzy/", "")]
-            : null;
+          : null;
 
       const lastmod =
+        articleLastmodByPath.get(route) ??
         updatedAt ??
         (await getGitLastModified(sourceFile ? `src/${sourceFile}` : "index.html"));
 

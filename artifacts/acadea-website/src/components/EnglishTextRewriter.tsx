@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 
@@ -186,15 +186,23 @@ export function EnglishTextRewriter() {
   const { isEnglish } = useLanguage();
   const [location] = useLocation();
 
+  // Translate legacy static text before the browser paints it, rather than
+  // replacing visible text a frame later and shifting the layout.
+  useLayoutEffect(() => {
+    if (isEnglish) {
+      rewrite(document.body);
+    }
+  }, [isEnglish, location]);
+
   useEffect(() => {
     if (!isEnglish) {
       return;
     }
 
-    let frame = window.requestAnimationFrame(() => rewrite(document.body));
     const observer = new MutationObserver(() => {
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => rewrite(document.body));
+      // MutationObserver callbacks run before the browser's next paint, so
+      // lazy-loaded content is translated without a visible text reflow.
+      rewrite(document.body);
     });
 
     observer.observe(document.body, {
@@ -206,7 +214,6 @@ export function EnglishTextRewriter() {
     });
 
     return () => {
-      window.cancelAnimationFrame(frame);
       observer.disconnect();
     };
   }, [isEnglish, location]);

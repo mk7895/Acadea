@@ -60,7 +60,11 @@ function absoluteUrl(value: string) {
     return value;
   }
 
-  const normalized = value.startsWith("/") ? value : `/${value}`;
+  const pathWithLeadingSlash = value.startsWith("/") ? value : `/${value}`;
+  const normalized =
+    pathWithLeadingSlash === "/" || /\/[^/]+\.[^/]+$/.test(pathWithLeadingSlash)
+      ? pathWithLeadingSlash
+      : `${pathWithLeadingSlash.replace(/\/+$/, "")}/`;
   return `${SITE_URL}${normalized}`;
 }
 

@@ -53,8 +53,24 @@ function ensureAbsoluteUrl(value: string) {
     return value;
   }
 
-  const path = value.startsWith("/") ? value : `/${value}`;
+  const path = normalizePublicPath(value);
   return `${SITE_URL}${path}`;
+}
+
+/**
+ * The deployed static host serves route directories with a trailing slash.
+ * Keeping every public SEO URL in that form avoids canonical and sitemap mismatches.
+ */
+export function normalizePublicPath(value: string) {
+  const [pathAndQuery, hash = ""] = value.split("#", 2);
+  const [pathname, query = ""] = pathAndQuery.split("?", 2);
+  const withLeadingSlash = pathname.startsWith("/") ? pathname : `/${pathname}`;
+
+  if (withLeadingSlash === "/" || /\/[^/]+\.[^/]+$/.test(withLeadingSlash)) {
+    return `${withLeadingSlash}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
+  }
+
+  return `${withLeadingSlash.replace(/\/+$/, "")}/${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
 }
 
 function ensureAbsoluteImage(value?: string) {

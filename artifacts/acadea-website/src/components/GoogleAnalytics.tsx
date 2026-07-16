@@ -26,6 +26,7 @@ export function GoogleAnalytics() {
   const { consent } = useCookieConsent();
   const configuredRef = useRef(false);
   const isTrackingEnabledRoute = location !== "/panel";
+  const canLoadGoogleTag = Boolean(consent?.analytics || consent?.marketing);
 
   useEffect(() => {
     if (typeof window === "undefined" || !isTrackingEnabledRoute) {
@@ -41,7 +42,9 @@ export function GoogleAnalytics() {
       wait_for_update: 500,
     });
 
-    if (document.getElementById(GOOGLE_SCRIPT_ID)) {
+    // Do not spend the initial page load on a third-party analytics script
+    // before the visitor has opted into an optional cookie category.
+    if (!canLoadGoogleTag || document.getElementById(GOOGLE_SCRIPT_ID)) {
       return;
     }
 
@@ -55,7 +58,7 @@ export function GoogleAnalytics() {
       script.remove();
       configuredRef.current = false;
     };
-  }, [isTrackingEnabledRoute]);
+  }, [canLoadGoogleTag, isTrackingEnabledRoute]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !isTrackingEnabledRoute) {
@@ -72,7 +75,12 @@ export function GoogleAnalytics() {
   }, [consent, isTrackingEnabledRoute]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !isTrackingEnabledRoute || configuredRef.current) {
+    if (
+      typeof window === "undefined" ||
+      !isTrackingEnabledRoute ||
+      !canLoadGoogleTag ||
+      configuredRef.current
+    ) {
       return;
     }
 
@@ -83,10 +91,15 @@ export function GoogleAnalytics() {
       page_path: location,
     });
     configuredRef.current = true;
-  }, [isTrackingEnabledRoute, location]);
+  }, [canLoadGoogleTag, isTrackingEnabledRoute, location]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !isTrackingEnabledRoute || !configuredRef.current) {
+    if (
+      typeof window === "undefined" ||
+      !isTrackingEnabledRoute ||
+      !canLoadGoogleTag ||
+      !configuredRef.current
+    ) {
       return;
     }
 
@@ -95,7 +108,7 @@ export function GoogleAnalytics() {
       page_location: window.location.href,
       page_title: document.title,
     });
-  }, [isTrackingEnabledRoute, location]);
+  }, [canLoadGoogleTag, isTrackingEnabledRoute, location]);
 
   return null;
 }

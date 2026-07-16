@@ -187,7 +187,7 @@ export default function ArticlePage() {
     [article?.tocItems, articleBody],
   );
 
-  const articlePath = `${localizePath("/baza-wiedzy")}${slug}`;
+  const articlePath = localizePath(`/baza-wiedzy${slug}`);
   const wordCount = estimateWordCount(articleBody);
 
   useSeo(
@@ -233,7 +233,9 @@ export default function ArticlePage() {
             "Articles and guides about studying abroad from ACADEA.",
           ),
           path: articlePath,
-          noindex: true,
+          // A loading state or a transient API failure is not a missing page.
+          // Sending noindex there let crawlers record valid articles as excluded.
+          noindex: article === null && !articleError,
           schemas: [
             createOrganizationSchema(),
             createLocalBusinessSchema(),

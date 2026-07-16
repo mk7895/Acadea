@@ -57,6 +57,14 @@ function splitPath(path: string) {
   };
 }
 
+function addTrailingSlash(pathname: string) {
+  if (pathname === "/" || /\/[^/]+\.[^/]+$/.test(pathname)) {
+    return pathname;
+  }
+
+  return `${pathname.replace(/\/+$/, "")}/`;
+}
+
 export function getLanguageFromPath(pathname: string): Language {
   return pathname === "/en" || pathname.startsWith("/en/") ? "en" : "pl";
 }
@@ -96,7 +104,7 @@ export function localizePathname(pathname: string, targetLanguage: Language) {
 
 export function localizeFullPath(path: string, targetLanguage: Language) {
   const { pathname, search, hash } = splitPath(path);
-  return `${localizePathname(pathname, targetLanguage)}${search}${hash}`;
+  return `${addTrailingSlash(localizePathname(pathname, targetLanguage))}${search}${hash}`;
 }
 
 export function useLanguage() {

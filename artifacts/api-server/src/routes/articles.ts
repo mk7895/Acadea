@@ -1,5 +1,3 @@
-import { readFile, stat } from "node:fs/promises";
-import path from "node:path";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { asc, eq, inArray } from "drizzle-orm";
 import { hasDatabaseConfig } from "../lib/databaseConfig";
@@ -7,15 +5,6 @@ import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 const siteUrl = (process.env.SITE_URL ?? "https://acadea.org").replace(/\/+$/, "");
-const frontendRoot = path.resolve(import.meta.dirname, "..", "..", "acadea-website");
-const staticRoutesConfigPath = path.join(frontendRoot, "src", "data", "static-routes.json");
-
-type StaticRouteConfig = {
-  path: string;
-  source: string;
-  includeInSitemap: boolean;
-};
-
 function getRequestOrigin(req: Request) {
   const forwardedProto = req.get("x-forwarded-proto");
   const forwardedHost = req.get("x-forwarded-host");
@@ -103,23 +92,8 @@ async function loadPublicArticleTaxonomy(language: "pl" | "en") {
   }));
 }
 
-async function loadStaticRoutesForSitemap() {
-  const raw = await readFile(staticRoutesConfigPath, "utf8");
-  return JSON.parse(raw) as StaticRouteConfig[];
-}
-
-async function getStaticRouteLastmod(source: string) {
-  try {
-    const filePath = path.join(frontendRoot, "src", source);
-    const fileStat = await stat(filePath);
-    return fileStat.mtime.toISOString().slice(0, 10);
-  } catch {
-    return new Date().toISOString().slice(0, 10);
-  }
-}
-
 function toSitemapEntry(route: string, lastmod: string) {
-  const normalizedRoute = route === "/" ? "" : route;
+  const normalizedRoute = route === "/" ? "" : `${route.replace(/\/+$/, "")}/`;
   return [
     "  <url>",
     `    <loc>${siteUrl}${normalizedRoute}</loc>`,
@@ -209,8 +183,6 @@ router.get("/articles/:slug", async (req, res) => {
 
 router.get("/content/sitemap.xml", async (_req, res) => {
   try {
-    const staticRoutes = (await loadStaticRoutesForSitemap()).filter((route) => route.includeInSitemap);
-
     let dynamicArticles: Array<{ slug: string; language: string; updatedAt: Date }> = [];
     if (hasDatabaseConfig()) {
       const { db, articlesTable } = await import("@workspace/db");
@@ -225,9 +197,6 @@ router.get("/content/sitemap.xml", async (_req, res) => {
         .orderBy(asc(articlesTable.sortOrder), asc(articlesTable.id));
     }
 
-    const staticEntries = await Promise.all(
-      staticRoutes.map(async (route) => toSitemapEntry(route.path, await getStaticRouteLastmod(route.source))),
-    );
     const articleEntries = dynamicArticles.map((article) =>
       toSitemapEntry(
         article.language === "en"
@@ -240,7 +209,6 @@ router.get("/content/sitemap.xml", async (_req, res) => {
     const xml = [
       '<?xml version="1.0" encoding="UTF-8"?>',
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-      ...staticEntries,
       ...articleEntries,
       "</urlset>",
       "",
