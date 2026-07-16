@@ -28,7 +28,7 @@ import {
   createWebSiteSchema,
   useSeo,
 } from "@/lib/seo";
-import { HOME_FAQ_ITEMS } from "@/data/home-faq";
+import { HOME_FAQ_ITEMS_EN, HOME_FAQ_ITEMS_PL } from "@/data/home-faq";
 import { ResponsiveQrCode } from "@/components/ResponsiveQrCode";
 import { useLanguage } from "@/lib/i18n";
 
@@ -153,8 +153,8 @@ export default function Home() {
       "Study abroad guidance and university applications | ACADEA",
     ),
     description: t(
-      "Pomagamy kandydatom dostać się na studia za granicą. ACADEA wspiera w wyborze uczelni, dokumentach, esejach, stypendiach, egzaminach i planowaniu całej aplikacji.",
-      "We help candidates get into universities abroad. ACADEA supports university choice, documents, essays, scholarships, exams and planning the whole application.",
+      "Pomagamy dostać się na studia za granicą. ACADEA wspiera w wyborze uczelni, dokumentach, esejach, egzaminach i planowaniu aplikacji.",
+      "We help students get into universities abroad. ACADEA supports university choice, documents, essays, exams and application planning.",
     ),
     path: localizePath("/"),
     keywords: isEnglish
@@ -176,7 +176,7 @@ export default function Home() {
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
-      createWebSiteSchema(),
+      createWebSiteSchema(isEnglish ? "en-GB" : "pl-PL"),
       createWebPageSchema({
         path: localizePath("/"),
         title: t(
@@ -188,7 +188,7 @@ export default function Home() {
           "ACADEA helps with applications to universities abroad, university choice, documents, essays, scholarships and planning the whole process.",
         ),
       }),
-      createFaqSchema(HOME_FAQ_ITEMS),
+      createFaqSchema(isEnglish ? HOME_FAQ_ITEMS_EN : HOME_FAQ_ITEMS_PL),
       createBreadcrumbSchema([{ name: t("Strona Główna", "Home"), path: localizePath("/") }]),
       createSiteNavigationSchema([
         { name: t("Strona Główna", "Home"), path: localizePath("/") },

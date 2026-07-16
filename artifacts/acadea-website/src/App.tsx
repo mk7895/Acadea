@@ -8,6 +8,7 @@ import { Layout } from "@/components/layout/Layout";
 import { CookieConsentProvider } from "@/components/CookieConsent";
 import { useCookieConsent } from "@/components/CookieConsent";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { MetaPixel } from "@/components/MetaPixel";
 import { ConsultationPrompt } from "@/components/ConsultationPrompt";
 import { LanguageSuggestionPrompt } from "@/components/LanguageSuggestionPrompt";
 import { EnglishTextRewriter } from "@/components/EnglishTextRewriter";
@@ -16,7 +17,6 @@ import {
   getCookie,
   setSessionCookie,
 } from "@/lib/cookies";
-import { prefetchPublicArticleIndex } from "@/lib/article-api";
 import { LanguageProvider, useLanguage } from "@/lib/i18n";
 
 const queryClient = new QueryClient();
@@ -168,7 +168,9 @@ function PublicArticlePrefetch() {
     const prefetch = () => {
       // Mark the session before the network call so route changes do not trigger duplicate preloads.
       setSessionCookie(ARTICLE_PREFETCH_SESSION_COOKIE_NAME, "1");
-      void prefetchPublicArticleIndex(language);
+      void import("@/lib/article-api").then(({ prefetchPublicArticleIndex }) =>
+        prefetchPublicArticleIndex(language),
+      );
     };
 
     if (browserWindow.requestIdleCallback) {
@@ -190,6 +192,7 @@ function App() {
         <LanguageProvider>
           <CookieConsentProvider>
             <GoogleAnalytics />
+            <MetaPixel />
             <TooltipProvider>
               <PublicArticlePrefetch />
               <EnglishTextRewriter />

@@ -203,10 +203,9 @@ export function GlobeSection() {
           width={SIZE}
           height={SIZE}
           viewBox={`0 0 ${SIZE} ${SIZE}`}
-          className="w-full h-auto cursor-grab active:cursor-grabbing block"
+          className="block h-auto w-full cursor-grab touch-none active:cursor-grabbing"
           onMouseDown={onPointerDown}
           onTouchStart={onPointerDown}
-          style={{ touchAction: "none" }}
           aria-label="Interaktywna mapa ACADEA"
         >
           {/* Ocean */}
@@ -251,7 +250,7 @@ export function GlobeSection() {
                 stroke="#fff"
                 strokeWidth={isAcadea ? 0.55 : 0.22}
                 opacity={isAcadea ? 0.92 : 0.6}
-                style={{ transition: "fill 0.12s ease", cursor: isAcadea ? "pointer" : "grab" }}
+                className={`${isAcadea ? "cursor-pointer" : "cursor-grab"} transition-[fill] duration-[120ms] ease-[ease]`}
                 onMouseEnter={() => { if (isAcadea) { cancelClear(); setHovered(resolvedId); } }}
                 onMouseLeave={() => isAcadea && scheduleClear()}
                 onClick={() => {
@@ -279,7 +278,7 @@ export function GlobeSection() {
                 fill={isHovered ? "#FCBC1E" : "#166534"}
                 stroke="#ffffff"
                 strokeWidth={1.2}
-                style={{ cursor: "pointer", transition: "fill 0.12s ease" }}
+                className="cursor-pointer transition-[fill] duration-[120ms] ease-[ease]"
                 onMouseEnter={() => {
                   cancelClear();
                   setHovered(marker.iso);

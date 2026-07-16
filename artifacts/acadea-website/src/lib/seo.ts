@@ -12,6 +12,7 @@ const ORGANIZATION_LOGO = `${SITE_URL}/images/logo-dark.png`;
 const CONTACT_EMAIL = "contact@acadea.org";
 const CONTACT_PHONE = "+48 728 492 936";
 const CONTACT_WHATSAPP = "https://wa.me/48799831204";
+const YOUTUBE_URL = "https://www.youtube.com/@acadeaorg";
 
 const ORGANIZATION_ADDRESS = {
   "@type": "PostalAddress",
@@ -20,6 +21,28 @@ const ORGANIZATION_ADDRESS = {
   postalCode: "50-262",
   addressCountry: "PL",
 } as const;
+
+const LANGUAGE_ROUTE_PAIRS: Record<string, string> = {
+  "/": "/en",
+  "/jak-to-dziala": "/en/how-it-works",
+  "/kraje": "/en/countries",
+  "/o-nas": "/en/about-us",
+  "/kontakt": "/en/contact",
+  "/baza-wiedzy": "/en/knowledge-base",
+  "/stypendium": "/en/scholarship",
+  "/stypendium/aplikacja": "/en/scholarship/application",
+  "/stypendium/zgoda-rodzica": "/en/scholarship/parent-consent",
+  "/stypendium/regulamin": "/en/scholarship/terms",
+  "/umow-spotkanie": "/en/book-consultation",
+  "/mentoruj": "/en/become-a-mentor",
+  "/polityka-prywatnosci": "/en/privacy-policy",
+  "/regulamin": "/en/terms",
+  "/regulamin-platformy": "/en/platform-terms",
+};
+
+const ENGLISH_TO_POLISH_ROUTE = Object.fromEntries(
+  Object.entries(LANGUAGE_ROUTE_PAIRS).map(([pl, en]) => [en, pl]),
+);
 
 type JsonLdSchema = Record<string, unknown>;
 
@@ -71,6 +94,50 @@ export function normalizePublicPath(value: string) {
   }
 
   return `${withLeadingSlash.replace(/\/+$/, "")}/${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
+}
+
+function normalizedPathname(value: string) {
+  const [pathAndQuery] = value.split("#", 1);
+  const [pathname] = pathAndQuery.split("?", 1);
+  return pathname.replace(/\/+$/, "") || "/";
+}
+
+function languageForPath(value: string) {
+  const pathname = normalizedPathname(value);
+  return pathname === "/en" || pathname.startsWith("/en/") ? "en-GB" : "pl-PL";
+}
+
+export function getLanguageAlternates(value: string) {
+  const pathname = normalizedPathname(value);
+  let polishPath = "";
+  let englishPath = "";
+
+  if (LANGUAGE_ROUTE_PAIRS[pathname]) {
+    polishPath = pathname;
+    englishPath = LANGUAGE_ROUTE_PAIRS[pathname];
+  } else if (ENGLISH_TO_POLISH_ROUTE[pathname]) {
+    polishPath = ENGLISH_TO_POLISH_ROUTE[pathname];
+    englishPath = pathname;
+  } else if (pathname.startsWith("/kraje/")) {
+    polishPath = pathname;
+    englishPath = pathname.replace(/^\/kraje/, "/en/countries");
+  } else if (pathname.startsWith("/en/countries/")) {
+    polishPath = pathname.replace(/^\/en\/countries/, "/kraje");
+    englishPath = pathname;
+  } else if (pathname.startsWith("/umow-spotkanie/")) {
+    polishPath = pathname;
+    englishPath = pathname.replace(/^\/umow-spotkanie/, "/en/book-consultation");
+  } else if (pathname.startsWith("/en/book-consultation/")) {
+    polishPath = pathname.replace(/^\/en\/book-consultation/, "/umow-spotkanie");
+    englishPath = pathname;
+  } else {
+    return null;
+  }
+
+  return {
+    pl: buildAbsoluteUrl(polishPath),
+    en: buildAbsoluteUrl(englishPath),
+  };
 }
 
 function ensureAbsoluteImage(value?: string) {
@@ -151,6 +218,7 @@ export function createOrganizationSchema() {
       "https://www.facebook.com/acadeaorg/",
       "https://www.instagram.com/acadeaorg?igsh=NmFwcHUwZXI1M2Y5&utm_source=qr",
       "https://www.linkedin.com/company/acadeaorg",
+      YOUTUBE_URL,
     ],
     contactPoint: [
       {
@@ -180,20 +248,21 @@ export function createLocalBusinessSchema() {
       "https://www.facebook.com/acadeaorg/",
       "https://www.instagram.com/acadeaorg?igsh=NmFwcHUwZXI1M2Y5&utm_source=qr",
       "https://www.linkedin.com/company/acadeaorg",
+      YOUTUBE_URL,
       CONTACT_WHATSAPP,
     ],
     areaServed: ["PL", "GB", "NL", "DE", "DK", "SE", "US", "CA", "CH", "FR", "IE"],
   } satisfies JsonLdSchema;
 }
 
-export function createWebSiteSchema() {
+export function createWebSiteSchema(language = "pl-PL") {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: SITE_NAME,
     alternateName: ORGANIZATION_NAME,
     url: SITE_URL,
-    inLanguage: "pl-PL",
+    inLanguage: language,
     publisher: {
       "@type": "Organization",
       name: ORGANIZATION_NAME,
@@ -266,7 +335,7 @@ export function createWebPageSchema(input: {
     headline: input.title,
     description: normalizeText(input.description),
     url: buildAbsoluteUrl(input.path),
-    inLanguage: "pl-PL",
+    inLanguage: languageForPath(input.path),
     primaryImageOfPage: ensureAbsoluteImage(input.image),
     isPartOf: {
       "@type": "WebSite",
@@ -317,6 +386,7 @@ export function createArticleSchema(input: {
     articleSection: input.category,
     keywords: input.keywords?.join(", "),
     wordCount: input.wordCount,
+    inLanguage: languageForPath(input.path),
     author: {
       "@type": "Organization",
       name: ORGANIZATION_NAME,
@@ -330,7 +400,6 @@ export function createArticleSchema(input: {
       },
     },
     mainEntityOfPage: buildAbsoluteUrl(input.path),
-    inLanguage: "pl-PL",
   } satisfies JsonLdSchema;
 }
 
@@ -363,8 +432,10 @@ export function useSeo(config: SeoConfig) {
     const description = normalizeText(current.description);
     const canonical = buildAbsoluteUrl(current.path);
     const image = ensureAbsoluteImage(current.image);
-    const locale = current.locale ?? DEFAULT_LOCALE;
-    const lang = current.lang ?? DEFAULT_LANGUAGE;
+    const isEnglishPath = languageForPath(current.path) === "en-GB";
+    const locale = current.locale ?? (isEnglishPath ? "en_GB" : DEFAULT_LOCALE);
+    const lang = current.lang ?? (isEnglishPath ? "en-GB" : DEFAULT_LANGUAGE);
+    const alternates = getLanguageAlternates(current.path);
     const robots = current.noindex
       ? "noindex, nofollow"
       : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
@@ -442,16 +513,27 @@ export function useSeo(config: SeoConfig) {
     }
 
     ensureLink('link[rel="canonical"]', { rel: "canonical", href: canonical });
-    ensureLink('link[rel="alternate"][hreflang="pl-PL"]', {
-      rel: "alternate",
-      hreflang: "pl-PL",
-      href: canonical,
-    });
-    ensureLink('link[rel="alternate"][hreflang="x-default"]', {
-      rel: "alternate",
-      hreflang: "x-default",
-      href: canonical,
-    });
+    if (alternates) {
+      ensureLink('link[rel="alternate"][hreflang="pl-PL"]', {
+        rel: "alternate",
+        hreflang: "pl-PL",
+        href: alternates.pl,
+      });
+      ensureLink('link[rel="alternate"][hreflang="en-GB"]', {
+        rel: "alternate",
+        hreflang: "en-GB",
+        href: alternates.en,
+      });
+      ensureLink('link[rel="alternate"][hreflang="x-default"]', {
+        rel: "alternate",
+        hreflang: "x-default",
+        href: alternates.pl,
+      });
+    } else {
+      removeMeta('link[rel="alternate"][hreflang="pl-PL"]');
+      removeMeta('link[rel="alternate"][hreflang="en-GB"]');
+      removeMeta('link[rel="alternate"][hreflang="x-default"]');
+    }
 
     removeManagedJsonLd();
     (current.schemas ?? []).forEach(appendJsonLd);

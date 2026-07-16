@@ -57,7 +57,7 @@ async function getGitLastModified(relativePath) {
 }
 
 function toUrlEntry(route, lastmod) {
-  const normalizedRoute = route === "/" ? "" : `${route.replace(/\/+$/, "")}/`;
+  const normalizedRoute = route === "/" ? "/" : `${route.replace(/\/+$/, "")}/`;
   const loc = `${siteUrl}${normalizedRoute}`;
   return [
     "  <url>",

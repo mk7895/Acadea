@@ -8,7 +8,6 @@ import {
   deleteCookie,
   setLongLivedCookie,
 } from "@/lib/cookies";
-import { clearPublicArticleCache } from "@/lib/article-api";
 import { useLanguage } from "@/lib/i18n";
 
 type CookieConsentPreferences = {
@@ -115,7 +114,9 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
     if (!nextConsent.preferences) {
       deleteCookie(TIMEZONE_COOKIE_NAME);
       deleteCookie(ARTICLE_PREFETCH_SESSION_COOKIE_NAME);
-      clearPublicArticleCache();
+      void import("@/lib/article-api").then(({ clearPublicArticleCache }) =>
+        clearPublicArticleCache(),
+      );
     }
     setIsPreferencesOpen(false);
   }

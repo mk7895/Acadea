@@ -3,7 +3,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { articles } from "../src/data/articles";
 import { countries } from "../src/data/countries";
-import { HOME_FAQ_ITEMS } from "../src/data/home-faq";
+import {
+  HOME_FAQ_ITEMS_EN,
+  HOME_FAQ_ITEMS_PL,
+} from "../src/data/home-faq";
 import {
   DEFAULT_OG_IMAGE,
   SITE_NAME,
@@ -18,6 +21,7 @@ import {
   createSiteNavigationSchema,
   createWebPageSchema,
   createWebSiteSchema,
+  getLanguageAlternates,
 } from "../src/lib/seo";
 
 type JsonLdSchema = Record<string, unknown>;
@@ -34,6 +38,9 @@ type RouteMeta = {
   publishedTime?: string;
   modifiedTime?: string;
   schemas?: JsonLdSchema[];
+  language?: "pl-PL" | "en-GB";
+  locale?: "pl_PL" | "en_GB";
+  fallbackDescription?: string;
 };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -123,6 +130,14 @@ function upsertLink(
   return html.replace("</head>", `    ${tag}\n  </head>`);
 }
 
+function removeAlternateLink(html: string, hreflang: string) {
+  const escaped = hreflang.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return html.replace(
+    new RegExp(`<link\\s+[^>]*rel=["']alternate["'][^>]*hreflang=["']${escaped}["'][^>]*>\\s*`, "i"),
+    "",
+  );
+}
+
 function injectJsonLd(html: string, schemas: JsonLdSchema[]) {
   const jsonLd = schemas
     .map(
@@ -134,21 +149,23 @@ function injectJsonLd(html: string, schemas: JsonLdSchema[]) {
   return html.replace("</head>", `${jsonLd}\n  </head>`);
 }
 
-function injectNoScriptFallback(html: string, meta: RouteMeta) {
+function injectStaticFallback(html: string, meta: RouteMeta) {
   const heading = escapeHtml(meta.heading ?? meta.title.replace(/\s*\|\s*ACADEA$/, ""));
-  const description = escapeHtml(meta.description);
+  const description = escapeHtml(meta.fallbackDescription ?? meta.description);
 
   const fallback = [
-    "<noscript>",
-    "  <style>#root{display:none!important}</style>",
-    '  <main style="margin:0 auto;max-width:56rem;padding:2rem 1rem;font-family:Inter,system-ui,sans-serif;line-height:1.6;color:#1f2937">',
-    `    <h1 style="margin:0 0 1rem;font-size:2rem;line-height:1.15;color:#166534">${heading}</h1>`,
-    `    <p style="margin:0;color:#4b5563">${description}</p>`,
+    '<main data-acadea-static-fallback="true">',
+    `    <h1>${heading}</h1>`,
+    `    <p>${description}</p>`,
     "  </main>",
-    "</noscript>",
   ].join("\n");
 
-  return html.replace("<div id=\"root\"></div>", `${fallback}\n    <div id="root"></div>`);
+  return html
+    .replace(
+      "</head>",
+      '    <script>document.documentElement.classList.add("js")</script>\n  </head>',
+    )
+    .replace('<div id="root"></div>', `<div id="root">${fallback}\n    </div>`);
 }
 
 function buildStaticRouteMeta(): RouteMeta[] {
@@ -157,8 +174,12 @@ function buildStaticRouteMeta(): RouteMeta[] {
       path: "/",
       title: "Studia za granicą i doradztwo aplikacyjne | ACADEA",
       description:
-        "Pomagamy kandydatom dostać się na studia za granicą. ACADEA wspiera w wyborze uczelni, esejach, dokumentach, egzaminach i planowaniu aplikacji.",
+        "Pomagamy dostać się na studia za granicą. ACADEA wspiera w wyborze uczelni, dokumentach, esejach, egzaminach i planowaniu aplikacji.",
       heading: "Studia za granicą i doradztwo aplikacyjne",
+      language: "pl-PL",
+      locale: "pl_PL",
+      fallbackDescription:
+        "Pomagamy kandydatom dostać się na studia za granicą. ACADEA wspiera w wyborze uczelni, esejach, dokumentach, egzaminach i planowaniu aplikacji.",
       keywords: [
         "studia za granicą",
         "doradztwo aplikacyjne",
@@ -176,7 +197,7 @@ function buildStaticRouteMeta(): RouteMeta[] {
           description:
             "ACADEA pomaga w aplikacji na studia za granicą, wyborze uczelni, dokumentach, esejach, stypendiach i planowaniu całego procesu.",
         }),
-        createFaqSchema(HOME_FAQ_ITEMS),
+        createFaqSchema(HOME_FAQ_ITEMS_PL),
         createBreadcrumbSchema([{ name: "Strona Główna", path: "/" }]),
         createSiteNavigationSchema([
           { name: "Strona Główna", path: "/" },
@@ -186,6 +207,44 @@ function buildStaticRouteMeta(): RouteMeta[] {
           { name: "Stypendia", path: "/stypendium" },
           { name: "Poznajmy się", path: "/o-nas" },
           { name: "Kontakt", path: "/kontakt" },
+        ]),
+      ],
+    },
+    {
+      path: "/en",
+      title: "Study abroad guidance and university applications | ACADEA",
+      description:
+        "We help students get into universities abroad. ACADEA supports university choice, documents, essays, exams and application planning.",
+      heading: "Study abroad guidance and university applications",
+      language: "en-GB",
+      locale: "en_GB",
+      keywords: [
+        "study abroad",
+        "study abroad guidance",
+        "university applications abroad",
+        "university application support",
+        "ACADEA",
+      ],
+      schemas: [
+        createOrganizationSchema(),
+        createLocalBusinessSchema(),
+        createWebSiteSchema("en-GB"),
+        createWebPageSchema({
+          path: "/en",
+          title: "Study abroad guidance and university applications | ACADEA",
+          description:
+            "ACADEA helps with applications to universities abroad, university choice, documents, essays, scholarships and planning the whole process.",
+        }),
+        createFaqSchema(HOME_FAQ_ITEMS_EN),
+        createBreadcrumbSchema([{ name: "Home", path: "/en" }]),
+        createSiteNavigationSchema([
+          { name: "Home", path: "/en" },
+          { name: "How we help", path: "/en/how-it-works" },
+          { name: "Countries and universities", path: "/en/countries" },
+          { name: "Knowledge base", path: "/en/knowledge-base" },
+          { name: "Scholarships", path: "/en/scholarship" },
+          { name: "About us", path: "/en/about-us" },
+          { name: "Contact", path: "/en/contact" },
         ]),
       ],
     },
@@ -596,12 +655,15 @@ function applyRouteMeta(template: string, meta: RouteMeta) {
   const description = normalizeText(meta.description);
   const canonical = absoluteUrl(meta.path);
   const image = absoluteUrl(meta.image ?? DEFAULT_OG_IMAGE);
+  const language = meta.language ?? (meta.path === "/en" || meta.path.startsWith("/en/") ? "en-GB" : "pl-PL");
+  const locale = meta.locale ?? (language === "en-GB" ? "en_GB" : "pl_PL");
+  const alternates = getLanguageAlternates(meta.path);
   const robots = meta.noindex
     ? "noindex, nofollow"
     : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
 
   let html = template;
-  html = html.replace(/<html[^>]*lang="[^"]*"[^>]*>/i, '<html lang="pl">');
+  html = html.replace(/<html[^>]*lang="[^"]*"[^>]*>/i, `<html lang="${language}">`);
   html = html.replace(/<title>.*?<\/title>/i, `<title>${escapeHtml(title)}</title>`);
   html = upsertMetaByName(html, "description", description);
   html = upsertMetaByName(html, "robots", robots);
@@ -612,7 +674,7 @@ function applyRouteMeta(template: string, meta: RouteMeta) {
   html = upsertMetaByProperty(html, "og:url", canonical);
   html = upsertMetaByProperty(html, "og:image", image);
   html = upsertMetaByProperty(html, "og:image:alt", meta.heading ?? title);
-  html = upsertMetaByProperty(html, "og:locale", "pl_PL");
+  html = upsertMetaByProperty(html, "og:locale", locale);
   html = upsertMetaByProperty(html, "og:site_name", SITE_NAME);
   html = upsertMetaByName(html, "twitter:card", "summary_large_image");
   html = upsertMetaByName(html, "twitter:title", title);
@@ -620,8 +682,15 @@ function applyRouteMeta(template: string, meta: RouteMeta) {
   html = upsertMetaByName(html, "twitter:image", image);
   html = upsertMetaByName(html, "twitter:image:alt", meta.heading ?? title);
   html = upsertLink(html, { rel: "canonical" }, canonical);
-  html = upsertLink(html, { rel: "alternate", hreflang: "pl-PL" }, canonical);
-  html = upsertLink(html, { rel: "alternate", hreflang: "x-default" }, canonical);
+  if (alternates) {
+    html = upsertLink(html, { rel: "alternate", hreflang: "pl-PL" }, alternates.pl);
+    html = upsertLink(html, { rel: "alternate", hreflang: "en-GB" }, alternates.en);
+    html = upsertLink(html, { rel: "alternate", hreflang: "x-default" }, alternates.pl);
+  } else {
+    html = removeAlternateLink(html, language === "en-GB" ? "pl-PL" : "en-GB");
+    html = upsertLink(html, { rel: "alternate", hreflang: language }, canonical);
+    html = upsertLink(html, { rel: "alternate", hreflang: "x-default" }, canonical);
+  }
 
   if (meta.keywords?.length) {
     html = upsertMetaByName(html, "keywords", meta.keywords.join(", "));
@@ -639,7 +708,7 @@ function applyRouteMeta(template: string, meta: RouteMeta) {
     html = injectJsonLd(html, meta.schemas);
   }
 
-  html = injectNoScriptFallback(html, meta);
+  html = injectStaticFallback(html, meta);
   return html;
 }
 
