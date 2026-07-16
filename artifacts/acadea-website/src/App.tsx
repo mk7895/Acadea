@@ -12,6 +12,7 @@ import { MetaPixel } from "@/components/MetaPixel";
 import { ConsultationPrompt } from "@/components/ConsultationPrompt";
 import { LanguageSuggestionPrompt } from "@/components/LanguageSuggestionPrompt";
 import { EnglishTextRewriter } from "@/components/EnglishTextRewriter";
+import Home from "@/pages/Home";
 import {
   ARTICLE_PREFETCH_SESSION_COOKIE_NAME,
   getCookie,
@@ -20,7 +21,6 @@ import {
 import { LanguageProvider, useLanguage } from "@/lib/i18n";
 
 const queryClient = new QueryClient();
-const Home = lazy(() => import("@/pages/Home"));
 const HowItWorks = lazy(() => import("@/pages/HowItWorks"));
 const Countries = lazy(() => import("@/pages/Countries"));
 const CountryDetail = lazy(() => import("@/pages/CountryDetail"));

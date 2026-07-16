@@ -290,9 +290,9 @@ export default function Home() {
               initial={{ opacity: 0, x: 40 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.9, ease: "easeOut", delay: 0.2 }}
-              className="hidden lg:flex items-center justify-center"
+              className="hidden min-h-[532px] lg:flex items-center justify-center"
             >
-              <Suspense fallback={<div className="h-[520px] w-full max-w-[520px] rounded-full bg-primary/5" />}>
+              <Suspense fallback={<div className="h-[532px] w-full max-w-[500px] rounded-full bg-primary/5" />}>
                 <GlobeSection />
               </Suspense>
             </motion.div>
@@ -399,6 +399,8 @@ export default function Home() {
                 <img
                   src={scholarshipHomePhoto}
                   alt={t("Program Stypendialny ACADEA", "ACADEA Scholarship Programme")}
+                  width={1600}
+                  height={1022}
                   className="h-full w-full scale-[1.04] object-cover"
                   loading="lazy"
                 />

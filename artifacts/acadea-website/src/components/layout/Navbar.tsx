@@ -53,7 +53,9 @@ export function Navbar() {
           <img
             src={isScrolled ? logoGreen : logoGreen}
             alt="ACADEA Logo"
-            className="h-20 md:h-[5.5rem] w-auto shrink-0"
+            width={900}
+            height={500}
+            className="h-20 w-36 shrink-0 md:h-[5.5rem] md:w-[9.9rem]"
           />
         </Link>
 
