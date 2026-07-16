@@ -78,7 +78,7 @@ export function localizePathname(pathname: string, targetLanguage: Language) {
 
   if (targetLanguage === "en") {
     if (normalized === "/baza-wiedzy" || normalized.startsWith("/baza-wiedzy/")) {
-      return "/en/knowledge-base";
+      return normalized.replace(/^\/baza-wiedzy/, "/en/knowledge-base");
     }
     if (normalized.startsWith("/kraje/")) {
       return normalized.replace(/^\/kraje/, "/en/countries");
@@ -91,7 +91,7 @@ export function localizePathname(pathname: string, targetLanguage: Language) {
 
   const englishNormalized = normalizeEnglishPath(normalized);
   if (englishNormalized === "/en/knowledge-base" || englishNormalized.startsWith("/en/knowledge-base/")) {
-    return "/baza-wiedzy";
+    return englishNormalized.replace(/^\/en\/knowledge-base/, "/baza-wiedzy");
   }
   if (englishNormalized.startsWith("/en/countries/")) {
     return englishNormalized.replace(/^\/en\/countries/, "/kraje");

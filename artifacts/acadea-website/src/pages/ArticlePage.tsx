@@ -270,7 +270,7 @@ export default function ArticlePage() {
         if (!href) return <span>{children}</span>;
         const isInternal = href.startsWith("/");
         if (isInternal) {
-          return <Link href={`/baza-wiedzy${href}`}>{children}</Link>;
+          return <Link href={localizePath(`/baza-wiedzy${href}`)}>{children}</Link>;
         }
         return <a href={href}>{children}</a>;
       },
@@ -411,7 +411,7 @@ export default function ArticlePage() {
                   {related.map((r) => (
                     <Link
                       key={r.slug}
-                      href={`${localizePath("/baza-wiedzy")}${r.slug}`}
+                      href={localizePath(`/baza-wiedzy${r.slug}`)}
                       className="group block overflow-hidden rounded-xl border border-gray-100 transition-shadow hover:shadow-md"
                     >
                       <div className="h-28 overflow-hidden bg-gray-100">

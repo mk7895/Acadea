@@ -377,7 +377,7 @@ export default function Blog() {
                       <h3 className="mb-3 text-lg font-bold leading-snug text-primary">{article.title}</h3>
                       <p className="line-clamp-3 flex-1 text-sm leading-relaxed text-gray-500">{article.excerpt}</p>
                       <Link
-                        href={`${localizePath("/baza-wiedzy")}${article.slug}`}
+                        href={localizePath(`/baza-wiedzy${article.slug}`)}
                         className="group/btn mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:text-primary/80"
                       >
                         {t("Czytaj więcej", "Read more")}
