@@ -120,7 +120,7 @@ export default function Scholarship() {
                 )}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <a href="#konkurs">
+                <Link href={localizePath("/stypendium/aplikacja")}>
                   <Button
                     size="lg"
                     data-testid="button-scholarship-hero-cta"
@@ -128,7 +128,7 @@ export default function Scholarship() {
                   >
                     {t("Zobacz konkurs stypendialny", "See the scholarship competition")} <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
-                </a>
+                </Link>
               </div>
             </motion.div>
 
