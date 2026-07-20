@@ -176,6 +176,13 @@ export default function Scholarship() {
               <Calendar size={18} className="shrink-0" />
               <span>Online</span>
             </div>
+            <Link
+              href={localizePath("/stypendium/aplikacja")}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-base font-bold text-white shadow-sm transition-colors hover:bg-gray-900"
+            >
+              {t("Przejdź do formularza", "Go to the application form")}
+              <ArrowRight size={18} className="shrink-0" />
+            </Link>
           </motion.div>
         </div>
       </section>
