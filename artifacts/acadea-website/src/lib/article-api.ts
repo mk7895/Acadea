@@ -33,6 +33,7 @@ export interface ArticleSummary {
   category: string;
   categorySlugs: string[];
   language?: "pl" | "en";
+  translationKey?: string;
   title: string;
   slug: string;
   excerpt: string;
@@ -47,6 +48,7 @@ export interface ArticleDetail extends ArticleSummary {
   relatedSlugs: string[];
   relatedArticles: ArticleSummary[];
   tocItems: ArticleTocItem[];
+  alternateSlug: string | null;
 }
 
 export type ArticleEditorRecord = {
@@ -55,6 +57,7 @@ export type ArticleEditorRecord = {
   category: string;
   categorySlugs: string[];
   language: "pl" | "en";
+  translationKey: string;
   title: string;
   slug: string;
   excerpt: string;
@@ -227,6 +230,7 @@ export async function fetchArticleDetail(slug: string, language: "pl" | "en" = "
       relatedSlugs: relatedArticles.map((candidate) => candidate.slug),
       relatedArticles,
       tocItems: article.tocItems ?? [],
+      alternateSlug: null,
     } satisfies ArticleDetail;
   }
 }

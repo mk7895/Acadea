@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, ne } from "drizzle-orm";
 import { hasDatabaseConfig } from "../lib/databaseConfig";
 import { logger } from "../lib/logger";
 
@@ -41,6 +41,7 @@ function shapeSummary(
     category: string;
     categorySlugs: string[];
     language: string;
+    translationKey: string;
     title: string;
     slug: string;
     excerpt: string;
@@ -56,6 +57,7 @@ function shapeSummary(
     category: row.category,
     categorySlugs: row.categorySlugs,
     language: row.language,
+    translationKey: row.translationKey,
     title: row.title,
     slug: row.slug,
     excerpt: row.excerpt,
@@ -171,12 +173,28 @@ router.get("/articles/:slug", async (req, res) => {
     .filter((row): row is NonNullable<typeof row> => Boolean(row))
     .map((row) => shapeSummary(req, row));
 
+  const [alternate] = await db
+    .select({
+      slug: articlesTable.slug,
+      language: articlesTable.language,
+    })
+    .from(articlesTable)
+    .where(
+      and(
+        eq(articlesTable.translationKey, article.translationKey),
+        ne(articlesTable.language, article.language),
+        eq(articlesTable.isPublished, true),
+      ),
+    )
+    .limit(1);
+
   return res.json({
     ...shapeSummary(req, article),
     markdown: article.markdown,
     tocItems: article.tocItems,
     relatedSlugs: article.relatedSlugs,
     relatedArticles,
+    alternateSlug: alternate?.slug ?? null,
     categories: referencedCategories,
   });
 });

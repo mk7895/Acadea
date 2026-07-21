@@ -53,6 +53,7 @@ export const articlesTable = pgTable(
     category: text("category").notNull(),
     categorySlugs: jsonb("category_slugs").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
     language: text("language").notNull().default("pl"),
+    translationKey: text("translation_key").notNull(),
     title: text("title").notNull(),
     slug: text("slug").notNull(),
     excerpt: text("excerpt").notNull(),
@@ -67,6 +68,10 @@ export const articlesTable = pgTable(
   },
   (table) => ({
     slugUnique: uniqueIndex("articles_slug_unique").on(table.slug),
+    translationLanguageUnique: uniqueIndex("articles_translation_language_unique").on(
+      table.translationKey,
+      table.language,
+    ),
   }),
 );
 

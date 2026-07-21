@@ -52,6 +52,7 @@ const adminArticleSchema = z.object({
   category: z.string().trim().default(""),
   categorySlugs: z.array(z.string().trim().min(1)).default([]),
   language: z.enum(["pl", "en"]).default("pl"),
+  translationKey: z.string().trim().min(1).optional(),
   title: z.string().trim().min(1),
   slug: z.string().trim().min(1),
   excerpt: z.string().trim().min(1),
@@ -145,6 +146,7 @@ function shapeAdminSummary(
     category: string;
     categorySlugs: string[];
     language: string;
+    translationKey: string;
     title: string;
     slug: string;
     excerpt: string;
@@ -173,6 +175,7 @@ function shapeAdminSummary(
     category: row.category,
     categorySlugs: row.categorySlugs,
     language: row.language,
+    translationKey: row.translationKey,
     title: row.title,
     slug: row.slug,
     excerpt: row.excerpt,
@@ -572,6 +575,7 @@ router.post("/admin/articles", requireAdmin, async (req, res) => {
   }
 
   const slug = normalizeArticleSlug(parsed.data.slug);
+  const translationKey = normalizeArticleSlug(parsed.data.translationKey ?? slug);
   const markdown = normalizeContactFormMarkers(parsed.data.markdown);
   const relatedSlugs = Array.from(
     new Set(parsed.data.relatedSlugs.map((value) => normalizeArticleSlug(value)).filter((value) => value !== slug)),
@@ -595,6 +599,7 @@ router.post("/admin/articles", requireAdmin, async (req, res) => {
       category: primaryCategory,
       categorySlugs,
       language: parsed.data.language,
+      translationKey,
       title: parsed.data.title,
       slug,
       excerpt: parsed.data.excerpt,
@@ -653,6 +658,9 @@ router.put("/admin/articles/:id", requireAdmin, async (req, res) => {
       category: primaryCategory,
       categorySlugs,
       language: parsed.data.language,
+      ...(parsed.data.translationKey
+        ? { translationKey: normalizeArticleSlug(parsed.data.translationKey) }
+        : {}),
       title: parsed.data.title,
       slug,
       excerpt: parsed.data.excerpt,

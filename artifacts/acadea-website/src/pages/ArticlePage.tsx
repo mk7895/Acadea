@@ -41,7 +41,7 @@ function estimateWordCount(markdown: string) {
 export default function ArticlePage() {
   const params = useParams<{ slug: string }>();
   const [, setLocation] = useLocation();
-  const { language, localizePath, t } = useLanguage();
+  const { language, localizePath, setRouteLanguageAlternates, t } = useLanguage();
   const slug = `/${params.slug}`;
   const [article, setArticle] = useState<ArticleDetail | null | undefined>(undefined);
   const [articleError, setArticleError] = useState(false);
@@ -188,7 +188,28 @@ export default function ArticlePage() {
   );
 
   const articlePath = localizePath(`/baza-wiedzy${slug}`);
+  const articleAlternates =
+    article?.alternateSlug
+      ? {
+          pl:
+            language === "pl"
+              ? `/baza-wiedzy${article.slug}`
+              : `/baza-wiedzy${article.alternateSlug}`,
+          en:
+            language === "en"
+              ? `/en/knowledge-base${article.slug}`
+              : `/en/knowledge-base${article.alternateSlug}`,
+        }
+      : undefined;
   const wordCount = estimateWordCount(articleBody);
+
+  useEffect(() => {
+    setRouteLanguageAlternates(articleAlternates ?? null);
+
+    return () => {
+      setRouteLanguageAlternates(null);
+    };
+  }, [articleAlternates?.en, articleAlternates?.pl, setRouteLanguageAlternates]);
 
   useSeo(
     article
@@ -200,6 +221,7 @@ export default function ArticlePage() {
           type: "article",
           publishedTime: article.updatedAt,
           modifiedTime: article.updatedAt,
+          alternates: articleAlternates,
           keywords: [
             article.category,
             article.title,

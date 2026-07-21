@@ -64,6 +64,10 @@ export type SeoConfig = {
   locale?: string;
   publishedTime?: string;
   modifiedTime?: string;
+  alternates?: {
+    pl: string;
+    en: string;
+  };
   schemas?: JsonLdSchema[];
 };
 
@@ -435,7 +439,12 @@ export function useSeo(config: SeoConfig) {
     const isEnglishPath = languageForPath(current.path) === "en-GB";
     const locale = current.locale ?? (isEnglishPath ? "en_GB" : DEFAULT_LOCALE);
     const lang = current.lang ?? (isEnglishPath ? "en-GB" : DEFAULT_LANGUAGE);
-    const alternates = getLanguageAlternates(current.path);
+    const alternates = current.alternates
+      ? {
+          pl: buildAbsoluteUrl(current.alternates.pl),
+          en: buildAbsoluteUrl(current.alternates.en),
+        }
+      : getLanguageAlternates(current.path);
     const robots = current.noindex
       ? "noindex, nofollow"
       : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";

@@ -1,8 +1,18 @@
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
 import { useLocation } from "wouter";
 import { getCookie, setLongLivedCookie } from "@/lib/cookies";
 
 export type Language = "pl" | "en";
+export type LanguageRouteAlternates = Record<Language, string>;
 
 export const LANGUAGE_COOKIE_NAME = "acadea_language";
 
@@ -41,6 +51,7 @@ type LanguageContextValue = {
   isEnglish: boolean;
   localizePath: (path: string, targetLanguage?: Language) => string;
   switchLanguagePath: (targetLanguage: Language) => string;
+  setRouteLanguageAlternates: Dispatch<SetStateAction<LanguageRouteAlternates | null>>;
   setPreferredLanguage: (language: Language) => void;
   t: (pl: string, en: string) => string;
 };
@@ -117,22 +128,32 @@ export function useLanguage() {
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [location] = useLocation();
+  const [routeLanguageAlternates, setRouteLanguageAlternates] =
+    useState<LanguageRouteAlternates | null>(null);
   const language = getLanguageFromPath(splitPath(location).pathname);
 
   useEffect(() => {
     document.documentElement.lang = language === "en" ? "en-GB" : "pl";
   }, [language]);
 
+  useEffect(() => {
+    setRouteLanguageAlternates(null);
+  }, [location]);
+
   const value = useMemo<LanguageContextValue>(
     () => ({
       language,
       isEnglish: language === "en",
       localizePath: (path, targetLanguage = language) => localizeFullPath(path, targetLanguage),
-      switchLanguagePath: (targetLanguage) => localizeFullPath(location, targetLanguage),
+      switchLanguagePath: (targetLanguage) =>
+        routeLanguageAlternates
+          ? localizeFullPath(routeLanguageAlternates[targetLanguage], targetLanguage)
+          : localizeFullPath(location, targetLanguage),
+      setRouteLanguageAlternates,
       setPreferredLanguage: (nextLanguage) => setLongLivedCookie(LANGUAGE_COOKIE_NAME, nextLanguage),
       t: (pl, en) => (language === "en" ? en : pl),
     }),
-    [language, location],
+    [language, location, routeLanguageAlternates],
   );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { articles } from "../src/data/articles";
+import { articles as staticArticles } from "../src/data/articles";
 import { countries } from "../src/data/countries";
 import {
   HOME_FAQ_ITEMS_EN,
@@ -40,7 +40,24 @@ type RouteMeta = {
   schemas?: JsonLdSchema[];
   language?: "pl-PL" | "en-GB";
   locale?: "pl_PL" | "en_GB";
+  alternates?: {
+    pl: string;
+    en: string;
+  };
   fallbackDescription?: string;
+};
+
+type PrerenderArticle = {
+  order: number;
+  category: string;
+  language: "pl" | "en";
+  translationKey: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  image: string;
+  updatedAt: string;
+  markdown?: string;
 };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -48,6 +65,9 @@ const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
 const distRoot = path.join(projectRoot, "dist", "public");
 const templatePath = path.join(distRoot, "index.html");
+const articleApiUrl = (
+  process.env.SITEMAP_ARTICLES_API_URL ?? "https://api.acadea.org/api/articles"
+).replace(/\/+$/, "");
 
 function escapeHtml(value: string) {
   return value
@@ -613,9 +633,64 @@ function estimateWordCount(markdown: string) {
     .filter(Boolean).length;
 }
 
-function buildArticleRouteMeta(): RouteMeta[] {
+async function loadPublishedArticles(): Promise<PrerenderArticle[]> {
+  try {
+    const responses = await Promise.all(
+      (["pl", "en"] as const).map(async (language) => {
+        const response = await fetch(`${articleApiUrl}?language=${language}`);
+        if (!response.ok) {
+          throw new Error(`Article API responded with ${response.status} for ${language}`);
+        }
+
+        const rows = (await response.json()) as Array<Omit<PrerenderArticle, "language"> & { language?: string }>;
+        return rows
+          .filter((row) => row.slug && row.title && row.excerpt)
+          .map((row) => ({
+            ...row,
+            language,
+            // Older API revisions do not expose translationKey. Paired imports keep
+            // the same order in both languages, so this still produces correct
+            // hreflang pairs during a rolling deployment.
+            translationKey: row.translationKey || String(row.order),
+          }));
+      }),
+    );
+
+    return responses.flat();
+  } catch (error) {
+    console.warn(
+      `Falling back to the local Polish article fixture for prerendering: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    return staticArticles.map((article) => ({
+      ...article,
+      language: "pl" as const,
+      translationKey: article.slug,
+    }));
+  }
+}
+
+function buildArticleRouteMeta(articles: PrerenderArticle[]): RouteMeta[] {
+  const translationsByKey = new Map<string, Partial<Record<"pl" | "en", PrerenderArticle>>>();
+  articles.forEach((article) => {
+    const translations = translationsByKey.get(article.translationKey) ?? {};
+    translations[article.language] = article;
+    translationsByKey.set(article.translationKey, translations);
+  });
+
   return articles.map((article) => {
-    const articlePath = `/baza-wiedzy${article.slug}`;
+    const isEnglish = article.language === "en";
+    const articlePath = isEnglish
+      ? `/en/knowledge-base${article.slug}`
+      : `/baza-wiedzy${article.slug}`;
+    const translations = translationsByKey.get(article.translationKey);
+    const alternates =
+      translations?.pl && translations.en
+        ? {
+            pl: `/baza-wiedzy${translations.pl.slug}`,
+            en: `/en/knowledge-base${translations.en.slug}`,
+          }
+        : undefined;
+    const studyAbroadKeyword = isEnglish ? "studying abroad" : "studia za granicą";
 
     return {
       path: articlePath,
@@ -626,7 +701,10 @@ function buildArticleRouteMeta(): RouteMeta[] {
       type: "article",
       publishedTime: article.updatedAt,
       modifiedTime: article.updatedAt,
-      keywords: [article.category, article.title, "studia za granicą", "ACADEA"],
+      keywords: [article.category, article.title, studyAbroadKeyword, "ACADEA"],
+      language: isEnglish ? "en-GB" : "pl-PL",
+      locale: isEnglish ? "en_GB" : "pl_PL",
+      alternates,
       schemas: [
         createOrganizationSchema(),
         createLocalBusinessSchema(),
@@ -637,12 +715,15 @@ function buildArticleRouteMeta(): RouteMeta[] {
           image: article.image,
           updatedAt: article.updatedAt,
           category: article.category,
-          keywords: [article.category, article.title, "studia za granicą", "ACADEA"],
-          wordCount: estimateWordCount(article.markdown),
+          keywords: [article.category, article.title, studyAbroadKeyword, "ACADEA"],
+          wordCount: article.markdown ? estimateWordCount(article.markdown) : undefined,
         }),
         createBreadcrumbSchema([
-          { name: "Strona Główna", path: "/" },
-          { name: "Baza Wiedzy", path: "/baza-wiedzy" },
+          { name: isEnglish ? "Home" : "Strona Główna", path: isEnglish ? "/en" : "/" },
+          {
+            name: isEnglish ? "Knowledge base" : "Baza Wiedzy",
+            path: isEnglish ? "/en/knowledge-base" : "/baza-wiedzy",
+          },
           { name: article.title, path: articlePath },
         ]),
       ],
@@ -657,7 +738,12 @@ function applyRouteMeta(template: string, meta: RouteMeta) {
   const image = absoluteUrl(meta.image ?? DEFAULT_OG_IMAGE);
   const language = meta.language ?? (meta.path === "/en" || meta.path.startsWith("/en/") ? "en-GB" : "pl-PL");
   const locale = meta.locale ?? (language === "en-GB" ? "en_GB" : "pl_PL");
-  const alternates = getLanguageAlternates(meta.path);
+  const alternates = meta.alternates
+    ? {
+        pl: absoluteUrl(meta.alternates.pl),
+        en: absoluteUrl(meta.alternates.en),
+      }
+    : getLanguageAlternates(meta.path);
   const robots = meta.noindex
     ? "noindex, nofollow"
     : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
@@ -728,10 +814,11 @@ async function writeRouteHtml(meta: RouteMeta, template: string) {
 
 async function main() {
   const template = await readFile(templatePath, "utf8");
+  const publishedArticles = await loadPublishedArticles();
   const routeMeta = [
     ...buildStaticRouteMeta(),
     ...buildCountryRouteMeta(),
-    ...buildArticleRouteMeta(),
+    ...buildArticleRouteMeta(publishedArticles),
   ];
 
   await Promise.all(routeMeta.map((meta) => writeRouteHtml(meta, template)));

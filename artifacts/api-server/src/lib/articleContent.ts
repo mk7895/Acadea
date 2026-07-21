@@ -71,7 +71,7 @@ export function extractMarkdownHeadings(markdown: string) {
 }
 
 export function splitRelatedSection(markdown: string) {
-  const marker = /\n## Czytaj też\s*\n/i;
+  const marker = /\n## (?:Czytaj też|Read also|Read more|Related reading)\s*\n/i;
   const match = marker.exec(markdown);
   if (!match) {
     return {
