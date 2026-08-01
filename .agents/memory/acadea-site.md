@@ -13,3 +13,5 @@ description: Durable copy/positioning decisions and nav naming for the ACADEA we
 - **Country count copy**: use "25+ krajów" everywhere (not 15+).
 
 - **Booking consent**: marketing-consent checkbox is REQUIRED client-side; not yet enforced server-side in `POST /api/booking/create`. If legal enforcement is needed, add it to the server Zod schema.
+
+- **Scholarship parent-consent links**: browser-facing consent links belong to `acadea.org`, never `api.acadea.org`. The API uses `PUBLIC_SITE_URL` when configured and otherwise defaults to `https://acadea.org`; root consent paths on the API host exist only as temporary redirects for already-sent emails. Polish and English consent pages must be prerendered, marked `noindex`, and excluded from the sitemap.

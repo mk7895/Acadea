@@ -10,6 +10,7 @@ import {
 } from "../lib/mailer";
 import { verifyTurnstileToken } from "../lib/turnstile";
 import { hasDatabaseConfig } from "../lib/databaseConfig";
+import { buildPublicSiteUrl } from "../lib/publicSite";
 
 const router: IRouter = Router();
 let nextSubmissionId = 1;
@@ -53,18 +54,6 @@ const parentConsentStatementSchema = z.object({
   signatureName: z.string().trim().min(2),
   turnstileToken: z.string().min(1).optional(),
 });
-
-function getRequestOrigin(req: Parameters<typeof verifyTurnstileToken>[0]) {
-  const forwardedProto = req.headers["x-forwarded-proto"];
-  const protocol = Array.isArray(forwardedProto)
-    ? forwardedProto[0]
-    : forwardedProto ?? req.protocol;
-  const forwardedHost = req.headers["x-forwarded-host"];
-  const host = Array.isArray(forwardedHost)
-    ? forwardedHost[0]
-    : forwardedHost ?? req.get("host");
-  return `${protocol}://${host}`;
-}
 
 function buildParentConsentStatement(input: {
   applicantName: string;
@@ -404,13 +393,11 @@ router.post("/contact", async (req, res) => {
         tokenHash,
       });
 
-      const origin =
-        process.env.PUBLIC_SITE_URL?.trim().replace(/\/$/, "") ?? getRequestOrigin(req);
       const consentPath =
         parsed.data.language === "en"
-          ? "/en/scholarship/parent-consent"
-          : "/stypendium/zgoda-rodzica";
-      const consentUrl = `${origin}${consentPath}?token=${encodeURIComponent(token)}`;
+          ? "/en/scholarship/parent-consent/"
+          : "/stypendium/zgoda-rodzica/";
+      const consentUrl = buildPublicSiteUrl(consentPath, { token });
 
       void sendScholarshipParentConsentEmail({
         applicantName: row.name,

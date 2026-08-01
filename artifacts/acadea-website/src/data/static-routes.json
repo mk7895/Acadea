@@ -15,6 +15,8 @@
   { "path": "/en/scholarship", "source": "pages/Scholarship.tsx", "includeInSitemap": true },
   { "path": "/stypendium/aplikacja", "source": "pages/ScholarshipForm.tsx", "includeInSitemap": true },
   { "path": "/en/scholarship/application", "source": "pages/ScholarshipForm.tsx", "includeInSitemap": true },
+  { "path": "/stypendium/zgoda-rodzica", "source": "pages/ScholarshipParentConsent.tsx", "includeInSitemap": false },
+  { "path": "/en/scholarship/parent-consent", "source": "pages/ScholarshipParentConsent.tsx", "includeInSitemap": false },
   { "path": "/stypendium/regulamin", "source": "pages/ScholarshipTerms.tsx", "includeInSitemap": true },
   { "path": "/en/scholarship/terms", "source": "pages/ScholarshipTerms.tsx", "includeInSitemap": true },
   { "path": "/umow-spotkanie", "source": "pages/Booking.tsx", "includeInSitemap": true },

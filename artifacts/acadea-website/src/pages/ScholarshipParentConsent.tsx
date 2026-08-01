@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useSearch } from "wouter";
 import { motion } from "framer-motion";
 import { AlertTriangle, ArrowRight, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,14 +30,13 @@ type ParentConsentPayload = {
 };
 
 export default function ScholarshipParentConsent() {
-  const [location] = useLocation();
+  const search = useSearch();
   const { isEnglish, localizePath, t } = useLanguage();
   const locale = isEnglish ? "en-GB" : "pl-PL";
   const token = useMemo(() => {
-    const query = location.includes("?") ? location.slice(location.indexOf("?")) : "";
-    const params = new URLSearchParams(query);
+    const params = new URLSearchParams(search);
     return params.get("token")?.trim() ?? "";
-  }, [location]);
+  }, [search]);
 
   useSeo({
     title: t("Zgoda rodzica lub opiekuna | ACADEA", "Parent or guardian consent | ACADEA"),
@@ -46,6 +45,7 @@ export default function ScholarshipParentConsent() {
       "Secure form for confirming parent or legal guardian consent for a minor's participation in the ACADEA Scholarship Competition.",
     ),
     path: localizePath("/stypendium/zgoda-rodzica"),
+    noindex: true,
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),

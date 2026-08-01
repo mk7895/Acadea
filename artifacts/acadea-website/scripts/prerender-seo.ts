@@ -451,6 +451,26 @@ function buildStaticRouteMeta(): RouteMeta[] {
       ],
     },
     {
+      path: "/stypendium/zgoda-rodzica",
+      title: "Zgoda rodzica lub opiekuna | ACADEA",
+      description:
+        "Bezpieczny formularz potwierdzenia zgody rodzica lub opiekuna prawnego dla zgłoszenia stypendialnego ACADEA.",
+      heading: "Zgoda rodzica lub opiekuna",
+      noindex: true,
+      language: "pl-PL",
+      locale: "pl_PL",
+    },
+    {
+      path: "/en/scholarship/parent-consent",
+      title: "Parent or guardian consent | ACADEA",
+      description:
+        "Secure parent or legal guardian consent form for an ACADEA scholarship application.",
+      heading: "Parent or guardian consent",
+      noindex: true,
+      language: "en-GB",
+      locale: "en_GB",
+    },
+    {
       path: "/stypendium/regulamin",
       title: "Regulamin Konkursu Stypendialnego ACADEA",
       description:
