@@ -126,7 +126,7 @@ The Gmail monitor scans up to 40 messages from the last 120 days, keeps only mes
 
 ## Known handoff gaps and risks
 
-- The recovered final message from the Mateusz task says a corrected SQL script was saved in the same file and copied to the clipboard, and that its validation checks only new English relationships. The full transcript and Mateusz filesystem were unavailable when this note was written. `origin/main` at `cf2d272` contains the earlier `attached_assets/article-language-update.sql` without that described validation block. Before running or replacing this migration, inspect Mateusz's worktree for an uncommitted version.
+- Machine-local operational assets and their current known state are tracked in `multi-machine-handoff.md`. In particular, the corrected 40-article English import exists only on Mateusz's computer and its successful production application is not yet confirmed in Git-tracked state.
 - `run-local.sh` is tied to Mateusz's path and Node 24, while the shared package manager is pnpm and the production container uses Node 22.
 - API CORS is currently unrestricted (`cors()`), so production origin policy should be reviewed before exposing sensitive platform functionality more broadly.
 - The public R2 signing endpoint does not require authentication.
@@ -136,8 +136,4 @@ The Gmail monitor scans up to 40 messages from the last 120 days, keeps only mes
 
 ## Two-computer workflow
 
-1. On the computer that already has work, run `git status` before pulling or switching branches. Do not discard uncommitted SQL or database utilities.
-2. Fetch and compare branch/commit before editing. Use a shared `codex/...` feature branch for non-trivial work rather than editing `main` independently on both computers.
-3. Commit and push code plus durable `.agents/memory/` updates from one computer; pull them on the other. Codex's machine-local memory and task transcript are not a substitute for Git-tracked project context.
-4. Keep all secrets in ignored local env files or the deployment secret manager. Share only variable names and setup instructions through Git.
-5. For schema work, record the exact SQL/migration applied and the environment where it ran. A committed schema file is not proof that Cloud SQL was migrated.
+The mandatory preflight, branch-ownership rules, local asset boundary, and end-of-task handoff format live in `multi-machine-handoff.md`. Follow that document before editing on either computer. Keep this architecture note focused on application behavior and update it when the durable implementation changes.

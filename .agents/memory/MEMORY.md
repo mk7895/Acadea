@@ -1,3 +1,4 @@
 - [Google Calendar connector API paths](google-calendar-connector.md) — proxy calls need full `/calendar/v3/` prefix, not just the endpoint path
 - [ACADEA site conventions](acadea-site.md) — scholarship is general mentoring (not fund/mecenas); nav labels Jak pomagamy / Poznajmy się; 25+ krajów; booking consent required client-side only.
 - [ACADEA platform architecture](acadea-platform-architecture.md) — monorepo/backend map, guide inheritance and entitlement logic, Google/Stripe/storage integrations, deployment shape, cross-computer workflow, and known risks.
+- [Multi-machine handoff](multi-machine-handoff.md) — mandatory preflight/finish protocol, branch ownership, source-of-truth hierarchy, machine-local asset boundaries, and current local-only operational state.
