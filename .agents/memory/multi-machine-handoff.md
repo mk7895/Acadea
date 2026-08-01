@@ -106,6 +106,15 @@ As of 2026-08-02, the community motivation leaderboard code is tracked on `main`
 
 The scholarship parent-consent URL repair requires no database migration. Its durable routing and privacy rules are recorded in `.agents/memory/acadea-site.md`.
 
+## Current production verification
+
+As of 2026-08-02, parent-consent repair commit `54c482a` was pushed to `main` and deployed:
+
+- **Website:** both `/stypendium/zgoda-rodzica/` and `/en/scholarship/parent-consent/` return `200`, are prerendered with `noindex`, and remain excluded from the sitemap.
+- **API:** legacy root links on `api.acadea.org` return `302` to the matching `acadea.org` form while preserving the token query parameter.
+- **Client behavior:** a production smoke test with a non-existent test token reached the consent API and returned the expected not-found state, confirming that the query token is read correctly.
+- **Database and external configuration:** no migration or manual provider configuration was required.
+
 The file names above are inventory only. Their presence in this note does not make their content available on another computer. If any item becomes necessary for repeatable application behavior, implement a safe tracked equivalent rather than committing local secrets or one-off operational data.
 
 ## Secret and configuration rules
