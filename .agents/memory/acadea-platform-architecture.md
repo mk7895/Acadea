@@ -116,6 +116,14 @@ The Gmail monitor scans up to 40 messages from the last 120 days, keeps only mes
 - In development, when Stripe is not usable, checkout directly applies entitlements and clears the cart.
 - Production payment fulfillment is incomplete at this commit: there is no Stripe webhook route, durable payment/checkout record, idempotent fulfillment handler, or reconciliation path. A successful hosted Checkout redirect therefore does not by itself apply entitlements in this code. Do not describe Stripe billing as production-complete.
 
+## Community essay leaderboard and feedback draw
+
+- The mentee navigation includes an opt-in `Społeczność` area. A participant chooses a pseudonym; public responses expose only that pseudonym, essay counts, rank, and raffle result. Full names and email addresses are returned only to the admin community view.
+- Essay progress is derived from completed item rows in active `essay_like` material templates. Stale state rows whose row keys no longer exist in the current template structure are excluded.
+- Each currently completed essay supplies one weighted entry in the Monday-to-Monday UTC weekly draw. An admin can run the draw once per week for up to five unique students. Winners are persisted, and the selection prefers students who have not won during the preceding eight weeks when the pool is large enough.
+- Community participation lives in `platform_community_preferences`; weekly results live in `platform_community_raffle_winners`. The authenticated routes are `GET/PUT /api/platform/mentee/community`, `GET /api/platform/admin/community`, and `POST /api/platform/admin/community/draw`.
+- The tracked deployment SQL is `lib/db/migrations/20260801_community_leaderboard.sql`. Application builds do not apply it automatically, and the API code must not be deployed before those two tables exist in the target database.
+
 ## Public website and article-language logic
 
 - The public site and platform share the Express API but are separate frontends.

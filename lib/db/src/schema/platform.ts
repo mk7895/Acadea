@@ -489,6 +489,44 @@ export const platformMaterialItemStatesTable = pgTable(
   }),
 );
 
+export const platformCommunityPreferencesTable = pgTable(
+  "platform_community_preferences",
+  {
+    id: serial("id").primaryKey(),
+    menteeUserId: integer("mentee_user_id")
+      .references(() => platformUsersTable.id, { onDelete: "cascade" })
+      .notNull(),
+    displayName: text("display_name").notNull(),
+    isParticipating: boolean("is_participating").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    menteeUnique: uniqueIndex("platform_community_preferences_mentee_unique").on(
+      table.menteeUserId,
+    ),
+  }),
+);
+
+export const platformCommunityRaffleWinnersTable = pgTable(
+  "platform_community_raffle_winners",
+  {
+    id: serial("id").primaryKey(),
+    weekKey: text("week_key").notNull(),
+    menteeUserId: integer("mentee_user_id")
+      .references(() => platformUsersTable.id, { onDelete: "cascade" })
+      .notNull(),
+    entryCount: integer("entry_count").notNull(),
+    selectedAt: timestamp("selected_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    weekMenteeUnique: uniqueIndex("platform_community_raffle_winners_week_mentee_unique").on(
+      table.weekKey,
+      table.menteeUserId,
+    ),
+  }),
+);
+
 export const platformMentorWorkspaceLinksTable = pgTable(
   "platform_mentor_workspace_links",
   {
