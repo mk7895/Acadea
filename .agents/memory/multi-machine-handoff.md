@@ -100,7 +100,19 @@ As of 2026-08-01, the following context exists only on Mateusz's computer and is
 - `.local-work/research/`, `.local-work/docs/`, `.local-work/scripts-data/`, and `.import-jsons/` contain additional research and guide/import artifacts.
 - Root `scripts/` contains local operational tooling and dependencies. It is ignored and must not be assumed to exist on Marlena's computer.
 
-## Current feature-branch handoff
+## Current feature-branch handoffs
+
+### `codex/academic-results` on Marlena's computer
+
+- **Git:** commit `ffb1e01` is pushed to `origin/codex/academic-results`; the branch is one commit ahead of `main` and has not been merged.
+- **Code:** structured GPA, SAT, and IELTS entry for mentees plus an assigned-student results view for mentors are implemented in the platform frontend, API, and Drizzle schema.
+- **Database:** `lib/db/migrations/20260801_academic_results.sql` is prepared but has not been applied to any environment.
+- **External configuration:** not required.
+- **Local-only dependency:** none for the feature. The bundled Codex Node runtime had to be placed on `PATH` for local package post-install scripts.
+- **Verification:** `pnpm run typecheck` passed; the full `pnpm run build` passed after using the bundled Node runtime. A production check confirmed that `app.acadea.org` still serves the old login/application build; no database-backed authenticated smoke test was possible on this clean clone.
+- **Next action:** apply the academic-results SQL migration to the intended database, merge the feature branch, deploy API and platform builds, and then verify both mentee save and mentor visibility using authenticated accounts.
+
+### `feature/community-motivation-leaderboard` on Mateusz's computer
 
 As of 2026-08-01, Mateusz's computer has an uncommitted implementation on `feature/community-motivation-leaderboard`:
 

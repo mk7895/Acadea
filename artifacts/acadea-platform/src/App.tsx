@@ -118,6 +118,55 @@ type MaterialRowEditor = {
   university: string;
 };
 
+type AcademicResultsForm = {
+  gpaScale: string;
+  gpaValue: string;
+  ieltsListening: string;
+  ieltsOverall: string;
+  ieltsReading: string;
+  ieltsSpeaking: string;
+  ieltsTestDate: string;
+  ieltsWriting: string;
+  satMath: string;
+  satReadingWriting: string;
+  satTestDate: string;
+  satTotal: string;
+};
+
+function createEmptyAcademicResultsForm(): AcademicResultsForm {
+  return {
+    gpaScale: "",
+    gpaValue: "",
+    ieltsListening: "",
+    ieltsOverall: "",
+    ieltsReading: "",
+    ieltsSpeaking: "",
+    ieltsTestDate: "",
+    ieltsWriting: "",
+    satMath: "",
+    satReadingWriting: "",
+    satTestDate: "",
+    satTotal: "",
+  };
+}
+
+function academicResultsToForm(results: any): AcademicResultsForm {
+  const empty = createEmptyAcademicResultsForm();
+  if (!results) {
+    return empty;
+  }
+  return Object.fromEntries(
+    Object.keys(empty).map((key) => [
+      key,
+      results[key] === null || results[key] === undefined ? "" : String(results[key]),
+    ]),
+  ) as AcademicResultsForm;
+}
+
+function optionalNumber(value: string) {
+  return value.trim() === "" ? null : Number(value);
+}
+
 function platformGuideTypeLabel(value: string) {
   switch (value) {
     case "admin_template":
@@ -756,6 +805,54 @@ function formatDate(value: string | null | undefined) {
   return date.toLocaleString("pl-PL");
 }
 
+function formatAcademicDate(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+  const parts = value.split("-").map(Number);
+  if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) {
+    return value;
+  }
+  return new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString("pl-PL");
+}
+
+function AcademicResultsSummary({ results }: { results: any }) {
+  const gpaReady = results?.gpaValue !== null && results?.gpaValue !== undefined
+    && results?.gpaScale !== null && results?.gpaScale !== undefined;
+  const satReady = results?.satTotal !== null && results?.satTotal !== undefined;
+  const ieltsReady = results?.ieltsOverall !== null && results?.ieltsOverall !== undefined;
+
+  return (
+    <div className="academic-results-grid">
+      <div className={`academic-result-card ${gpaReady ? "has-result" : ""}`}>
+        <div className="academic-result-label">GPA</div>
+        <strong>{gpaReady ? `${results.gpaValue} / ${results.gpaScale}` : "Nie podano"}</strong>
+        <div className="small muted">Aktualna średnia i skala ocen</div>
+      </div>
+      <div className={`academic-result-card ${satReady ? "has-result" : ""}`}>
+        <div className="academic-result-label">SAT</div>
+        <strong>{satReady ? `${results.satTotal} / 1600` : "Nie podano"}</strong>
+        <div className="academic-result-details small muted">
+          <span>Czytanie i pisanie: {results?.satReadingWriting ?? "—"}</span>
+          <span>Matematyka: {results?.satMath ?? "—"}</span>
+          {formatAcademicDate(results?.satTestDate) ? <span>Data: {formatAcademicDate(results.satTestDate)}</span> : null}
+        </div>
+      </div>
+      <div className={`academic-result-card ${ieltsReady ? "has-result" : ""}`}>
+        <div className="academic-result-label">IELTS</div>
+        <strong>{ieltsReady ? `${results.ieltsOverall} / 9` : "Nie podano"}</strong>
+        <div className="academic-result-details small muted">
+          <span>Słuchanie: {results?.ieltsListening ?? "—"}</span>
+          <span>Czytanie: {results?.ieltsReading ?? "—"}</span>
+          <span>Pisanie: {results?.ieltsWriting ?? "—"}</span>
+          <span>Mówienie: {results?.ieltsSpeaking ?? "—"}</span>
+          {formatAcademicDate(results?.ieltsTestDate) ? <span>Data: {formatAcademicDate(results.ieltsTestDate)}</span> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function formatParentConsentStatus(value: unknown) {
   switch (value) {
     case "signed":
@@ -1235,6 +1332,7 @@ function Dashboard({
     if (session.user.role === "mentor") {
       return [
         ["profile", "Profil"],
+        ["mentees", "Podopieczni"],
         ["availability", "Dostępność"],
         ["meetings", "Spotkania"],
       ];
@@ -4969,6 +5067,7 @@ function MentorSection({
   const [mentorMaterialTemplates, setMentorMaterialTemplates] = useState<any[]>([]);
   const [mentorItemGuides, setMentorItemGuides] = useState<any[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
+  const [mentees, setMentees] = useState<any[]>([]);
   const [status, setStatus] = useState("");
   const [meetingActionId, setMeetingActionId] = useState<string | null>(null);
   const [meetingNoteDrafts, setMeetingNoteDrafts] = useState<Record<number, string>>({});
@@ -5130,6 +5229,11 @@ function MentorSection({
     }
     if (section === "meetings") {
       void refreshMentorMeetings().catch((error) => setStatus(error.message));
+    }
+    if (section === "mentees") {
+      void apiFetch<any[]>("/mentor/mentees", undefined, token)
+        .then(setMentees)
+        .catch((error) => setStatus(error.message));
     }
   }, [section, token]);
 
@@ -5568,6 +5672,41 @@ function MentorSection({
               <strong>30 min</strong>
             </div>
           </div>
+        </div>
+      ) : null}
+      {section === "mentees" ? (
+        <div className="stack">
+          <div className="dashboard-card">
+            <h2>Podopieczni</h2>
+            <p className="muted">
+              Wyniki akademickie studentów, do których masz nadany dostęp. Dane aktualizują sami studenci w zakładce „Twoje Dane”.
+            </p>
+          </div>
+          {mentees.map((mentee) => (
+            <div className="dashboard-card mentee-academic-card" key={mentee.menteeUserId}>
+              <header className="mentee-academic-header">
+                <div>
+                  <h2>{mentee.fullName}</h2>
+                  <div className="small muted">{mentee.studentEmail || mentee.email}</div>
+                </div>
+                <div className="mentee-academic-meta small muted">
+                  {mentee.intakeYear ? <span>Rok rozpoczęcia: {mentee.intakeYear}</span> : null}
+                  {Array.isArray(mentee.targetCountries) && mentee.targetCountries.length ? (
+                    <span>Kraje: {mentee.targetCountries.join(", ")}</span>
+                  ) : null}
+                  {mentee.academicResults?.updatedAt ? (
+                    <span>Aktualizacja: {formatDate(mentee.academicResults.updatedAt)}</span>
+                  ) : null}
+                </div>
+              </header>
+              <AcademicResultsSummary results={mentee.academicResults} />
+            </div>
+          ))}
+          {!mentees.length ? (
+            <div className="dashboard-card">
+              <div className="status">Nie masz jeszcze przypisanych podopiecznych.</div>
+            </div>
+          ) : null}
         </div>
       ) : null}
       {section === "profile" ? (
@@ -6617,6 +6756,9 @@ function MenteeSection({
   const [availableGuideUniversityFilter, setAvailableGuideUniversityFilter] = useState("all");
   const [openHintGuide, setOpenHintGuide] = useState<any | null>(null);
   const [profileValues, setProfileValues] = useState<Record<string, string>>({});
+  const [academicResultsForm, setAcademicResultsForm] = useState<AcademicResultsForm>(
+    createEmptyAcademicResultsForm,
+  );
   const [status, setStatus] = useState("");
   const [purchasePopup, setPurchasePopup] = useState<null | {
     body: string;
@@ -6954,6 +7096,7 @@ function MenteeSection({
       nextValues[String(field.id)] = responses.get(field.id) ?? "";
     }
     setProfileValues(nextValues);
+    setAcademicResultsForm(academicResultsToForm(payload.academicResults));
     return payload;
   }
 
@@ -7217,6 +7360,42 @@ function MenteeSection({
       setStatus("Twoje dane zostały zapisane.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Nie udało się zapisać danych.");
+    }
+  }
+
+  async function saveAcademicResults(event: React.FormEvent) {
+    event.preventDefault();
+    setStatus("");
+    const gpaValue = optionalNumber(academicResultsForm.gpaValue);
+    const gpaScale = optionalNumber(academicResultsForm.gpaScale);
+    if ((gpaValue === null) !== (gpaScale === null)) {
+      setStatus("Podaj zarówno GPA, jak i skalę GPA albo pozostaw oba pola puste.");
+      return;
+    }
+
+    try {
+      const savedResults = await apiFetch<any>("/mentee/academic-results", {
+        method: "PUT",
+        body: JSON.stringify({
+          gpaScale,
+          gpaValue,
+          ieltsListening: optionalNumber(academicResultsForm.ieltsListening),
+          ieltsOverall: optionalNumber(academicResultsForm.ieltsOverall),
+          ieltsReading: optionalNumber(academicResultsForm.ieltsReading),
+          ieltsSpeaking: optionalNumber(academicResultsForm.ieltsSpeaking),
+          ieltsTestDate: academicResultsForm.ieltsTestDate || null,
+          ieltsWriting: optionalNumber(academicResultsForm.ieltsWriting),
+          satMath: optionalNumber(academicResultsForm.satMath),
+          satReadingWriting: optionalNumber(academicResultsForm.satReadingWriting),
+          satTestDate: academicResultsForm.satTestDate || null,
+          satTotal: optionalNumber(academicResultsForm.satTotal),
+        }),
+      }, token);
+      setAcademicResultsForm(academicResultsToForm(savedResults));
+      setOverview((current: any) => current ? { ...current, academicResults: savedResults } : current);
+      setStatus("Wyniki akademickie zostały zapisane i są widoczne dla Twoich mentorów.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać wyników akademickich.");
     }
   }
 
@@ -8842,39 +9021,183 @@ function MenteeSection({
         </div>
       ) : null}
       {section === "profile" && overview ? (
-        <div className="dashboard-card">
-          <h2>Twoje Dane</h2>
-          <p className="muted">To jest pełny formularz danych aplikacyjnych. Administrator może z czasem dodawać tutaj kolejne pola wymagane przez uczelnie.</p>
-          <form className="stack" onSubmit={saveProfileResponses} style={{ marginTop: 18 }}>
-            {Array.from(new Set(profileFields.map((field: any) => String(field.sectionTitle)))) .map((sectionTitle: string) => (
-              <div className="stack" key={sectionTitle} style={{ paddingTop: 4 }}>
-                <h3 style={{ margin: "0 0 6px", color: "#153f2c" }}>{sectionTitle}</h3>
-                {profileFields
-                  .filter((field: any) => field.sectionTitle === sectionTitle)
-                  .map((field: any) => (
-                    <div className="field" key={field.id}>
-                      <label>{field.label}{field.isRequired ? " *" : ""}</label>
-                      {field.fieldType === "textarea" ? (
-                        <textarea
-                          placeholder={field.placeholder ?? ""}
-                          value={profileValues[String(field.id)] ?? ""}
-                          onChange={(event) => setProfileValues((current) => ({ ...current, [String(field.id)]: event.target.value }))}
-                        />
-                      ) : (
-                        <input
-                          type={field.fieldType === "date" ? "date" : "text"}
-                          placeholder={field.placeholder ?? ""}
-                          value={profileValues[String(field.id)] ?? ""}
-                          onChange={(event) => setProfileValues((current) => ({ ...current, [String(field.id)]: event.target.value }))}
-                        />
-                      )}
-                      {field.description ? <div className="small muted">{field.description}</div> : null}
+        <div className="stack">
+          <div className="dashboard-card academic-results-editor">
+            <h2>Wyniki akademickie</h2>
+            <p className="muted">
+              Uzupełnij aktualne wyniki. Po zapisaniu będą widoczne dla przypisanych Ci mentorów.
+            </p>
+            <AcademicResultsSummary results={overview.academicResults} />
+            <form className="stack" onSubmit={saveAcademicResults} style={{ marginTop: 22 }}>
+              <section className="academic-entry-group">
+                <div>
+                  <h3>GPA</h3>
+                  <p className="small muted">Wpisz średnią razem ze skalą, np. 3,8 na 4,0.</p>
+                </div>
+                <div className="grid-2">
+                  <div className="field">
+                    <label>Twój GPA</label>
+                    <input
+                      inputMode="decimal"
+                      min="0"
+                      placeholder="np. 3,8"
+                      step="0.01"
+                      type="number"
+                      value={academicResultsForm.gpaValue}
+                      onChange={(event) => setAcademicResultsForm((current) => ({ ...current, gpaValue: event.target.value }))}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Maksymalny GPA w skali</label>
+                    <input
+                      inputMode="decimal"
+                      min="0.01"
+                      placeholder="np. 4,0"
+                      step="0.01"
+                      type="number"
+                      value={academicResultsForm.gpaScale}
+                      onChange={(event) => setAcademicResultsForm((current) => ({ ...current, gpaScale: event.target.value }))}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section className="academic-entry-group">
+                <div>
+                  <h3>SAT</h3>
+                  <p className="small muted">Łączny wynik oraz dwie części egzaminu.</p>
+                </div>
+                <div className="academic-input-grid">
+                  <div className="field">
+                    <label>Wynik łączny</label>
+                    <input
+                      inputMode="numeric"
+                      max="1600"
+                      min="400"
+                      placeholder="np. 1450"
+                      step="1"
+                      type="number"
+                      value={academicResultsForm.satTotal}
+                      onChange={(event) => setAcademicResultsForm((current) => ({ ...current, satTotal: event.target.value }))}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Czytanie i pisanie</label>
+                    <input
+                      inputMode="numeric"
+                      max="800"
+                      min="200"
+                      placeholder="np. 700"
+                      step="1"
+                      type="number"
+                      value={academicResultsForm.satReadingWriting}
+                      onChange={(event) => setAcademicResultsForm((current) => ({ ...current, satReadingWriting: event.target.value }))}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Matematyka</label>
+                    <input
+                      inputMode="numeric"
+                      max="800"
+                      min="200"
+                      placeholder="np. 750"
+                      step="1"
+                      type="number"
+                      value={academicResultsForm.satMath}
+                      onChange={(event) => setAcademicResultsForm((current) => ({ ...current, satMath: event.target.value }))}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Data egzaminu</label>
+                    <input
+                      type="date"
+                      value={academicResultsForm.satTestDate}
+                      onChange={(event) => setAcademicResultsForm((current) => ({ ...current, satTestDate: event.target.value }))}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section className="academic-entry-group">
+                <div>
+                  <h3>IELTS Academic</h3>
+                  <p className="small muted">Wynik ogólny i wyniki cząstkowe w krokach po 0,5.</p>
+                </div>
+                <div className="academic-input-grid">
+                  {([
+                    ["ieltsOverall", "Wynik ogólny"],
+                    ["ieltsListening", "Słuchanie"],
+                    ["ieltsReading", "Czytanie"],
+                    ["ieltsWriting", "Pisanie"],
+                    ["ieltsSpeaking", "Mówienie"],
+                  ] as Array<[keyof AcademicResultsForm, string]>).map(([key, label]) => (
+                    <div className="field" key={key}>
+                      <label>{label}</label>
+                      <input
+                        inputMode="decimal"
+                        max="9"
+                        min="0"
+                        placeholder="np. 7,5"
+                        step="0.5"
+                        type="number"
+                        value={academicResultsForm[key]}
+                        onChange={(event) => setAcademicResultsForm((current) => ({ ...current, [key]: event.target.value }))}
+                      />
                     </div>
                   ))}
-              </div>
-            ))}
-            <button className="btn btn-primary">Zapisz Twoje Dane</button>
-          </form>
+                  <div className="field">
+                    <label>Data egzaminu</label>
+                    <input
+                      type="date"
+                      value={academicResultsForm.ieltsTestDate}
+                      onChange={(event) => setAcademicResultsForm((current) => ({ ...current, ieltsTestDate: event.target.value }))}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <button className="btn btn-primary">Zapisz wyniki akademickie</button>
+            </form>
+          </div>
+
+          <div className="dashboard-card">
+            <h2>Pozostałe dane aplikacyjne</h2>
+            <p className="muted">Administrator może z czasem dodawać tutaj kolejne pola wymagane przez uczelnie.</p>
+            {profileFields.length ? (
+              <form className="stack" onSubmit={saveProfileResponses} style={{ marginTop: 18 }}>
+                {Array.from(new Set(profileFields.map((field: any) => String(field.sectionTitle)))) .map((sectionTitle: string) => (
+                  <div className="stack" key={sectionTitle} style={{ paddingTop: 4 }}>
+                    <h3 style={{ margin: "0 0 6px", color: "#153f2c" }}>{sectionTitle}</h3>
+                    {profileFields
+                      .filter((field: any) => field.sectionTitle === sectionTitle)
+                      .map((field: any) => (
+                        <div className="field" key={field.id}>
+                          <label>{field.label}{field.isRequired ? " *" : ""}</label>
+                          {field.fieldType === "textarea" ? (
+                            <textarea
+                              placeholder={field.placeholder ?? ""}
+                              value={profileValues[String(field.id)] ?? ""}
+                              onChange={(event) => setProfileValues((current) => ({ ...current, [String(field.id)]: event.target.value }))}
+                            />
+                          ) : (
+                            <input
+                              type={field.fieldType === "date" ? "date" : "text"}
+                              placeholder={field.placeholder ?? ""}
+                              value={profileValues[String(field.id)] ?? ""}
+                              onChange={(event) => setProfileValues((current) => ({ ...current, [String(field.id)]: event.target.value }))}
+                            />
+                          )}
+                          {field.description ? <div className="small muted">{field.description}</div> : null}
+                        </div>
+                      ))}
+                  </div>
+                ))}
+                <button className="btn btn-primary">Zapisz pozostałe dane</button>
+              </form>
+            ) : (
+              <div className="status" style={{ marginTop: 18 }}>Brak dodatkowych pól do uzupełnienia.</div>
+            )}
+          </div>
         </div>
       ) : null}
       {section === "offers" && overview ? (

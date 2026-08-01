@@ -42,6 +42,7 @@ There are currently no automated test files or configured Jest/Vitest/Playwright
 ## Core platform data model
 
 - Accounts and access: `platform_users`, `platform_sessions`, `platform_password_reset_tokens`, `mentor_profiles`, `mentee_profiles`, `platform_mentor_assignments`, `platform_guide_assignments`.
+- Academic profile: `platform_academic_results` stores one structured result record per mentee, including GPA with its scale, SAT total/components/date, and IELTS overall/components/date.
 - University process: `platform_guides`, `platform_guide_checklist_items`, `platform_material_templates`, `platform_material_item_states`, `platform_file_assets`.
 - Mentoring: `mentor_availability_rules`, `mentor_universities`, `platform_meetings`, `platform_mentor_workspace_links`.
 - Integrations and commerce: `platform_google_connections`, `platform_products`, `platform_cart_items`, `platform_popup_configs`, `platform_email_classifier_rules`, `platform_university_emails`.
@@ -141,6 +142,13 @@ The Gmail monitor scans up to 40 messages from the last 120 days, keeps only mes
 - The self-service adoption route inserts `platform_guide_assignments` before checking the active-guide limit. A rejected adoption can therefore leave persistent template access behind.
 - Stripe Checkout has no webhook-based entitlement fulfillment yet.
 - The platform backend and frontend are each very large single files, and there is no automated test suite; guide/import/access changes need focused manual regression checks plus typecheck/build.
+
+## Academic results feature
+
+- Mentees edit GPA, SAT, and IELTS in a dedicated section at the top of `Twoje Dane`. Score ranges and the GPA-to-scale relationship are validated by the API before upsert.
+- `GET /api/platform/mentor/mentees` exposes these results only for students linked through `platform_mentor_assignments` or whose `primaryMentorUserId` is the authenticated mentor.
+- Mentors see the result summaries in the `Podopieczni` section. The existing admin-configurable profile fields remain separate below the academic form.
+- The schema change requires `lib/db/migrations/20260801_academic_results.sql` to be applied before deploying the dependent API code. A successful frontend/API build does not apply this SQL.
 
 ## Two-computer workflow
 
