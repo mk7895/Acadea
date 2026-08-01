@@ -12,6 +12,7 @@ import {
   mentorUniversitiesTable,
   newsletterSignupsTable,
   platformGoogleConnectionsTable,
+  platformAcademicResultsTable,
   platformGuideAssignmentsTable,
   platformGuideChecklistItemsTable,
   platformGuidesTable,
@@ -266,6 +267,52 @@ const profileResponseSchema = z.object({
     }),
   ).default([]),
 });
+
+const nullableIeltsBandSchema = z
+  .number()
+  .min(0)
+  .max(9)
+  .refine((value) => Number.isInteger(value * 2), "Wynik IELTS musi być podany co 0,5 punktu.")
+  .nullable()
+  .default(null);
+
+const nullableExamDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .nullable()
+  .default(null);
+
+const academicResultsSchema = z
+  .object({
+    gpaValue: z.number().min(0).max(999).nullable().default(null),
+    gpaScale: z.number().positive().max(999).nullable().default(null),
+    satTotal: z.number().int().min(400).max(1600).nullable().default(null),
+    satReadingWriting: z.number().int().min(200).max(800).nullable().default(null),
+    satMath: z.number().int().min(200).max(800).nullable().default(null),
+    satTestDate: nullableExamDateSchema,
+    ieltsOverall: nullableIeltsBandSchema,
+    ieltsListening: nullableIeltsBandSchema,
+    ieltsReading: nullableIeltsBandSchema,
+    ieltsWriting: nullableIeltsBandSchema,
+    ieltsSpeaking: nullableIeltsBandSchema,
+    ieltsTestDate: nullableExamDateSchema,
+  })
+  .superRefine((value, context) => {
+    if ((value.gpaValue === null) !== (value.gpaScale === null)) {
+      context.addIssue({
+        code: "custom",
+        message: "Podaj zarówno GPA, jak i skalę GPA.",
+        path: [value.gpaValue === null ? "gpaValue" : "gpaScale"],
+      });
+    }
+    if (value.gpaValue !== null && value.gpaScale !== null && value.gpaValue > value.gpaScale) {
+      context.addIssue({
+        code: "custom",
+        message: "GPA nie może być wyższe niż maksymalna wartość skali.",
+        path: ["gpaValue"],
+      });
+    }
+  });
 
 const materialTemplateSchema = z.object({
   title: z.string().trim().min(1),
@@ -1088,6 +1135,50 @@ function serializeMentorProfile(
     rescheduleNoticeHours: profile.rescheduleNoticeHours ?? 24,
     timezone: profile.timezone ?? "Europe/Warsaw",
     whatsappNumber: profile.whatsappNumber ?? "",
+  };
+}
+
+function serializeAcademicResults(
+  results:
+    | {
+        createdAt?: Date | null;
+        gpaScale?: string | null;
+        gpaValue?: string | null;
+        id?: number;
+        ieltsListening?: string | null;
+        ieltsOverall?: string | null;
+        ieltsReading?: string | null;
+        ieltsSpeaking?: string | null;
+        ieltsTestDate?: string | null;
+        ieltsWriting?: string | null;
+        menteeUserId?: number;
+        satMath?: number | null;
+        satReadingWriting?: number | null;
+        satTestDate?: string | null;
+        satTotal?: number | null;
+        updatedAt?: Date | null;
+      }
+    | null
+    | undefined,
+) {
+  if (!results) {
+    return null;
+  }
+
+  const numericValue = (value: string | null | undefined) =>
+    value === null || value === undefined ? null : Number(value);
+
+  return {
+    ...results,
+    gpaScale: numericValue(results.gpaScale),
+    gpaValue: numericValue(results.gpaValue),
+    ieltsListening: numericValue(results.ieltsListening),
+    ieltsOverall: numericValue(results.ieltsOverall),
+    ieltsReading: numericValue(results.ieltsReading),
+    ieltsSpeaking: numericValue(results.ieltsSpeaking),
+    ieltsWriting: numericValue(results.ieltsWriting),
+    createdAt: results.createdAt?.toISOString() ?? null,
+    updatedAt: results.updatedAt?.toISOString() ?? null,
   };
 }
 
@@ -5176,6 +5267,68 @@ router.delete(
 );
 
 router.get(
+  "/platform/mentor/mentees",
+  requirePlatformAuth,
+  requirePlatformRole("mentor"),
+  async (req: AuthenticatedRequest, res) => {
+    const { db } = await import("@workspace/db");
+    const [accessRows, primaryMenteeRows] = await Promise.all([
+      db
+        .select({ menteeUserId: platformMentorAssignmentsTable.menteeUserId })
+        .from(platformMentorAssignmentsTable)
+        .where(eq(platformMentorAssignmentsTable.mentorUserId, req.platformUser!.id)),
+      db
+        .select({ menteeUserId: menteeProfilesTable.userId })
+        .from(menteeProfilesTable)
+        .where(eq(menteeProfilesTable.primaryMentorUserId, req.platformUser!.id)),
+    ]);
+    const menteeUserIds = Array.from(new Set([
+      ...accessRows.map((row) => row.menteeUserId),
+      ...primaryMenteeRows.map((row) => row.menteeUserId),
+    ]));
+
+    if (!menteeUserIds.length) {
+      return res.json([]);
+    }
+
+    const [mentees, academicResults] = await Promise.all([
+      db
+        .select({
+          email: platformUsersTable.email,
+          fullName: platformUsersTable.fullName,
+          intakeYear: menteeProfilesTable.intakeYear,
+          menteeUserId: platformUsersTable.id,
+          studentEmail: menteeProfilesTable.studentEmail,
+          targetCountries: menteeProfilesTable.targetCountries,
+        })
+        .from(platformUsersTable)
+        .innerJoin(menteeProfilesTable, eq(menteeProfilesTable.userId, platformUsersTable.id))
+        .where(
+          and(
+            inArray(platformUsersTable.id, menteeUserIds),
+            eq(platformUsersTable.role, "mentee"),
+          ),
+        )
+        .orderBy(asc(platformUsersTable.fullName)),
+      db
+        .select()
+        .from(platformAcademicResultsTable)
+        .where(inArray(platformAcademicResultsTable.menteeUserId, menteeUserIds)),
+    ]);
+    const academicResultsByMentee = new Map(
+      academicResults.map((results) => [results.menteeUserId, serializeAcademicResults(results)]),
+    );
+
+    return res.json(
+      mentees.map((mentee) => ({
+        ...mentee,
+        academicResults: academicResultsByMentee.get(mentee.menteeUserId) ?? null,
+      })),
+    );
+  },
+);
+
+router.get(
   "/platform/mentor/meetings",
   requirePlatformAuth,
   requirePlatformRole("mentor"),
@@ -5868,6 +6021,11 @@ router.get(
           .from(platformProfileResponsesTable)
           .where(eq(platformProfileResponsesTable.menteeUserId, req.platformUser!.id))
       : [];
+    const [academicResults] = await db
+      .select()
+      .from(platformAcademicResultsTable)
+      .where(eq(platformAcademicResultsTable.menteeUserId, req.platformUser!.id))
+      .limit(1);
     const accessibleGuideIds = Array.from(new Set([
       ...uniqueGuides.map((guide) => guide.id),
       ...assignedGuideTemplates.map((guide) => guide.id),
@@ -6050,6 +6208,7 @@ router.get(
         updatedAt: connection.updatedAt.toISOString(),
       })),
       profile,
+      academicResults: serializeAcademicResults(academicResults),
       assignedMentors: assignedMentors.map((mentor) => ({
         ...mentor,
         googleCalendarConnected:
@@ -6596,6 +6755,51 @@ router.post(
     });
 
     return res.json({ state });
+  },
+);
+
+router.put(
+  "/platform/mentee/academic-results",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = academicResultsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+
+    const { db } = await import("@workspace/db");
+    const numericText = (value: number | null) => (value === null ? null : String(value));
+    const values = {
+      gpaScale: numericText(parsed.data.gpaScale),
+      gpaValue: numericText(parsed.data.gpaValue),
+      ieltsListening: numericText(parsed.data.ieltsListening),
+      ieltsOverall: numericText(parsed.data.ieltsOverall),
+      ieltsReading: numericText(parsed.data.ieltsReading),
+      ieltsSpeaking: numericText(parsed.data.ieltsSpeaking),
+      ieltsTestDate: parsed.data.ieltsTestDate,
+      ieltsWriting: numericText(parsed.data.ieltsWriting),
+      satMath: parsed.data.satMath,
+      satReadingWriting: parsed.data.satReadingWriting,
+      satTestDate: parsed.data.satTestDate,
+      satTotal: parsed.data.satTotal,
+    };
+    const [results] = await db
+      .insert(platformAcademicResultsTable)
+      .values({
+        menteeUserId: req.platformUser!.id,
+        ...values,
+      })
+      .onConflictDoUpdate({
+        target: platformAcademicResultsTable.menteeUserId,
+        set: {
+          ...values,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    return res.json(serializeAcademicResults(results));
   },
 );
 

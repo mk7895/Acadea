@@ -100,7 +100,19 @@ As of 2026-08-01, the following context exists only on Mateusz's computer and is
 - `.local-work/research/`, `.local-work/docs/`, `.local-work/scripts-data/`, and `.import-jsons/` contain additional research and guide/import artifacts.
 - Root `scripts/` contains local operational tooling and dependencies. It is ignored and must not be assumed to exist on Marlena's computer.
 
-## Current feature-branch handoff
+## Current feature-branch handoffs
+
+### `codex/academic-results` on Marlena's computer
+
+- **Git:** local feature branch created from synchronized `origin/main`; changes are not committed or pushed.
+- **Code:** structured GPA, SAT, and IELTS entry for mentees plus an assigned-student results view for mentors are implemented in the platform frontend, API, and Drizzle schema.
+- **Database:** `lib/db/migrations/20260801_academic_results.sql` is prepared but has not been applied to any environment.
+- **External configuration:** not required.
+- **Local-only dependency:** none for the feature. The bundled Codex Node runtime had to be placed on `PATH` for local package post-install scripts.
+- **Verification:** `pnpm run typecheck` passed; the full `pnpm run build` passed after using the bundled Node runtime. No database-backed browser smoke test was run on this clean clone.
+- **Next action:** review the diff, then commit/push if approved; apply the academic-results SQL migration before deploying the API/frontend and verify both mentee save and mentor visibility against the target database.
+
+### `feature/community-motivation-leaderboard` on Mateusz's computer
 
 As of 2026-08-01, Mateusz's computer has an uncommitted implementation on `feature/community-motivation-leaderboard`:
 

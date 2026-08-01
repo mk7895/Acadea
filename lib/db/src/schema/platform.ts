@@ -2,6 +2,7 @@ import {
   boolean,
   integer,
   jsonb,
+  numeric,
   pgTable,
   serial,
   text,
@@ -351,6 +352,35 @@ export const platformProfileResponsesTable = pgTable("platform_profile_responses
     table.fieldId,
   ),
 }));
+
+export const platformAcademicResultsTable = pgTable(
+  "platform_academic_results",
+  {
+    id: serial("id").primaryKey(),
+    menteeUserId: integer("mentee_user_id")
+      .references(() => platformUsersTable.id, { onDelete: "cascade" })
+      .notNull(),
+    gpaValue: numeric("gpa_value", { precision: 5, scale: 2 }),
+    gpaScale: numeric("gpa_scale", { precision: 5, scale: 2 }),
+    satTotal: integer("sat_total"),
+    satReadingWriting: integer("sat_reading_writing"),
+    satMath: integer("sat_math"),
+    satTestDate: text("sat_test_date"),
+    ieltsOverall: numeric("ielts_overall", { precision: 2, scale: 1 }),
+    ieltsListening: numeric("ielts_listening", { precision: 2, scale: 1 }),
+    ieltsReading: numeric("ielts_reading", { precision: 2, scale: 1 }),
+    ieltsWriting: numeric("ielts_writing", { precision: 2, scale: 1 }),
+    ieltsSpeaking: numeric("ielts_speaking", { precision: 2, scale: 1 }),
+    ieltsTestDate: text("ielts_test_date"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    menteeUnique: uniqueIndex("platform_academic_results_mentee_unique").on(
+      table.menteeUserId,
+    ),
+  }),
+);
 
 export const platformMaterialTemplatesTable = pgTable("platform_material_templates", {
   id: serial("id").primaryKey(),
