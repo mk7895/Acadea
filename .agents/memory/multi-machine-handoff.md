@@ -100,17 +100,11 @@ As of 2026-08-01, the following context exists only on Mateusz's computer and is
 - `.local-work/research/`, `.local-work/docs/`, `.local-work/scripts-data/`, and `.import-jsons/` contain additional research and guide/import artifacts.
 - Root `scripts/` contains local operational tooling and dependencies. It is ignored and must not be assumed to exist on Marlena's computer.
 
-## Current feature-branch handoff
+## Recently integrated tracked work
 
-As of 2026-08-01, Mateusz's computer has an uncommitted implementation on `feature/community-motivation-leaderboard`:
+As of 2026-08-02, the community motivation leaderboard code is tracked on `main` through merge commit `09d5f5a`. Its database migration remains a separate deployment step: Git-tracked state does not confirm that `lib/db/migrations/20260801_community_leaderboard.sql` was applied or that the feature was production-verified. Check the live database and deployed services before claiming either status.
 
-- **Git:** the branch was created from `ebd1545`; it has not been committed or pushed, so another computer must not attempt to continue it from Git yet.
-- **Code:** mentee opt-in aliases, essay-progress ranking, weekly weighted entries, persistent winners, an admin draw dashboard, and responsive community UI are implemented.
-- **Database:** `lib/db/migrations/20260801_community_leaderboard.sql` is prepared and aligned with the Drizzle schema. It has not been applied to any database and has not been production-verified.
-- **External configuration:** none required.
-- **Local-only dependency:** none required for the feature. The generated visual-QA preview under the ignored platform `dist/` directory is disposable.
-- **Verification:** library, platform, and API typechecks passed; API and platform production builds passed; the community UI was inspected at 1440px and 390px with no horizontal overflow or browser warnings. The unchanged public website typecheck was tried both through the root check and on its own, but emitted no diagnostics and was interrupted after remaining active for more than five minutes.
-- **Next action:** review and commit the branch, investigate the unusually slow public-site TypeScript check separately, apply the tracked SQL to the intended database, then deploy API and platform builds and smoke-test both community roles.
+The scholarship parent-consent URL repair requires no database migration. Its durable routing and privacy rules are recorded in `.agents/memory/acadea-site.md`.
 
 The file names above are inventory only. Their presence in this note does not make their content available on another computer. If any item becomes necessary for repeatable application behavior, implement a safe tracked equivalent rather than committing local secrets or one-off operational data.
 
