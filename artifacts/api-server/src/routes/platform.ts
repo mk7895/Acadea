@@ -1,5 +1,6 @@
 import { Router, type NextFunction, type Request, type Response } from "express";
-import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { randomInt } from "node:crypto";
+import { and, asc, desc, eq, gte, inArray, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   bookingLeadsTable,
@@ -26,6 +27,8 @@ import {
   platformProfileFieldsTable,
   platformProfileResponsesTable,
   platformCartItemsTable,
+  platformCommunityPreferencesTable,
+  platformCommunityRaffleWinnersTable,
   platformEmailClassifierRulesTable,
   platformUniversityEmailsTable,
   scholarshipParentConsentsTable,
@@ -464,6 +467,11 @@ const menteeMaterialDocTabSchema = z.object({
 const menteeMaterialRemoveSchema = z.object({
   templateId: z.number().int().positive(),
   rowKey: z.string().trim().min(1),
+});
+
+const menteeCommunityPreferenceSchema = z.object({
+  displayName: z.string().trim().min(2).max(32),
+  isParticipating: z.boolean(),
 });
 
 const adminMasterDocCreateTabSchema = z.object({
@@ -2526,6 +2534,179 @@ function requirePlatformRole(...roles: PlatformUserRole[]) {
     }
     next();
   };
+}
+
+function getCommunityWeek(now = new Date()) {
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const daysSinceMonday = (start.getUTCDay() + 6) % 7;
+  start.setUTCDate(start.getUTCDate() - daysSinceMonday);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 7);
+  return {
+    endsAt: end,
+    key: start.toISOString().slice(0, 10),
+    startsAt: start,
+  };
+}
+
+function getDefaultCommunityDisplayName(menteeUserId: number) {
+  return `Student ${String(menteeUserId).padStart(3, "0")}`;
+}
+
+async function getCommunityProgressSnapshot(db: any, now = new Date()) {
+  const week = getCommunityWeek(now);
+  const essayTemplates = await db
+    .select({
+      id: platformMaterialTemplatesTable.id,
+      structure: platformMaterialTemplatesTable.structure,
+    })
+    .from(platformMaterialTemplatesTable)
+    .where(
+      and(
+        eq(platformMaterialTemplatesTable.isActive, true),
+        eq(platformMaterialTemplatesTable.templateType, "essay_like"),
+      ),
+    );
+  const essayTemplateIds = essayTemplates.map((template: { id: number }) => template.id);
+  const validEssayRowKeys = new Set(
+    essayTemplates.flatMap((template: { id: number; structure: unknown }) =>
+      normalizeMaterialStructureRows(template.structure)
+        .filter((row) => row.level === "item")
+        .map((row) => `${template.id}:${row.displayKey}`),
+    ),
+  );
+  const completedRows = essayTemplateIds.length
+    ? await db
+        .select({
+          menteeUserId: platformMaterialItemStatesTable.menteeUserId,
+          rowKey: platformMaterialItemStatesTable.rowKey,
+          templateId: platformMaterialItemStatesTable.templateId,
+          updatedAt: platformMaterialItemStatesTable.updatedAt,
+        })
+        .from(platformMaterialItemStatesTable)
+        .where(
+          and(
+            eq(platformMaterialItemStatesTable.completed, true),
+            inArray(platformMaterialItemStatesTable.templateId, essayTemplateIds),
+          ),
+        )
+    : [];
+  const completedByMentee = new Map<number, number>();
+  const completedThisWeekByMentee = new Map<number, number>();
+  for (const row of completedRows) {
+    if (!validEssayRowKeys.has(`${row.templateId}:${row.rowKey}`)) {
+      continue;
+    }
+    completedByMentee.set(
+      row.menteeUserId,
+      (completedByMentee.get(row.menteeUserId) ?? 0) + 1,
+    );
+    if (row.updatedAt >= week.startsAt && row.updatedAt < week.endsAt) {
+      completedThisWeekByMentee.set(
+        row.menteeUserId,
+        (completedThisWeekByMentee.get(row.menteeUserId) ?? 0) + 1,
+      );
+    }
+  }
+
+  const participants = await db
+    .select({
+      displayName: platformCommunityPreferencesTable.displayName,
+      email: platformUsersTable.email,
+      fullName: platformUsersTable.fullName,
+      menteeUserId: platformCommunityPreferencesTable.menteeUserId,
+    })
+    .from(platformCommunityPreferencesTable)
+    .innerJoin(
+      platformUsersTable,
+      eq(platformUsersTable.id, platformCommunityPreferencesTable.menteeUserId),
+    )
+    .where(
+      and(
+        eq(platformCommunityPreferencesTable.isParticipating, true),
+        eq(platformUsersTable.role, "mentee"),
+        inArray(platformUsersTable.status, ["active", "pending"]),
+      ),
+    );
+  const standings = participants
+    .map((participant: {
+      displayName: string;
+      email: string;
+      fullName: string;
+      menteeUserId: number;
+    }) => ({
+      ...participant,
+      completedEssays: completedByMentee.get(participant.menteeUserId) ?? 0,
+      completedThisWeek: completedThisWeekByMentee.get(participant.menteeUserId) ?? 0,
+    }))
+    .sort(
+      (left: { completedEssays: number; completedThisWeek: number; displayName: string }, right: { completedEssays: number; completedThisWeek: number; displayName: string }) =>
+        right.completedEssays - left.completedEssays
+        || right.completedThisWeek - left.completedThisWeek
+        || left.displayName.localeCompare(right.displayName, "pl"),
+    )
+    .map((standing: Record<string, unknown>, index: number) => ({ ...standing, rank: index + 1 }));
+
+  return {
+    completedByMentee,
+    completedThisWeekByMentee,
+    standings,
+    week,
+  };
+}
+
+async function getCommunityWinnerRows(db: any, weekKey?: string) {
+  return db
+    .select({
+      displayName: platformCommunityPreferencesTable.displayName,
+      email: platformUsersTable.email,
+      entryCount: platformCommunityRaffleWinnersTable.entryCount,
+      fullName: platformUsersTable.fullName,
+      isParticipating: platformCommunityPreferencesTable.isParticipating,
+      menteeUserId: platformCommunityRaffleWinnersTable.menteeUserId,
+      selectedAt: platformCommunityRaffleWinnersTable.selectedAt,
+      weekKey: platformCommunityRaffleWinnersTable.weekKey,
+    })
+    .from(platformCommunityRaffleWinnersTable)
+    .innerJoin(
+      platformUsersTable,
+      eq(platformUsersTable.id, platformCommunityRaffleWinnersTable.menteeUserId),
+    )
+    .innerJoin(
+      platformCommunityPreferencesTable,
+      eq(platformCommunityPreferencesTable.menteeUserId, platformCommunityRaffleWinnersTable.menteeUserId),
+    )
+    .where(weekKey ? eq(platformCommunityRaffleWinnersTable.weekKey, weekKey) : undefined)
+    .orderBy(
+      desc(platformCommunityRaffleWinnersTable.selectedAt),
+      asc(platformCommunityRaffleWinnersTable.id),
+    )
+    .limit(30);
+}
+
+function selectWeightedCommunityWinners<
+  T extends { completedEssays: number; menteeUserId: number },
+>(entries: T[], limit: number) {
+  const remaining = [...entries];
+  const selected: T[] = [];
+  while (remaining.length && selected.length < limit) {
+    const totalWeight = remaining.reduce(
+      (total, entry) => total + Math.max(1, entry.completedEssays),
+      0,
+    );
+    let cursor = randomInt(totalWeight);
+    let selectedIndex = 0;
+    for (let index = 0; index < remaining.length; index += 1) {
+      cursor -= Math.max(1, remaining[index].completedEssays);
+      if (cursor < 0) {
+        selectedIndex = index;
+        break;
+      }
+    }
+    selected.push(remaining[selectedIndex]);
+    remaining.splice(selectedIndex, 1);
+  }
+  return selected;
 }
 
 async function upsertGuideItems(db: Awaited<typeof import("@workspace/db")>["db"], guideId: number, items: z.infer<typeof guideItemSchema>[]) {
@@ -5328,6 +5509,226 @@ router.delete(
     }
 
     return res.status(204).end();
+  },
+);
+
+router.get(
+  "/platform/mentee/community",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const { db } = await import("@workspace/db");
+    const [preference] = await db
+      .select()
+      .from(platformCommunityPreferencesTable)
+      .where(eq(platformCommunityPreferencesTable.menteeUserId, req.platformUser!.id))
+      .limit(1);
+    const snapshot = await getCommunityProgressSnapshot(db);
+    const currentWinners = await getCommunityWinnerRows(db, snapshot.week.key);
+    const recentWinners = await getCommunityWinnerRows(db);
+    const currentStanding = snapshot.standings.find(
+      (standing: { menteeUserId: number }) => standing.menteeUserId === req.platformUser!.id,
+    );
+    const completedEssays = snapshot.completedByMentee.get(req.platformUser!.id) ?? 0;
+    const completedThisWeek = snapshot.completedThisWeekByMentee.get(req.platformUser!.id) ?? 0;
+    const isParticipating = Boolean(preference?.isParticipating);
+    const publicStanding = (standing: {
+      completedEssays: number;
+      completedThisWeek: number;
+      displayName: string;
+      menteeUserId: number;
+      rank: number;
+    }) => ({
+      completedEssays: standing.completedEssays,
+      completedThisWeek: standing.completedThisWeek,
+      displayName: standing.displayName,
+      isCurrentUser: standing.menteeUserId === req.platformUser!.id,
+      rank: standing.rank,
+    });
+    const publicWinner = (winner: {
+      displayName: string;
+      entryCount: number;
+      menteeUserId: number;
+      selectedAt: Date;
+      weekKey: string;
+    }) => ({
+      displayName: winner.displayName,
+      entryCount: winner.entryCount,
+      isCurrentUser: winner.menteeUserId === req.platformUser!.id,
+      selectedAt: winner.selectedAt.toISOString(),
+      weekKey: winner.weekKey,
+    });
+
+    return res.json({
+      leaderboard: snapshot.standings.slice(0, 50).map(publicStanding),
+      me: {
+        completedEssays,
+        completedThisWeek,
+        eligibleForDraw: isParticipating && completedEssays > 0,
+        entryCount: isParticipating ? completedEssays : 0,
+        rank: currentStanding?.rank ?? null,
+      },
+      participation: {
+        displayName:
+          preference?.displayName ?? getDefaultCommunityDisplayName(req.platformUser!.id),
+        isParticipating,
+      },
+      raffle: {
+        drawn: currentWinners.length > 0,
+        endsAt: snapshot.week.endsAt.toISOString(),
+        startsAt: snapshot.week.startsAt.toISOString(),
+        weekKey: snapshot.week.key,
+        winners: currentWinners
+          .filter((winner: { isParticipating: boolean }) => winner.isParticipating)
+          .map(publicWinner),
+      },
+      recentWinners: recentWinners
+        .filter(
+          (winner: { isParticipating: boolean; weekKey: string }) =>
+            winner.isParticipating && winner.weekKey !== snapshot.week.key,
+        )
+        .slice(0, 15)
+        .map(publicWinner),
+      summary: {
+        completedEssays: snapshot.standings.reduce(
+          (total: number, standing: { completedEssays: number }) => total + standing.completedEssays,
+          0,
+        ),
+        completedThisWeek: snapshot.standings.reduce(
+          (total: number, standing: { completedThisWeek: number }) => total + standing.completedThisWeek,
+          0,
+        ),
+        participantCount: snapshot.standings.length,
+      },
+    });
+  },
+);
+
+router.put(
+  "/platform/mentee/community",
+  requirePlatformAuth,
+  requirePlatformRole("mentee"),
+  async (req: AuthenticatedRequest, res) => {
+    const parsed = menteeCommunityPreferenceSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: parsed.error.message });
+    }
+    const { db } = await import("@workspace/db");
+    const [preference] = await db
+      .insert(platformCommunityPreferencesTable)
+      .values({
+        displayName: parsed.data.displayName,
+        isParticipating: parsed.data.isParticipating,
+        menteeUserId: req.platformUser!.id,
+      })
+      .onConflictDoUpdate({
+        target: platformCommunityPreferencesTable.menteeUserId,
+        set: {
+          displayName: parsed.data.displayName,
+          isParticipating: parsed.data.isParticipating,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return res.json({
+      displayName: preference.displayName,
+      isParticipating: preference.isParticipating,
+    });
+  },
+);
+
+router.get(
+  "/platform/admin/community",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (_req: AuthenticatedRequest, res) => {
+    const { db } = await import("@workspace/db");
+    const snapshot = await getCommunityProgressSnapshot(db);
+    const winners = await getCommunityWinnerRows(db, snapshot.week.key);
+    return res.json({
+      leaderboard: snapshot.standings,
+      raffle: {
+        drawn: winners.length > 0,
+        endsAt: snapshot.week.endsAt.toISOString(),
+        startsAt: snapshot.week.startsAt.toISOString(),
+        weekKey: snapshot.week.key,
+        winners: winners.map((winner: any) => ({
+          ...winner,
+          selectedAt: winner.selectedAt.toISOString(),
+        })),
+      },
+      summary: {
+        completedEssays: snapshot.standings.reduce(
+          (total: number, standing: { completedEssays: number }) => total + standing.completedEssays,
+          0,
+        ),
+        completedThisWeek: snapshot.standings.reduce(
+          (total: number, standing: { completedThisWeek: number }) => total + standing.completedThisWeek,
+          0,
+        ),
+        eligibleCount: snapshot.standings.filter(
+          (standing: { completedEssays: number }) => standing.completedEssays > 0,
+        ).length,
+        participantCount: snapshot.standings.length,
+      },
+    });
+  },
+);
+
+router.post(
+  "/platform/admin/community/draw",
+  requirePlatformAuth,
+  requirePlatformRole("admin"),
+  async (_req: AuthenticatedRequest, res) => {
+    const { db } = await import("@workspace/db");
+    const drawResult = await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(1357902468)`);
+      const snapshot = await getCommunityProgressSnapshot(tx);
+      const existingWinners = await getCommunityWinnerRows(tx, snapshot.week.key);
+      if (existingWinners.length) {
+        return { alreadyDrawn: true, selectedCount: existingWinners.length };
+      }
+      const eligible = snapshot.standings.filter(
+        (standing: { completedEssays: number }) => standing.completedEssays > 0,
+      );
+      if (!eligible.length) {
+        return { alreadyDrawn: false, selectedCount: 0 };
+      }
+      const recentCutoff = new Date(snapshot.week.startsAt);
+      recentCutoff.setUTCDate(recentCutoff.getUTCDate() - 8 * 7);
+      const recentWinners = await tx
+        .select({ menteeUserId: platformCommunityRaffleWinnersTable.menteeUserId })
+        .from(platformCommunityRaffleWinnersTable)
+        .where(gte(platformCommunityRaffleWinnersTable.selectedAt, recentCutoff));
+      const recentWinnerIds = new Set(
+        recentWinners.map((winner: { menteeUserId: number }) => winner.menteeUserId),
+      );
+      const preferredPool = eligible.filter(
+        (standing: { menteeUserId: number }) => !recentWinnerIds.has(standing.menteeUserId),
+      );
+      const fallbackPool = eligible.filter(
+        (standing: { menteeUserId: number }) => recentWinnerIds.has(standing.menteeUserId),
+      );
+      const winnerLimit = Math.min(5, eligible.length);
+      const candidatePool = preferredPool.length >= winnerLimit
+        ? preferredPool
+        : [...preferredPool, ...fallbackPool];
+      const selected = selectWeightedCommunityWinners(candidatePool, winnerLimit);
+      await tx.insert(platformCommunityRaffleWinnersTable).values(
+        selected.map((standing) => ({
+          entryCount: standing.completedEssays,
+          menteeUserId: standing.menteeUserId,
+          weekKey: snapshot.week.key,
+        })),
+      );
+      return { alreadyDrawn: false, selectedCount: selected.length };
+    });
+    if (!drawResult.selectedCount) {
+      return res.status(409).json({
+        error: "Brak uczestników z ukończonym esejem w aktualnym losowaniu.",
+      });
+    }
+    return res.json(drawResult);
   },
 );
 

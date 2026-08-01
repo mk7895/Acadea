@@ -1219,6 +1219,7 @@ function Dashboard({
     if (session.user.role === "admin") {
       return [
         ["overview", "Przegląd"],
+        ["community", "Społeczność"],
         ["users", "Użytkownicy"],
         ["guides", "Szablony uczelni"],
         ["profile-designer", "Projektant Twoich Danych"],
@@ -1246,6 +1247,7 @@ function Dashboard({
       ["profile", "Twoje Dane"],
       ["materials", "Twoje Materiały"],
       ["essays", "Twoje Eseje"],
+      ["community", "Społeczność"],
       ["mentors", "Mentorzy"],
       ["meetings", "Twoje Spotkania"],
       ["offers", "Twoje Oferty"],
@@ -1435,6 +1437,8 @@ function AdminSection({
   token: string;
 }) {
   const [overview, setOverview] = useState<Overview | null>(null);
+  const [community, setCommunity] = useState<any>(null);
+  const [communityDrawPending, setCommunityDrawPending] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [mentorProfiles, setMentorProfiles] = useState<any[]>([]);
   const [menteeProfiles, setMenteeProfiles] = useState<any[]>([]);
@@ -1761,6 +1765,34 @@ function AdminSection({
     );
   }
 
+  async function refreshAdminCommunity() {
+    const payload = await apiFetch<any>("/admin/community", undefined, token);
+    setCommunity(payload);
+    return payload;
+  }
+
+  async function drawCommunityWinners() {
+    setCommunityDrawPending(true);
+    setStatus("");
+    try {
+      const result = await apiFetch<{ alreadyDrawn: boolean; selectedCount: number }>(
+        "/admin/community/draw",
+        { method: "POST" },
+        token,
+      );
+      await refreshAdminCommunity();
+      setStatus(
+        result.alreadyDrawn
+          ? "Losowanie na ten tydzień zostało już przeprowadzone."
+          : `Wylosowano ${result.selectedCount} ${result.selectedCount === 1 ? "osobę" : "osób"} do bezpłatnego feedbacku.`,
+      );
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się przeprowadzić losowania.");
+    } finally {
+      setCommunityDrawPending(false);
+    }
+  }
+
   async function refreshGuides() {
     const payload = await apiFetch<any[]>("/admin/guides", undefined, token);
     setGuides(payload);
@@ -2074,6 +2106,9 @@ function AdminSection({
       void apiFetch<Overview>("/admin/overview", undefined, token)
         .then(setOverview)
         .catch((error) => setStatus(error.message));
+    }
+    if (section === "community") {
+      void refreshAdminCommunity().catch((error) => setStatus(error.message));
     }
     if (section === "users") {
       void refreshUsers().catch((error) => setStatus(error.message));
@@ -2740,6 +2775,98 @@ function AdminSection({
             ))}
           </div>
         </div>
+      ) : null}
+      {section === "community" ? (
+        community ? (
+          <div className="stack">
+            <div className="dashboard-card community-admin-hero">
+              <div className="community-card-head">
+                <div>
+                  <div className="eyebrow">Motywacja i feedback</div>
+                  <h2 style={{ marginTop: 16 }}>Społeczność eseistów</h2>
+                  <p className="muted" style={{ marginBottom: 0 }}>
+                    Ranking pokazuje wyłącznie studentów, którzy dobrowolnie dołączyli pod pseudonimem. Każdy ukończony esej daje jeden los w cotygodniowym losowaniu.
+                  </p>
+                </div>
+                <button
+                  className="btn btn-primary"
+                  disabled={communityDrawPending || community.raffle.drawn || community.summary.eligibleCount === 0}
+                  onClick={() => void drawCommunityWinners()}
+                  type="button"
+                >
+                  {communityDrawPending
+                    ? "Losowanie…"
+                    : community.raffle.drawn
+                      ? "Losowanie zakończone"
+                      : "Wylosuj do 5 osób"}
+                </button>
+              </div>
+              <div className="stats-grid" style={{ marginTop: 20 }}>
+                <div className="stat"><div className="small muted">Uczestnicy</div><strong>{community.summary.participantCount}</strong></div>
+                <div className="stat"><div className="small muted">Ukończone eseje</div><strong>{community.summary.completedEssays}</strong></div>
+                <div className="stat"><div className="small muted">Ukończone w tym tygodniu</div><strong>{community.summary.completedThisWeek}</strong></div>
+                <div className="stat"><div className="small muted">Osoby z losami</div><strong>{community.summary.eligibleCount}</strong></div>
+              </div>
+            </div>
+            <div className="grid-2 community-admin-grid">
+              <div className="dashboard-card">
+                <div className="community-card-head">
+                  <div>
+                    <h2>Ranking</h2>
+                    <div className="small muted">Dane kontaktowe są widoczne tylko dla administratora.</div>
+                  </div>
+                  <span className="community-week-badge">Tydzień od {formatDate(community.raffle.startsAt)}</span>
+                </div>
+                {community.leaderboard.length ? (
+                  <div className="community-ranking" style={{ marginTop: 18 }}>
+                    {community.leaderboard.map((entry: any) => (
+                      <div className="community-ranking-row" key={entry.menteeUserId}>
+                        <div className="community-rank-number">{entry.rank}</div>
+                        <div className="community-ranking-person">
+                          <strong>{entry.displayName}</strong>
+                          <span>{entry.fullName} • {entry.email}</span>
+                        </div>
+                        <div className="community-ranking-score">
+                          <strong>{entry.completedEssays}</strong>
+                          <span>losów</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="status" style={{ marginTop: 18 }}>Nikt jeszcze nie dołączył do rankingu.</div>
+                )}
+              </div>
+              <div className="dashboard-card">
+                <h2>Zwycięzcy tygodnia</h2>
+                <p className="muted">
+                  Losowanie można przeprowadzić raz w tygodniu. System preferuje osoby, które nie wygrały w ostatnich ośmiu tygodniach.
+                </p>
+                {community.raffle.winners.length ? (
+                  <div className="list" style={{ marginTop: 18 }}>
+                    {community.raffle.winners.map((winner: any, index: number) => (
+                      <div className="list-item community-winner-row" key={`${winner.menteeUserId}-${index}`}>
+                        <div className="community-winner-icon">★</div>
+                        <div>
+                          <strong>{winner.fullName}</strong>
+                          <div className="small muted">{winner.displayName} • {winner.email} • {winner.entryCount} losów</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="community-draw-empty" style={{ marginTop: 18 }}>
+                    <div className="community-draw-icon">5</div>
+                    <strong>Miejsca na bezpłatny feedback</strong>
+                    <span>Losowanie czeka na przeprowadzenie przez administratora.</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="dashboard-card"><div className="status">Ładowanie danych społeczności…</div></div>
+        )
       ) : null}
       {section === "users" ? (
         <div className="stack">
@@ -6472,6 +6599,9 @@ function MenteeSection({
 }) {
   const { canUsePreferencesCookies } = useCookieConsent();
   const [overview, setOverview] = useState<any>(null);
+  const [community, setCommunity] = useState<any>(null);
+  const [communityDisplayName, setCommunityDisplayName] = useState("");
+  const [communitySaving, setCommunitySaving] = useState(false);
   const [mentors, setMentors] = useState<any[]>([]);
   const [mentorSlots, setMentorSlots] = useState<Array<{ end: string; start: string }>>([]);
   const [mentorSlotsConnectionReady, setMentorSlotsConnectionReady] = useState(true);
@@ -6569,6 +6699,10 @@ function MenteeSection({
     [availableGuideCountryFilter, availableGuideTemplates, availableGuideUniversityFilter],
   );
   const guideLimits = overview?.guideLimits ?? { emailInboxEnabled: false, maxActiveGuideCount: 1, maxHintGuideCount: 1, maxStorageMb: 100 };
+  const communityMaxScore = Math.max(
+    1,
+    ...(community?.leaderboard ?? []).map((entry: any) => Number(entry.completedEssays ?? 0)),
+  );
   const materialTemplates = overview?.materialTemplates ?? [];
   const materialItemStates = overview?.materialItemStates ?? [];
   const googleWorkspace = overview?.googleWorkspace ?? {};
@@ -6822,6 +6956,43 @@ function MenteeSection({
     setProfileValues(nextValues);
     return payload;
   }
+
+  async function refreshCommunity() {
+    const payload = await apiFetch<any>("/mentee/community", undefined, token);
+    setCommunity(payload);
+    setCommunityDisplayName(payload.participation?.displayName ?? "");
+    return payload;
+  }
+
+  async function saveCommunityPreference(isParticipating: boolean) {
+    const displayName = communityDisplayName.trim();
+    if (displayName.length < 2) {
+      setStatus("Wpisz pseudonim składający się z co najmniej 2 znaków.");
+      return;
+    }
+    setCommunitySaving(true);
+    setStatus("");
+    try {
+      await apiFetch(
+        "/mentee/community",
+        {
+          method: "PUT",
+          body: JSON.stringify({ displayName, isParticipating }),
+        },
+        token,
+      );
+      await refreshCommunity();
+      setStatus(
+        isParticipating
+          ? "Dołączono do rankingu społeczności. Powodzenia!"
+          : "Twój pseudonim został ukryty w rankingu i kolejnych losowaniach.",
+      );
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Nie udało się zapisać ustawień społeczności.");
+    } finally {
+      setCommunitySaving(false);
+    }
+  }
   useEffect(() => {
     if (canUsePreferencesCookies) {
       setLongLivedCookie(TIMEZONE_COOKIE_NAME, viewerTimezone);
@@ -6839,6 +7010,9 @@ function MenteeSection({
   useEffect(() => {
     if (section === "universities" || section === "materials" || section === "offers" || section === "essays" || section === "profile" || section === "meetings" || section === "mentors" || section === "emails" || section === "packages") {
       void refreshOverview().catch((error) => setStatus(error.message));
+    }
+    if (section === "community") {
+      void refreshCommunity().catch((error) => setStatus(error.message));
     }
     if (section === "mentors") {
       void apiFetch<any[]>("/public/mentors").then(setMentors).catch((error) => setStatus(error.message));
@@ -9047,6 +9221,205 @@ function MenteeSection({
           )}
         </div>
       </aside>
+      {section === "community" ? (
+        community ? (
+          <div className="stack community-page">
+            <div className="dashboard-card community-hero">
+              <div className="community-hero-content">
+                <div>
+                  <div className="eyebrow">Razem do mety</div>
+                  <h2 className="community-title">Twój postęp może motywować innych</h2>
+                  <p>
+                    Odhaczaj ukończone eseje, porównuj postęp pod pseudonimem i zbieraj losy na bezpłatny feedback od ACADEA.
+                  </p>
+                </div>
+                <div className="community-prize-seal">
+                  <strong>5</strong>
+                  <span>feedbacków<br />co tydzień</span>
+                </div>
+              </div>
+            </div>
+
+            {!community.participation.isParticipating ? (
+              <div className="dashboard-card community-join-card">
+                <div className="community-card-head">
+                  <div>
+                    <h2>Dołącz do wyzwania</h2>
+                    <p className="muted" style={{ marginBottom: 0 }}>
+                      W rankingu pokażemy wyłącznie wybrany pseudonim i liczbę ukończonych esejów. Twoje imię, e-mail i treść prac pozostaną prywatne.
+                    </p>
+                  </div>
+                  <div className="community-lock" aria-hidden="true">◇</div>
+                </div>
+                <div className="community-join-form" style={{ marginTop: 20 }}>
+                  <div className="field">
+                    <label htmlFor="community-display-name">Twój pseudonim w rankingu</label>
+                    <input
+                      id="community-display-name"
+                      maxLength={32}
+                      onChange={(event) => setCommunityDisplayName(event.target.value)}
+                      placeholder="np. Ambitna Sowa"
+                      value={communityDisplayName}
+                    />
+                  </div>
+                  <button
+                    className="btn btn-primary"
+                    disabled={communitySaving}
+                    onClick={() => void saveCommunityPreference(true)}
+                    type="button"
+                  >
+                    {communitySaving ? "Dołączanie…" : "Dołącz i zbieraj losy"}
+                  </button>
+                </div>
+                <div className="community-rules">
+                  <span><strong>1.</strong> Ukończ esej na swojej checkliście</span>
+                  <span><strong>2.</strong> Otrzymaj jeden los za każdy ukończony esej</span>
+                  <span><strong>3.</strong> Weź udział w cotygodniowym losowaniu</span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="stats-grid community-personal-stats">
+                  <div className="stat community-stat-highlight">
+                    <div className="small">Twoje miejsce</div>
+                    <strong>{community.me.rank ? `#${community.me.rank}` : "—"}</strong>
+                    <span>wśród {community.summary.participantCount} uczestników</span>
+                  </div>
+                  <div className="stat">
+                    <div className="small muted">Ukończone eseje</div>
+                    <strong>{community.me.completedEssays}</strong>
+                    <span className="small muted">+{community.me.completedThisWeek} w tym tygodniu</span>
+                  </div>
+                  <div className="stat">
+                    <div className="small muted">Losy w tym tygodniu</div>
+                    <strong>{community.me.entryCount}</strong>
+                    <span className="small muted">1 ukończony esej = 1 los</span>
+                  </div>
+                  <div className="stat">
+                    <div className="small muted">Postęp społeczności</div>
+                    <strong>{community.summary.completedEssays}</strong>
+                    <span className="small muted">ukończonych esejów razem</span>
+                  </div>
+                </div>
+
+                <div className="grid-2 community-main-grid">
+                  <div className="dashboard-card community-leaderboard-card">
+                    <div className="community-card-head">
+                      <div>
+                        <div className="eyebrow">Ranking społeczności</div>
+                        <h2 style={{ marginTop: 14 }}>Robimy postępy razem</h2>
+                      </div>
+                      <span className="community-week-badge">+{community.summary.completedThisWeek} w tym tygodniu</span>
+                    </div>
+                    {community.leaderboard.length ? (
+                      <div className="community-ranking" style={{ marginTop: 20 }}>
+                        {community.leaderboard.map((entry: any) => (
+                          <div
+                            className={`community-ranking-row ${entry.isCurrentUser ? "is-current" : ""}`}
+                            key={`${entry.rank}-${entry.displayName}`}
+                          >
+                            <div className="community-rank-number">{entry.rank}</div>
+                            <div className="community-ranking-person">
+                              <strong>{entry.displayName}{entry.isCurrentUser ? " (Ty)" : ""}</strong>
+                              <div className="community-progress-track" aria-hidden="true">
+                                <span style={{ width: `${Math.max(5, (entry.completedEssays / communityMaxScore) * 100)}%` }} />
+                              </div>
+                            </div>
+                            <div className="community-ranking-score">
+                              <strong>{entry.completedEssays}</strong>
+                              <span>{entry.completedEssays === 1 ? "esej" : "esejów"}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="status" style={{ marginTop: 18 }}>Bądź pierwszą osobą w rankingu.</div>
+                    )}
+                    <button className="btn btn-secondary community-essay-cta" onClick={() => onNavigate("essays")} type="button">
+                      Przejdź do checklisty esejów
+                    </button>
+                  </div>
+
+                  <div className="stack">
+                    <div className={`dashboard-card community-raffle-card ${community.raffle.drawn ? "is-drawn" : ""}`}>
+                      <div className="eyebrow">Cotygodniowe losowanie</div>
+                      <h2 style={{ marginTop: 14 }}>
+                        {community.raffle.drawn ? "Zwycięzcy tego tygodnia" : "5 bezpłatnych feedbacków"}
+                      </h2>
+                      <p className="muted">
+                        {community.raffle.drawn
+                          ? "Wylosowane osoby otrzymają kontakt od zespołu ACADEA."
+                          : `Losowanie tej rundy kończy się ${formatDate(community.raffle.endsAt)}.`}
+                      </p>
+                      {community.raffle.winners.length ? (
+                        <div className="list community-winner-list">
+                          {community.raffle.winners.map((winner: any, index: number) => (
+                            <div className={`community-winner-row ${winner.isCurrentUser ? "is-current" : ""}`} key={`${winner.displayName}-${index}`}>
+                              <div className="community-winner-icon">★</div>
+                              <div>
+                                <strong>{winner.displayName}{winner.isCurrentUser ? " — gratulacje!" : ""}</strong>
+                                <div className="small muted">{winner.entryCount} {winner.entryCount === 1 ? "los" : "losów"}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="community-draw-empty">
+                          <div className="community-draw-icon">{community.me.entryCount}</div>
+                          <strong>{community.me.eligibleForDraw ? "Jesteś w losowaniu" : "Ukończ pierwszy esej"}</strong>
+                          <span>
+                            {community.me.eligibleForDraw
+                              ? `Masz ${community.me.entryCount} ${community.me.entryCount === 1 ? "los" : "losów"} w tej rundzie.`
+                              : "Każdy ukończony esej zwiększa Twoją szansę."}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="dashboard-card community-settings-card">
+                      <h2>Twój pseudonim</h2>
+                      <div className="field" style={{ marginTop: 14 }}>
+                        <label htmlFor="community-display-name-active">Widoczny dla społeczności</label>
+                        <input
+                          id="community-display-name-active"
+                          maxLength={32}
+                          onChange={(event) => setCommunityDisplayName(event.target.value)}
+                          value={communityDisplayName}
+                        />
+                      </div>
+                      <div className="button-row" style={{ marginTop: 14 }}>
+                        <button className="btn btn-secondary" disabled={communitySaving} onClick={() => void saveCommunityPreference(true)} type="button">
+                          Zapisz pseudonim
+                        </button>
+                        <button className="btn btn-text" disabled={communitySaving} onClick={() => void saveCommunityPreference(false)} type="button">
+                          Opuść ranking
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {community.recentWinners.length ? (
+                  <div className="dashboard-card">
+                    <h2>Ostatnio wyróżnieni</h2>
+                    <div className="community-recent-winners" style={{ marginTop: 16 }}>
+                      {community.recentWinners.map((winner: any, index: number) => (
+                        <div className="community-recent-winner" key={`${winner.weekKey}-${winner.displayName}-${index}`}>
+                          <span>★</span>
+                          <strong>{winner.displayName}</strong>
+                          <small>Tydzień od {formatDate(winner.weekKey)}</small>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="dashboard-card"><div className="status">Ładowanie społeczności…</div></div>
+        )
+      ) : null}
       {section === "essays" && overview
         ? renderMaterialSectionCard(
             "Twoje Eseje",
