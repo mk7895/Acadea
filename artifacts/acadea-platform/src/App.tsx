@@ -9040,6 +9040,7 @@ function MenteeSection({
                     <input
                       inputMode="decimal"
                       min="0"
+                      placeholder="np. 3,8"
                       step="0.01"
                       type="number"
                       value={academicResultsForm.gpaValue}
@@ -9051,6 +9052,7 @@ function MenteeSection({
                     <input
                       inputMode="decimal"
                       min="0.01"
+                      placeholder="np. 4,0"
                       step="0.01"
                       type="number"
                       value={academicResultsForm.gpaScale}
@@ -9085,6 +9087,7 @@ function MenteeSection({
                       inputMode="numeric"
                       max="800"
                       min="200"
+                      placeholder="np. 700"
                       step="1"
                       type="number"
                       value={academicResultsForm.satReadingWriting}
@@ -9097,6 +9100,7 @@ function MenteeSection({
                       inputMode="numeric"
                       max="800"
                       min="200"
+                      placeholder="np. 750"
                       step="1"
                       type="number"
                       value={academicResultsForm.satMath}
@@ -9133,6 +9137,7 @@ function MenteeSection({
                         inputMode="decimal"
                         max="9"
                         min="0"
+                        placeholder="np. 7,5"
                         step="0.5"
                         type="number"
                         value={academicResultsForm[key]}
