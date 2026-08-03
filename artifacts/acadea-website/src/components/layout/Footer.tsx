@@ -35,12 +35,6 @@ export function Footer() {
 
   return (
     <footer className="bg-primary text-white pt-16 pb-8">
-      <div className="sr-only" aria-hidden="true">
-        {t(
-          "Fundacja Acadea, Jedności Narodowej 55-57 / 15, 50-262 Wrocław, Polska. Kontakt: contact@acadea.org, telefon +48 728 492 936.",
-          "Fundacja Acadea, Jedności Narodowej 55-57 / 15, 50-262 Wroclaw, Poland. Contact: contact@acadea.org, phone +48 728 492 936.",
-        )}
-      </div>
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           <div className="space-y-6">
@@ -53,6 +47,11 @@ export function Footer() {
                 "Applying to university abroad, made simpler. We help students get into dream universities in more than 25 countries.",
               )}
             </p>
+            <div className="rounded-2xl border border-white/15 bg-white/5 p-4 text-xs leading-relaxed text-gray-300">
+              <p className="font-bold text-white">Fundacja Acadea</p>
+              <p>KRS: 0001240540 • NIP: 8982333798 • REGON: 544715960</p>
+              <p>{t("Jedności Narodowej 55-57 / 15, 50-262 Wrocław, Polska", "Jedności Narodowej 55-57 / 15, 50-262 Wroclaw, Poland")}</p>
+            </div>
             <div className="flex items-center gap-4 text-white">
               <a
                 href="https://www.facebook.com/acadeaorg/"
@@ -85,7 +84,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold mb-6">{t("Nawigacja", "Navigation")}</h4>
+            <h2 className="text-lg font-semibold mb-6">{t("Nawigacja", "Navigation")}</h2>
             <ul className="space-y-4">
               <li>
                 <Link href={localizePath("/")} className="text-gray-300 hover:text-white transition-colors">
@@ -126,7 +125,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold mb-6">{t("Usługi", "Services")}</h4>
+            <h2 className="text-lg font-semibold mb-6">{t("Usługi", "Services")}</h2>
             <ul className="space-y-4">
               {serviceLinks.map((svc) => (
                 <li key={svc.href}>
@@ -143,7 +142,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold mb-6">{t("Kontakt", "Contact")}</h4>
+            <h2 className="text-lg font-semibold mb-6">{t("Kontakt", "Contact")}</h2>
             <ul className="space-y-4">
               <li className="flex items-start gap-3 text-gray-300">
                 <Mail size={20} className="text-accent shrink-0 mt-0.5" />

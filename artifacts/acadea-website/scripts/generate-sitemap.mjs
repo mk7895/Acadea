@@ -105,12 +105,19 @@ async function main() {
     countriesSource,
     /slug:\s*"([^"]+)",\s*\n\s*updatedAt:\s*"[^"]+",\s*\n\s*name:\s*"[^"]+",\s*\n\s*flag:/g,
   ).map((slug) => `/kraje/${slug}`);
+  const englishCountrySlugs = countrySlugs.map((route) =>
+    route.replace(/^\/kraje\//, "/en/countries/"),
+  );
   const countryUpdatedAtBySlug = collectSlugDatePairs(
     countriesSource,
     /slug:\s*"([^"]+)",\s*\n\s*updatedAt:\s*"([^"]+)"/g,
   );
 
-  const staticAndCountryRoutes = dedupe([...staticRoutes, ...countrySlugs]);
+  const staticAndCountryRoutes = dedupe([
+    ...staticRoutes,
+    ...countrySlugs,
+    ...englishCountrySlugs,
+  ]);
   const articleLastmodByPath = new Map(liveArticleRoutes.map((route) => [route.path, route.lastmod]));
   const routes = dedupe([...staticAndCountryRoutes, ...liveArticleRoutes.map((route) => route.path)]).sort((a, b) =>
     a.localeCompare(b),
@@ -119,14 +126,16 @@ async function main() {
   const routeEntries = await Promise.all(
     routes.map(async (route) => {
       let sourceFile = routeSourceMap[route];
-      if (!sourceFile && route.startsWith("/kraje/")) {
+      if (!sourceFile && (route.startsWith("/kraje/") || route.startsWith("/en/countries/"))) {
         sourceFile = "data/countries.ts";
       }
 
-      const updatedAt =
-        route.startsWith("/kraje/")
-          ? countryUpdatedAtBySlug[route.replace("/kraje/", "")]
+      const countrySlug = route.startsWith("/kraje/")
+        ? route.replace("/kraje/", "")
+        : route.startsWith("/en/countries/")
+          ? route.replace("/en/countries/", "")
           : null;
+      const updatedAt = countrySlug ? countryUpdatedAtBySlug[countrySlug] : null;
 
       const lastmod =
         articleLastmodByPath.get(route) ??

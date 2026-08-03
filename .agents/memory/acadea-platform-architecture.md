@@ -127,6 +127,7 @@ The Gmail monitor scans up to 40 messages from the last 120 days, keeps only mes
 ## Public website and article-language logic
 
 - The public site and platform share the Express API but are separate frontends.
+- The public-site build prerenders indexable Polish and English navigation routes, Polish and English country-detail routes, and published article routes. Its generated sitemap must not advertise a route without a matching prerendered HTML file.
 - Knowledge-base articles are database-backed with local fixtures as a fallback for some rendering paths.
 - `articles.language` is `pl` or `en`. `translationKey` pairs language variants and has a unique `(translation_key, language)` index.
 - Article detail lookup returns `alternateSlug` for a published article with the same translation key in the other language. The public UI uses that slug for language switching and SEO alternate links.
