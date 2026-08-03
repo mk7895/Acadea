@@ -3,6 +3,7 @@ import logoGreen from "@/assets/logo-green.webp";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/lib/i18n";
 
 const links = [
@@ -12,7 +13,6 @@ const links = [
   { href: "/baza-wiedzy", label: "Baza Wiedzy", labelEn: "Knowledge base" },
   { href: "/stypendium", label: "Stypendia", labelEn: "Scholarships", highlight: true },
   { href: "/o-nas", label: "Poznajmy się", labelEn: "About us" },
-  { href: "/kontakt", label: "Kontakt", labelEn: "Contact" },
 ];
 
 export function Navbar() {
@@ -40,16 +40,6 @@ export function Navbar() {
     setMobileMenuOpen(false);
   }, [location]);
 
-  useEffect(() => {
-    if (!mobileMenuOpen) return undefined;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [mobileMenuOpen]);
-
   return (
     <header
       className={`fixed top-0 z-50 w-full transition-all duration-300 ${
@@ -70,7 +60,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden lg:flex items-center gap-5 lg:translate-y-[0.65rem]" aria-label={t("Główna nawigacja", "Main navigation")}>
+        <nav className="hidden md:flex items-center gap-6 md:translate-y-[0.65rem]">
           {links.map((link) => (
             link.highlight ? (
               <Link
@@ -98,7 +88,7 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden lg:flex items-center gap-3 lg:translate-y-[0.65rem]">
+        <div className="hidden md:flex items-center gap-4 md:translate-y-[0.65rem]">
           <div className="flex items-center rounded-full border border-primary/15 bg-white/80 p-1">
             <Link
               href={switchLanguagePath("pl")}
@@ -126,27 +116,29 @@ export function Navbar() {
 
         {/* Mobile Toggle */}
         <button
-          className="lg:hidden z-50 relative cursor-pointer p-2 text-primary"
+          className="md:hidden z-50 relative cursor-pointer p-2 text-primary"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label={mobileMenuOpen ? t("Zamknij menu", "Close menu") : t("Otwórz menu", "Open menu")}
-          aria-expanded={mobileMenuOpen}
-          aria-controls="mobile-navigation"
+          aria-label={t("Otwórz menu", "Open menu")}
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
         {/* Mobile Menu */}
-        {mobileMenuOpen && (
-            <div
-              id="mobile-navigation"
-              className="absolute inset-0 top-0 pt-24 px-6 pb-8 bg-white shadow-xl min-h-screen overflow-y-auto flex flex-col lg:hidden"
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 top-0 pt-24 px-6 pb-8 bg-white shadow-xl h-screen flex flex-col md:hidden"
             >
-              <nav className="flex flex-col gap-5 text-center mt-8" aria-label={t("Nawigacja mobilna", "Mobile navigation")}>
+              <nav className="flex flex-col gap-6 text-center mt-8">
                 {links.map((link) => (
                   <Link
                     key={link.href}
                     href={localizePath(link.href)}
-                    className={`cursor-pointer text-xl font-semibold transition-colors ${
+                    className={`cursor-pointer text-2xl font-semibold transition-colors ${
                       link.highlight
                         ? "text-accent"
                         : location === localizePath(link.href)
@@ -181,8 +173,9 @@ export function Navbar() {
                   </Link>
                 </div>
               </nav>
-            </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </header>
   );

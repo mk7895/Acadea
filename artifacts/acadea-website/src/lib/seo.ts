@@ -210,22 +210,14 @@ export function buildAbsoluteUrl(path: string) {
 export function createOrganizationSchema() {
   return {
     "@context": "https://schema.org",
-    "@type": "EducationalOrganization",
-    name: SITE_NAME,
-    legalName: ORGANIZATION_NAME,
+    "@type": "Organization",
+    name: ORGANIZATION_NAME,
     alternateName: SITE_NAME,
-    description:
-      "Fundacja edukacyjna wspierająca młodych ludzi w świadomym planowaniu studiów poprzez bezpłatną wiedzę, mentoring, program stypendialny i wsparcie aplikacyjne.",
     url: SITE_URL,
     logo: ORGANIZATION_LOGO,
     email: CONTACT_EMAIL,
     telephone: CONTACT_PHONE,
     address: ORGANIZATION_ADDRESS,
-    identifier: [
-      { "@type": "PropertyValue", propertyID: "KRS", value: "0001240540" },
-      { "@type": "PropertyValue", propertyID: "NIP", value: "8982333798" },
-      { "@type": "PropertyValue", propertyID: "REGON", value: "544715960" },
-    ],
     sameAs: [
       "https://www.facebook.com/acadeaorg/",
       "https://www.instagram.com/acadeaorg?igsh=NmFwcHUwZXI1M2Y5&utm_source=qr",

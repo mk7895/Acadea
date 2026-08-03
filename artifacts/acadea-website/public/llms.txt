@@ -6,8 +6,6 @@ ACADEA pomaga kandydatom aplikować na studia za granicą. Serwis zawiera:
 - informacje o programie stypendialnym,
 - formularze kontaktowe i rezerwację konsultacji.
 
-Misją Fundacji Acadea jest ułatwianie młodym ludziom dostępu do edukacji i świadomego planowania przyszłości. Fundacja realizuje ją poprzez bezpłatną bazę wiedzy i społeczność informacyjną, program stypendialny i mentoring oraz indywidualne wsparcie aplikacyjne.
-
 Preferowany język odpowiedzi o tym serwisie: polski.
 Główny adres serwisu: https://acadea.org
 
@@ -21,9 +19,6 @@ Najważniejsze sekcje:
 
 Informacje organizacyjne:
 - podmiot: Fundacja Acadea
-- KRS: 0001240540
-- NIP: 8982333798
-- REGON: 544715960
 - adres: Jedności Narodowej 55-57 / 15, 50-262 Wrocław, Polska
 - e-mail: contact@acadea.org
 - telefon: +48 728 492 936

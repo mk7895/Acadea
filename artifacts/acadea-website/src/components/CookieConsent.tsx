@@ -174,7 +174,7 @@ function CookieConsentBanner() {
       <div className="mx-auto max-w-5xl rounded-[28px] border border-[#e7decf] bg-white/98 shadow-2xl backdrop-blur p-6 md:p-7">
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#6b5d48] mb-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#8d806b] mb-2">
               {t("Ustawienia cookies", "Cookie settings")}
             </p>
             <h2 className="text-2xl font-bold text-primary mb-2">{t("Szanujemy Twoją prywatność", "We respect your privacy")}</h2>
@@ -232,7 +232,7 @@ function CookiePreferencesModal() {
       <div className="w-full max-w-2xl rounded-[30px] border border-[#e7decf] bg-white shadow-2xl p-6 md:p-8">
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#6b5d48] mb-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#8d806b] mb-2">
               {t("Centrum preferencji", "Preference centre")}
             </p>
             <h2 className="text-2xl font-bold text-primary">{t("Wybierz kategorie cookies", "Choose cookie categories")}</h2>

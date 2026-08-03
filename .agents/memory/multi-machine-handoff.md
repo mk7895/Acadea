@@ -115,18 +115,6 @@ As of 2026-08-02, parent-consent repair commit `54c482a` was pushed to `main` an
 - **Client behavior:** a production smoke test with a non-existent test token reached the consent API and returned the expected not-found state, confirming that the query token is read correctly.
 - **Database and external configuration:** no migration or manual provider configuration was required.
 
-## Google Ad Grants website remediation
-
-As of 2026-08-03, Marlena's `main` worktree contains local, uncommitted public-site changes responding to Google's website-policy rejection.
-
-- **Git:** changes are not committed or pushed; another computer must not assume they are available remotely.
-- **Code:** the homepage and About page now state Fundacja Acadea's mission and activities, legal identifiers are visible, Contact is in the primary navigation, mobile navigation is protected from the consultation overlay, and initial homepage JavaScript was reduced by removing eager animation/QR work and deferring the desktop globe.
-- **Crawlability:** the prerenderer and sitemap now cover English navigation pages and English country-detail pages. Before deployment, production `https://acadea.org/en/about-us/` returned `404`; deployment is required to repair these routes.
-- **Content:** the live article API returned 40 published English articles on 2026-08-03; the generated sitemap includes those current URLs. This verifies live API content only, not how or when the underlying import was applied.
-- **Database and external configuration:** no database migration or provider-dashboard change is required for this code change.
-- **Verification:** `pnpm --filter @workspace/acadea-website run typecheck`, the website production build, a 160-URL sitemap-to-prerender audit with zero missing files, desktop/mobile browser checks, and local mobile Lighthouse (Performance 96, Accessibility 100, SEO 100) passed.
-- **Next action:** review the diff, commit and push it, deploy the public website, smoke-test the repaired English URLs and cache headers in production, then resubmit the Google Ad Grants activation request.
-
 The file names above are inventory only. Their presence in this note does not make their content available on another computer. If any item becomes necessary for repeatable application behavior, implement a safe tracked equivalent rather than committing local secrets or one-off operational data.
 
 ## Secret and configuration rules

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BookOpen, Heart, Landmark, Users } from "lucide-react";
+import { ArrowRight, Users } from "lucide-react";
 import {
   createBreadcrumbSchema,
   createLocalBusinessSchema,
@@ -64,10 +64,10 @@ export default function AboutUs() {
   ];
 
   useSeo({
-    title: t("Fundacja Acadea | Misja, działania i zespół", "Fundacja Acadea | Mission, activities and team"),
+    title: t("Poznajmy się | Zespół ACADEA", "About us | The ACADEA team"),
     description: t(
-      "Poznaj misję, działania i zespół Fundacji Acadea. Rozwijamy bezpłatną bazę wiedzy, mentoring, program stypendialny i wsparcie aplikacyjne.",
-      "Learn about Fundacja Acadea's mission, activities and team: a free knowledge base, mentoring, a scholarship programme and application support.",
+      "Poznaj zespół ACADEA i historię osób, które same przeszły proces aplikacji na studia za granicą, a dziś wspierają kolejnych kandydatów.",
+      "Meet the ACADEA team and the stories of the people who went through the process of applying abroad themselves and today support the next generation of candidates.",
     ),
     path: localizePath("/o-nas"),
     keywords: isEnglish
@@ -78,10 +78,10 @@ export default function AboutUs() {
       createLocalBusinessSchema(),
       createWebPageSchema({
         path: localizePath("/o-nas"),
-        title: t("Fundacja Acadea | Misja, działania i zespół", "Fundacja Acadea | Mission, activities and team"),
+        title: t("Poznajmy się | Zespół ACADEA", "About us | The ACADEA team"),
         description: t(
-          "Misja, bezpłatne działania edukacyjne, program stypendialny, wsparcie aplikacyjne i zespół Fundacji Acadea.",
-          "The mission, free educational activities, scholarship programme, application support and team of Fundacja Acadea.",
+          "Strona o zespole ACADEA, jego wartościach i doświadczeniu w aplikacji na studia za granicą.",
+          "A page about the ACADEA team, its values and its experience in applying to universities abroad.",
         ),
       }),
       createBreadcrumbSchema([
@@ -100,33 +100,29 @@ export default function AboutUs() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary">
-              <Landmark size={16} />
-              <span>{t("Zarejestrowana fundacja edukacyjna", "A registered educational foundation")}</span>
-            </div>
             <h1 className="text-4xl md:text-5xl font-bold text-primary mb-6">
               {t(
-                "Fundacja Acadea. Edukacja bez niepotrzebnych barier.",
-                "Fundacja Acadea. Education without unnecessary barriers.",
+                "Byliśmy tam, gdzie Ty jesteś teraz.",
+                "We have been where you are now.",
               )}
             </h1>
             <div className="space-y-6 text-lg text-gray-600 leading-relaxed">
               <p>
                 {t(
-                  "Naszą misją jest ułatwiać młodym ludziom dostęp do edukacji i pomagać im podejmować świadome decyzje o dalszej drodze. Skupiamy się na osobach planujących studia za granicą oraz na rodzinach, które chcą dobrze zrozumieć wymagania, koszty i dostępne możliwości.",
-                  "Our mission is to make education more accessible to young people and help them make informed choices about their next steps. We focus on students considering university abroad, and on families who want to understand the requirements, costs and available options.",
+                  "Założyliśmy ACADEA, ponieważ sami kiedyś przeszliśmy przez stresujący i skomplikowany proces aplikacji na zagraniczne uczelnie.",
+                  "We founded ACADEA because we ourselves once went through the stressful and complicated process of applying to foreign universities.",
                 )}
               </p>
               <p>
                 {t(
-                  "Realizujemy tę misję poprzez bezpłatną bazę wiedzy, społeczność informacyjną, program stypendialny i mentoring oraz indywidualne wsparcie aplikacyjne. Nie obiecujemy przyjęcia na uczelnię. Porządkujemy informacje, uczymy samodzielnego podejmowania decyzji i pomagamy przejść przez proces krok po kroku.",
-                  "We pursue that mission through a free knowledge base, an information community, a scholarship and mentoring programme, and individual application support. We do not promise university admission. We organise information, build independent decision-making skills and help students move through the process step by step.",
+                  "Sami gubiliśmy się w gąszczu wymagań, portali aplikacyjnych, egzaminów językowych i terminów. Z biegiem lat nauczyliśmy się, co naprawdę znaczy doskonały esej, a wymagania kolejnych uczelni przestały mieć przed nami jakiekolwiek tajemnice.",
+                  "We ourselves got lost in the maze of requirements, application portals, language exams and deadlines. Over the years we learned what a truly excellent essay means, and the requirements of successive universities stopped holding any secrets for us.",
                 )}
               </p>
               <p className="font-semibold text-primary">
                 {t(
-                  "Fundacja Acadea jest wpisana do Krajowego Rejestru Sądowego pod numerem KRS 0001240540.",
-                  "Fundacja Acadea is entered in Poland's National Court Register under KRS number 0001240540.",
+                  "Od ponad 5 lat prowadzimy kolejne roczniki ambitnych uczniów za rękę — dokładnie tak, jak sami chcielibyśmy zostać wtedy poprowadzeni.",
+                  "For more than 5 years, we have been guiding successive cohorts of ambitious students by the hand - exactly the way we ourselves would have wanted to be guided back then.",
                 )}
               </p>
             </div>
@@ -136,50 +132,16 @@ export default function AboutUs() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative h-[500px] rounded-3xl overflow-hidden"
-            >
-              <img
-                src="/images/about-together.webp"
-                alt={t("Zespół ACADEA", "The ACADEA team")}
-                width={1200}
-                height={800}
-                className="w-full h-full object-cover object-[38%_center]"
-              />
+            className="relative h-[500px] rounded-3xl overflow-hidden"
+          >
+            <img
+              src="/images/about-together.webp"
+              alt={t("Zespół ACADEA", "The ACADEA team")}
+              className="w-full h-full object-cover object-[38%_center]"
+            />
             <div className="absolute inset-0 bg-primary/10 mix-blend-multiply" />
           </motion.div>
         </div>
-
-        <section className="mb-24 grid grid-cols-1 gap-6 md:grid-cols-3" aria-label={t("Działania Fundacji Acadea", "Fundacja Acadea activities")}>
-          {[
-            {
-              icon: BookOpen,
-              title: t("Wiedza dostępna bezpłatnie", "Knowledge available for free"),
-              text: t("Rozwijamy praktyczną bazę artykułów o rekrutacji, finansowaniu studiów i życiu akademickim.", "We develop a practical knowledge base about admissions, funding and student life."),
-              href: "/baza-wiedzy",
-            },
-            {
-              icon: Heart,
-              title: t("Mentoring i stypendia", "Mentoring and scholarships"),
-              text: t("Prowadzimy program dla ambitnych osób, które potrzebują wiedzy, relacji z mentorem i realnego planu działania.", "We run a programme for ambitious people who need knowledge, a mentoring relationship and a realistic plan."),
-              href: "/stypendium",
-            },
-            {
-              icon: Users,
-              title: t("Wsparcie uczniów i rodzin", "Support for students and families"),
-              text: t("Wyjaśniamy kolejne etapy, pomagamy porównywać możliwości i wspieramy w przygotowaniu aplikacji.", "We explain each stage, help compare options and support students as they prepare applications."),
-              href: "/jak-to-dziala",
-            },
-          ].map((activity) => (
-            <article key={activity.title} className="flex flex-col rounded-2xl border border-primary/10 bg-[#f8faf7] p-7">
-              <activity.icon size={25} className="text-primary" />
-              <h2 className="mt-5 text-xl font-bold text-primary">{activity.title}</h2>
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-gray-600">{activity.text}</p>
-              <Link href={localizePath(activity.href)} className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-primary hover:text-accent">
-                {t("Dowiedz się więcej", "Learn more")} <ArrowRight size={15} />
-              </Link>
-            </article>
-          ))}
-        </section>
 
         <div className="bg-gray-50 border border-gray-100 rounded-3xl p-10 md:p-16 mb-24">
           <div className="text-center mb-12">

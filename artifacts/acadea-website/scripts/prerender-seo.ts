@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { articles as staticArticles } from "../src/data/articles";
-import { countries, getLocalizedCountry } from "../src/data/countries";
+import { countries } from "../src/data/countries";
 import {
   HOME_FAQ_ITEMS_EN,
   HOME_FAQ_ITEMS_PL,
@@ -194,12 +194,12 @@ function buildStaticRouteMeta(): RouteMeta[] {
       path: "/",
       title: "Studia za granicą i doradztwo aplikacyjne | ACADEA",
       description:
-        "Fundacja Acadea wspiera młodych ludzi planujących studia za granicą poprzez bezpłatną wiedzę, mentoring, stypendia i pomoc w aplikacji.",
+        "Pomagamy dostać się na studia za granicą. ACADEA wspiera w wyborze uczelni, dokumentach, esejach, egzaminach i planowaniu aplikacji.",
       heading: "Studia za granicą i doradztwo aplikacyjne",
       language: "pl-PL",
       locale: "pl_PL",
       fallbackDescription:
-        "Fundacja Acadea pomaga młodym ludziom planującym studia za granicą. Rozwijamy bezpłatną bazę wiedzy, mentoring i program stypendialny oraz wspieramy w przygotowaniu aplikacji.",
+        "Pomagamy kandydatom dostać się na studia za granicą. ACADEA wspiera w wyborze uczelni, esejach, dokumentach, egzaminach i planowaniu aplikacji.",
       keywords: [
         "studia za granicą",
         "doradztwo aplikacyjne",
@@ -234,12 +234,10 @@ function buildStaticRouteMeta(): RouteMeta[] {
       path: "/en",
       title: "Study abroad guidance and university applications | ACADEA",
       description:
-        "Fundacja Acadea supports young people planning to study abroad through free information, mentoring, scholarships and application guidance.",
+        "We help students get into universities abroad. ACADEA supports university choice, documents, essays, exams and application planning.",
       heading: "Study abroad guidance and university applications",
       language: "en-GB",
       locale: "en_GB",
-      fallbackDescription:
-        "Fundacja Acadea helps young people planning to study abroad through a free knowledge base, mentoring, a scholarship programme and application guidance.",
       keywords: [
         "study abroad",
         "study abroad guidance",
@@ -255,7 +253,7 @@ function buildStaticRouteMeta(): RouteMeta[] {
           path: "/en",
           title: "Study abroad guidance and university applications | ACADEA",
           description:
-            "Fundacja Acadea supports young people through free information, mentoring, scholarships and guidance with applications to universities abroad.",
+            "ACADEA helps with applications to universities abroad, university choice, documents, essays, scholarships and planning the whole process.",
         }),
         createFaqSchema(HOME_FAQ_ITEMS_EN),
         createBreadcrumbSchema([{ name: "Home", path: "/en" }]),
@@ -333,21 +331,19 @@ function buildStaticRouteMeta(): RouteMeta[] {
     },
     {
       path: "/o-nas",
-      title: "Fundacja Acadea | Misja, działania i zespół",
+      title: "Poznajmy się | Zespół ACADEA",
       description:
-        "Poznaj misję, działania i zespół Fundacji Acadea. Rozwijamy bezpłatną bazę wiedzy, mentoring, program stypendialny i wsparcie aplikacyjne.",
-      heading: "Fundacja Acadea: misja, działania i zespół",
-      fallbackDescription:
-        "Naszą misją jest ułatwiać młodym ludziom dostęp do edukacji i świadomych decyzji o przyszłości. Prowadzimy bezpłatną bazę wiedzy, mentoring, program stypendialny i wsparcie aplikacyjne. KRS 0001240540.",
+        "Poznaj zespół ACADEA i historię osób, które same przeszły proces aplikacji na studia za granicą, a dziś wspierają kolejnych kandydatów.",
+      heading: "Poznajmy się",
       keywords: ["o nas ACADEA", "zespół ACADEA", "mentorzy studia za granicą"],
       schemas: [
         createOrganizationSchema(),
         createLocalBusinessSchema(),
         createWebPageSchema({
           path: "/o-nas",
-          title: "Fundacja Acadea | Misja, działania i zespół",
+          title: "Poznajmy się | Zespół ACADEA",
           description:
-            "Misja, bezpłatne działania edukacyjne, program stypendialny, wsparcie aplikacyjne i zespół Fundacji Acadea.",
+            "Strona o zespole ACADEA, jego wartościach i doświadczeniu w aplikacji na studia za granicą.",
         }),
         createBreadcrumbSchema([
           { name: "Strona Główna", path: "/" },
@@ -621,230 +617,33 @@ function buildStaticRouteMeta(): RouteMeta[] {
   ];
 }
 
-function buildEnglishStaticRouteMeta(): RouteMeta[] {
-  const pages: Array<{
-    path: string;
-    title: string;
-    description: string;
-    heading: string;
-    keywords: string[];
-    breadcrumb: string;
-    collection?: boolean;
-  }> = [
-    {
-      path: "/en/how-it-works",
-      title: "How ACADEA helps with university applications | ACADEA",
-      description:
-        "See how ACADEA supports university choice, exams, documents, essays, applications, interviews and post-offer formalities step by step.",
-      heading: "How we help with university applications",
-      keywords: ["university application support", "study abroad guidance", "application process"],
-      breadcrumb: "How we help",
-    },
-    {
-      path: "/en/countries",
-      title: "Countries and universities abroad | ACADEA",
-      description:
-        "Compare study destinations, universities, application systems, teaching languages and costs across more than 25 countries covered by ACADEA.",
-      heading: "Countries and universities abroad",
-      keywords: ["study abroad countries", "universities abroad", "international university applications"],
-      breadcrumb: "Countries and universities",
-      collection: true,
-    },
-    {
-      path: "/en/about-us",
-      title: "Fundacja Acadea | Mission, activities and team",
-      description:
-        "Learn about Fundacja Acadea's mission, free educational activities, scholarship and mentoring programme, application support and team.",
-      heading: "Fundacja Acadea: mission, activities and team",
-      keywords: ["Fundacja Acadea", "educational foundation", "ACADEA mission", "ACADEA team"],
-      breadcrumb: "About us",
-    },
-    {
-      path: "/en/contact",
-      title: "Contact ACADEA and book a free consultation",
-      description:
-        "Contact Fundacja Acadea about studying abroad, university choice, scholarships or application planning, or book a free initial consultation.",
-      heading: "Contact ACADEA",
-      keywords: ["contact ACADEA", "free study abroad consultation", "university application contact"],
-      breadcrumb: "Contact",
-    },
-    {
-      path: "/en/knowledge-base",
-      title: "Study abroad knowledge base | ACADEA",
-      description:
-        "Read practical ACADEA guides on university applications, deadlines, documents, essays, exams, countries, universities, costs and scholarships.",
-      heading: "Study abroad knowledge base",
-      keywords: ["study abroad guides", "university application advice", "ACADEA knowledge base"],
-      breadcrumb: "Knowledge base",
-      collection: true,
-    },
-    {
-      path: "/en/scholarship",
-      title: "ACADEA Scholarship Programme | Mentoring and support",
-      description:
-        "Explore the ACADEA Scholarship Programme for ambitious applicants who need mentoring, educational support and a realistic plan for their goals.",
-      heading: "ACADEA Scholarship Programme",
-      keywords: ["ACADEA scholarship", "mentoring programme", "study abroad scholarship support"],
-      breadcrumb: "Scholarships",
-    },
-    {
-      path: "/en/scholarship/application",
-      title: "Apply to the ACADEA Scholarship Programme",
-      description:
-        "Use the ACADEA Scholarship Programme application form to describe your goals, achievements, circumstances and motivation for mentoring support.",
-      heading: "ACADEA Scholarship application",
-      keywords: ["ACADEA scholarship application", "scholarship form", "mentoring application"],
-      breadcrumb: "Scholarship application",
-    },
-    {
-      path: "/en/scholarship/terms",
-      title: "ACADEA Scholarship Competition terms",
-      description:
-        "Read the ACADEA Scholarship Competition terms, including eligibility, application rounds, assessment, scoring, selection and data protection.",
-      heading: "ACADEA Scholarship Competition terms",
-      keywords: ["ACADEA scholarship terms", "scholarship competition rules"],
-      breadcrumb: "Scholarship terms",
-    },
-    {
-      path: "/en/book-consultation",
-      title: "Book a free study abroad consultation | ACADEA",
-      description:
-        "Choose a time for a free initial consultation with ACADEA about studying abroad, university selection and your application plan.",
-      heading: "Book a free consultation",
-      keywords: ["free study abroad consultation", "book ACADEA consultation", "university application meeting"],
-      breadcrumb: "Book a consultation",
-    },
-    {
-      path: "/en/become-a-mentor",
-      title: "Become an ACADEA mentor or volunteer",
-      description:
-        "Apply to support young people with Fundacja Acadea as a mentor or volunteer and share your university application and study experience.",
-      heading: "Become an ACADEA mentor",
-      keywords: ["ACADEA mentor", "education volunteering", "study abroad mentor"],
-      breadcrumb: "Become a mentor",
-    },
-    {
-      path: "/en/privacy-policy",
-      title: "Privacy policy | ACADEA",
-      description:
-        "Read how Fundacja Acadea processes personal data, uses cookies, operates forms and protects the rights of website and platform users.",
-      heading: "Privacy policy",
-      keywords: ["ACADEA privacy policy", "Fundacja Acadea data protection"],
-      breadcrumb: "Privacy policy",
-    },
-    {
-      path: "/en/terms",
-      title: "Website terms | ACADEA",
-      description:
-        "Read the terms governing use of the ACADEA website, forms, consultation booking and electronic communication with Fundacja Acadea.",
-      heading: "Website terms",
-      keywords: ["ACADEA website terms", "Fundacja Acadea terms"],
-      breadcrumb: "Terms",
-    },
-    {
-      path: "/en/platform-terms",
-      title: "ACADEA platform terms",
-      description:
-        "Read the terms for ACADEA platform accounts, materials, meetings, document storage, external integrations and user responsibilities.",
-      heading: "ACADEA platform terms",
-      keywords: ["ACADEA platform terms", "ACADEA account rules"],
-      breadcrumb: "Platform terms",
-    },
-  ];
-
-  return pages.map((page) => ({
-    path: page.path,
-    title: page.title,
-    description: page.description,
-    heading: page.heading,
-    fallbackDescription: page.description,
-    keywords: page.keywords,
-    language: "en-GB",
-    locale: "en_GB",
+function buildCountryRouteMeta(): RouteMeta[] {
+  return countries.map((country) => ({
+    path: `/kraje/${country.slug}`,
+    title: `Studia w ${country.name} | Uczelnie i aplikacja | ACADEA`,
+    description: country.intro,
+    heading: `Studia w ${country.name}`,
+    keywords: [
+      `studia w ${country.name}`,
+      `${country.name} uczelnie`,
+      `${country.name} aplikacja`,
+      `studia za granicą ${country.name}`,
+    ],
     schemas: [
       createOrganizationSchema(),
       createLocalBusinessSchema(),
-      page.collection
-        ? createCollectionPageSchema({
-            path: page.path,
-            title: page.title,
-            description: page.description,
-          })
-        : createWebPageSchema({
-            path: page.path,
-            title: page.title,
-            description: page.description,
-          }),
-      createBreadcrumbSchema([
-        { name: "Home", path: "/en" },
-        { name: page.breadcrumb, path: page.path },
-      ]),
-    ],
-  }));
-}
-
-function buildCountryRouteMeta(): RouteMeta[] {
-  return countries.flatMap((country) => {
-    const englishCountry = getLocalizedCountry(country, "en");
-
-    return [
-      {
+      createWebPageSchema({
         path: `/kraje/${country.slug}`,
         title: `Studia w ${country.name} | Uczelnie i aplikacja | ACADEA`,
         description: country.intro,
-        heading: `Studia w ${country.name}`,
-        keywords: [
-          `studia w ${country.name}`,
-          `${country.name} uczelnie`,
-          `${country.name} aplikacja`,
-          `studia za granicą ${country.name}`,
-        ],
-        schemas: [
-          createOrganizationSchema(),
-          createLocalBusinessSchema(),
-          createWebPageSchema({
-            path: `/kraje/${country.slug}`,
-            title: `Studia w ${country.name} | Uczelnie i aplikacja | ACADEA`,
-            description: country.intro,
-          }),
-          createBreadcrumbSchema([
-            { name: "Strona Główna", path: "/" },
-            { name: "Kraje i Uczelnie", path: "/kraje" },
-            { name: country.name, path: `/kraje/${country.slug}` },
-          ]),
-        ],
-      },
-      {
-        path: `/en/countries/${country.slug}`,
-        title: `Study in ${englishCountry.name} | Universities and applications | ACADEA`,
-        description: englishCountry.intro,
-        heading: `Study in ${englishCountry.name}`,
-        fallbackDescription: englishCountry.intro,
-        keywords: [
-          `study in ${englishCountry.name}`,
-          `${englishCountry.name} universities`,
-          `${englishCountry.name} university applications`,
-          `study abroad ${englishCountry.name}`,
-        ],
-        language: "en-GB" as const,
-        locale: "en_GB" as const,
-        schemas: [
-          createOrganizationSchema(),
-          createLocalBusinessSchema(),
-          createWebPageSchema({
-            path: `/en/countries/${country.slug}`,
-            title: `Study in ${englishCountry.name} | Universities and applications | ACADEA`,
-            description: englishCountry.intro,
-          }),
-          createBreadcrumbSchema([
-            { name: "Home", path: "/en" },
-            { name: "Countries and universities", path: "/en/countries" },
-            { name: englishCountry.name, path: `/en/countries/${country.slug}` },
-          ]),
-        ],
-      },
-    ];
-  });
+      }),
+      createBreadcrumbSchema([
+        { name: "Strona Główna", path: "/" },
+        { name: "Kraje i Uczelnie", path: "/kraje" },
+        { name: country.name, path: `/kraje/${country.slug}` },
+      ]),
+    ],
+  }));
 }
 
 function estimateWordCount(markdown: string) {
@@ -1038,7 +837,6 @@ async function main() {
   const publishedArticles = await loadPublishedArticles();
   const routeMeta = [
     ...buildStaticRouteMeta(),
-    ...buildEnglishStaticRouteMeta(),
     ...buildCountryRouteMeta(),
     ...buildArticleRouteMeta(publishedArticles),
   ];

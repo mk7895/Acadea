@@ -82,11 +82,7 @@ export function ConsultationPrompt() {
   }, [location]);
 
   useEffect(() => {
-    if (
-      !shouldShowOnPath ||
-      hasSeenPrompt() ||
-      window.matchMedia("(max-width: 1023px)").matches
-    ) {
+    if (!shouldShowOnPath || hasSeenPrompt()) {
       return undefined;
     }
 
@@ -100,10 +96,6 @@ export function ConsultationPrompt() {
 
     const handleExitIntent = (event: MouseEvent) => {
       if (event.relatedTarget) {
-        return;
-      }
-
-      if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
         return;
       }
 

@@ -1,4 +1,5 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy } from "react";
+import { motion, type Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -14,7 +15,6 @@ import {
   Wallet,
   Compass,
   PhoneCall,
-  Landmark,
 } from "lucide-react";
 import { Link } from "wouter";
 import scholarshipHomePhoto from "@/assets/scholarship-home-photo.webp";
@@ -29,32 +29,21 @@ import {
   useSeo,
 } from "@/lib/seo";
 import { HOME_FAQ_ITEMS_EN, HOME_FAQ_ITEMS_PL } from "@/data/home-faq";
+import { ResponsiveQrCode } from "@/components/ResponsiveQrCode";
 import { useLanguage } from "@/lib/i18n";
 
 const GlobeSection = lazy(() =>
   import("@/components/GlobeSection").then((module) => ({ default: module.GlobeSection })),
 );
 
-function DesktopGlobe() {
-  const [shouldRender, setShouldRender] = useState(false);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(min-width: 1024px)");
-    const update = () => setShouldRender(mediaQuery.matches);
-
-    update();
-    mediaQuery.addEventListener("change", update);
-    return () => mediaQuery.removeEventListener("change", update);
-  }, []);
-
-  if (!shouldRender) return null;
-
-  return (
-    <Suspense fallback={<div className="h-[532px] w-full max-w-[500px] rounded-full bg-primary/5" />}>
-      <GlobeSection />
-    </Suspense>
-  );
-}
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
+};
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+};
 
 export default function Home() {
   const { isEnglish, localizePath, t } = useLanguage();
@@ -158,47 +147,14 @@ export default function Home() {
     t("Odpowiedzi na pytania od ekspertów ACADEA", "Answers from ACADEA experts"),
   ];
 
-  const foundationActivities = [
-    {
-      icon: BookOpen,
-      title: t("Bezpłatna baza wiedzy", "Free knowledge base"),
-      desc: t(
-        "Publikujemy praktyczne poradniki o wyborze uczelni, dokumentach, stypendiach, kosztach i terminach aplikacji.",
-        "We publish practical guides on choosing universities, documents, scholarships, costs and application deadlines.",
-      ),
-      href: "/baza-wiedzy",
-      cta: t("Czytaj poradniki", "Read the guides"),
-    },
-    {
-      icon: Heart,
-      title: t("Program stypendialny i mentoring", "Scholarship programme and mentoring"),
-      desc: t(
-        "Dajemy ambitnym osobom dostęp do mentoringu i wsparcia, gdy barierą są finanse albo brak odpowiedniego zaplecza.",
-        "We give ambitious people access to mentoring and support when finances or a lack of guidance stand in their way.",
-      ),
-      href: "/stypendium",
-      cta: t("Poznaj program", "Explore the programme"),
-    },
-    {
-      icon: Users,
-      title: t("Wsparcie aplikacyjne", "Application support"),
-      desc: t(
-        "Pomagamy przejść od pierwszego pomysłu do złożenia aplikacji i formalności po otrzymaniu oferty.",
-        "We help students move from a first idea to a submitted application and the formalities that follow an offer.",
-      ),
-      href: "/jak-to-dziala",
-      cta: t("Zobacz, jak pomagamy", "See how we help"),
-    },
-  ];
-
   useSeo({
     title: t(
       "Studia za granicą i doradztwo aplikacyjne | ACADEA",
       "Study abroad guidance and university applications | ACADEA",
     ),
     description: t(
-      "Fundacja Acadea wspiera młodych ludzi planujących studia za granicą poprzez bezpłatną wiedzę, mentoring, stypendia i pomoc w aplikacji.",
-      "Fundacja Acadea supports young people planning to study abroad through free information, mentoring, scholarships and application guidance.",
+      "Pomagamy dostać się na studia za granicą. ACADEA wspiera w wyborze uczelni, dokumentach, esejach, egzaminach i planowaniu aplikacji.",
+      "We help students get into universities abroad. ACADEA supports university choice, documents, essays, exams and application planning.",
     ),
     path: localizePath("/"),
     keywords: isEnglish
@@ -256,8 +212,12 @@ export default function Home() {
 
         <div className="container mx-auto px-4 md:px-6 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-12 lg:gap-20 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/12 text-primary border border-accent/35 text-xs font-semibold mb-8 uppercase tracking-widest">
+            <motion.div
+              initial={{ opacity: 0, y: 32 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/12 text-accent border border-accent/25 text-xs font-semibold mb-8 uppercase tracking-widest">
                 <Globe size={13} />
                 <span>{t("Edukacja bez granic", "Education without borders")}</span>
               </div>
@@ -282,7 +242,7 @@ export default function Home() {
                 )}
               </h1>
 
-              <p className="text-lg text-gray-600 leading-relaxed mb-10 max-w-lg">
+              <p className="text-lg text-gray-500 leading-relaxed mb-10 max-w-lg">
                 {t(
                   "Pomagamy dostać się na wymarzone uczelnie na całym świecie.",
                   "We help students get into their dream universities all around the world.",
@@ -301,7 +261,7 @@ export default function Home() {
                 </Link>
               </div>
 
-              <div className="flex flex-wrap gap-6 items-center text-sm text-gray-600 pt-8">
+              <div className="flex flex-wrap gap-6 items-center text-sm text-gray-400 pt-8">
                 <div className="flex items-center gap-2">
                   <MapPin size={16} className="text-primary" />
                   <span>
@@ -324,58 +284,18 @@ export default function Home() {
                   </span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="hidden min-h-[532px] lg:flex items-center justify-center">
-              <DesktopGlobe />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-y border-primary/10 bg-[#f8faf7] py-12 md:py-16" aria-labelledby="foundation-mission-heading">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="mx-auto max-w-4xl text-center">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white px-4 py-2 text-sm font-semibold text-primary">
-              <Landmark size={16} />
-              <span>{t("Fundacja Acadea • KRS 0001240540", "Fundacja Acadea • KRS 0001240540")}</span>
-            </div>
-            <h2 id="foundation-mission-heading" className="text-3xl font-bold leading-tight text-primary md:text-5xl">
-              {t(
-                "Naszą misją jest ułatwiać młodym ludziom dostęp do edukacji i świadomych decyzji o przyszłości.",
-                "Our mission is to make education and informed choices about the future more accessible to young people.",
-              )}
-            </h2>
-            <p className="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-gray-600">
-              {t(
-                "Jako fundacja edukacyjna łączymy bezpłatną, rzetelną wiedzę z mentoringiem i indywidualnym wsparciem. Pomagamy kandydatom oraz ich rodzinom zrozumieć możliwości, koszty i wymagania, a następnie zaplanować realną drogę do celu.",
-                "As an educational foundation, we combine free, reliable information with mentoring and individual support. We help applicants and their families understand their options, costs and requirements, then plan a realistic route towards their goal.",
-              )}
-            </p>
-          </div>
-
-          <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
-            {foundationActivities.map((activity) => (
-              <article key={activity.title} className="flex h-full flex-col rounded-2xl border border-primary/10 bg-white p-7 shadow-sm">
-                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/8">
-                  <activity.icon size={23} className="text-primary" />
-                </div>
-                <h3 className="text-xl font-bold text-primary">{activity.title}</h3>
-                <p className="mt-3 flex-1 text-sm leading-relaxed text-gray-600">{activity.desc}</p>
-                <Link href={localizePath(activity.href)} className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-primary hover:text-accent">
-                  {activity.cta} <ArrowRight size={16} />
-                </Link>
-              </article>
-            ))}
-          </div>
-
-          <div className="mt-9 flex flex-col items-center justify-center gap-3 text-center sm:flex-row">
-            <Link href={localizePath("/o-nas")} className="inline-flex h-12 items-center justify-center rounded-full border border-primary/20 px-6 text-sm font-bold text-primary hover:bg-white">
-              {t("Poznaj Fundację Acadea", "About Fundacja Acadea")}
-            </Link>
-            <Link href={localizePath("/kontakt")} className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-6 text-sm font-bold text-white hover:bg-primary/90">
-              {t("Skontaktuj się z nami", "Contact us")}
-            </Link>
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.9, ease: "easeOut", delay: 0.2 }}
+              className="hidden min-h-[532px] lg:flex items-center justify-center"
+            >
+              <Suspense fallback={<div className="h-[532px] w-full max-w-[500px] rounded-full bg-primary/5" />}>
+                <GlobeSection />
+              </Suspense>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -394,10 +314,17 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
             {services.map((service) => (
-              <div
+              <motion.div
                 key={service.title}
+                variants={itemVariants}
                 className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group"
               >
                 <div className="w-12 h-12 bg-primary/8 rounded-xl flex items-center justify-center mb-6 group-hover:bg-primary/15 transition-colors">
@@ -405,30 +332,35 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-bold text-primary mb-3">{service.title}</h3>
                 <p className="text-gray-500 leading-relaxed">{service.desc}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       <section className="py-12 md:py-16 bg-white overflow-hidden">
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-12 lg:gap-16 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/30 text-primary text-sm font-semibold mb-8">
-                <Heart size={16} className="text-primary fill-accent" />
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7 }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-accent text-sm font-semibold mb-8">
+                <Heart size={16} className="fill-accent" />
                 <span>{t("Program Stypendialny ACADEA", "ACADEA Scholarship Programme")}</span>
               </div>
               <h2 className="text-4xl md:text-5xl font-bold text-primary leading-tight mb-6">
                 {isEnglish ? (
                   <>
-                    Your <span className="text-[#9a6200]">potential</span> matters,
+                    Your <span className="text-accent">potential</span> matters,
                     <br />
                     not your budget.
                   </>
                 ) : (
                   <>
-                    Liczy się Twój <span className="text-[#9a6200]">potencjał</span>,
+                    Liczy się Twój <span className="text-accent">potencjał</span>,
                     <br />
                     nie budżet.
                   </>
@@ -450,9 +382,15 @@ export default function Home() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-            </div>
+            </motion.div>
 
-            <div className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-primary/5 to-accent/10 border border-primary/10 p-2 md:min-h-[360px] md:p-2.5">
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, delay: 0.1 }}
+              className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-primary/5 to-accent/10 border border-primary/10 p-2 md:min-h-[360px] md:p-2.5"
+            >
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-accent/10 blur-[80px]" />
                 <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-primary/8 blur-[60px]" />
@@ -471,7 +409,7 @@ export default function Home() {
                 <MapPin size={16} className="shrink-0 text-accent" />
                 <span>{t("wewnątrz Bodleian Library, University of Oxford", "inside the Bodleian Library, University of Oxford")}</span>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -479,7 +417,11 @@ export default function Home() {
       <section className="py-12 md:py-16 bg-gray-50">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-3xl mx-auto text-center mb-14">
-            <div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/8 border border-primary/15 text-primary text-sm font-semibold mb-6">
                 <Heart size={16} />
                 <span>{t("Dla Rodziców", "For parents")}</span>
@@ -496,12 +438,15 @@ export default function Home() {
                   "The decision to study abroad is an important step for the whole family. We make sure it is transparent, safe and well planned - also from a parent's perspective.",
                 )}
               </p>
-            </div>
+            </motion.div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {parentCards.map((card) => (
-              <div
+              <motion.div
                 key={card.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
                 className="bg-white rounded-2xl p-7 border border-gray-100 shadow-sm"
               >
                 <div className="w-12 h-12 bg-primary/8 rounded-xl flex items-center justify-center mb-5">
@@ -509,7 +454,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-lg font-bold text-primary mb-2">{card.title}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{card.desc}</p>
-              </div>
+              </motion.div>
             ))}
           </div>
           <div className="text-center">
@@ -532,7 +477,13 @@ export default function Home() {
 
       <section className="py-12 md:py-16 bg-gray-50">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="rounded-3xl overflow-hidden grid grid-cols-1 lg:grid-cols-2">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="rounded-3xl overflow-hidden grid grid-cols-1 lg:grid-cols-2"
+          >
             <div className="bg-orange-50 p-10 md:p-14 flex flex-col justify-center">
               <div className="w-14 h-14 bg-primary/12 rounded-2xl flex items-center justify-center mb-7">
                 <MessageCircle size={30} className="text-primary" />
@@ -572,26 +523,29 @@ export default function Home() {
               </a>
             </div>
             <div className="bg-primary p-10 md:p-14 flex flex-col items-center justify-center text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/10 text-accent">
-                <MessageCircle size={38} />
-              </div>
-              <p className="text-white font-bold text-lg mt-7">{t("Dołącz jednym kliknięciem", "Join in one click")}</p>
-              <p className="text-white/70 text-sm mt-2 mb-7 max-w-xs">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className="bg-white rounded-3xl p-6 shadow-xl"
+              >
+                <ResponsiveQrCode
+                  value="https://chat.whatsapp.com/Cg8sKNNvAFIKBfDjBLqWKl"
+                  size={200}
+                  title={t("Kod QR do grupy WhatsApp ACADEA", "QR code for the ACADEA WhatsApp group")}
+                  className="h-auto w-full max-w-[200px]"
+                />
+              </motion.div>
+              <p className="text-white font-bold text-lg mt-7">{t("Zeskanuj kod QR", "Scan the QR code")}</p>
+              <p className="text-white/70 text-sm mt-2 max-w-xs">
                 {t(
-                  "Grupa jest bezpłatna. Link otworzy oficjalną aplikację lub stronę WhatsApp.",
-                  "The group is free. The link opens the official WhatsApp app or website.",
+                  "Otwórz aparat i dołącz do społeczności ACADEA na WhatsApp.",
+                  "Open your camera and join the ACADEA community on WhatsApp.",
                 )}
               </p>
-              <a
-                href="https://chat.whatsapp.com/Cg8sKNNvAFIKBfDjBLqWKl"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-12 items-center justify-center rounded-full bg-accent px-6 text-sm font-bold text-primary hover:bg-white"
-              >
-                {t("Otwórz grupę WhatsApp", "Open the WhatsApp group")}
-              </a>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -599,7 +553,12 @@ export default function Home() {
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-accent rounded-full blur-[120px] opacity-20 pointer-events-none" />
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-white/10 rounded-full blur-[120px] opacity-20 pointer-events-none" />
         <div className="container mx-auto px-4 md:px-6 relative z-10 text-center">
-          <div className="max-w-3xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="max-w-3xl mx-auto"
+          >
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               {t("Zacznijmy Twoją drogę.", "Let's start your journey.")}
               
@@ -615,7 +574,7 @@ export default function Home() {
                 {t("Wybierz termin", "Choose a time")} <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-          </div>
+          </motion.div>
         </div>
       </section>
     </div>
