@@ -116,7 +116,7 @@ data and user records are intentionally not part of this public repository.
 publicly visible for portfolio evaluation only; it is not open source. No
 permission is granted to copy, modify, distribute, deploy, host, sublicense,
 sell, create derivative works from, or otherwise use the code or Acadea product
-materials for commercial or non-commercial purposes.
+materials for commercial purposes.
 
 See the [proprietary source-code notice](LICENSE) for the complete terms.
 Third-party dependencies remain governed by their respective licences.
