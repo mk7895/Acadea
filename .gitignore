@@ -43,11 +43,44 @@ testem.log
 .DS_Store
 Thumbs.db
 
-# Local environment secrets
-.env
-.env.local
-.env.database
-*.env.local
+# Local environment secrets and package-manager credentials
+.env*
+!.env.example
+!**/.env.example
+!.env.database.example
+.npmrc
+!/.npmrc
+.yarnrc*
+
+# Private keys, certificates, service-account files, and credential exports
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials.json
+*credentials*.json
+*service-account*.json
+application_default_credentials.json
+kaggle.json
+
+# Local databases, uploaded files, backups, and data exports
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.dump
+/data/
+/uploads/
+/exports/
+/backups/
+attached_assets/*.csv
+attached_assets/*.tsv
+attached_assets/*.xlsx
+attached_assets/*.xls
+attached_assets/*.dta
+attached_assets/*.parquet
 
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md

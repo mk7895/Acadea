@@ -155,6 +155,15 @@ lead,” and may state that Acadea has supported more than 200 students and
 contributed to over 75 university placements. Keep the AI-assistance disclosure
 concise in the Acadea README; do not lead with it in profile metadata.
 
+### Public-repository safety controls
+
+As of 2026-08-08, GitHub secret scanning and push protection are enabled for
+the public Acadea repository. The root `.gitignore` also rejects environment
+variants, package-manager credentials, private-key containers, service-account
+exports, local databases, uploads, backups, and common tabular data exports.
+Keep the explicit `.env.example` and `.env.database.example` exceptions as
+placeholder-only documentation; never place working credentials in them.
+
 ## Current production verification
 
 As of 2026-08-02, parent-consent repair commit `54c482a` was pushed to `main` and deployed:
