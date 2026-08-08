@@ -135,6 +135,20 @@ tree produced a Tailwind/Vite `CachedInputFileSystem` error for the website
 build; the clean-clone pass showed that this was local dependency state rather
 than a source or lockfile failure.
 
+### Proprietary licensing decision
+
+On 2026-08-08, Mateusz explicitly rejected open-source licensing for Acadea.
+The current repository must retain the all-rights-reserved proprietary
+`LICENSE`, the root package must remain `UNLICENSED`, and public descriptions
+must not grant reuse rights. Do not restore MIT or another open-source licence
+without his explicit approval.
+
+Public visibility still lets GitHub users view and fork the repository under
+GitHub's Terms of Service. A source-code notice also cannot prevent unlawful
+copying or independently created business ideas. If preventing access is the
+priority, the source repository must be made private and replaced by a separate
+public showcase containing only approved portfolio materials.
+
 ## Current production verification
 
 As of 2026-08-02, parent-consent repair commit `54c482a` was pushed to `main` and deployed:
