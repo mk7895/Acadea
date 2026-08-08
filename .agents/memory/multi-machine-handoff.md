@@ -1,7 +1,7 @@
 ---
 name: ACADEA multi-machine handoff
 description: Required workflow for preserving context and safely moving work between Mateusz's primary computer and Marlena's clean clone
-verified_on: 2026-08-01
+verified_on: 2026-08-08
 ---
 
 # Multi-machine handoff
@@ -9,6 +9,12 @@ verified_on: 2026-08-01
 ## Purpose
 
 Git-tracked code and `.agents/memory/` are the durable handoff layer between computers. Codex task transcripts, clipboard contents, browser sessions, local shell history, ignored files, and machine-local memory are not shared and must never be treated as if they were.
+
+`AGENTS.md` and `.agents/memory/` must remain tracked in the public repository.
+This is a deliberate cross-device design decision, not repository debris. Do
+not add either path to `.gitignore`, remove it from the index, or move it outside
+the repository. The corresponding safety requirement is that these files must
+never contain secrets or personal user records.
 
 The goal is to preserve enough intent and operational state that work can continue safely after a pull without committing secrets, proprietary one-off utilities, generated imports, or local research.
 
@@ -105,6 +111,29 @@ As of 2026-08-01, the following context exists only on Mateusz's computer and is
 As of 2026-08-02, the community motivation leaderboard code is tracked on `main` through merge commit `09d5f5a`. Its database migration remains a separate deployment step: Git-tracked state does not confirm that `lib/db/migrations/20260801_community_leaderboard.sql` was applied or that the feature was production-verified. Check the live database and deployed services before claiming either status.
 
 The scholarship parent-consent URL repair requires no database migration. Its durable routing and privacy rules are recorded in `.agents/memory/acadea-site.md`.
+
+## Portfolio presentation and CI
+
+As of 2026-08-08, branch `agent/improve-public-portfolio` prepares the repository
+for recruiter-facing presentation without changing application behaviour:
+
+- a root README documents the live product, Mateusz's founder/product role,
+  AI-assisted development, architecture, public-data policy, and local checks;
+- current screenshots from the deployed English website are stored under
+  `docs/images/`;
+- the existing MIT package declaration is backed by a root `LICENSE`;
+- `.github/workflows/ci.yml` installs from the lockfile on Node 22 with pnpm
+  11.9.0, then runs the full workspace type-check and build;
+- root runtime metadata now declares pnpm 11.9.0 and Node versions 22 through 24;
+- `run-local.sh` resolves the repository root dynamically and uses pnpm, so it
+  no longer depends on one computer's absolute path.
+
+Verification on 2026-08-08: a clean temporary clone using Node 22.23.1 and pnpm
+11.9.0 passed `pnpm install --frozen-lockfile`, `pnpm typecheck`, and
+`pnpm -r --if-present run build`. The older primary-computer `node_modules`
+tree produced a Tailwind/Vite `CachedInputFileSystem` error for the website
+build; the clean-clone pass showed that this was local dependency state rather
+than a source or lockfile failure.
 
 ## Current production verification
 

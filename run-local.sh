@@ -2,21 +2,21 @@
 
 set -e
 
-# Load nvm and use Node 24
+# Load nvm and use the repository's declared Node version.
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-nvm use 24 >/dev/null
+nvm use >/dev/null
 
-ROOT="/Users/mateuszklepacki/Desktop/Acadea-Edu-Portal"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "Starting API on http://127.0.0.1:5001..."
 cd "$ROOT/artifacts/api-server"
-PORT=5001 npm run dev &
+PORT=5001 pnpm run dev &
 API_PID=$!
 
 echo "Starting frontend on http://localhost:5173..."
 cd "$ROOT/artifacts/acadea-website"
-PORT=5173 BASE_PATH=/ npm run dev &
+PORT=5173 BASE_PATH=/ pnpm run dev &
 FRONTEND_PID=$!
 
 echo ""
