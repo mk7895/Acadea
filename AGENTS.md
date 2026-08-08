@@ -18,6 +18,11 @@ credentials, personal user records, and other private material.
 
 Use `pnpm`; do not introduce another lockfile. Never commit local `.env` files, credentials, OAuth refresh tokens, service-account JSON, database passwords, or signed media URLs.
 
+This is proprietary source code. Keep the root package licence set to
+`UNLICENSED` and the all-rights-reserved `LICENSE` notice intact. Never add an
+open-source licence or describe the repository as open source without Mateusz's
+explicit approval.
+
 This repository is developed on Marlena's and Mateusz's computers. Do not hard-code either user's absolute path in shared scripts. Before editing, run the preflight in `.agents/memory/multi-machine-handoff.md`: inspect `git status`, fetch, compare the local branch with its upstream, and use `git pull --ff-only` only when the worktree is clean and the branch is merely behind. Never reset, overwrite, or silently merge another computer's work.
 
 Do not assume ignored files exist on both computers. Mateusz's computer currently has the local operational assets and secrets; Marlena's computer should be treated as a clean Git clone unless the handoff memory explicitly says otherwise. Keep ignored utilities, generated imports, credentials, and local research out of Git. If work depends on them, record the dependency and recreation or secure-transfer requirement in the handoff memory without recording secret values.

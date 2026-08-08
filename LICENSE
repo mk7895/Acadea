@@ -1,21 +1,31 @@
-MIT License
+ACADEA PROPRIETARY SOURCE CODE NOTICE
 
-Copyright (c) 2026 Mateusz Klepacki
+Copyright (c) 2026 Mateusz Klepacki. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This repository is made publicly viewable for portfolio evaluation only. Except
+for the limited rights necessarily provided by GitHub's Terms of Service for
+content hosted on GitHub, no licence or permission is granted to any person or
+entity to use this source code or the Acadea product materials.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Without prior written permission from the copyright owner, you may not copy,
+reproduce, modify, adapt, translate, create derivative works from, distribute,
+publish, sublicense, sell, rent, host, deploy, make available, or otherwise use
+the source code, documentation, designs, written content, or other original
+materials in this repository, in whole or in substantial part, for commercial
+or non-commercial purposes.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+No rights are granted to the Acadea name, logos, trade dress, written content,
+service materials, product workflows, or other brand and business assets.
+
+Third-party libraries, tools, fonts, and other dependencies remain subject to
+their own licence terms. This notice does not restrict any rights granted by
+their respective copyright owners.
+
+For permission requests, contact the repository owner through the public
+contact information on the Acadea website.
+
+THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. TO THE MAXIMUM EXTENT PERMITTED
+BY LAW, THE COPYRIGHT OWNER WILL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY ARISING FROM THE MATERIALS OR THEIR USE.

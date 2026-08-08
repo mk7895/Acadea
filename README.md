@@ -110,9 +110,13 @@ data and user records are intentionally not part of this public repository.
 - The repository is source code for portfolio and product transparency; it is
   not a ready-made Acadea production deployment.
 
-## Licence
+## Licence and permitted use
 
-The source code in this repository is available under the [MIT Licence](LICENSE).
-Acadea names, logos, written content and other brand assets remain the property
-of their respective owner and are not granted for reuse by that software
-licence.
+**Copyright © 2026 Mateusz Klepacki. All rights reserved.** This repository is
+publicly visible for portfolio evaluation only; it is not open source. No
+permission is granted to copy, modify, distribute, deploy, host, sublicense,
+sell, create derivative works from, or otherwise use the code or Acadea product
+materials for commercial or non-commercial purposes.
+
+See the [proprietary source-code notice](LICENSE) for the complete terms.
+Third-party dependencies remain governed by their respective licences.
