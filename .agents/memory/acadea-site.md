@@ -15,3 +15,10 @@ description: Durable copy/positioning decisions and nav naming for the ACADEA we
 - **Booking consent**: marketing-consent checkbox is REQUIRED client-side; not yet enforced server-side in `POST /api/booking/create`. If legal enforcement is needed, add it to the server Zod schema.
 
 - **Scholarship parent-consent links**: browser-facing consent links belong to `acadea.org`, never `api.acadea.org`. The API uses `PUBLIC_SITE_URL` when configured and otherwise defaults to `https://acadea.org`; root consent paths on the API host exist only as temporary redirects for already-sent emails. Polish and English consent pages must be prerendered, marked `noindex`, and excluded from the sitemap.
+
+- **Public portfolio positioning**: describe Mateusz as Acadea's **co-founder**,
+  not “product lead.” Approved scale language is “supported more than 200
+  students and contributed to over 75 university placements.” Disclose
+  extensive AI assistance concisely in the Acadea repository README, while
+  leading external profile metadata with economics, data and co-founder
+  positioning.

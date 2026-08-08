@@ -1,7 +1,10 @@
 # Acadea
 
-**A live mentoring and university-application product built from a real service
-need.**
+Acadea is a live bilingual mentoring and university-application service that
+has supported more than 200 students and contributed to over 75 university
+placements. This repository contains the public website, mentor/mentee
+platform, TypeScript API, PostgreSQL data layer and shared packages behind the
+deployed product.
 
 [Visit Acadea](https://acadea.org/) ·
 [Open the mentoring platform](https://app.acadea.org/) ·
@@ -9,30 +12,20 @@ need.**
 
 ![Acadea English homepage](docs/images/acadea-homepage.png)
 
-Acadea helps students plan and manage applications to universities abroad. The
-repository contains the public website, the mentor/mentee platform, the API and
-the shared TypeScript packages behind the deployed service.
+## My contribution
 
-This is not a tutorial repository. It represents sustained product work across
-a public bilingual website, operational workflows, structured application data,
-booking and communication, and external-service integrations.
+As co-founder, I:
 
-## My role
+- translated student, mentor and administrative needs into product requirements and acceptance criteria;
+- defined workflows and business rules for application planning, documents, scheduling and progress tracking;
+- prioritised releases and integrations around the organisation’s operational needs;
+- tested production behaviour and iterated the deployed service.
 
-I founded Acadea and led the product from service concept to a deployed system.
-My contribution is best understood as **founder and product lead**, not as a
-claim of unaided software engineering:
-
-- translated business and user needs into journeys, requirements and acceptance criteria;
-- defined the mentor, mentee and administrator workflows and their business rules;
-- prioritised features and integrations around the way the service operates;
-- tested production behaviour and iterated on releases and deployment decisions;
-- used AI-assisted development extensively to turn those decisions into working software.
-
-I remain accountable for the problem framing, product choices, domain logic,
-validation and operational outcome. AI assistance is disclosed because it is an
-important part of how the product was delivered—not something this portfolio is
-intended to obscure.
+The implementation was developed with extensive AI assistance. I specified the
+required workflows and business rules, reviewed and tested the resulting
+behaviour, and managed product iterations and deployment. I therefore present
+the repository as evidence of product delivery and technical problem-solving,
+not as a claim that I wrote every line unaided.
 
 ## Product scope
 
@@ -91,32 +84,12 @@ pnpm typecheck
 pnpm -r --if-present run build
 ```
 
-The workspace currently relies on full TypeScript checks and production builds
-as its automated quality gates. It does not yet have a comprehensive automated
-application-test suite; production flows are also tested manually. That is a
-known engineering limitation rather than an omitted claim.
+Automated checks currently cover TypeScript validation and production builds,
+supplemented by manual testing of the principal production workflows. Local
+execution requires private environment configuration and access to external
+services; credentials and user data are not included.
 
-Running the complete product locally additionally requires private environment
-configuration and access to external services. Those credentials, operational
-data and user records are intentionally not part of this public repository.
+## Licence
 
-## Public-repository policy
-
-- Environment files, tokens, credentials and local databases are ignored.
-- Student, mentor and operational records are never included.
-- `AGENTS.md` and `.agents/memory` are intentionally tracked so the same
-  AI-assisted development context is available across cloned repositories on
-  multiple devices. They do not contain credentials or user records.
-- The repository is source code for portfolio and product transparency; it is
-  not a ready-made Acadea production deployment.
-
-## Licence and permitted use
-
-**Copyright © 2026 Mateusz Klepacki. All rights reserved.** This repository is
-publicly visible for portfolio evaluation only; it is not open source. No
-permission is granted to copy, modify, distribute, deploy, host, sublicense,
-sell, create derivative works from, or otherwise use the code or Acadea product
-materials for commercial purposes.
-
-See the [proprietary source-code notice](LICENSE) for the complete terms.
-Third-party dependencies remain governed by their respective licences.
+The source is publicly visible for portfolio review but is not open source. See
+[LICENSE](LICENSE) for the applicable terms.

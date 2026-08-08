@@ -13,7 +13,7 @@ This note records the implementation at commit `cf2d272` on `main`. Re-check the
 
 ## Repository and runtime map
 
-- This is a private `pnpm` TypeScript monorepo. The root build runs library typechecking, artifact typechecking, and each artifact build.
+- This is a publicly visible but proprietary `pnpm` TypeScript monorepo. The root build runs library typechecking, artifact typechecking, and each artifact build.
 - `artifacts/acadea-website`: React 19 + Vite public marketing site and knowledge base (`acadea.org`). It supports Polish and English routes, builds a sitemap, and prerenders SEO HTML.
 - `artifacts/acadea-platform`: React 19 + Vite admin/mentor/mentee application (`app.acadea.org`). Its default API base is `/api/platform`; local Vite proxies `/api` to `http://127.0.0.1:5001`.
 - `artifacts/api-server`: Express 5 API. Every route is mounted below `/api`. The platform API lives primarily in the large `src/routes/platform.ts` module.
@@ -28,7 +28,8 @@ There are currently no automated test files or configured Jest/Vitest/Playwright
 - `api.acadea.org` resolves through Google infrastructure and `/api/healthz` returns `{ "status": "ok" }`.
 - `cloudbuild.api.yaml` builds the API Docker image, pushes it to Artifact Registry, and deploys the `acadea-api` Cloud Run service in `europe-west1`. Cloud Run uses the default VPC/subnet with private-ranges-only egress.
 - PostgreSQL is the application database. The repository contains Cloud SQL-oriented configuration and one-off SQL files, but no conventional ordered migration directory. A code deploy does not itself prove that the production database schema was updated.
-- The API container builds on Node 22. The current `run-local.sh` forces Node 24 and hard-codes Mateusz's absolute checkout path, so it is not portable to Marlena's computer and should not be treated as a shared launcher until fixed.
+- The API container and CI use Node 22. The root `.nvmrc` also selects Node
+  22, and `run-local.sh` resolves the checkout root dynamically and uses pnpm.
 
 ## Authentication and roles
 
@@ -135,7 +136,6 @@ The Gmail monitor scans up to 40 messages from the last 120 days, keeps only mes
 ## Known handoff gaps and risks
 
 - Machine-local operational assets and their current known state are tracked in `multi-machine-handoff.md`. In particular, the corrected 40-article English import exists only on Mateusz's computer and its successful production application is not yet confirmed in Git-tracked state.
-- `run-local.sh` is tied to Mateusz's path and Node 24, while the shared package manager is pnpm and the production container uses Node 22.
 - API CORS is currently unrestricted (`cors()`), so production origin policy should be reviewed before exposing sensitive platform functionality more broadly.
 - The public R2 signing endpoint does not require authentication.
 - The self-service adoption route inserts `platform_guide_assignments` before checking the active-guide limit. A rejected adoption can therefore leave persistent template access behind.

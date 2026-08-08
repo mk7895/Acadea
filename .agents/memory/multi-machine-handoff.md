@@ -114,14 +114,15 @@ The scholarship parent-consent URL repair requires no database migration. Its du
 
 ## Portfolio presentation and CI
 
-As of 2026-08-08, branch `agent/improve-public-portfolio` prepares the repository
-for recruiter-facing presentation without changing application behaviour:
+As of 2026-08-08, `main` includes the recruiter-facing repository presentation
+without changing application behaviour:
 
-- a root README documents the live product, Mateusz's founder/product role,
-  AI-assisted development, architecture, public-data policy, and local checks;
+- the root README documents the live product, Mateusz's contribution as
+  co-founder, AI-assisted development, architecture and local checks;
 - current screenshots from the deployed English website are stored under
   `docs/images/`;
-- the existing MIT package declaration is backed by a root `LICENSE`;
+- the root `LICENSE` and package metadata use an all-rights-reserved,
+  proprietary model rather than an open-source licence;
 - `.github/workflows/ci.yml` installs from the lockfile on Node 22 with pnpm
   11.9.0, then runs the full workspace type-check and build;
 - root runtime metadata now declares pnpm 11.9.0 and Node versions 22 through 24;
@@ -148,6 +149,11 @@ GitHub's Terms of Service. A source-code notice also cannot prevent unlawful
 copying or independently created business ideas. If preventing access is the
 priority, the source repository must be made private and replaced by a separate
 public showcase containing only approved portfolio materials.
+
+Public portfolio copy should describe Mateusz as **co-founder**, not “product
+lead,” and may state that Acadea has supported more than 200 students and
+contributed to over 75 university placements. Keep the AI-assistance disclosure
+concise in the Acadea README; do not lead with it in profile metadata.
 
 ## Current production verification
 
