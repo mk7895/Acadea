@@ -11,6 +11,11 @@ Before making non-trivial changes, read:
 
 Treat the checked-out code and database schema as the current source of truth. Chat summaries and memory files preserve intent and handoff context, but they may be older than the current branch. When they disagree, verify the Git history and current implementation before editing.
 
+`AGENTS.md` and `.agents/memory/` are deliberately Git-tracked and public. They
+are the shared context layer for AI-assisted work across multiple cloned
+devices. Never ignore, untrack, remove, or relocate them. Keep them free of
+credentials, personal user records, and other private material.
+
 Use `pnpm`; do not introduce another lockfile. Never commit local `.env` files, credentials, OAuth refresh tokens, service-account JSON, database passwords, or signed media URLs.
 
 This repository is developed on Marlena's and Mateusz's computers. Do not hard-code either user's absolute path in shared scripts. Before editing, run the preflight in `.agents/memory/multi-machine-handoff.md`: inspect `git status`, fetch, compare the local branch with its upstream, and use `git pull --ff-only` only when the worktree is clean and the branch is merely behind. Never reset, overwrite, or silently merge another computer's work.

@@ -60,3 +60,6 @@ Thumbs.db
 
 # Local operational tooling, research, and one-off database utilities.
 /scripts/
+
+# Local Codex application state.
+/.codex/
